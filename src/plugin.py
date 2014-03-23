@@ -62,7 +62,6 @@ from Components.TimerSanityCheck import TimerSanityCheck
 # EPGCache & Event
 from enigma import eEPGCache, eServiceReference, eServiceCenter, iServiceInformation
 
-# geändert Mike
 from Tools import Notifications
 
 try:
@@ -101,7 +100,6 @@ config.plugins.serienRec.pastTimer = ConfigYesNo(default = False)
 config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
 config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
 config.plugins.serienRec.writeLog = ConfigYesNo(default = True)
-# geändert Mike
 config.plugins.serienRec.showNotification = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogChannels = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogAllowedSender = ConfigYesNo(default = True)
@@ -473,7 +471,6 @@ class serienRecCheckForRecording():
 		else:
 			print "\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------" % (self.uhrzeit, str(self.page))
 			writeLog("\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------" % (self.uhrzeit, str(self.page)), True)
-# geändert Mike
 			if config.plugins.serienRec.showNotification.value:
 				Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde gestartet."), MessageBox.TYPE_INFO, timeout=3)
 
@@ -1045,7 +1042,6 @@ class serienRecAddTimer():
 		}
 
 class serienRecMain(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -1100,7 +1096,6 @@ class serienRecMain(Screen):
 			"nextBouquet" : self.nextPage,
 			"prevBouquet" : self.backPage,
 			"displayHelp" : self.youtubeSearch,
-# geändert Mike
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile
 		}, -1)
@@ -1121,7 +1116,6 @@ class serienRecMain(Screen):
 		self['popup_bg'] = Pixmap()
 		self['popup_bg'].hide()
 
-# geaendert Mike
 		if config.plugins.serienRec.updateInterval.value == 24:
 			config.plugins.serienRec.timeUpdate.value = True
 			config.plugins.serienRec.update.value = False
@@ -1172,7 +1166,6 @@ class serienRecMain(Screen):
 		self['title'] = Label("Loading infos from Web...")
 		self['headline'] = Label("")
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
-# geändert Mike
 		self['red'] = Label("Serientyp auswählen")
 		self['green'] = Label("Channels zuweisen")
 		self['info'] = Label("Timer suchen")
@@ -1181,7 +1174,6 @@ class serienRecMain(Screen):
 
 		self.onLayoutFinish.append(self.startScreen)
 
-# geändert Mike
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
 
@@ -1615,7 +1607,6 @@ class serienRecMain(Screen):
 		print error
 
 class serienRecMainChannelEdit(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -1653,7 +1644,6 @@ class serienRecMainChannelEdit(Screen):
 			"up"    : self.keyUp,
 			"down"  : self.keyDown,
 			"red"	: self.keyBlue,
-# geändert Mike
 			"green" : self.keyGreen,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile
@@ -1698,7 +1688,6 @@ class serienRecMainChannelEdit(Screen):
 			self.stbChlist = buildSTBchannellist()
 			self.onLayoutFinish.append(self.readWebChannels)
 
-# geändert Mike
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 
@@ -1923,7 +1912,6 @@ class serienRecMainChannelEdit(Screen):
 		print error
 
 class serienRecMarker(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -1971,7 +1959,6 @@ class serienRecMarker(Screen):
 			"left"  : self.keyLeft,
 			"right" : self.keyRight,
 			"up"    : self.keyUp,
-# geändert Mike
 			"down"  : self.keyDown,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile
@@ -2013,7 +2000,6 @@ class serienRecMarker(Screen):
 		self.loading = True
 		self.onLayoutFinish.append(self.readSerienMarker)
 
-# geändert Mike
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
@@ -2459,7 +2445,6 @@ class serienRecMarker(Screen):
 		print error
 
 class serienRecAddSerie(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -2493,7 +2478,6 @@ class serienRecAddSerie(Screen):
 			"right" : self.keyRight,
 			"up"    : self.keyUp,
 			"down"  : self.keyDown,
-# geändert Mike
 			"red"	: self.keyRed,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile
@@ -2515,7 +2499,6 @@ class serienRecAddSerie(Screen):
 
 		self.onLayoutFinish.append(self.searchSerie)
 
-# geändert Mike
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
@@ -2688,7 +2671,6 @@ class serienRecAddSerie(Screen):
 		print error
 
 class serienRecSendeTermine(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -2725,7 +2707,6 @@ class serienRecSendeTermine(Screen):
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"red"	: self.keyRed,
-# geändert Mike
 			"green" : self.keyGreen,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile
@@ -2757,7 +2738,6 @@ class serienRecSendeTermine(Screen):
 
 		self.onLayoutFinish.append(self.searchSerie)
 
-# geändert Mike
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
@@ -3179,7 +3159,6 @@ class serienRecSendeTermine(Screen):
 		print error
 
 class serienRecTimer(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -3207,7 +3186,6 @@ class serienRecTimer(Screen):
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"red"	: self.keyRed,
-# geändert Mike
 			"green" : self.viewChange,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile
@@ -3221,10 +3199,8 @@ class serienRecTimer(Screen):
 		self['red'] = Label("Entferne Timer")
 		
 		if config.plugins.serienRec.recordListView.value == 0:
-# geändert Mike
 			self['green'] = Label("Zeige früheste Timer zuerst")
 		elif config.plugins.serienRec.recordListView.value == 1:
-# geändert Mike
 			self['green'] = Label("Zeige neuste Timer zuerst")
 
 		self.red = 0xf23d21
@@ -3236,7 +3212,6 @@ class serienRecTimer(Screen):
 
 		self.onLayoutFinish.append(self.readTimer)
 
-# geändert Mike
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
@@ -3246,11 +3221,9 @@ class serienRecTimer(Screen):
 	def viewChange(self):
 		if config.plugins.serienRec.recordListView.value == 0:
 			config.plugins.serienRec.recordListView.value = 1
-# geändert Mike
 			self['green'].setText("Zeige neuste Timer zuerst")
 		elif config.plugins.serienRec.recordListView.value == 1:
 			config.plugins.serienRec.recordListView.value = 0
-# geändert Mike
 			self['green'].setText("Zeige früheste Timer zuerst")
 		config.plugins.serienRec.recordListView.save()
 		self.readTimer()
@@ -3309,7 +3282,6 @@ class serienRecTimer(Screen):
 
 	def buildList(self, entry):
 		(serie, title, start_time, webChannel, foundIcon) = entry
-# geändert Mike
 		WochenTag=["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 		xtime = time.strftime(WochenTag[time.localtime(int(start_time)).tm_wday]+", %d.%m.%Y - %H:%M", time.localtime(int(start_time)))
 
@@ -3407,7 +3379,6 @@ class serienRecTimer(Screen):
 		print error
 
 class serienRecSetup(Screen, ConfigListScreen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -3434,13 +3405,11 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions"], {
 			"red"	: self.cancel,
 			"green"	: self.save,
-# geändert Mike
 			"cancel": self.cancel,
 			"ok"	: self.ok
 		}, -1)
 
 		self['title'] = Label("Serien Recorder - Einstellungen:")
-# geändert Mike
 		self['red'] = Label("Abbrechen")
 		self['green'] = Label("Speichern")
 		self.red = 0xf23d21
@@ -3452,7 +3421,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 		ConfigListScreen.__init__(self, self.list, session = self.session)
 
 	def createConfigList(self):
-# geändert Mike
 		self.list = []
 		self.get_media = getConfigListEntry("Speicherort der Aufnahmen:" + "   " + config.plugins.serienRec.savetopath.value, config.plugins.serienRec.fake_entry)
 		self.list.append(self.get_media)
@@ -3506,7 +3474,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 	def save(self):
 		#for x in self["config"].list:
 		#	x[1].save()
-# geändert Mike
 		config.plugins.serienRec.showNotification.save()
 		if config.plugins.serienRec.updateInterval.value == 24:
 			config.plugins.serienRec.timeUpdate.value = True
@@ -3552,7 +3519,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.close(False)
 
 class SerienRecFileList(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -3576,11 +3542,9 @@ class SerienRecFileList(Screen):
 	def __init__(self, session, initDir):
 		Screen.__init__(self, session)
 		
-# geändert Mike
 		self["title"] = Label("Aufnahme-Verzeichnis auswählen")
 		self["media"] = Label("")
 		self["folderlist"] = FileList(initDir, inhibitMounts = False, inhibitDirs = False, showMountpoints = False, showFiles = False)
-# geändert Mike
 		self["red"] = Label("Abbrechen")
 		self["green"] = Label("Speichern")
 
@@ -3635,7 +3599,6 @@ class SerienRecFileList(Screen):
 		self["media"].setText("Auswahl: %s" % currFolder)
 
 class serienRecReadLog(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -3703,7 +3666,6 @@ class serienRecReadLog(Screen):
 		self.close()
 
 class serienRecLogReader(Screen):
-# geändert Mike
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
@@ -3737,7 +3699,6 @@ class serienRecLogReader(Screen):
 		}, -1)
 
 		self["list"] = ScrollLabel()
-# geändert Mike
 		self['title'] = Label("Suchlauf für neue Timer läuft.")
 		self['red'] = Label("Exit")
 		self.red = 0xf23d21
@@ -3785,7 +3746,6 @@ class serienRecLogReader(Screen):
 				self.chooseMenuList.setList(map(self.buildList, self.logliste))
 			else:
 				self.points += " ."
-# geändert Mike
 				self['title'].setText('Suchlauf für neue Timer läuft.%s' % self.points)
 					
 	def buildList(self, entry):
@@ -3954,7 +3914,6 @@ def Plugins(path, **kwargs):
 		PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=main)
 		]
 		
-# geändert Mike
 class serienRecModifyAdded(Screen):
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
