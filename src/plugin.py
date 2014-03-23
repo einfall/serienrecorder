@@ -2692,6 +2692,9 @@ class serienRecSendeTermine(Screen):
 
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="560,651" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="ok" position="600,656" size="220,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/yellow_round.png" position="820,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="yellow" position="860,656" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>"""
 
 	def __init__(self, session, serien_name, serie_url, serie_staffeln, serien_cover):
@@ -2708,6 +2711,7 @@ class serienRecSendeTermine(Screen):
 			"cancel": self.keyCancel,
 			"red"	: self.keyRed,
 			"green" : self.keyGreen,
+			"yellow": self.keyYellow,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile
 		}, -1)
@@ -2722,6 +2726,7 @@ class serienRecSendeTermine(Screen):
 		self['title'] = Label("Loading Web-Channel / STB-Channels...")
 		self['red'] = Label("")
 		self['green'] = Label("")
+		self['yellow'] = Label("")
 		self['ok'] = Label("Auswahl")
 		self['cover'] = Pixmap()
 
@@ -2735,7 +2740,8 @@ class serienRecSendeTermine(Screen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 		self.loading = True
-
+		self.FilterEnabled = True
+		
 		self.onLayoutFinish.append(self.searchSerie)
 
 	def readLogFile(self):
@@ -2779,21 +2785,22 @@ class serienRecSendeTermine(Screen):
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				title = iso8859_Decode(title)
 
-				# filter sender
-				cSender_list = self.checkSender(sender)
-				if len(cSender_list) == 0:
-					webChannel = sender
-					stbChannel = "Nicht gefunden"
-				else:
-					(webChannel, stbChannel, stbRef, status) = cSender_list[0]
+				if self.FilterEnabled:
+					# filter sender
+					cSender_list = self.checkSender(sender)
+					if len(cSender_list) == 0:
+						webChannel = sender
+						stbChannel = "Nicht gefunden"
+					else:
+						(webChannel, stbChannel, stbRef, status) = cSender_list[0]
 
-				if stbChannel == "Nicht gefunden":
-					print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel)
-					continue
-					
-				if int(status) == 0:
-					print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel)
-					continue
+					if stbChannel == "Nicht gefunden":
+						print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel)
+						continue
+						
+					if int(status) == 0:
+						print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel)
+						continue
 					
 				# replace S1 to S01
 				if checkInt(staffel):
@@ -2807,9 +2814,16 @@ class serienRecSendeTermine(Screen):
 
 			self['red'].setText("Verwerfen")
 			self['green'].setText("Timer erstellen")
+			if self.FilterEnabled:
+				self['yellow'].setText("Filter ausschalten")
+				txt = "gefiltert"
+			else:
+				self['yellow'].setText("Filter einschalten")
+				txt = "alle"
+
 			self.chooseMenuList2.setList(map(self.buildList_termine, self.sendetermine_list))
 			self.loading = False
-			self['title'].setText("%s Sendetermine für ' %s ' gefunden." % (str(len(self.sendetermine_list)), self.serien_name))
+			self['title'].setText("%s Sendetermine für ' %s ' gefunden. (%s)" % (str(len(self.sendetermine_list)), self.serien_name, txt))
 
 	def buildList_termine(self, entry):
 		#(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
@@ -3137,6 +3151,25 @@ class serienRecSendeTermine(Screen):
 
 	def keyGreen(self):
 		self.getTimes()
+
+	def keyYellow(self):
+		self['red'].setText("")
+		self['green'].setText("")
+		self['yellow'].setText("")
+
+		self.sendetermine_list = []
+		self.loading = True
+		self.chooseMenuList2.setList(map(self.buildList_termine, self.sendetermine_list))
+
+		if self.FilterEnabled:
+			self.FilterEnabled = False
+		else:
+			self.FilterEnabled = True
+		
+		print "[SerienRecorder] suche ' %s '" % self.serien_name
+		self['title'].setText("Suche ' %s '" % self.serien_name)
+		print self.serie_url
+		getPage(self.serie_url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
 
 	def showCover(self, serien_nameCover):
 		if fileExists(serien_nameCover):
