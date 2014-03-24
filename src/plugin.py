@@ -109,6 +109,7 @@ config.plugins.serienRec.writeLogDisk = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogTimeRange = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogTimeLimit = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
+config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
@@ -2253,6 +2254,34 @@ class serienRecMarker(Screen):
 			print serien_url
 			self.session.open(serienRecSendeTermine, serien_name, serien_url, serien_staffeln, self.serien_nameCover)
 
+	def callSaveMsg(self, answer):
+		if answer:
+			serien_name = self['list'].getCurrent()[0][0]
+			self.removeSerienMarker(serien_name)
+		else:
+			return
+			
+	def removeSerienMarker(self, serien_name):
+		markerList = []
+		markerFile_leer = os.path.getsize(self.markerFile)
+		if not markerFile_leer == 0:
+			readMarker = open(self.markerFile, "r")
+			writeMarker = open(self.markerFile+".tmp", "w")
+			for rawData in readMarker.readlines():
+				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+				(serie2, url2, staffel2, sendern2) = data[0]
+				if not serien_name.lower() == serie2.lower():
+					markerList.append((serie2, url2, staffel2, sendern2))
+					writeMarker.write('"%s" "%s" "%s" "%s"\n' % (serie2, url2, staffel2, sendern2))
+
+			readMarker.close()
+			writeMarker.close()
+			markerList.sort()
+			self.chooseMenuList.setList(map(self.buildList, markerList))
+			shutil.move(self.markerFile+".tmp", self.markerFile)
+			self['title'].instance.setForegroundColor(parseColor("red"))
+			self['title'].setText("Serie '- %s -' entfernt." % serien_name)
+			
 	def keyRed(self):
 		if self.modus == "list":
 			check = self['list'].getCurrent()
@@ -2274,25 +2303,10 @@ class serienRecMarker(Screen):
 							print "gefunden."
 							break
 				if found:
-					markerList = []
-					markerFile_leer = os.path.getsize(self.markerFile)
-					if not markerFile_leer == 0:
-						readMarker = open(self.markerFile, "r")
-						writeMarker = open(self.markerFile+".tmp", "w")
-						for rawData in readMarker.readlines():
-							data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-							(serie2, url2, staffel2, sendern2) = data[0]
-							if not serien_name.lower() == serie2.lower():
-								markerList.append((serie2, url2, staffel2, sendern2))
-								writeMarker.write('"%s" "%s" "%s" "%s"\n' % (serie2, url2, staffel2, sendern2))
-
-						readMarker.close()
-						writeMarker.close()
-						markerList.sort()
-						self.chooseMenuList.setList(map(self.buildList, markerList))
-						shutil.move(self.markerFile+".tmp", self.markerFile)
-						self['title'].instance.setForegroundColor(parseColor("red"))
-						self['title'].setText("Serie '- %s -' entfernt." % serien_name)
+					if config.plugins.serienRec.confirmOnDelete.value:
+						self.session.openWithCallback(self.callSaveMsg, MessageBox, _("Soll '%s' wirklich entfernt werden?" % serien_name), MessageBox.TYPE_YESNO, default = False)				
+					else:
+						self.removeSerienMarker(serien_name)
 
 	def insertStaffelMarker(self):
 		print self.select_serie
@@ -3208,7 +3222,7 @@ class serienRecTimer(Screen):
 			<widget name="red" position="60,656" size="250,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
 			
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/green_round.png" position="310,651" zPosition="1" size="32,32" alphatest="on" />
-			<widget name="green" position="350,656" size="210,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+			<widget name="green" position="350,656" size="250,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>"""
 
 	def __init__(self, session):
@@ -3339,6 +3353,57 @@ class serienRecTimer(Screen):
 	def keyOK(self):
 		pass
 
+	def callSaveMsg(self, answer):
+		if answer:
+			current_time = int(time.time())
+			serien_name = self['list'].getCurrent()[0][0]
+			serien_title = self['list'].getCurrent()[0][1]
+			serien_time = self['list'].getCurrent()[0][2]
+			serien_channel = self['list'].getCurrent()[0][3]
+			self.removeTimer(serien_name, serien_title, serien_time, serien_channel, current_time)
+		else:
+			return
+			
+	def removeTimer(self, serien_name, serien_title, serien_time, serien_channel, current_time):
+		timerList = []
+		timerFile_leer = os.path.getsize(self.timerFile)
+		if not timerFile_leer == 0:
+			readTimer = open(self.timerFile, "r")
+			writeTimer = open(self.timerFile+".tmp", "w")
+			for rawData in readTimer.readlines():
+				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+				(serie, xtitle, xtime, xsref, webchannel) = data[0]
+				if serien_name.lower() == serie.lower() and int(serien_time) == int(xtime) and serien_channel.lower() == webchannel.lower():
+					print "[Serien Recorder] Timer %s removed." % serie
+					title = "%s - %s" % (serien_name, serien_title)
+					removed = serienRecAddTimer.removeTimerEntry(title, serien_time)
+					if removed:
+						print "[Serien Recorder] enigma2 Timer removed."
+					else:
+						print "[Serien Recorder] enigma2 NOOOTTT removed"
+				else:
+					if int(current_time) > int(xtime):
+						timerList.append((serie, xtitle, xtime, webchannel, "1"))
+						writeTimer.write('"%s" "%s" "%s" "%s" "%s" "%s"\n' % (serie, xtitle, xtime, xsref, webchannel, "1"))
+					else:
+						writeTimer.write('"%s" "%s" "%s" "%s" "%s" "%s"\n' % (serie, xtitle, xtime, xsref, webchannel, "0"))
+						timerList.append((serie, xtitle, xtime, webchannel, "0"))
+
+			readTimer.close()
+			writeTimer.close()
+
+			if config.plugins.serienRec.recordListView.value == 0:
+				timerList.sort(key=lambda t : t[2])
+			elif config.plugins.serienRec.recordListView.value == 1:
+				timerList.sort(key=lambda t : t[2])
+				timerList.reverse()
+
+			self.chooseMenuList.setList(map(self.buildList, timerList))
+			shutil.move(self.timerFile+".tmp", self.timerFile)
+			#self.readTimer()
+			self['title'].instance.setForegroundColor(parseColor("red"))
+			self['title'].setText("Timer '- %s -' entfernt." % serien_name)
+			
 	def keyRed(self):
 		check = self['list'].getCurrent()
 		if check == None:
@@ -3366,45 +3431,11 @@ class serienRecTimer(Screen):
 				print "[Serien Recorder] keinen passenden timer gefunden."
 
 			if found:
-				timerList = []
-				timerFile_leer = os.path.getsize(self.timerFile)
-				if not timerFile_leer == 0:
-					readTimer = open(self.timerFile, "r")
-					writeTimer = open(self.timerFile+".tmp", "w")
-					for rawData in readTimer.readlines():
-						data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-						(serie, xtitle, xtime, xsref, webchannel) = data[0]
-						if serien_name.lower() == serie.lower() and int(serien_time) == int(xtime) and serien_channel.lower() == webchannel.lower():
-							print "[Serien Recorder] Timer %s removed." % serie
-							title = "%s - %s" % (serien_name, serien_title)
-							removed = serienRecAddTimer.removeTimerEntry(title, serien_time)
-							if removed:
-								print "[Serien Recorder] enigma2 Timer removed."
-							else:
-								print "[Serien Recorder] enigma2 NOOOTTT removed"
-						else:
-							if int(current_time) > int(xtime):
-								timerList.append((serie, xtitle, xtime, webchannel, "1"))
-								writeTimer.write('"%s" "%s" "%s" "%s" "%s" "%s"\n' % (serie, xtitle, xtime, xsref, webchannel, "1"))
-							else:
-								writeTimer.write('"%s" "%s" "%s" "%s" "%s" "%s"\n' % (serie, xtitle, xtime, xsref, webchannel, "0"))
-								timerList.append((serie, xtitle, xtime, webchannel, "0"))
-
-					readTimer.close()
-					writeTimer.close()
-
-					if config.plugins.serienRec.recordListView.value == 0:
-						timerList.sort(key=lambda t : t[2])
-					elif config.plugins.serienRec.recordListView.value == 1:
-						timerList.sort(key=lambda t : t[2])
-						timerList.reverse()
-
-					self.chooseMenuList.setList(map(self.buildList, timerList))
-					shutil.move(self.timerFile+".tmp", self.timerFile)
-					#self.readTimer()
-					self['title'].instance.setForegroundColor(parseColor("red"))
-					self['title'].setText("Timer '- %s -' entfernt." % serien_name)
-
+				if config.plugins.serienRec.confirmOnDelete.value:
+					self.session.openWithCallback(self.callSaveMsg, MessageBox, _("Soll '%s' wirklich entfernt werden?" % serien_name), MessageBox.TYPE_YESNO, default = False)				
+				else:
+					self.removeTimer(serien_name, serien_title, serien_time, serien_channel, current_time)
+						
 	def keyCancel(self):
 		self.close()
 
@@ -3476,6 +3507,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Automatisches Plugin-Update:", config.plugins.serienRec.Autoupdate))
 		self.list.append(getConfigListEntry("Aus Deep-StandBy aufwecken:", config.plugins.serienRec.wakeUpDSB))
 		self.list.append(getConfigListEntry("Nach dem automatischen Suchlauf in Deep-StandBy gehen:", config.plugins.serienRec.afterAutocheck))
+		self.list.append(getConfigListEntry("Vor Löschen in SerienMarker und TimerList Benutzer fragen:", config.plugins.serienRec.confirmOnDelete))
 		self.list.append(getConfigListEntry("DEBUG LOG (/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log):", config.plugins.serienRec.writeLog))
 		self.list.append(getConfigListEntry("DEBUG LOG - Senderliste:", config.plugins.serienRec.writeLogChannels))
 		self.list.append(getConfigListEntry("DEBUG LOG - Seriensender:", config.plugins.serienRec.writeLogAllowedSender))
@@ -3485,6 +3517,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("DEBUG LOG - Tageszeit:", config.plugins.serienRec.writeLogTimeRange))
 		self.list.append(getConfigListEntry("DEBUG LOG - Zeitbegrenzung:", config.plugins.serienRec.writeLogTimeLimit))
 		self.list.append(getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
+
 
 	def changedEntry(self):
 		self.createConfigList()
@@ -3544,6 +3577,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.writeLogTimeRange.save()
 		config.plugins.serienRec.writeLogTimeLimit.save()
 		config.plugins.serienRec.writeLogTimerDebug.save()
+		config.plugins.serienRec.confirmOnDelete.save()
 
 		configfile.save()
 		self.close(True)
