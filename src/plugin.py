@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from Components.ActionMap import *
 from Components.Label import Label
 from Components.MenuList import MenuList
@@ -63,6 +63,7 @@ from Components.TimerSanityCheck import TimerSanityCheck
 from enigma import eEPGCache, eServiceReference, eServiceCenter, iServiceInformation
 
 from Tools import Notifications
+import sqlite3
 
 try:
 	default_before = int(config.recording.margin_before.value)
@@ -110,13 +111,18 @@ config.plugins.serienRec.writeLogTimeRange = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogTimeLimit = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
 config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
+config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.3"))
+config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta1"))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
+
+#dbNeueStaffel = sqlite3.connect(":memory:")
+dbNeueStaffel = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
+dbNeueStaffel.text_factory = str
 
 def iso8859_Decode(txt):
 	#txt = txt.replace('\xe4','ä').replace('\xf6','ö').replace('\xfc','ü').replace('\xdf','ß')
@@ -198,6 +204,13 @@ def getUnixTime(std, min):
 	now = datetime.datetime.now()
 	#print now.year, now.month, now.day, std, min
 	return datetime.datetime(now.year, now.month, now.day, int(std), int(min)).strftime("%s")
+
+def getUnixTimeWithDayOffset(std, min, AddDays):
+	now = datetime.datetime.now()
+	#print now.year, now.month, now.day, std, min
+	date = datetime.datetime(now.year, now.month, now.day, int(std), int(min))
+	date += datetime.timedelta(days=AddDays)
+	return date.strftime("%s")
 
 def getRealUnixTime(min, std, day, month, year):
 	#now = datetime.datetime.now()
@@ -347,6 +360,14 @@ class serienRecCheckForRecording():
 		self.logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
 		self.addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
 
+		self.daypage = 0
+		#dbNeueStaffel = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
+		#dbNeueStaffel.text_factory = str
+		cNeueStaffel = dbNeueStaffel.cursor()
+		cNeueStaffel.execute("CREATE TABLE IF NOT EXISTS NeueStaffel (Serie TEXT, Staffel INTEGER, Sender TEXT, StaffelStart TEXT, Url TEXT, Neu INTEGER DEFAULT 1)")
+		dbNeueStaffel.commit()
+		
+
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 
@@ -473,7 +494,7 @@ class serienRecCheckForRecording():
 			print "\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------" % (self.uhrzeit, str(self.page))
 			writeLog("\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------" % (self.uhrzeit, str(self.page)), True)
 			if config.plugins.serienRec.showNotification.value:
-				Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde gestartet."), MessageBox.TYPE_INFO, timeout=3)
+				Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde gestartet."), MessageBox.TYPE_INFO, timeout=3, id="[Serien Recorder] Suchlauf wurde gestartet")
 
 		sMsg = "\nDEBUG Filter: "
 		if config.plugins.serienRec.writeLogChannels.value:
@@ -498,6 +519,125 @@ class serienRecCheckForRecording():
 		self.new_urls = []
 		self.urls = []
 		self.speedStartTime = time.clock()
+
+		# suche nach neuen Serien
+		if config.plugins.serienRec.ActionOnNew.value != "0":
+			self.startCheck2(amanuell)
+		else:
+			self.startCheck3()
+
+			
+	def startCheck2(self, amanuell):
+		ds = defer.DeferredSemaphore(tokens=1)
+		downloads = [ds.run(self.readWebpageForNewStaffel, "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))).addCallback(self.parseWebpageForNewStaffel, amanuell).addErrback(self.dataError) for daypage in range(int(config.plugins.serienRec.checkfordays.value))]
+		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.dataError)
+		
+	def readWebpageForNewStaffel(self, url):
+		print "[Serien Recorder] call %s" % url
+		return getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'})
+		
+	def parseWebpageForNewStaffel(self, data, amanuell):
+		# read channels
+		self.senderListe = {}
+		for s in self.readSenderListe():
+			self.senderListe[s[0].lower()] = s[:]
+			
+		head_datum = re.findall('<li class="datum">(.*?)</li>', data, re.S)
+		raw = re.findall('s_regional\[.*?\]=(.*?);\ns_paytv\[.*?\]=(.*?);\ns_neu\[.*?\]=(.*?);\ns_prime\[.*?\]=(.*?);.*?<td rowspan="3" class="zeit">(.*?) Uhr</td>.*?<a href="(/serie/.*?)">(.*?)</a>.*?href="http://www.wunschliste.de/kalender.pl\?s=(.*?)\&.*?alt="(.*?)".*?title="Staffel.*?>(.*?)</span>.*?title="Episode.*?>(.*?)</span>.*?target="_new">(.*?)</a>', data, re.S)
+		if raw:
+			for regional,paytv,neu,prime,time,url,serien_name,serien_id,sender,staffel,episode,title in raw:
+				# encode utf-8
+				serien_name = iso8859_Decode(serien_name)
+				sender = iso8859_Decode(sender)
+				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
+
+				if checkInt(episode) and checkInt(staffel):
+					if int(episode) == 1:
+						if int(staffel) < 10 and len(staffel) == 1:
+							staffel = str("0"+staffel)
+						if int(episode) < 10 and len(episode) == 1:
+							episode = str("0"+episode)
+
+						(webChannel, stbChannel, stbRef, status) = self.checkSender(self.senderListe, sender)
+						if int(status) == 1:
+							if not self.checkMarker(serien_name):
+								cNeueStaffel = dbNeueStaffel.cursor()
+								sql = "SELECT * FROM NeueStaffel WHERE Serie=? AND Staffel=?"
+								cNeueStaffel.execute(sql, (serien_name, staffel))
+								row = cNeueStaffel.fetchone()
+								if not row:
+									data = (serien_name, staffel, sender, head_datum[0], "http://www.wunschliste.de/epg_print.pl?s="+serien_id)
+									sql = "INSERT INTO NeueStaffel (Serie, Staffel, Sender, StaffelStart, Url) VALUES (?, ?, ?, ?, ?)"
+									cNeueStaffel.execute(sql, data)
+									dbNeueStaffel.commit()
+
+									if not amanuell:
+										if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
+											Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
+
+							else:
+								readMarker = open(self.markerFile, "r")
+								infos = []
+								for rawData in readMarker.readlines():
+									mdata = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+									(mSerie, mUrl, mStaffel, mSender) = mdata[0]
+									if mSerie.lower() == serien_name.lower():
+										markerExist = False
+										if re.search(staffel, str(mStaffel), re.S|re.I):
+											markerExist = True
+										elif re.search('Alle', str(mStaffel), re.S|re.I):
+											markerExist = True
+										elif "folgende" in mStaffel:
+											staffeln2 = []
+											staffeln1 = mStaffel.replace("[","").replace("]","").replace("'","").split(",")
+											for x in staffeln1:
+												if x != "Alle" and x != "folgende":
+													staffeln2.append(int(x))
+											if len(staffeln2) and int(staffel) >= max(staffeln2):
+												markerExist = True
+										if not markerExist:
+											cNeueStaffel = dbNeueStaffel.cursor()
+											sql = "SELECT * FROM NeueStaffel WHERE Serie=? AND Staffel=?"
+											cNeueStaffel.execute(sql, (serien_name, staffel))
+											row = cNeueStaffel.fetchone()
+											if not row:
+												data = (serien_name, staffel, sender, head_datum[0], "http://www.wunschliste.de/epg_print.pl?s="+serien_id, "2")
+												sql = "INSERT INTO NeueStaffel (Serie, Staffel, Sender, StaffelStart, Url, Neu) VALUES (?, ?, ?, ?, ?, ?)"
+												cNeueStaffel.execute(sql, data)
+												dbNeueStaffel.commit()
+
+												if not amanuell:
+													if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
+														Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
+										break
+								readMarker.close()
+							
+	def createNewMarker(self, result=True):
+		cNeueStaffel = dbNeueStaffel.cursor()
+		sql = "SELECT Serie, Staffel, StaffelStart FROM NeueStaffel WHERE Neu>0"
+		cNeueStaffel.execute(sql)
+		for row in cNeueStaffel:
+			(Serie, Staffel, StaffelStart) = row
+			writeLog("[Serien Recorder] %d. Staffel von '%s' beginnt am %s" % (int(Staffel), Serie, StaffelStart), True)
+
+		if config.plugins.serienRec.ActionOnNew.value == "2" or config.plugins.serienRec.ActionOnNew.value == "3":
+			writeMarker = open(self.markerFile, "a")
+			sql = "SELECT Serie, MIN(Staffel), Sender, Url FROM NeueStaffel WHERE Neu=1 GROUP BY Serie"
+			cNeueStaffel.execute(sql)
+			for row in cNeueStaffel:
+				(Serie, Staffel, Sender, Url) = row
+				if Staffel < 10:
+					Staffel = "0"+str(Staffel)
+				#writeMarker.write('"%s" "%s" "[\'%s\']" "[\'%s\']"\n' % (Serie, Url, str(Staffel), Sender))
+				writeMarker.write('"%s" "%s" "%s" "%s"\n' % (Serie, Url, ['folgende', str(Staffel)], ['Alle']))
+				writeLog("[Serien Recorder] Neuer Marker für '%s' wurde angelegt" % Serie, True)
+			sql = "UPDATE NeueStaffel SET Neu=0 WHERE Neu=1"
+			cNeueStaffel.execute(sql)
+			dbNeueStaffel.commit()
+			writeMarker.close()
+		return result
+		
+	def startCheck3(self, result=True):
 		## hier werden die wunschliste urls eingelesen vom serien marker
 		self.urls = getkMarker()
 		self.count_url = 0
@@ -506,7 +646,7 @@ class serienRecCheckForRecording():
 		ds = defer.DeferredSemaphore(tokens=1)
 		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,serienTitle,SerieUrl,SerieStaffel,SerieSender).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender in self.urls]
 		finished = defer.DeferredList(downloads).addErrback(self.dataError)
-
+		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
 		return getPage(url, timeout=20, headers={'Content-Type':'application/x-www-form-urlencoded'})
@@ -825,7 +965,6 @@ class serienRecCheckForRecording():
 		writeLog("[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, str(konflikt)), True)
 		return False
 			
-			
 	def checkMarker(self, mSerie):
 		readMarker = open(self.markerFile, "r")
 		for rawData in readMarker.readlines():
@@ -1098,7 +1237,8 @@ class serienRecMain(Screen):
 			"prevBouquet" : self.backPage,
 			"displayHelp" : self.youtubeSearch,
 			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile
+			"1"		: self.modifyAddedFile,
+			"3"		: self.showProposalDB
 		}, -1)
 
 		# normal
@@ -1174,6 +1314,9 @@ class serienRecMain(Screen):
 		self['blue'] = Label("Timer-Liste")
 
 		self.onLayoutFinish.append(self.startScreen)
+
+	def showProposalDB(self):
+		self.session.open(serienRecShowProposal)
 
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
@@ -1264,7 +1407,8 @@ class serienRecMain(Screen):
 				serieAdded = False
 				start_h = time[:+2]
 				start_m = time[+3:]
-				start_time = getUnixTime(start_h, start_m)
+				#start_time = getUnixTime(start_h, start_m)
+				start_time = getUnixTimeWithDayOffset(start_h, start_m, self.page)
 				
 				# encode utf-8
 				serien_name = iso8859_Decode(serien_name)
@@ -1298,6 +1442,7 @@ class serienRecMain(Screen):
 							self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme, serieAdded,serien_id))
 
 		print "[Serien Recorder] Es wurden %s Serie(n) gefunden" % len(self.daylist)
+		
 		if len(self.daylist) != 0:
 			if head_datum:
 				self['title'].setText("Es wurden für - %s - %s Serie(n) gefunden." % (head_datum[0], len(self.daylist)))
@@ -1326,7 +1471,10 @@ class serienRecMain(Screen):
 			setFarbe = self.green
 		else:
 			setFarbe = self.white
-
+			if checkInt(episode):
+				if int(episode) == 1:
+					setFarbe = self.red
+					
 		if int(neu) == 1 and aufnahme:
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 5, 30, 17, imageNeu),
@@ -1523,8 +1671,10 @@ class serienRecMain(Screen):
 				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
 				(serie, title, start_time, sRef, webChannel) = data[0]
 				#print serie, title, start_time, sRef, webChannel
-				if xSerie.lower() == serie.lower() and int(xStart_time) == int(start_time) and webChannel.lower() == xWebchannel.lower():
+				if xSerie.lower() == serie.lower() and int(xStart_time) == (int(start_time) + (config.plugins.serienRec.margin_before.value * 60)) and webChannel.lower() == xWebchannel.lower():
+					readTimer.close()
 					return True
+			readTimer.close()
 			return False
 		else:
 			return False
@@ -1548,6 +1698,7 @@ class serienRecMain(Screen):
 			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
 			(serie, url, staffel, sender) = data[0]
 			if serie.lower() == mSerie.lower():
+				readMarker.close()
 				return True
 		readMarker.close()
 		return False
@@ -1602,7 +1753,13 @@ class serienRecMain(Screen):
 		self.readWebpage()
 
 	def keyCancel(self):
-		self.close()
+		if self.modus == "list":
+			self.close()
+		elif self.modus == "popup":
+			self['popup'].hide()
+			self['popup_bg'].hide()
+			self['list'].show()
+			self.modus = "list"
 
 	def dataError(self, error):
 		print error
@@ -1612,6 +1769,7 @@ class serienRecMainChannelEdit(Screen):
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -1647,7 +1805,8 @@ class serienRecMainChannelEdit(Screen):
 			"red"	: self.keyBlue,
 			"green" : self.keyGreen,
 			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile
+			"1"		: self.modifyAddedFile,
+			"3"		: self.showProposalDB
 		}, -1)
 
 		# normal
@@ -1659,6 +1818,7 @@ class serienRecMainChannelEdit(Screen):
 		self['red'] = Label("Sender An/Aus-Schalten")
 		self['ok'] = Label("Sender Auswählen")
 		self['green'] = Label("Sender-Liste Zurücksetzen")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
@@ -1691,6 +1851,9 @@ class serienRecMainChannelEdit(Screen):
 
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
+
+	def showProposalDB(self):
+		self.session.open(serienRecShowProposal)
 
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
@@ -1917,6 +2080,7 @@ class serienRecMarker(Screen):
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -1962,7 +2126,8 @@ class serienRecMarker(Screen):
 			"up"    : self.keyUp,
 			"down"  : self.keyDown,
 			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile
+			"1"		: self.modifyAddedFile,
+			"3"		: self.showProposalDB
 		}, -1)
 
 		#normal
@@ -1988,6 +2153,7 @@ class serienRecMarker(Screen):
 		self['yellow'] = Label("Sendetermine")
 		self['blue'] = Label("Serie Suchen")
 		self['cover'] = Pixmap()
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -2004,6 +2170,9 @@ class serienRecMarker(Screen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
+	def showProposalDB(self):
+		self.session.open(serienRecShowProposal)
+
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
 
@@ -2463,6 +2632,7 @@ class serienRecAddSerie(Screen):
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -2494,7 +2664,8 @@ class serienRecAddSerie(Screen):
 			"down"  : self.keyDown,
 			"red"	: self.keyRed,
 			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile
+			"1"		: self.modifyAddedFile,
+			"3"		: self.showProposalDB
 		}, -1)
 
 		# search
@@ -2503,10 +2674,11 @@ class serienRecAddSerie(Screen):
 		self.chooseMenuList.l.setItemHeight(25)
 		self['list'] = self.chooseMenuList
 		self['title'] = Label("")
-		self['red'] = Label("Exit")
+		self['red'] = Label("Abbrechen")
 		self['green'] = Label("")
 		self['ok'] = Label("Hinzufügen")
 		self['cover'] = Pixmap()
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
 		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
 		self.loading = True
@@ -2516,6 +2688,9 @@ class serienRecAddSerie(Screen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
+	def showProposalDB(self):
+		self.session.open(serienRecShowProposal)
+
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
 
@@ -2689,6 +2864,7 @@ class serienRecSendeTermine(Screen):
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -2727,7 +2903,8 @@ class serienRecSendeTermine(Screen):
 			"green" : self.keyGreen,
 			"yellow": self.keyYellow,
 			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile
+			"1"		: self.modifyAddedFile,
+			"3"		: self.showProposalDB
 		}, -1)
 		
 		# termine
@@ -2743,6 +2920,7 @@ class serienRecSendeTermine(Screen):
 		self['yellow'] = Label("")
 		self['ok'] = Label("Auswahl")
 		self['cover'] = Pixmap()
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
 		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
 		self.channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
@@ -2761,6 +2939,9 @@ class serienRecSendeTermine(Screen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
+	def showProposalDB(self):
+		self.session.open(serienRecShowProposal)
+
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
 
@@ -2826,7 +3007,7 @@ class serienRecSendeTermine(Screen):
 
 				self.sendetermine_list.append((serien_name, sender, datum, startzeit, endzeit, staffel, episode, title, "0"))
 
-			self['red'].setText("Verwerfen")
+			self['red'].setText("Abbrechen")
 			self['green'].setText("Timer erstellen")
 			if self.FilterEnabled:
 				self['yellow'].setText("Filter ausschalten")
@@ -3210,6 +3391,7 @@ class serienRecTimer(Screen):
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -3235,7 +3417,8 @@ class serienRecTimer(Screen):
 			"red"	: self.keyRed,
 			"green" : self.viewChange,
 			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile
+			"1"		: self.modifyAddedFile,
+			"3"		: self.showProposalDB
 		}, -1)
 
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
@@ -3244,6 +3427,7 @@ class serienRecTimer(Screen):
 		self['list'] = self.chooseMenuList
 		self['title'] = Label("")
 		self['red'] = Label("Entferne Timer")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		
 		if config.plugins.serienRec.recordListView.value == 0:
 			self['green'] = Label("Zeige früheste Timer zuerst")
@@ -3262,6 +3446,9 @@ class serienRecTimer(Screen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
+	def showProposalDB(self):
+		self.session.open(serienRecShowProposal)
+
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
 
@@ -3447,6 +3634,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -3476,6 +3664,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self['title'] = Label("Serien Recorder - Einstellungen:")
 		self['red'] = Label("Abbrechen")
 		self['green'] = Label("Speichern")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		self.red = 0xf23d21
 		self.green = 0x389416
 		self.blue = 0x0064c7
@@ -3508,6 +3697,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Aus Deep-StandBy aufwecken:", config.plugins.serienRec.wakeUpDSB))
 		self.list.append(getConfigListEntry("Nach dem automatischen Suchlauf in Deep-StandBy gehen:", config.plugins.serienRec.afterAutocheck))
 		self.list.append(getConfigListEntry("Vor Löschen in SerienMarker und TimerList Benutzer fragen:", config.plugins.serienRec.confirmOnDelete))
+		self.list.append(getConfigListEntry("Aktion bei neuer Serie/Staffel:", config.plugins.serienRec.ActionOnNew))
 		self.list.append(getConfigListEntry("DEBUG LOG (/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log):", config.plugins.serienRec.writeLog))
 		self.list.append(getConfigListEntry("DEBUG LOG - Senderliste:", config.plugins.serienRec.writeLogChannels))
 		self.list.append(getConfigListEntry("DEBUG LOG - Seriensender:", config.plugins.serienRec.writeLogAllowedSender))
@@ -3517,7 +3707,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("DEBUG LOG - Tageszeit:", config.plugins.serienRec.writeLogTimeRange))
 		self.list.append(getConfigListEntry("DEBUG LOG - Zeitbegrenzung:", config.plugins.serienRec.writeLogTimeLimit))
 		self.list.append(getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
-
 
 	def changedEntry(self):
 		self.createConfigList()
@@ -3578,6 +3767,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.writeLogTimeLimit.save()
 		config.plugins.serienRec.writeLogTimerDebug.save()
 		config.plugins.serienRec.confirmOnDelete.save()
+		config.plugins.serienRec.ActionOnNew.save()
 
 		configfile.save()
 		self.close(True)
@@ -3590,6 +3780,7 @@ class SerienRecFileList(Screen):
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 			<widget name="title" position="50,15" size="820,55" foregroundColor="red" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="center" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget name="media" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
@@ -3614,6 +3805,7 @@ class SerienRecFileList(Screen):
 		self["folderlist"] = FileList(initDir, inhibitMounts = False, inhibitDirs = False, showMountpoints = False, showFiles = False)
 		self["red"] = Label("Abbrechen")
 		self["green"] = Label("Speichern")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
 		self["actions"] = ActionMap(["WizardActions", "DirectionActions", "ColorActions", "EPGSelectActions"],
 		{
@@ -3669,7 +3861,8 @@ class serienRecReadLog(Screen):
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
-			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;24" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -3693,7 +3886,8 @@ class serienRecReadLog(Screen):
 
 		self["list"] = ScrollLabel()
 		self['title'] = Label("Lese LogFile: (/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log)")
-		self['red'] = Label("Exit")
+		self['red'] = Label("Abbrechen")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		self.red = 0xf23d21
 		self.green = 0x389416
 		self.blue = 0x0064c7
@@ -3737,6 +3931,7 @@ class serienRecLogReader(Screen):
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -3766,8 +3961,9 @@ class serienRecLogReader(Screen):
 		}, -1)
 
 		self["list"] = ScrollLabel()
-		self['title'] = Label("Suchlauf für neue Timer läuft.")
-		self['red'] = Label("Exit")
+		self['title'] = Label("Suche nach neuen Timern läuft.")
+		self['red'] = Label("Abbrechen")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		self.red = 0xf23d21
 		self.green = 0x389416
 		self.blue = 0x0064c7
@@ -3813,7 +4009,7 @@ class serienRecLogReader(Screen):
 				self.chooseMenuList.setList(map(self.buildList, self.logliste))
 			else:
 				self.points += " ."
-				self['title'].setText('Suchlauf für neue Timer läuft.%s' % self.points)
+				self['title'].setText('Suche nach neuen Timern läuft.%s' % self.points)
 					
 	def buildList(self, entry):
 		(zeile) = entry
@@ -3985,7 +4181,8 @@ class serienRecModifyAdded(Screen):
 	skin = """
 		<screen position="center,center" size="1280,720" title="Serien Recorder">
 			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
-			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;24" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
@@ -4028,6 +4225,7 @@ class serienRecModifyAdded(Screen):
 		self['green'] = Label("Speichern")
 		self['cancel'] = Label("Abbrechen")
 		self['yellow'] = Label("Sortieren")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		
 		self.delAdded = False
 		self.sortedList = False
@@ -4103,5 +4301,225 @@ class serienRecModifyAdded(Screen):
 	def keyCancel(self):
 		self.close()
 
-	def dataError(self, error):
-		print error
+
+class serienRecShowProposal(Screen):
+	skin = """
+		<screen position="center,center" size="1280,720" title="Serien Recorder">
+			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
+			<widget name="title" position="50,55" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;24" valign="center" halign="left" />
+			<widget name="version" position="850,15" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
+			<widget source="global.CurrentTime" render="Label" position="850,55" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
+				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
+			</widget>
+			<widget source="session.VideoPicture" render="Pig" position="913,135" size="328,186" zPosition="3" backgroundColor="transparent" />
+			<eLabel position="912,134" size="330,188" backgroundColor="#00ffffff" zPosition="0" name="Videoback" />
+			<eLabel position="913,135" size="328,186" backgroundColor="#00000000" zPosition="1" name="Videofill" />
+			<widget name="list" position="20,135" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
+			
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/red_round.png" position="20,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="red" position="60,656" size="250,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
+			
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/green_round.png" position="310,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="green" position="350,656" size="210,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="560,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="cancel" position="600,656" size="220,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+			
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/yellow_round.png" position="820,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="yellow" position="860,656" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/blue_round.png" position="1060,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="blue" position="1100,656" size="250,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+		</screen>"""
+
+	def __init__(self, session):
+		Screen.__init__(self, session)
+		self.session = session
+
+		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions"], {
+			"ok"    : self.keyOK,
+			"cancel": self.keyOK,
+			"red"	: self.keyRed,
+			"green" : self.keyGreen,
+			"yellow": self.keyYellow,
+			"blue"	: self.keyBlue
+		}, -1)
+
+		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setItemHeight(25)
+
+
+		self['list'] = self.chooseMenuList
+		self['title'] = Label("")
+		self['red'] = Label("Eintrag löschen")
+		self['green'] = Label("Marker übernehmen")
+		self['cancel'] = Label("Abbrechen")
+		self['yellow'] = Label("Zeige nur neue")
+		self['blue'] = Label("Liste leeren")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
+		self.red = 0xf23d21
+		
+		self.filter = False
+		self.proposalList = []
+		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+
+		self.onLayoutFinish.append(self.readProposal)
+
+	def readProposal(self):
+		self.proposalList = []
+		cNeueStaffel = dbNeueStaffel.cursor()
+		sql = "SELECT * FROM NeueStaffel WHERE Neu=? OR Neu>=1 GROUP BY Serie, Staffel"
+		cNeueStaffel.execute(sql, (self.filter, ))
+		for row in cNeueStaffel:
+			(Serie, Staffel, Sender, Datum, Url, Neu) = row
+			if Staffel < 10:
+				Staffel = "0"+str(Staffel)
+			self.proposalList.append((Serie, Staffel, Sender, Datum, Url, Neu))
+
+		self['title'].setText("Neue Serie(n) / Staffel(n):")
+		dirFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
+		self.imageFound = loadPNG(dirFound)
+		
+		self.proposalList.sort(key=lambda x: time.strptime(x[3].split(",")[1].strip(), "%d.%m.%Y"))
+		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
+			
+	def buildList(self, entry):
+		(Serie, Staffel, Sender, Datum, Url, Neu) = entry
+		if Neu == 0:
+			return [entry,
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 0, 32, 32, self.imageFound),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)))
+				]
+		elif Neu == 2:
+			return [entry,
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)), self.red, self.red)
+				]
+		else:
+			return [entry,
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)))
+				]
+				
+	def keyRed(self):
+		check = self['list'].getCurrent()
+		if check == None:
+			print "[Serien Recorder] Proposal-DB leer."
+			return
+		else:
+			(Serie, Staffel, Sender, Datum, Url, Neu) = self['list'].getCurrent()[0]
+			cNeueStaffel = dbNeueStaffel.cursor()
+			data = (Serie, Staffel, Sender, Datum)
+			#sql = "UPDATE NeueStaffel SET Neu=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
+			sql = "DELETE FROM NeueStaffel WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
+			cNeueStaffel.execute(sql, data)
+			dbNeueStaffel.commit()
+			
+			self.readProposal()
+
+	def keyGreen(self):
+		check = self['list'].getCurrent()
+		if check == None:
+			print "[Serien Recorder] Proposal-DB leer."
+			return
+		else:
+			(Serie, Staffel, Sender, Datum, Url, Neu) = self['list'].getCurrent()[0]
+			if Neu:
+				if self.checkMarker(Serie):
+					readMarker = open(self.markerFile, "r")
+					writeMarkerFile = open(self.markerFile+".tmp", 'w')
+					for rawData in readMarker.readlines():
+						data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+						(mSerie, mUrl, mStaffel, mSender) = data[0]
+						if mSerie.lower() == Serie.lower():
+							staffeln2 = []
+							sender2 = []
+							if re.search('Alle', str(mStaffel), re.S|re.I):
+								staffeln2.append('Alle')
+							else:
+								staffeln2.append('%s' % Staffel)
+								staffeln1 = mStaffel.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
+								for x in staffeln1:
+									if x != "folgende":
+										staffeln2.append('%s' % x)
+								staffeln2.sort()
+								if "folgende" in staffeln1:
+									staffeln2.insert(0, 'folgende')
+								
+							if re.search('Alle', str(mSender), re.S|re.I):
+								sender2.append('Alle')
+							else:
+								sender1 = mSender.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
+								for x in sender1:
+									sender2.append('%s' % x)
+								if not Sender in sender1:
+									sender2.append('%s' % Sender)
+								sender2.sort()
+							writeMarkerFile.write('"%s" "%s" "%s" "%s"\n' % (Serie, Url, staffeln2, sender2))
+						else:
+							writeMarkerFile.write(rawData)
+						
+					writeMarkerFile.close()
+					readMarker.close()
+					shutil.move(self.markerFile+".tmp", self.markerFile)
+				else:
+					writeMarkerFile = open(self.markerFile, 'a')
+					writeMarkerFile.write('"%s" "%s" "[\'%s\']" "[\'%s\']"\n' % (Serie, Url, Staffel, Sender))
+					writeMarkerFile.close()
+
+				cNeueStaffel = dbNeueStaffel.cursor()
+				data = (Serie, Staffel, Sender, Datum)
+				sql = "UPDATE NeueStaffel SET Neu=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
+				cNeueStaffel.execute(sql, data)
+				dbNeueStaffel.commit()
+
+			self.readProposal()
+		
+	def keyYellow(self):
+		if not self.filter:
+			self.filter = True
+			self.readProposal()
+			self['yellow'].setText("Zeige alle")
+		else:
+			self.filter = False
+			self.readProposal()
+			self['yellow'].setText("Zeige nur neue")
+
+	def keyBlue(self):
+		check = self['list'].getCurrent()
+		if check == None:
+			print "[Serien Recorder] Proposal-DB leer."
+			return
+		else:
+			if config.plugins.serienRec.confirmOnDelete.value:
+				self.session.openWithCallback(self.callDeleteMsg, MessageBox, _("Soll die Liste wirklich geleert werden?"), MessageBox.TYPE_YESNO, default = False)				
+			else:
+				cNeueStaffel = dbNeueStaffel.cursor()
+				cNeueStaffel.execute("DELETE FROM NeueStaffel")
+				dbNeueStaffel.commit()
+				
+				self.readProposal()
+
+	def keyOK(self):
+		self.close()
+
+	def callDeleteMsg(self, answer):
+		if answer:
+			cNeueStaffel = dbNeueStaffel.cursor()
+			cNeueStaffel.execute("DELETE FROM NeueStaffel")
+			dbNeueStaffel.commit()
+			
+			self.readProposal()
+		else:
+			return
+			
+	def checkMarker(self, mSerie):
+		readMarker = open(self.markerFile, "r")
+		for rawData in readMarker.readlines():
+			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+			(serie, url, staffel, sender) = data[0]
+			if serie.lower() == mSerie.lower():
+				readMarker.close()
+				return True
+		readMarker.close()
+		return False
+
