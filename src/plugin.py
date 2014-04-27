@@ -112,6 +112,7 @@ config.plugins.serienRec.writeLogTimeLimit = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
 config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
 config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
+config.plugins.serienRec.recordAll = ConfigYesNo(default = False)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
@@ -120,9 +121,10 @@ config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
 
-#dbNeueStaffel = sqlite3.connect(":memory:")
-dbNeueStaffel = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
-dbNeueStaffel.text_factory = str
+#dbSerRec = sqlite3.connect(":memory:")
+dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
+dbSerRec.text_factory = str
+#dbSerRec.text_factory = unicode
 
 def iso8859_Decode(txt):
 	#txt = txt.replace('\xe4','ä').replace('\xf6','ö').replace('\xfc','ü').replace('\xdf','ß')
@@ -275,25 +277,22 @@ def getEPGevent(query, channelref, title, starttime):
 
 def getWebSender():
 	fSender = []
-	channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
-	readChannel = open(channelFile, "r")
-	for rawData in readChannel.readlines():
-		data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-		(webChannel, stbChannel, stbRef, status) = data[0]
+	cChannels = dbSerRec.cursor()
+	sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels"
+	cChannels.execute(sql)
+	for row in cChannels:
+		(webChannel, stbChannel, stbRef, status) = row
 		fSender.append((webChannel))
-	readChannel.close()
 	return fSender
 
 def getWebSenderAktiv():
 	fSender = []
-	channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
-	readChannel = open(channelFile, "r")
-	for rawData in readChannel.readlines():
-		data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-		(webChannel, stbChannel, stbRef, status) = data[0]
-		if int(status) == 1:
-			fSender.append((webChannel))
-	readChannel.close()
+	cChannels = dbSerRec.cursor()
+	sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD FROM Channels WHERE Erlaubt=1"
+	cChannels.execute(sql)
+	for row in cChannels:
+		(webChannel, stbChannel, stbRef) = row
+		fSender.append((webChannel))
 	return fSender
 
 def writeLog(text, forceWrite=False):
@@ -339,6 +338,18 @@ def getUrl(url):
 	finalurl = res.geturl()
 	return finalurl
 
+def initDB():
+	#dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
+	#dbSerRec.text_factory = str
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, Staffel INTEGER, Sender TEXT NOT NULL, StaffelStart TEXT NOT NULL, UTCStaffelStart INTEGER, Url TEXT NOT NULL, CreationFlag INTEGER DEFAULT 1)")
+	cCursor.execute("CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, STBChannelHD TEXT NOT NULL DEFAULT \"\", ServiceRefHD TEXT NOT NULL DEFAULT \"\", STBChannelSD TEXT NOT NULL DEFAULT \"\", ServiceRefSD TEXT NOT NULL DEFAULT \"\", Erlaubt INTEGER DEFAULT 0, Vorlaufzeit INTEGER DEFAULT NULL, Nachlaufzeit INTEGER DEFAULT NULL)")
+	cCursor.execute("CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, Serie TEXT NOT NULL, Url TEXT NOT NULL, AufnahmeVerzeichnis TEXT, AlleStaffelnAb INTEGER DEFAULT 0, alleSender INTEGER DEFAULT 1, Vorlaufzeit INTEGER DEFAULT NULL, Nachlaufzeit INTEGER DEFAULT NULL, AufnahmezeitVon INTEGER DEFAULT NULL,  AufnahmezeitBis INTEGER DEFAULT NULL, AnzahlWiederholungen INTEGER DEFAULT NULL)")
+	cCursor.execute("CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, ErlaubterSender TEXT NOT NULL, FOREIGN KEY(ID) REFERENCES SerienMarker(ID))")
+	cCursor.execute("CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, ErlaubteStaffel INTEGER, FOREIGN KEY(ID) REFERENCES SerienMarker(ID))")
+	cCursor.execute("CREATE TABLE IF NOT EXISTS AngelegteTimer (Serie TEXT NOT NULL, Staffel INTEGER, Episode INTEGER, Titel TEXT, StartZeitstempel INTEGER NOT NULL, ServiceRef TEXT NOT NULL, webChannel TEXT NOT NULL)")
+	dbSerRec.commit()
+
 class serienRecCheckForRecording():
 
 	instance = None
@@ -355,27 +366,19 @@ class serienRecCheckForRecording():
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
 		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-		self.channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
 		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
 		self.logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
 		self.addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
 
 		self.daypage = 0
-		#dbNeueStaffel = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
-		#dbNeueStaffel.text_factory = str
-		cNeueStaffel = dbNeueStaffel.cursor()
-		cNeueStaffel.execute("CREATE TABLE IF NOT EXISTS NeueStaffel (Serie TEXT, Staffel INTEGER, Sender TEXT, StaffelStart TEXT, Url TEXT, Neu INTEGER DEFAULT 1)")
-		dbNeueStaffel.commit()
+		initDB()
+		cCursor = dbSerRec.cursor()
 		
-
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 
 		if not fileExists(self.markerFile):
 			open(self.markerFile, 'w').close()
-
-		if not fileExists(self.channelFile ):
-			open(self.channelFile , 'w').close()
 
 		if not fileExists(self.timerFile):
 			open(self.timerFile, 'w').close()
@@ -384,8 +387,6 @@ class serienRecCheckForRecording():
 			open(self.addedFile, 'w').close()
 
 		markerFile_leer = os.path.getsize(self.markerFile)
-		channelFile_leer = os.path.getsize(self.channelFile)
-
 		if markerFile_leer == 0:
 			writeLog("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
 			print "[Serien Recorder] check: markerFile leer."
@@ -393,7 +394,9 @@ class serienRecCheckForRecording():
 			writeLog("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------", True)
 			return
 
-		if channelFile_leer == 0:
+		cCursor.execute("SELECT * FROM Channels")
+		row = cCursor.fetchone()
+		if not row:
 			writeLog("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
 			print "[Serien Recorder] check: channelFile leer."
 			writeLog("[Serien Recorder] check: channelFile leer.", True)
@@ -543,6 +546,9 @@ class serienRecCheckForRecording():
 			self.senderListe[s[0].lower()] = s[:]
 			
 		head_datum = re.findall('<li class="datum">(.*?)</li>', data, re.S)
+		txt = head_datum[0].split(",")
+		(day, month, year) = txt[1].split(".")
+		UTCDatum = getRealUnixTime(0, 0, day, month, year)
 		raw = re.findall('s_regional\[.*?\]=(.*?);\ns_paytv\[.*?\]=(.*?);\ns_neu\[.*?\]=(.*?);\ns_prime\[.*?\]=(.*?);.*?<td rowspan="3" class="zeit">(.*?) Uhr</td>.*?<a href="(/serie/.*?)">(.*?)</a>.*?href="http://www.wunschliste.de/kalender.pl\?s=(.*?)\&.*?alt="(.*?)".*?title="Staffel.*?>(.*?)</span>.*?title="Episode.*?>(.*?)</span>.*?target="_new">(.*?)</a>', data, re.S)
 		if raw:
 			for regional,paytv,neu,prime,time,url,serien_name,serien_id,sender,staffel,episode,title in raw:
@@ -561,15 +567,15 @@ class serienRecCheckForRecording():
 						(webChannel, stbChannel, stbRef, status) = self.checkSender(self.senderListe, sender)
 						if int(status) == 1:
 							if not self.checkMarker(serien_name):
-								cNeueStaffel = dbNeueStaffel.cursor()
-								sql = "SELECT * FROM NeueStaffel WHERE Serie=? AND Staffel=?"
+								cNeueStaffel = dbSerRec.cursor()
+								sql = "SELECT * FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=?"
 								cNeueStaffel.execute(sql, (serien_name, staffel))
 								row = cNeueStaffel.fetchone()
 								if not row:
-									data = (serien_name, staffel, sender, head_datum[0], "http://www.wunschliste.de/epg_print.pl?s="+serien_id)
-									sql = "INSERT INTO NeueStaffel (Serie, Staffel, Sender, StaffelStart, Url) VALUES (?, ?, ?, ?, ?)"
+									data = (serien_name, staffel, sender, head_datum[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s="+serien_id)
+									sql = "INSERT INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url) VALUES (?, ?, ?, ?, ?, ?)"
 									cNeueStaffel.execute(sql, data)
-									dbNeueStaffel.commit()
+									dbSerRec.commit()
 
 									if not amanuell:
 										if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
@@ -596,15 +602,15 @@ class serienRecCheckForRecording():
 											if len(staffeln2) and int(staffel) >= max(staffeln2):
 												markerExist = True
 										if not markerExist:
-											cNeueStaffel = dbNeueStaffel.cursor()
-											sql = "SELECT * FROM NeueStaffel WHERE Serie=? AND Staffel=?"
+											cNeueStaffel = dbSerRec.cursor()
+											sql = "SELECT * FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=?"
 											cNeueStaffel.execute(sql, (serien_name, staffel))
 											row = cNeueStaffel.fetchone()
 											if not row:
-												data = (serien_name, staffel, sender, head_datum[0], "http://www.wunschliste.de/epg_print.pl?s="+serien_id, "2")
-												sql = "INSERT INTO NeueStaffel (Serie, Staffel, Sender, StaffelStart, Url, Neu) VALUES (?, ?, ?, ?, ?, ?)"
+												data = (serien_name, staffel, sender, head_datum[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s="+serien_id, "2") 
+												sql = "INSERT INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag) VALUES (?, ?, ?, ?, ?, ?, ?)"
 												cNeueStaffel.execute(sql, data)
-												dbNeueStaffel.commit()
+												dbSerRec.commit()
 
 												if not amanuell:
 													if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
@@ -613,16 +619,16 @@ class serienRecCheckForRecording():
 								readMarker.close()
 							
 	def createNewMarker(self, result=True):
-		cNeueStaffel = dbNeueStaffel.cursor()
-		sql = "SELECT Serie, Staffel, StaffelStart FROM NeueStaffel WHERE Neu>0"
+		cNeueStaffel = dbSerRec.cursor()
+		sql = "SELECT Serie, Staffel, StaffelStart FROM NeuerStaffelbeginn WHERE CreationFlag>0"
 		cNeueStaffel.execute(sql)
 		for row in cNeueStaffel:
 			(Serie, Staffel, StaffelStart) = row
-			writeLog("[Serien Recorder] %d. Staffel von '%s' beginnt am %s" % (int(Staffel), Serie, StaffelStart), True)
+			writeLog("[Serien Recorder] %d. Staffel von '%s' beginnt am %s" % (int(Staffel), Serie, StaffelStart), True) 
 
 		if config.plugins.serienRec.ActionOnNew.value == "2" or config.plugins.serienRec.ActionOnNew.value == "3":
 			writeMarker = open(self.markerFile, "a")
-			sql = "SELECT Serie, MIN(Staffel), Sender, Url FROM NeueStaffel WHERE Neu=1 GROUP BY Serie"
+			sql = "SELECT Serie, MIN(Staffel), Sender, Url FROM NeuerStaffelbeginn WHERE CreationFlag=1 GROUP BY Serie"
 			cNeueStaffel.execute(sql)
 			for row in cNeueStaffel:
 				(Serie, Staffel, Sender, Url) = row
@@ -631,9 +637,9 @@ class serienRecCheckForRecording():
 				#writeMarker.write('"%s" "%s" "[\'%s\']" "[\'%s\']"\n' % (Serie, Url, str(Staffel), Sender))
 				writeMarker.write('"%s" "%s" "%s" "%s"\n' % (Serie, Url, ['folgende', str(Staffel)], ['Alle']))
 				writeLog("[Serien Recorder] Neuer Marker für '%s' wurde angelegt" % Serie, True)
-			sql = "UPDATE NeueStaffel SET Neu=0 WHERE Neu=1"
+			sql = "UPDATE NeuerStaffelbeginn SET CreationFlag=0 WHERE CreationFlag=1"
 			cNeueStaffel.execute(sql)
-			dbNeueStaffel.commit()
+			dbSerRec.commit()
 			writeMarker.close()
 		return result
 		
@@ -742,7 +748,7 @@ class serienRecCheckForRecording():
 			# ueberprueft welche sender aktiviert und eingestellt sind.
 			#
 			(webChannel, stbChannel, stbRef, status) = self.checkSender(self.senderListe, sender)
-			if stbChannel == "Nicht gefunden":
+			if stbChannel == "":
 				#print "[Serien Recorder] ' %s ' - STB-Channel nicht gefunden -> ' %s '" % (label_serie, webChannel)
 				writeLogFilter("channels", "[Serien Recorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '" % (label_serie, webChannel))
 				continue
@@ -829,7 +835,8 @@ class serienRecCheckForRecording():
 			# check im added file
 			if checkAlreadyAdded(serien_name+' '+check_SeasonEpisode):
 				writeLogFilter("added", "[Serien Recorder] ' %s ' - Staffel/Episode bereits in added vorhanden -> ' %s '" % (label_serie, check_SeasonEpisode))
-				continue
+				if not config.plugins.serienRec.recordAll.value: 
+					continue
 
 			# check hdd
 			bereits_vorhanden = False
@@ -842,7 +849,8 @@ class serienRecCheckForRecording():
 
 			if bereits_vorhanden:
 				writeLogFilter("disk", "[Serien Recorder] ' %s ' - Staffel/Episode bereits auf hdd vorhanden -> ' %s '" % (label_serie, check_SeasonEpisode))
-				continue
+				if not config.plugins.serienRec.recordAll.value: 
+					continue
 				
 			##############################
 			#
@@ -998,12 +1006,12 @@ class serienRecCheckForRecording():
 
 	def readSenderListe(self):
 		fSender = []
-		readChannel = open(self.channelFile, "r")
-		for rawData in readChannel.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(webChannel, stbChannel, stbRef, status) = data[0]
+		cChannels = dbSerRec.cursor()
+		sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels"
+		cChannels.execute(sql)
+		for row in cChannels:
+			(webChannel, stbChannel, stbRef, status) = row
 			fSender.append((webChannel, stbChannel, stbRef, status))
-		readChannel.close()
 		return fSender
 		
 	def checkSender(self, mSlist, mSender):
@@ -1011,22 +1019,10 @@ class serienRecCheckForRecording():
 			(webChannel, stbChannel, stbRef, status) = mSlist[mSender.lower()]
 		else:
 			webChannel = mSender
-			stbChannel = "Nicht gefunden"
-			stbRef = "serviceref"
+			stbChannel = ""
+			stbRef = ""
 			status = "0"
 		return (webChannel, stbChannel, stbRef, status)
-
-	def checkSender2(self, mSender):
-		fSender = []
-		readChannel = open(self.channelFile, "r")
-		for rawData in readChannel.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(webChannel, stbChannel, stbRef, status) = data[0]
-			if mSender == webChannel:
-				fSender.append((webChannel, stbChannel, stbRef, status))
-				break
-		readChannel.close()
-		return fSender
 
 	def addRecTimer(self, serien_name, title, start_time, stbRef, webChannel):
 		found = False
@@ -1238,7 +1234,8 @@ class serienRecMain(Screen):
 			"displayHelp" : self.youtubeSearch,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB
+			"3"		: self.showProposalDB,
+			"9"     : self.importFromFile
 		}, -1)
 
 		# normal
@@ -1287,13 +1284,11 @@ class serienRecMain(Screen):
 		self.loading = True
 		self.page = 0
 
+		initDB()
+		
 		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
 		if not fileExists(self.markerFile):
 			open(self.markerFile, 'w').close()
-
-		self.channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
-		if not fileExists(self.channelFile):
-			open(self.channelFile, 'w').close()
 
 		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
 		if not fileExists(self.timerFile):
@@ -1315,6 +1310,10 @@ class serienRecMain(Screen):
 
 		self.onLayoutFinish.append(self.startScreen)
 
+	def importFromFile(self):
+		ImportFilesToDB()
+		self['title'].setText("File-Import erfolgreich ausgeführt")
+		
 	def showProposalDB(self):
 		self.session.open(serienRecShowProposal)
 
@@ -1681,15 +1680,13 @@ class serienRecMain(Screen):
 
 	def checkSender(self, mSender):
 		fSender = []
-		readChannel = open(self.channelFile, "r")
-		for rawData in readChannel.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(webChannel, stbChannel, stbRef, status) = data[0]
-			if mSender == webChannel:
-				fSender.append((webChannel, stbChannel, stbRef, status))
-				readChannel.close()
-				return fSender
-		readChannel.close()
+		cChannels = dbSerRec.cursor()
+		sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels WHERE WebChannel=?"
+		cChannels.execute(sql, (mSender,))
+		row = cChannels.fetchone()
+		if row:
+			(webChannel, stbChannel, stbRef, status) = row
+			fSender.append((webChannel, stbChannel, stbRef, status))
 		return fSender
 
 	def checkMarker(self, mSerie):
@@ -1705,7 +1702,8 @@ class serienRecMain(Screen):
 
 	def keyGreen(self):
 		self.session.open(serienRecMainChannelEdit)
-	
+		#self.close()
+
 	def keyYellow(self):
 		self.session.open(serienRecMarker)
 
@@ -1802,7 +1800,7 @@ class serienRecMainChannelEdit(Screen):
 			"right" : self.keyRight,
 			"up"    : self.keyUp,
 			"down"  : self.keyDown,
-			"red"	: self.keyBlue,
+			"red"	: self.keyRed,
 			"green" : self.keyGreen,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile,
@@ -1836,15 +1834,11 @@ class serienRecMainChannelEdit(Screen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 
-		self.channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
-
-		if fileExists(self.channelFile):
-			channelFile_leer = os.path.getsize(self.channelFile)
-			if not channelFile_leer == 0:
-				self.onLayoutFinish.append(self.showChannels)
-			else:
-				self.stbChlist = buildSTBchannellist()
-				self.onLayoutFinish.append(self.readWebChannels)
+		cChannels = dbSerRec.cursor()
+		cChannels.execute("SELECT * FROM Channels")
+		row = cChannels.fetchone()
+		if row:
+			self.onLayoutFinish.append(self.showChannels)
 		else:
 			self.stbChlist = buildSTBchannellist()
 			self.onLayoutFinish.append(self.readWebChannels)
@@ -1859,31 +1853,26 @@ class serienRecMainChannelEdit(Screen):
 		self.session.open(serienRecModifyAdded)
 
 	def showChannels(self):
-		if fileExists(self.channelFile):
-			self.serienRecChlist = []
-			openChannels = open(self.channelFile, "r")
-			for rawData in openChannels.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				if data:
-					(webSender, servicename, serviceref, status) = data[0]
-					self.serienRecChlist.append((webSender, servicename, status))
+		self.serienRecChlist = []
+		cChannels = dbSerRec.cursor()
+		sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels"
+		cChannels.execute(sql)
+		for row in cChannels:
+			(webSender, servicename, serviceref, status) = row
+			self.serienRecChlist.append((webSender, servicename, status))
 
-			openChannels.close()
-
-			if len(self.serienRecChlist) != 0:
-				self['title'].setText("Web-Channel / STB-Channels.")
-				self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
-			else:
-				print "[SerienRecorder] fehler bei der erstellung der serienRecChlist.."
+		if len(self.serienRecChlist) != 0:
+			self['title'].setText("Web-Channel / STB-Channels.")
+			self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
 		else:
-			print "[SerienRecorder] fehler beim erstellen der showChannels.."
+			print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
 
 	def readWebChannels(self):
 		print "[SerienRecorder] call webpage.."
 		self['title'].setText("Read Web-Channels...")
 		url = "http://www.wunschliste.de/updates/stationen"
 		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.createWebChannels).addErrback(self.dataError)
-
+		
 	def createWebChannels(self, data):
 		print "[SerienRecorder] get webchannels.."
 		self['title'].setText("Read Web-Channels...")
@@ -1892,43 +1881,48 @@ class serienRecMainChannelEdit(Screen):
 			web_chlist = []
 			for station in stations:
 				if station != 'alle':
-					web_chlist.append((station.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','')))
+					web_chlist.append((station.replace('\xdf','ß').replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','')))
 
-			web_chlist.sort(key=lambda x: x[0][0])
+			web_chlist.sort(key=lambda x: x.lower())
 			print web_chlist
 			self.serienRecChlist = []
-			writeChannels = open(self.channelFile, "w")
-			dupecheck = []
 			if len(web_chlist) != 0:
 				self['title'].setText("Build Channels-List...")
+				cChannels = dbSerRec.cursor()
+				sqlCheck = "SELECT * FROM Channels WHERE WebChannel=?"
+				sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannelHD, ServiceRefHD, Erlaubt) VALUES (?, ?, ?, ?)"
 				for webSender in web_chlist:
 					#print webSender
-					found = False
-					for servicename,serviceref in self.stbChlist:
-						#print servicename
-						if re.search(webSender.lower(), servicename.lower(), re.S) and webSender.lower() not in dupecheck:
-							dupecheck.append(webSender.lower())
-							#print webSender, servicename
-							found = True
-							self.serienRecChlist.append((webSender, servicename, "1"))
-							writeChannels.write('"%s" "%s" "%s" "%s"\n' % (webSender, servicename, serviceref, "1"))
-					if not found:
-						self.serienRecChlist.append((webSender, "Nicht gefunden", "0"))
-						writeChannels.write('"%s" "%s" "%s" "%s"\n' % (webSender, "Nicht gefunden", "serviceref", "0"))
-
-				writeChannels.close()
+					cChannels.execute(sqlCheck, (webSender,))
+					row = cChannels.fetchone()
+					if not row:
+						found = False
+						for servicename,serviceref in self.stbChlist:
+							#print servicename
+							if re.search(webSender.lower(), servicename.lower(), re.S):
+								cChannels.execute(sql, (webSender, servicename, serviceref, 1))
+								#print webSender, servicename
+								self.serienRecChlist.append((webSender, servicename, "1"))
+								found = True
+								break
+						if not found:
+							cChannels.execute(sql, (webSender, "", "", 0))
+							self.serienRecChlist.append((webSender, "", "0"))
+				dbSerRec.commit()
 
 			else:
 				print "[SerienRecorder] webChannel list leer.."
 
 			if len(self.serienRecChlist) != 0:
-				self['title'].setText("Web-Channel / STB-Channels.")
+				#self['title'].setText("Web-Channel / STB-Channels.")
 				self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
 			else:
-				print "[SerienRecorder] fehler bei der erstellung der serienRecChlist.."
+				print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
 
 		else:
 			print "[SerienRecorder] get webChannel error.."
+			
+		self['title'].setText("Web-Channel / STB-Channels.")
 
 	def buildList(self, entry):
 		(webSender, stbSender, status) = entry
@@ -1961,6 +1955,7 @@ class serienRecMainChannelEdit(Screen):
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			self.stbChlist = buildSTBchannellist()
+			self.stbChlist.insert(0, ("", ""))
 			self.chooseMenuList_popup.setList(map(self.buildList_popup, self.stbChlist))
 		else:
 			self.modus = "list"
@@ -1981,24 +1976,16 @@ class serienRecMainChannelEdit(Screen):
 			stbSender = self['popup_list'].getCurrent()[0][0]
 			stbRef = self['popup_list'].getCurrent()[0][1]
 			print "[SerienRecorder] select:", chlistSender, stbSender, stbRef
-			if fileExists(self.channelFile):
-				readChannelFile = open(self.channelFile, "r")
-				writeChannelFile = open(self.channelFile+".tmp", "w")
-				for rawData in readChannelFile.readlines():
-					data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-					if data:
-						(webSender, servicename, serviceref, status) = data[0]
-						if webSender == chlistSender:
-							writeChannelFile.write('"%s" "%s" "%s" "%s"\n' % (webSender, stbSender, stbRef, "1"))
-							print "[SerienRecorder] change to:", webSender, stbSender, stbRef, "1"
-						else:
-							writeChannelFile.write('"%s" "%s" "%s" "%s"\n' % (webSender, servicename, serviceref, status))
-				readChannelFile.close()
-				writeChannelFile.close()
-				shutil.move(self.channelFile+".tmp", self.channelFile)
-				self.showChannels()
-
-	def keyBlue(self):
+			cChannels = dbSerRec.cursor()
+			sql = "UPDATE Channels SET STBChannelHD=?, ServiceRefHD=?, Erlaubt=? WHERE WebChannel=?"
+			if stbSender != "":
+				cChannels.execute(sql, (stbSender, stbRef, 1, chlistSender))
+			else:
+				cChannels.execute(sql, (stbSender, stbRef, 0, chlistSender))
+			dbSerRec.commit()
+			self.showChannels()
+				
+	def keyRed(self):
 		check = self['list'].getCurrent()
 		if check == None:
 			print "[Serien Recorder] Channel-List leer."
@@ -2009,32 +1996,29 @@ class serienRecMainChannelEdit(Screen):
 			sender_status = self['list'].getCurrent()[0][2]
 			print sender_status
 
-			if fileExists(self.channelFile):
-				readChannelFile = open(self.channelFile, "r")
-				writeChannelFile = open(self.channelFile+".tmp", "w")
-				for rawData in readChannelFile.readlines():
-					data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-					if data:
-						(webSender, servicename, serviceref, status) = data[0]
-						if webSender == chlistSender:
-							if int(status) == 0:
-								writeChannelFile.write('"%s" "%s" "%s" "%s"\n' % (webSender, servicename, serviceref, "1"))
-								print "[SerienRecorder] change to:", webSender, servicename, serviceref, "1"
-								self['title'].instance.setForegroundColor(parseColor("red"))
-								self['title'].setText("")
-								self['title'].setText("Sender '- %s -' wurde aktiviert." % webSender)
-							else:
-								writeChannelFile.write('"%s" "%s" "%s" "%s"\n' % (webSender, servicename, serviceref, "0"))
-								print "[SerienRecorder] change to:",webSender, servicename, serviceref, "0"
-								self['title'].instance.setForegroundColor(parseColor("red"))
-								self['title'].setText("")
-								self['title'].setText("Sender '- %s -' wurde deaktiviert." % webSender)
-						else:
-							writeChannelFile.write('"%s" "%s" "%s" "%s"\n' % (webSender, servicename, serviceref, status))
-				readChannelFile.close()
-				writeChannelFile.close()
-				shutil.move(self.channelFile+".tmp", self.channelFile)
-				self.showChannels()
+			cChannels = dbSerRec.cursor()
+			sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels WHERE WebChannel=?"
+			cChannels.execute(sql, (chlistSender,))
+			row = cChannels.fetchone()
+			if row:
+				(webSender, servicename, serviceref, status) = row
+				sql = "UPDATE Channels SET Erlaubt=? WHERE WebChannel=?"
+				if int(status) == 0:
+					cChannels.execute(sql, (1, chlistSender))
+					print "[SerienRecorder] change to:", webSender, servicename, serviceref, "1"
+					self['title'].instance.setForegroundColor(parseColor("red"))
+					self['title'].setText("")
+					self['title'].setText("Sender '- %s -' wurde aktiviert." % webSender)
+				else:
+					cChannels.execute(sql, (0, chlistSender))
+					print "[SerienRecorder] change to:",webSender, servicename, serviceref, "0"
+					self['title'].instance.setForegroundColor(parseColor("red"))
+					self['title'].setText("")
+					self['title'].setText("Sender '- %s -' wurde deaktiviert." % webSender)
+				dbSerRec.commit()
+				
+			self['title'].instance.setForegroundColor(parseColor("white"))
+			self.showChannels()
 
 	def keyGreen(self):
 		self.session.openWithCallback(self.channelReset, MessageBox, _("Sender-Liste zurücksetzen ?"), MessageBox.TYPE_YESNO)
@@ -2042,13 +2026,9 @@ class serienRecMainChannelEdit(Screen):
 	def channelReset(self, answer):
 		if answer == True:
 			print "[Serien Recorder] channel-list reset..."
-			#if fileExists(self.channelFile):
-			#	os.remove(self.channelFile)
 
 			self.stbChlist = buildSTBchannellist()
 			self.readWebChannels()
-			#self.stbChlist = buildSTBchannellist()
-			#self.readWebChannels()
 		else:
 			print "[Serien Recorder] channel-list ok."
 
@@ -2070,8 +2050,9 @@ class serienRecMainChannelEdit(Screen):
 			self['popup_list'].hide()
 			self['popup_bg'].hide()
 		else:
+			#self.session.open(serienRecMain)
 			self.close()
-
+			
 	def dataError(self, error):
 		print error
 
@@ -2923,7 +2904,6 @@ class serienRecSendeTermine(Screen):
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
 		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-		self.channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
 		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
 		self.sendetermine_list = []
 		self.red = 0xf23d21
@@ -2985,11 +2965,11 @@ class serienRecSendeTermine(Screen):
 					cSender_list = self.checkSender(sender)
 					if len(cSender_list) == 0:
 						webChannel = sender
-						stbChannel = "Nicht gefunden"
+						stbChannel = ""
 					else:
 						(webChannel, stbChannel, stbRef, status) = cSender_list[0]
 
-					if stbChannel == "Nicht gefunden":
+					if stbChannel == "":
 						print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel)
 						continue
 						
@@ -3206,11 +3186,11 @@ class serienRecSendeTermine(Screen):
 						cSener_list = self.checkSender(sender)
 						if len(cSener_list) == 0:
 							webChannel = sender
-							stbChannel = "Nicht gefunden"
+							stbChannel = ""
 						else:
 							(webChannel, stbChannel, stbRef, status) = cSener_list[0]
 
-						if stbChannel == "Nicht gefunden":
+						if stbChannel == "":
 							#print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel)
 							writeLog("[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel))
 						elif int(status) == 0:
@@ -3309,14 +3289,14 @@ class serienRecSendeTermine(Screen):
 
 	def checkSender(self, mSender):
 		fSender = []
-		readChannel = open(self.channelFile, "r")
-		for rawData in readChannel.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(webChannel, stbChannel, stbRef, status) = data[0]
-			if mSender == webChannel:
-				fSender.append((webChannel, stbChannel, stbRef, status))
-				break
-		readChannel.close()
+		cChannels = dbSerRec.cursor()
+		sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels WHERE WebChannel=?"
+		cChannels.execute(sql, (mSender,))
+		row = cChannels.fetchone()
+		if row:
+			(webChannel, stbChannel, stbRef, status) = row
+			fSender.append((webChannel, stbChannel, stbRef, status))
+
 		return fSender
 
 	def addRecTimer(self, serien_name, title, start_time, stbRef, webChannel):
@@ -3707,6 +3687,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("DEBUG LOG - Tageszeit:", config.plugins.serienRec.writeLogTimeRange))
 		self.list.append(getConfigListEntry("DEBUG LOG - Zeitbegrenzung:", config.plugins.serienRec.writeLogTimeLimit))
 		self.list.append(getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
+		self.list.append(getConfigListEntry("Timer für ALLE Wiederholungen erstellen:", config.plugins.serienRec.recordAll))
 
 	def changedEntry(self):
 		self.createConfigList()
@@ -3768,7 +3749,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.writeLogTimerDebug.save()
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.ActionOnNew.save()
-
+		config.plugins.serienRec.recordAll.save()
+		
 		configfile.save()
 		self.close(True)
 
@@ -4176,6 +4158,24 @@ def Plugins(path, **kwargs):
 		PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_EXTENSIONSMENU], fnc=main),
 		PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=main)
 		]
+
+def ImportFilesToDB():
+	channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
+	if fileExists(channelFile ):
+		cChannels = dbSerRec.cursor()
+		sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannelHD, ServiceRefHD, Erlaubt) VALUES (?, ?, ?, ?)"
+		readChannel = open(channelFile, "r")
+		for rawData in readChannel.readlines():
+			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+			(webChannel, stbChannel, stbRef, status) = data[0]
+			if stbChannel == "Nicht gefunden":
+				stbChannel = ""
+			if stbRef == "serviceref":
+				stbRef = ""
+			cChannels.execute(sql, (webChannel, stbChannel, stbRef, status))
+		dbSerRec.commit()
+		readChannel.close()
+	return True
 		
 class serienRecModifyAdded(Screen):
 	skin = """
@@ -4368,14 +4368,14 @@ class serienRecShowProposal(Screen):
 
 	def readProposal(self):
 		self.proposalList = []
-		cNeueStaffel = dbNeueStaffel.cursor()
-		sql = "SELECT * FROM NeueStaffel WHERE Neu=? OR Neu>=1 GROUP BY Serie, Staffel"
+		cNeueStaffel = dbSerRec.cursor()
+		sql = "SELECT Serie, Staffel, Sender, StaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel"
 		cNeueStaffel.execute(sql, (self.filter, ))
 		for row in cNeueStaffel:
-			(Serie, Staffel, Sender, Datum, Url, Neu) = row
+			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = row
 			if Staffel < 10:
 				Staffel = "0"+str(Staffel)
-			self.proposalList.append((Serie, Staffel, Sender, Datum, Url, Neu))
+			self.proposalList.append((Serie, Staffel, Sender, Datum, Url, CreationFlag))
 
 		self['title'].setText("Neue Serie(n) / Staffel(n):")
 		dirFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
@@ -4385,13 +4385,13 @@ class serienRecShowProposal(Screen):
 		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
 			
 	def buildList(self, entry):
-		(Serie, Staffel, Sender, Datum, Url, Neu) = entry
-		if Neu == 0:
+		(Serie, Staffel, Sender, Datum, Url, CreationFlag) = entry
+		if CreationFlag == 0:
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 0, 32, 32, self.imageFound),
 				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)))
 				]
-		elif Neu == 2:
+		elif CreationFlag == 2:
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)), self.red, self.red)
 				]
@@ -4406,13 +4406,13 @@ class serienRecShowProposal(Screen):
 			print "[Serien Recorder] Proposal-DB leer."
 			return
 		else:
-			(Serie, Staffel, Sender, Datum, Url, Neu) = self['list'].getCurrent()[0]
-			cNeueStaffel = dbNeueStaffel.cursor()
-			data = (Serie, Staffel, Sender, Datum)
-			#sql = "UPDATE NeueStaffel SET Neu=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
-			sql = "DELETE FROM NeueStaffel WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
+			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = self['list'].getCurrent()[0]
+			cNeueStaffel = dbSerRec.cursor()
+			data = (Serie, Staffel, Sender, Datum) 
+			#sql = "UPDATE NeuerStaffelbeginn SET CreationFlag=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
+			sql = "DELETE FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
 			cNeueStaffel.execute(sql, data)
-			dbNeueStaffel.commit()
+			dbSerRec.commit()
 			
 			self.readProposal()
 
@@ -4422,8 +4422,8 @@ class serienRecShowProposal(Screen):
 			print "[Serien Recorder] Proposal-DB leer."
 			return
 		else:
-			(Serie, Staffel, Sender, Datum, Url, Neu) = self['list'].getCurrent()[0]
-			if Neu:
+			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = self['list'].getCurrent()[0]
+			if CreationFlag:
 				if self.checkMarker(Serie):
 					readMarker = open(self.markerFile, "r")
 					writeMarkerFile = open(self.markerFile+".tmp", 'w')
@@ -4466,11 +4466,11 @@ class serienRecShowProposal(Screen):
 					writeMarkerFile.write('"%s" "%s" "[\'%s\']" "[\'%s\']"\n' % (Serie, Url, Staffel, Sender))
 					writeMarkerFile.close()
 
-				cNeueStaffel = dbNeueStaffel.cursor()
-				data = (Serie, Staffel, Sender, Datum)
-				sql = "UPDATE NeueStaffel SET Neu=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
+				cNeueStaffel = dbSerRec.cursor()
+				data = (Serie, Staffel, Sender, Datum) 
+				sql = "UPDATE NeuerStaffelbeginn SET CreationFlag=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
 				cNeueStaffel.execute(sql, data)
-				dbNeueStaffel.commit()
+				dbSerRec.commit()
 
 			self.readProposal()
 		
@@ -4493,9 +4493,9 @@ class serienRecShowProposal(Screen):
 			if config.plugins.serienRec.confirmOnDelete.value:
 				self.session.openWithCallback(self.callDeleteMsg, MessageBox, _("Soll die Liste wirklich geleert werden?"), MessageBox.TYPE_YESNO, default = False)				
 			else:
-				cNeueStaffel = dbNeueStaffel.cursor()
-				cNeueStaffel.execute("DELETE FROM NeueStaffel")
-				dbNeueStaffel.commit()
+				cNeueStaffel = dbSerRec.cursor()
+				cNeueStaffel.execute("DELETE FROM NeuerStaffelbeginn")
+				dbSerRec.commit()
 				
 				self.readProposal()
 
@@ -4504,9 +4504,9 @@ class serienRecShowProposal(Screen):
 
 	def callDeleteMsg(self, answer):
 		if answer:
-			cNeueStaffel = dbNeueStaffel.cursor()
-			cNeueStaffel.execute("DELETE FROM NeueStaffel")
-			dbNeueStaffel.commit()
+			cNeueStaffel = dbSerRec.cursor()
+			cNeueStaffel.execute("DELETE FROM NeuerStaffelbeginn")
+			dbSerRec.commit()
 			
 			self.readProposal()
 		else:
