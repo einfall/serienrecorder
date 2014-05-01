@@ -1285,6 +1285,7 @@ class serienRecMain(Screen):
 		self.page = 0
 
 		initDB()
+		self.db = dbSerRec.cursor()
 		
 		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
 		if not fileExists(self.markerFile):
@@ -1525,33 +1526,21 @@ class serienRecMain(Screen):
 			serien_url = self['list'].getCurrent()[0][5]
 			serien_name = self['list'].getCurrent()[0][6]
 			serien_id = self['list'].getCurrent()[0][13]
+			
+			serien_id = "http://www.wunschliste.de/epg_print.pl?s="+serien_id
 
-			if not fileExists(self.markerFile):
-				open(self.markerFile, 'w').close()
-
-			found = False
-			readMarker = open(self.markerFile, "r")
-			for rawData in readMarker.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				if data:
-					(serie, url, staffel, sender) = data[0]
-					if serie.lower() == serien_name.lower():
-						found = True
-						break
-			readMarker.close()
-
-			if not found:
-				#if int(serien_neu) == 1:
-				#	writeMarker = open(self.markerFile, "a")
-				#	writeMarker.write('"%s" "%s" "%s"\n' % (serien_name, "http://www.wunschliste.de"+serien_url, "['Neu']"))
-				#	writeMarker.close()
-				#else:
-				writeMarker = open(self.markerFile, "a")
-				writeMarker.write('"%s" "%s" "%s" "%s"\n' % (serien_name, "http://www.wunschliste.de/epg_print.pl?s="+serien_id, "['Alle']", "['Alle']"))
-				#writeMarker.write('"%s" "%s" "%s"\n' % (serien_name, "http://www.wunschliste.de"+serien_url, "['Alle']"))
-				writeMarker.close()
+			self.db.execute("SELECT * FROM SerienMarker WHERE Serie=?", (serien_name,))
+											#sql = "SELECT * FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=?"
+											#cNeueStaffel.execute(sql, (serien_name, staffel))
+			checkExist = self.db.fetchone()
+			if checkExist is None:
 				self['title'].instance.setForegroundColor(parseColor("green"))
 				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
+
+				# ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, VorlaufZeit, Nachlaufzeit, AufnahmeZeitVon, AufnahmezeitBis, AnzahlWiederholungen
+				self.db.execute('INSERT INTO SerienMarker VALUES (NULL,?,?,?,?,?,?,?,?,?,?)', (serien_name, serien_id, 'Alle', 'Alle', '', '', '', '', '', ''))
+				dbSerRec.commit()
+
 			else:
 				self['title'].instance.setForegroundColor(parseColor("red"))
 				self['title'].setText("Serie '- %s -' existiert bereits im Serien Marker." % serien_name)
