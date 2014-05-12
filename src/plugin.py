@@ -126,6 +126,14 @@ dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrec
 dbSerRec.text_factory = str
 #dbSerRec.text_factory = unicode
 
+
+# const
+ADDEDFILE = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
+TIMERFILE = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
+MARKERFILE = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+LOGFILE = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
+CHANNELSFILE = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
+
 def iso8859_Decode(txt):
 	#txt = txt.replace('\xe4','ä').replace('\xf6','ö').replace('\xfc','ü').replace('\xdf','ß')
 	#txt = txt.replace('\xc4','Ä').replace('\xd6','Ö').replace('\xdc','Ü')
@@ -136,7 +144,7 @@ def iso8859_Decode(txt):
 
 def checkTimerAdded(name, seasonEpisode, start_unixtime):
 	#"Castle" "S03E20 - Die Pizza-Connection" "1392997800" "1:0:19:EF76:3F9:1:C00000:0:0:0:" "kabel eins"
-	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
+	addedFile = TIMERFILE
 	readAddedFile = open(addedFile, "r")
 	found = False
 	for line in readAddedFile.readlines():
@@ -151,8 +159,7 @@ def checkTimerAdded(name, seasonEpisode, start_unixtime):
 	return found
 
 def checkAlreadyAdded(dupeName):
-	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
-	readAddedFile = open(addedFile, "r")
+	readAddedFile = open(ADDEDFILE, "r")
 	found = False
 	for line in readAddedFile.readlines():
 		if dupeName in line:
@@ -163,11 +170,10 @@ def checkAlreadyAdded(dupeName):
 	return found
 
 def addAlreadyAdded(dupeName):
-	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
-	if not fileExists(addedFile):
-		open(addedFile, 'w').close()
+	if not fileExists(ADDEDFILE):
+		open(ADDEDFILE, 'w').close()
 
-	writeAddedFile = open(addedFile, "a")
+	writeAddedFile = open(ADDEDFILE, "a")
 	writeAddedFile.write('%s\n' % (dupeName))
 	writeAddedFile.close()
 
@@ -221,7 +227,7 @@ def getRealUnixTime(min, std, day, month, year):
 
 def getkMarker():
 	list = []
-	markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+	markerFile = MARKERFILE
 	readMarker = open(markerFile, "r")
 	for rawData in readMarker.readlines():
 		data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
@@ -297,7 +303,7 @@ def getWebSenderAktiv():
 
 def writeLog(text, forceWrite=False):
 	if config.plugins.serienRec.writeLog.value or forceWrite:
-		logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
+		logFile = LOGFILE
 		if not fileExists(logFile):
 			open(logFile, 'w').close()
 
@@ -307,7 +313,7 @@ def writeLog(text, forceWrite=False):
 
 def writeLogFilter(type, text, forceWrite=False):
 	if config.plugins.serienRec.writeLog.value or forceWrite:
-		logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
+		logFile = LOGFILE
 		if not fileExists(logFile):
 			open(logFile, 'w').close()
 
@@ -365,10 +371,10 @@ class serienRecCheckForRecording():
 		self.timermode2 = False
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
-		self.logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
-		self.addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
+		self.markerFile = MARKERFILE
+		self.timerFile = TIMERFILE
+		self.logFile = LOGFILE
+		self.addedFile = ADDEDFILE
 
 		self.daypage = 0
 		initDB()
@@ -1287,15 +1293,15 @@ class serienRecMain(Screen):
 		initDB()
 		self.db = dbSerRec.cursor()
 		
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+		self.markerFile = MARKERFILE
 		if not fileExists(self.markerFile):
 			open(self.markerFile, 'w').close()
 
-		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
+		self.timerFile = TIMERFILE
 		if not fileExists(self.timerFile):
 			open(self.timerFile, 'w').close()
 
-		self.addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
+		self.addedFile = ADDEDFILE
 		if not fileExists(self.addedFile):
 			open(self.addedFile, 'w').close()
 
@@ -2131,7 +2137,7 @@ class serienRecMarker(Screen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+		self.markerFile = MARKERFILE
 		self.searchTitle = ""
 		self.serien_nameCover = "nix"
 		self.loading = True
@@ -2650,7 +2656,7 @@ class serienRecAddSerie(Screen):
 		self['cover'] = Pixmap()
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+		self.markerFile = MARKERFILE
 		self.loading = True
 
 		self.onLayoutFinish.append(self.searchSerie)
@@ -2892,8 +2898,8 @@ class serienRecSendeTermine(Screen):
 		self['cover'] = Pixmap()
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
+		self.markerFile = MARKERFILE
+		self.timerFile = TIMERFILE
 		self.sendetermine_list = []
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -3408,7 +3414,7 @@ class serienRecTimer(Screen):
 		self.blue = 0x0064c7
 		self.yellow = 0xbab329
 		self.white = 0xffffff
-		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
+		self.timerFile = TIMERFILE
 
 		self.onLayoutFinish.append(self.readTimer)
 
@@ -3864,7 +3870,7 @@ class serienRecReadLog(Screen):
 		self.blue = 0x0064c7
 		self.yellow = 0xbab329
 		self.white = 0xffffff
-		self.logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
+		self.logFile = LOGFILE
 		self.logliste = []
 
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
@@ -3940,7 +3946,7 @@ class serienRecLogReader(Screen):
 		self.blue = 0x0064c7
 		self.yellow = 0xbab329
 		self.white = 0xffffff
-		self.logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
+		self.logFile = LOGFILE
 		self.logliste = []
 		self.points = ""
 
@@ -4031,19 +4037,19 @@ class checkupdate():
 			if self.delete_files == "True":
 				print "[Serien Recorder] lösche config files.."
 
-				self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+				self.markerFile = MARKERFILE
 				if fileExists(self.markerFile):
 					os.remove(self.markerFile)
 
-				self.channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
+				self.channelFile = CHANNELSFILE
 				if fileExists(self.channelFile):
 					os.remove(self.channelFile)
 
-				self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
+				self.timerFile = TIMERFILE
 				if fileExists(self.timerFile):
 					os.remove(self.timerFile)
 
-				self.logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
+				self.logFile = LOGFILE
 				if fileExists(self.logFile):
 					os.remove(self.logFile)
 
@@ -4149,7 +4155,7 @@ def Plugins(path, **kwargs):
 		]
 
 def ImportFilesToDB():
-	channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
+	channelFile = CHANNELSFILE
 	if fileExists(channelFile ):
 		cChannels = dbSerRec.cursor()
 		sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannelHD, ServiceRefHD, Erlaubt) VALUES (?, ?, ?, ?)"
@@ -4220,7 +4226,7 @@ class serienRecModifyAdded(Screen):
 		self.sortedList = False
 		self.addedliste = []
 		self.addedliste_tmp = []
-		self.addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
+		self.addedFile = ADDEDFILE
 
 		self.onLayoutFinish.append(self.readAdded)
 
@@ -4351,7 +4357,7 @@ class serienRecShowProposal(Screen):
 		
 		self.filter = False
 		self.proposalList = []
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+		self.markerFile = MARKERFILE
 
 		self.onLayoutFinish.append(self.readProposal)
 
