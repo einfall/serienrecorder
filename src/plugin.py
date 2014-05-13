@@ -72,6 +72,8 @@ except Exception:
 	default_before = 0
 	default_after = 0
 
+EPGTimeSpan = 10
+	
 # init EPGTranslator
 if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/EPGTranslator/plugin.pyo"):
 	from Plugins.Extensions.EPGTranslator.plugin import searchYouTube
@@ -97,7 +99,7 @@ config.plugins.serienRec.margin_before = ConfigInteger(default_before, (00,99))
 config.plugins.serienRec.margin_after = ConfigInteger(default_after, (00,99))
 config.plugins.serienRec.Alternatetimer = ConfigYesNo(default = True)
 config.plugins.serienRec.Autoupdate = ConfigYesNo(default = True)
-config.plugins.serienRec.pastTimer = ConfigYesNo(default = False)
+#config.plugins.serienRec.pastTimer = ConfigYesNo(default = False)
 config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
 config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
 config.plugins.serienRec.writeLog = ConfigYesNo(default = True)
@@ -113,10 +115,11 @@ config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
 config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
 config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
 config.plugins.serienRec.recordAll = ConfigYesNo(default = False)
+config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta1"))
+config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta3"))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -134,49 +137,34 @@ def iso8859_Decode(txt):
 	txt = txt.replace('...','').replace('..','').replace(':','').replace('\xb2','2')
 	return txt
 
-def checkTimerAdded(name, seasonEpisode, start_unixtime):
+def checkTimerAdded(sender, serie, staffel, episode, start_unixtime):
 	#"Castle" "S03E20 - Die Pizza-Connection" "1392997800" "1:0:19:EF76:3F9:1:C00000:0:0:0:" "kabel eins"
-	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
-	readAddedFile = open(addedFile, "r")
 	found = False
-	for line in readAddedFile.readlines():
-		#data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-		#(serie, se, startTimeUnix, sref, websender) = data[0]
-		#serie_label = "%s %s" % (serie, se)
-		if re.search(name+'.*?'+seasonEpisode+'.*?'+start_unixtime, line, re.S|re.I):
-			found = True
-			break
-
-	readAddedFile.close()
+	cCursor = dbSerRec.cursor()
+	sql = "SELECT * FROM AngelegteTimer WHERE LOWER(webChannel)=? AND LOWER(Serie)=? AND Staffel=? AND Episode=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
+	cCursor.execute(sql, (sender.lower(), serie.lower(), staffel, episode, int(start_unixtime)-(int(EPGTimeSpan)*60), int(start_unixtime)+(int(EPGTimeSpan)*60)))
+	row = cCursor.fetchone()
+	if row:
+		found = True
+	cCursor.close()
 	return found
 
-def checkAlreadyAdded(dupeName):
-	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
-	readAddedFile = open(addedFile, "r")
+def checkAlreadyAdded(serie, staffel, episode):
 	found = False
-	for line in readAddedFile.readlines():
-		if dupeName in line:
-			found = True
-			break
-
-	readAddedFile.close()
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", (serie.lower(), staffel, episode))
+	row = cCursor.fetchone()
+	if row:
+		found = True
+	cCursor.close()
 	return found
-
-def addAlreadyAdded(dupeName):
-	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
-	if not fileExists(addedFile):
-		open(addedFile, 'w').close()
-
-	writeAddedFile = open(addedFile, "a")
-	writeAddedFile.write('%s\n' % (dupeName))
-	writeAddedFile.close()
 
 def allowedTimeRange(f,t):
-	list = ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23']
+	liste = ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23']
 	if int(t) >= int(f):
-		new = list[int(f):int(t)+1]
+		new = liste[int(f):int(t)+1]
 	else:
-		new = list[int(f):len(list)] + list[0:int(t)+1]
+		new = liste[int(f):len(liste)] + liste[0:int(t)+1]
 		
 	return new
 
@@ -219,16 +207,41 @@ def getRealUnixTime(min, std, day, month, year):
 	#print now.year, now.month, now.day, std, min
 	return datetime.datetime(int(year), int(month), int(day), int(std), int(min)).strftime("%s")
 
-def getkMarker():
-	list = []
-	markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-	readMarker = open(markerFile, "r")
-	for rawData in readMarker.readlines():
-		data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-		(serie, url, staffel, sendern) = data[0]
-		list.append((serie, url, staffel, sendern))
-	readMarker.close()
-	return list
+def getMarker():
+	return_list = []
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT * FROM SerienMarker ORDER BY Serie")
+	cMarkerList = cCursor.fetchall()
+	for row in cMarkerList:
+		(ID, serie, url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AufnahmezeitVon, AufnahmezeitBis, AnzahlWiederholungen, preferredChannel, useAlternativeChannel) = row
+		if alleSender:
+			sender = ['Alle',]
+		else:
+			sender = []
+			cSender = dbSerRec.cursor()
+			cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY ErlaubterSender", (ID,))
+			cSenderList = cSender.fetchall()
+			if len(cSenderList) > 0:
+				sender = list(zip(*cSenderList)[0])
+			cSender.close()
+		
+		if AlleStaffelnAb == -2:			# 'Manuell'
+			staffeln = [AlleStaffelnAb,]
+		else:
+			staffeln = []
+			cStaffel = dbSerRec.cursor()
+			cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
+			cStaffelList = cStaffel.fetchall()
+			if len(cStaffelList) > 0:
+				staffeln = list(zip(*cStaffelList)[0])
+			if AlleStaffelnAb < 999999:
+				staffeln.insert(0, -1)
+				staffeln.append(AlleStaffelnAb)
+			cStaffel.close()
+		
+		return_list.append((serie, url, staffeln, sender))
+	cCursor.close()
+	return return_list
 
 def getServiceList(ref):
 	root = eServiceReference(str(ref))
@@ -270,29 +283,29 @@ def getEPGevent(query, channelref, title, starttime):
 		#print name.lower(), title.lower(), int(begin), int(starttime)
 		if channelref == serviceref: # and name.lower() == title.lower()
 			#if int(int(starttime)-60) == int(begin) or int(int(starttime)+60) == int(begin) or int(starttime) == int(begin):
-			if int(int(begin)-600) <= int(starttime) <= int(int(begin)+600):
+			if int(int(begin)-(int(EPGTimeSpan)*60)) <= int(starttime) <= int(int(begin)+(int(EPGTimeSpan)*60)):
 				#print "MATCHHHHHHH", name
 				epgmatches.append((serviceref, eit, name, begin, duration, shortdesc, extdesc))
 	return epgmatches
 
 def getWebSender():
 	fSender = []
-	cChannels = dbSerRec.cursor()
-	sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels"
-	cChannels.execute(sql)
-	for row in cChannels:
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels")
+	for row in cCursor:
 		(webChannel, stbChannel, stbRef, status) = row
 		fSender.append((webChannel))
+	cCursor.close()
 	return fSender
 
 def getWebSenderAktiv():
 	fSender = []
-	cChannels = dbSerRec.cursor()
-	sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD FROM Channels WHERE Erlaubt=1"
-	cChannels.execute(sql)
-	for row in cChannels:
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef FROM Channels WHERE Erlaubt=1")
+	for row in cCursor:
 		(webChannel, stbChannel, stbRef) = row
 		fSender.append((webChannel))
+	cCursor.close()
 	return fSender
 
 def writeLog(text, forceWrite=False):
@@ -325,30 +338,11 @@ def writeLogFilter(type, text, forceWrite=False):
 		
 		writeLogFile.close()
 
-def checkInt(x):
-	try:
-		int(x)
-		return True
-	except:
-		return False
-
 def getUrl(url):
 	req = urllib2.Request(url)
 	res = urllib2.urlopen(req)
 	finalurl = res.geturl()
 	return finalurl
-
-def initDB():
-	#dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
-	#dbSerRec.text_factory = str
-	cCursor = dbSerRec.cursor()
-	cCursor.execute("CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, Staffel INTEGER, Sender TEXT NOT NULL, StaffelStart TEXT NOT NULL, UTCStaffelStart INTEGER, Url TEXT NOT NULL, CreationFlag INTEGER DEFAULT 1)")
-	cCursor.execute("CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, STBChannelHD TEXT NOT NULL DEFAULT \"\", ServiceRefHD TEXT NOT NULL DEFAULT \"\", STBChannelSD TEXT NOT NULL DEFAULT \"\", ServiceRefSD TEXT NOT NULL DEFAULT \"\", Erlaubt INTEGER DEFAULT 0, Vorlaufzeit INTEGER DEFAULT NULL, Nachlaufzeit INTEGER DEFAULT NULL)")
-	cCursor.execute("CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, Serie TEXT NOT NULL, Url TEXT NOT NULL, AufnahmeVerzeichnis TEXT, AlleStaffelnAb INTEGER DEFAULT 0, alleSender INTEGER DEFAULT 1, Vorlaufzeit INTEGER DEFAULT NULL, Nachlaufzeit INTEGER DEFAULT NULL, AufnahmezeitVon INTEGER DEFAULT NULL,  AufnahmezeitBis INTEGER DEFAULT NULL, AnzahlWiederholungen INTEGER DEFAULT NULL)")
-	cCursor.execute("CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, ErlaubterSender TEXT NOT NULL, FOREIGN KEY(ID) REFERENCES SerienMarker(ID))")
-	cCursor.execute("CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, ErlaubteStaffel INTEGER, FOREIGN KEY(ID) REFERENCES SerienMarker(ID))")
-	cCursor.execute("CREATE TABLE IF NOT EXISTS AngelegteTimer (Serie TEXT NOT NULL, Staffel INTEGER, Episode INTEGER, Titel TEXT, StartZeitstempel INTEGER NOT NULL, ServiceRef TEXT NOT NULL, webChannel TEXT NOT NULL)")
-	dbSerRec.commit()
 
 class serienRecCheckForRecording():
 
@@ -365,44 +359,35 @@ class serienRecCheckForRecording():
 		self.timermode2 = False
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
 		self.logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
-		self.addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
 
 		self.daypage = 0
-		initDB()
 		cCursor = dbSerRec.cursor()
 		
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 
-		if not fileExists(self.markerFile):
-			open(self.markerFile, 'w').close()
-
-		if not fileExists(self.timerFile):
-			open(self.timerFile, 'w').close()
-
-		if not fileExists(self.addedFile):
-			open(self.addedFile, 'w').close()
-
-		markerFile_leer = os.path.getsize(self.markerFile)
-		if markerFile_leer == 0:
+		cCursor.execute("SELECT * FROM SerienMarker")
+		row = cCursor.fetchone()
+		if not row:
 			writeLog("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
-			print "[Serien Recorder] check: markerFile leer."
-			writeLog("[Serien Recorder] check: markerFile leer.", True)
+			print "[Serien Recorder] check: Tabelle SerienMarker leer."
+			writeLog("[Serien Recorder] check: Tabelle SerienMarker leer.", True)
 			writeLog("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------", True)
+			cCursor.close()
 			return
 
 		cCursor.execute("SELECT * FROM Channels")
 		row = cCursor.fetchone()
 		if not row:
 			writeLog("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
-			print "[Serien Recorder] check: channelFile leer."
-			writeLog("[Serien Recorder] check: channelFile leer.", True)
+			print "[Serien Recorder] check: Tabelle Channels leer."
+			writeLog("[Serien Recorder] check: Tabelle Channels leer.", True)
 			writeLog("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------", True)
+			cCursor.close()
 			return
-
+		cCursor.close()
+		
 		self.justplay = False
 		if config.plugins.serienRec.justplay.value:
 			self.justplay = True
@@ -487,7 +472,7 @@ class serienRecCheckForRecording():
 
 		# logFile leeren (renamed to _old)
 		if fileExists(self.logFile):
-			shutil.copy(self.logFile,self.logFile+"_old")
+			shutil.copy(self.logFile,"%s_old" % self.logFile)
 		open(self.logFile, 'w').close()
 
 		if amanuell:
@@ -533,7 +518,7 @@ class serienRecCheckForRecording():
 	def startCheck2(self, amanuell):
 		ds = defer.DeferredSemaphore(tokens=1)
 		downloads = [ds.run(self.readWebpageForNewStaffel, "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))).addCallback(self.parseWebpageForNewStaffel, amanuell).addErrback(self.dataError) for daypage in range(int(config.plugins.serienRec.checkfordays.value))]
-		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.dataError)
+		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.checkError)
 		
 	def readWebpageForNewStaffel(self, url):
 		print "[Serien Recorder] call %s" % url
@@ -554,104 +539,175 @@ class serienRecCheckForRecording():
 			for regional,paytv,neu,prime,time,url,serien_name,serien_id,sender,staffel,episode,title in raw:
 				# encode utf-8
 				serien_name = iso8859_Decode(serien_name)
-				sender = iso8859_Decode(sender)
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
+				sender = iso8859_Decode(sender)
 
-				if checkInt(episode) and checkInt(staffel):
+				if str(episode).isdigit() and str(staffel).isdigit():
 					if int(episode) == 1:
-						if int(staffel) < 10 and len(staffel) == 1:
-							staffel = str("0"+staffel)
-						if int(episode) < 10 and len(episode) == 1:
-							episode = str("0"+episode)
-
 						(webChannel, stbChannel, stbRef, status) = self.checkSender(self.senderListe, sender)
 						if int(status) == 1:
 							if not self.checkMarker(serien_name):
-								cNeueStaffel = dbSerRec.cursor()
-								sql = "SELECT * FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=?"
-								cNeueStaffel.execute(sql, (serien_name, staffel))
-								row = cNeueStaffel.fetchone()
+								cCursor = dbSerRec.cursor()
+								cCursor.execute("SELECT * FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=?", (serien_name, staffel))
+								row = cCursor.fetchone()
 								if not row:
-									data = (serien_name, staffel, sender, head_datum[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s="+serien_id)
-									sql = "INSERT INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url) VALUES (?, ?, ?, ?, ?, ?)"
-									cNeueStaffel.execute(sql, data)
+									data = (serien_name, staffel, sender, head_datum[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id)
+									cCursor.execute("INSERT INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url) VALUES (?, ?, ?, ?, ?, ?)", data)
 									dbSerRec.commit()
 
 									if not amanuell:
 										if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
 											Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
-
+								cCursor.close()
+								
 							else:
-								readMarker = open(self.markerFile, "r")
-								infos = []
-								for rawData in readMarker.readlines():
-									mdata = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-									(mSerie, mUrl, mStaffel, mSender) = mdata[0]
-									if mSerie.lower() == serien_name.lower():
-										markerExist = False
-										if re.search(staffel, str(mStaffel), re.S|re.I):
-											markerExist = True
-										elif re.search('Alle', str(mStaffel), re.S|re.I):
-											markerExist = True
-										elif "folgende" in mStaffel:
-											staffeln2 = []
-											staffeln1 = mStaffel.replace("[","").replace("]","").replace("'","").split(",")
-											for x in staffeln1:
-												if x != "Alle" and x != "folgende":
-													staffeln2.append(int(x))
-											if len(staffeln2) and int(staffel) >= max(staffeln2):
-												markerExist = True
-										if not markerExist:
-											cNeueStaffel = dbSerRec.cursor()
-											sql = "SELECT * FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=?"
-											cNeueStaffel.execute(sql, (serien_name, staffel))
-											row = cNeueStaffel.fetchone()
-											if not row:
-												data = (serien_name, staffel, sender, head_datum[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s="+serien_id, "2") 
-												sql = "INSERT INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag) VALUES (?, ?, ?, ?, ?, ?, ?)"
-												cNeueStaffel.execute(sql, data)
-												dbSerRec.commit()
+								cCursor = dbSerRec.cursor()
+								cCursor.execute("SELECT ID, AlleStaffelnAb FROM SerienMarker WHERE LOWER(Serie)=? AND AlleStaffelnAb>=0 AND AlleStaffelnAb<=?", (serien_name.lower(), staffel))				
+								row = cCursor.fetchone()
+								if row:
+									staffeln = []
+									(ID, AlleStaffelnAb) = row
+									cCursor.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
+									cStaffelList = cCursor.fetchall()
+									if len(cStaffelList) > 0:
+										staffeln = zip(*cStaffelList)[0]
+									if not staffel in staffeln:
+										cCursor = dbSerRec.cursor()
+										cCursor.execute("SELECT * FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=?", (serien_name, staffel))
+										row = cCursor.fetchone()
+										if not row:
+											data = (serien_name, staffel, sender, head_datum[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id, "2") 
+											cCursor.execute("INSERT INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag) VALUES (?, ?, ?, ?, ?, ?, ?)", data)
+											dbSerRec.commit()
 
-												if not amanuell:
-													if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
-														Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
-										break
-								readMarker.close()
+											if not amanuell:
+												if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
+													Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1)
+								cCursor.close()
 							
 	def createNewMarker(self, result=True):
-		cNeueStaffel = dbSerRec.cursor()
-		sql = "SELECT Serie, Staffel, StaffelStart FROM NeuerStaffelbeginn WHERE CreationFlag>0"
-		cNeueStaffel.execute(sql)
-		for row in cNeueStaffel:
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT Serie, Staffel, StaffelStart FROM NeuerStaffelbeginn WHERE CreationFlag>0")
+		for row in cCursor:
 			(Serie, Staffel, StaffelStart) = row
 			writeLog("[Serien Recorder] %d. Staffel von '%s' beginnt am %s" % (int(Staffel), Serie, StaffelStart), True) 
 
 		if config.plugins.serienRec.ActionOnNew.value == "2" or config.plugins.serienRec.ActionOnNew.value == "3":
-			writeMarker = open(self.markerFile, "a")
-			sql = "SELECT Serie, MIN(Staffel), Sender, Url FROM NeuerStaffelbeginn WHERE CreationFlag=1 GROUP BY Serie"
-			cNeueStaffel.execute(sql)
-			for row in cNeueStaffel:
+			cCursor.execute("SELECT Serie, MIN(Staffel), Sender, Url FROM NeuerStaffelbeginn WHERE CreationFlag=1 GROUP BY Serie")
+			for row in cCursor:
 				(Serie, Staffel, Sender, Url) = row
-				if Staffel < 10:
-					Staffel = "0"+str(Staffel)
-				#writeMarker.write('"%s" "%s" "[\'%s\']" "[\'%s\']"\n' % (Serie, Url, str(Staffel), Sender))
-				writeMarker.write('"%s" "%s" "%s" "%s"\n' % (Serie, Url, ['folgende', str(Staffel)], ['Alle']))
+				cCursor.execute("INSERT INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender) VALUES (?, ?, ?, 0)", (Serie, Url, Staffel))
+				cCursor.execute("INSERT INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (cCursor.lastrowid, Sender))
 				writeLog("[Serien Recorder] Neuer Marker für '%s' wurde angelegt" % Serie, True)
-			sql = "UPDATE NeuerStaffelbeginn SET CreationFlag=0 WHERE CreationFlag=1"
-			cNeueStaffel.execute(sql)
+			cCursor.execute("UPDATE NeuerStaffelbeginn SET CreationFlag=0 WHERE CreationFlag=1")
 			dbSerRec.commit()
-			writeMarker.close()
+		cCursor.close()
 		return result
+
+	def adjustEPGtimes(self, current_time):
+		cTimer = dbSerRec.cursor()
+		cCursor = dbSerRec.cursor()
+
+		cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>? AND EventID=0", (current_time, ))
+		for row in cCursor:
+			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
+					
+			##############################
+			#
+			# try to get eventID (eit) from epgCache
+			#
+			if config.plugins.serienRec.eventid.value:
+				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
+				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(serien_time)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(serien_time)+(int(config.plugins.serienRec.margin_before.value) * 60))
+				if event_matches and len(event_matches) > 0:
+					for event_entry in event_matches:
+						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+						if config.plugins.serienRec.seriensubdir.value:
+							dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
+						else:
+							dirname = config.plugins.serienRec.savetopath.value
+						writeLog("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
+						eit = int(event_entry[1])
+						new_start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
+						new_end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(config.plugins.serienRec.margin_after.value) * 60)
+						
+						print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
+						recordHandler = NavigationInstance.instance.RecordTimer
+						try:
+							for timer in recordHandler.timer_list:
+								if timer and timer.service_ref:
+									if (timer.begin == int(serien_time)) and (timer.eit != eit):
+										timer.begin = new_start_unixtime
+										timer.end = new_end_unixtime
+										timer.eit = eit
+										NavigationInstance.instance.RecordTimer.timeChanged(timer)
+										sql = "UPDATE AngelegteTimer SET StartZeitstempel=?, EventID=? WHERE StartZeitstempel>? AND ServiceRef=? AND EventID=0"
+										cTimer.execute(sql, (new_start_unixtime, eit, current_time, stbRef))
+										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(new_start_unixtime)))
+										writeLog("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> %s %s @ %s" % (title, show_start, title, webChannel), True)
+										self.countTimerUpdate += 1
+										break
+						except Exception:				
+							print "[Serien Recorder] Modify enigma2 Timer failed:", title, serien_time
+						break
+						
+		dbSerRec.commit()
+					
+		cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>? AND EventID>0", (current_time, ))
+		for row in cCursor:
+			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
+
+			epgmatches = []
+			epgcache = eEPGCache.getInstance()
+			allevents = epgcache.lookupEvent(['IBD',(stbRef, 2, eit, -1)]) or []
+
+			for eventid, begin, duration in allevents:
+				if int(eventid) == int(eit):
+					if int(begin) != (int(serien_time) + (int(config.plugins.serienRec.margin_before.value) * 60)):
+						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+						if config.plugins.serienRec.seriensubdir.value:
+							dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
+						else:
+							dirname = config.plugins.serienRec.savetopath.value
+						writeLog("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
+						start_unixtime = int(begin)
+						start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
+						end_unixtime = int(begin) + int(duration)
+						end_unixtime = int(end_unixtime) + (int(config.plugins.serienRec.margin_after.value) * 60)
+						
+						print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
+						recordHandler = NavigationInstance.instance.RecordTimer
+						try:
+							for timer in recordHandler.timer_list:
+								if timer and timer.service_ref:
+									if timer.eit == eit:
+										timer.begin = start_unixtime
+										timer.end = end_unixtime
+										NavigationInstance.instance.RecordTimer.timeChanged(timer)
+										sql = "UPDATE AngelegteTimer SET StartZeitstempel=? WHERE StartZeitstempel>? AND ServiceRef=? AND EventID=?"
+										cTimer.execute(sql, (start_unixtime, current_time, stbRef, eit))
+										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
+										writeLog("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> %s %s @ %s" % (title, show_start, title, webChannel), True)
+										self.countTimerUpdate += 1
+										break
+						except Exception:				
+							print "[Serien Recorder] Modify enigma2 Timer failed:", title, serien_time
+					break
+					
+		dbSerRec.commit()
+		cCursor.close()
+		cTimer.close()
 		
 	def startCheck3(self, result=True):
 		## hier werden die wunschliste urls eingelesen vom serien marker
-		self.urls = getkMarker()
+		self.urls = getMarker()
 		self.count_url = 0
 		self.countTimer = 0
+		self.countTimerUpdate = 0
 		self.countSerien = self.countMarker()
 		ds = defer.DeferredSemaphore(tokens=1)
 		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,serienTitle,SerieUrl,SerieStaffel,SerieSender).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender in self.urls]
-		finished = defer.DeferredList(downloads).addErrback(self.dataError)
+		finished = defer.DeferredList(downloads).addCallback(self.logStatistik).addErrback(self.dataError)
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
@@ -705,21 +761,13 @@ class serienRecCheckForRecording():
 		for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
 			# umlaute umwandeln
 			serien_name = iso8859_Decode(serien_name)
-			sender = iso8859_Decode(sender)
 			sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
+			sender = iso8859_Decode(sender)
 			title = iso8859_Decode(title)
 
-			# replace S1 to S01
-			if checkInt(staffel):
-				if int(staffel) < 10 and len(staffel) == 1:
-					staffel = str("0"+staffel)
-			if checkInt(episode):
-				if int(episode) < 10 and len(episode) == 1:
-					episode = str("0"+episode)
-
 			# setze label string
-			label_serie = "%s - S%sE%s - %s" % (serien_name, staffel, episode, title)
-			sTitle = "%s - S%sE%s" % (serien_name, staffel, episode)
+			label_serie = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+			sTitle = "%s - S%sE%s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2))
 
 			# formatiere start/end-zeit
 			(day, month) = datum.split('.')
@@ -764,13 +812,13 @@ class serienRecCheckForRecording():
 			#
 			# ueberprueft ob der sender zum sender von der Serie aus dem serien marker passt.
 			#
-			serieAllowed2 = False
-			if re.search(sender, str(allowedSender), re.S|re.I):
-				serieAllowed2 = True
-			elif re.search('Alle', str(allowedSender), re.S|re.I):
-				serieAllowed2 = True
-
-			if not serieAllowed2:
+			serieAllowed = False
+			if 'Alle' in allowedSender:
+				serieAllowed = True
+			elif sender in allowedSender:
+				serieAllowed = True
+				
+			if not serieAllowed:
 				writeLogFilter("allowedSender", "[Serien Recorder] ' %s ' - Sender nicht erlaubt -> %s -> %s" % (label_serie, sender, allowedSender))
 				continue
 				
@@ -781,46 +829,36 @@ class serienRecCheckForRecording():
 			# ueberprueft welche staffel(n) erlaubt sind
 			#
 			serieAllowed = False
-			if re.search(staffel, str(staffeln), re.S|re.I):
-				serieAllowed = True
-			elif re.search('Alle', str(staffeln), re.S|re.I):
-				serieAllowed = True
-			elif "folgende" in staffeln:
-				staffeln2 = []
-				staffeln1 = staffeln.replace("[","").replace("]","").replace("'","").split(",")
-				for x in staffeln1:
-					if x != "Alle" and x != "folgende":
-						staffeln2.append(int(x))
-				print staffel, max(staffeln2)
-				if len(staffeln2) and int(staffel) >= max(staffeln2):
-					serieAllowed = True
-
-			elif re.search('Manuell', str(staffeln), re.S|re.I):
+			if -2 in staffeln:			# 'Manuell'
 				serieAllowed = False
-
-			if not serieAllowed:
-				writeLogFilter("allowedEpisodes", "[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' S%sE%s ' -> ' %s '" % (label_serie, staffel, episode, staffeln))
-				continue
+			elif int(staffel) in staffeln:
+				serieAllowed = True
+			elif -1 in staffeln:		# 'folgende'
+				if int(staffel) >= max(staffeln):
+					serieAllowed = True
 				
+			if not serieAllowed:
+				writeLogFilter("allowedEpisodes", "[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' S%sE%s ' -> ' %s '" % (label_serie, str(staffel).zfill(2), str(episode).zfill(2), str(staffeln).replace('-2','Manuell').replace('-1','folgende')))
+				continue
 
 			##############################
 			
 			# erstellt das serien verzeichnis
 			mkdir = False
 			if config.plugins.serienRec.seriensubdir.value:
-				dirname = config.plugins.serienRec.savetopath.value+serien_name+"/"
-				if not fileExists(config.plugins.serienRec.savetopath.value+serien_name+"/"):
+				dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
+				if not fileExists("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)):
 					print "[Serien Recorder] erstelle Subdir %s" % config.plugins.serienRec.savetopath.value+serien_name+"/"
 					writeLog("[Serien Recorder] erstelle Subdir: ' %s%s%s '" % (config.plugins.serienRec.savetopath.value, serien_name, "/"))
-					os.makedirs(config.plugins.serienRec.savetopath.value+serien_name+"/")
-					if fileExists("/var/volatile/tmp/serienrecorder/"+serien_name+".png") and not fileExists("/var/volatile/tmp/serienrecorder/"+serien_name+".jpg"):
+					os.makedirs("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name))
+					if fileExists("/var/volatile/tmp/serienrecorder/%s.png" % (serien_name)) and not fileExists("/var/volatile/tmp/serienrecorder/%s.jpg" % (serien_name)):
 						#print "vorhanden...:", "/var/volatile/tmp/serienrecorder/"+serien_name+".png"
-						shutil.copy("/var/volatile/tmp/serienrecorder/"+serien_name+".png",config.plugins.serienRec.savetopath.value+serien_name+"/"+serien_name+".jpg")
+						shutil.copy("/var/volatile/tmp/serienrecorder/%s.png" % serien_name, "%s%s/%s.jpg" % (config.plugins.serienRec.savetopath.value, serien_name, serien_name))
 					mkdir = True
 				else:
-					if fileExists("/var/volatile/tmp/serienrecorder/"+serien_name+".png") and not fileExists("/var/volatile/tmp/serienrecorder/"+serien_name+".jpg"):
+					if fileExists("/var/volatile/tmp/serienrecorder/%s.png" % serien_name) and not fileExists("/var/volatile/tmp/serienrecorder/%s.jpg" % serien_name):
 						#print "vorhanden...:", "/var/volatile/tmp/serienrecorder/"+serien_name+".png"
-						shutil.copy("/var/volatile/tmp/serienrecorder/"+serien_name+".png",config.plugins.serienRec.savetopath.value+serien_name+"/"+serien_name+".jpg")
+						shutil.copy("/var/volatile/tmp/serienrecorder/%s.png" % serien_name, "%s%s/%s.jpg" % (config.plugins.serienRec.savetopath.value, serien_name, serien_name))
 			else:
 				dirname = config.plugins.serienRec.savetopath.value
 
@@ -830,10 +868,10 @@ class serienRecCheckForRecording():
 			#
 			# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 			#
-			check_SeasonEpisode = "S%sE%s" % (staffel, episode)
+			check_SeasonEpisode = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
 			# check im added file
-			if checkAlreadyAdded(serien_name+' '+check_SeasonEpisode):
+			if checkAlreadyAdded(serien_name, staffel, episode):
 				writeLogFilter("added", "[Serien Recorder] ' %s ' - Staffel/Episode bereits in added vorhanden -> ' %s '" % (label_serie, check_SeasonEpisode))
 				if not config.plugins.serienRec.recordAll.value: 
 					continue
@@ -859,14 +897,13 @@ class serienRecCheckForRecording():
 			eit = 0
 			if config.plugins.serienRec.eventid.value:
 				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, start_unixtime+config.plugins.serienRec.margin_before.value, -1)], stbRef, serien_name, start_unixtime+config.plugins.serienRec.margin_before.value)
+				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60))
 				print "event matches %s" % len(event_matches)
 				if event_matches and len(event_matches) > 0:
 					for event_entry in event_matches:
 						print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
 						eit = int(event_entry[1])
-						start_unixtime = int(event_entry[3])
-						start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
+						start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
 						break
 
 			##############################
@@ -903,13 +940,13 @@ class serienRecCheckForRecording():
 			#
 			# Setze Timer
 			#
-			if not self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode ):
-				if timer_backup.size() != 0:
+			if not self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode):
+				if len(timer_backup) != 0:
 					show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 					( title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode ) = timer_backup
 					show_start_old = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 					writeLog("[Serien Recorder] ' %s ' - Wiederholung konnte nicht programmiert werden -> %s -> Versuche Timer Backup -> %s" % (label_serie, show_start, show_start_old), True)
-					self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode )
+					self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode)
 				
 		### end of for loop
 		
@@ -919,25 +956,38 @@ class serienRecCheckForRecording():
 			writeLog("[Serien Recorder] ' %s ' - Keine Wiederholung gefunden! -> %s" % (label_serie, show_start), True)
 			# programmiere Timer
 			self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode)
-			
+
+	def logStatistik(self, result=True):
+		# gleiche alte Timer mit EPG ab
+		current_time = int(time.time())
+		if config.plugins.serienRec.eventid.value:
+			self.adjustEPGtimes(current_time)
+	
+		# Datenbank aufräumen
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("VACUUM")
+		cCursor.close()
+
 		# Statistik
-		if int(self.count_url) == int(self.countSerien):
-			self.speedEndTime = time.clock()
-			speedTime = (self.speedEndTime-self.speedStartTime)
+		self.speedEndTime = time.clock()
+		speedTime = (self.speedEndTime-self.speedStartTime)
+		if config.plugins.serienRec.eventid.value:
+			writeLog("[Serien Recorder] %s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate)), True)
+			print "[Serien Recorder] %s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate))
+		else:
 			writeLog("[Serien Recorder] %s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt." % (str(self.countSerien), str(self.countTimer)), True)
 			print "[Serien Recorder] %s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt." % (str(self.countSerien), str(self.countTimer))
-			writeLog("---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime), True)
-			print "---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime)
-			
-			
-			# in den deep-standby fahren.
-			if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.afterAutocheck.value and not self.manuell:
-				print "[Serien Recorder] gehe in Deep-Standby"
-				writeLog("[Serien Recorder] gehe in Deep-Standby")
-				self.session.open(TryQuitMainloop, 1)
-
+		writeLog("---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime), True)
+		print "---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime)
+		
+		# in den deep-standby fahren.
+		if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.afterAutocheck.value and not self.manuell:
+			print "[Serien Recorder] gehe in Deep-Standby"
+			writeLog("[Serien Recorder] gehe in Deep-Standby")
+			self.session.open(TryQuitMainloop, 1)
+		return result
 				
-	def doTimer(self, current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode ):
+	def doTimer(self, current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode):
 		##############################
 		#
 		# CHECK
@@ -957,61 +1007,47 @@ class serienRecCheckForRecording():
 			
 		# versuche timer anzulegen
 		# setze strings für addtimer
-		title = "S%sE%s - %s" % (staffel, episode, title)
-		result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, title, 0, self.justplay, 3, dirname, self.tags, 0, None, eit=eit, recordfile=".ts")
+		result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), 0, self.justplay, 3, dirname, self.tags, 0, None, eit=eit, recordfile=".ts")
 		if result["result"]:
 			self.countTimer += 1
 			# Eintrag in das timer file
-			self.addRecTimer(serien_name, title, str(start_unixtime), stbRef, webChannel)
+			self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit)
 			# Eintrag in das added file
-			addAlreadyAdded(serien_name+' '+check_SeasonEpisode)
 			writeLog("[Serien Recorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s" % (label_serie, show_start, label_serie, stbChannel), True)
 			return True
-			
+		
+		konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
+		if config.plugins.serienRec.showMessageOnConflicts.value:
+			Notifications.AddPopup(_("[Serien Recorder]\nACHTUNG!  -  %s" % konflikt), MessageBox.TYPE_INFO, timeout=-1)
 		print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
-		konflikt = result["message"]
-		writeLog("[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, str(konflikt)), True)
+		writeLog("[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"]), True)
 		return False
 			
-	def checkMarker(self, mSerie):
-		readMarker = open(self.markerFile, "r")
-		for rawData in readMarker.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(serie, url, staffel, sender) = data[0]
-			if serie.lower() == mSerie.lower():
-				readMarker.close()
-				return True
-		readMarker.close()
-		return False
-
-	def checkMarkerStaffel(self, mSerie):
-		readMarker = open(self.markerFile, "r")
-		infos = []
-		for rawData in readMarker.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(serie, url, staffel, sender) = data[0]
-			if serie.lower() == mSerie.lower():
-				readMarker.close()
-				staffel = eval(staffel)
-				return staffel
-		readMarker.close()
+	def checkMarker(self, Serie):
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (Serie.lower(), ))
+		row = cCursor.fetchone()
+		cCursor.close()
+		if row:
+			return True
+		else:	
+			return False
 
 	def countMarker(self):
-		count = 0
-		readMarker = open(self.markerFile, "r")
-		for rawData in readMarker.readlines():
-			count += 1
-		readMarker.close()
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT Count(*) FROM SerienMarker")
+		(count,) = cCursor.fetchone()	
+		cCursor.close()
 		return count
 
 	def readSenderListe(self):
 		fSender = []
-		cChannels = dbSerRec.cursor()
-		sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels"
-		cChannels.execute(sql)
-		for row in cChannels:
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels")
+		for row in cCursor:
 			(webChannel, stbChannel, stbRef, status) = row
 			fSender.append((webChannel, stbChannel, stbRef, status))
+		cCursor.close()
 		return fSender
 		
 	def checkSender(self, mSlist, mSender):
@@ -1024,31 +1060,32 @@ class serienRecCheckForRecording():
 			status = "0"
 		return (webChannel, stbChannel, stbRef, status)
 
-	def addRecTimer(self, serien_name, title, start_time, stbRef, webChannel):
-		found = False
-		readTimer = open(self.timerFile, "r")
-		for rawData in readTimer.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			if data:
-				(serie, tTitle, tStart_time, tRref, twebChannel) = data[0]
-				if serie == serien_name and int(tStart_time) == int(start_time):
-					found = True
-					break
-		readTimer.close()
-
-		if not found:
-			writeTimer = open(self.timerFile, "a")
-			writeTimer.write('"%s" "%s" "%s" "%s" "%s"\n' % (serien_name, title, start_time, stbRef, webChannel))
-			writeTimer.close()
-			print "[Serien Recorder] Timer angelegt: %s %s" % (serien_name, title)
-			writeLogFilter("timerDebug", "[Serien Recorder] Timer angelegt: %s %s" % (serien_name, title))
+	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit):
+		cCursor = dbSerRec.cursor()
+		sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND ServiceRef=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
+		#sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND ?<=StartZeitstempel<=?"
+		cCursor.execute(sql, (serien_name.lower(), stbRef, int(start_time) + (int(config.plugins.serienRec.margin_before.value) * 60) - (int(EPGTimeSpan) * 60), int(start_time) + (int(config.plugins.serienRec.margin_before.value) * 60) + (int(EPGTimeSpan) * 60)))
+		row = cCursor.fetchone()
+		if row:
+			sql = "UPDATE AngelegteTimer SET EventID=? WHERE LOWER(Serie)=? AND ServiceRef=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
+			cCursor.execute(sql, (eit, serien_name.lower(), stbRef, int(start_time) + (int(config.plugins.serienRec.margin_before.value) * 60) - (int(EPGTimeSpan) * 60), int(start_time) + (int(config.plugins.serienRec.margin_before.value) * 60) + (int(EPGTimeSpan) * 60)))
+			print "[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+			writeLogFilter("timerDebug", "[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
 		else:
-			print "[Serien Recorder] Timer bereits vorhanden: %s %s" % (serien_name, title)
-			writeLogFilter("timerDebug", "[Serien Recorder] Timer bereits vorhanden: %s %s" % (serien_name, title))
-
+			cCursor.execute("INSERT INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit))
+			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+			writeLogFilter("timerDebug", "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+		dbSerRec.commit()
+		cCursor.close()
+		
 	def dataError(self, error):
 		print "[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)" % error
 		writeLog("[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)" % error, True)
+
+	def checkError(self, error):
+		print "[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)" % error
+		writeLog("[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)" % error, True)
+		self.close()
 
 class serienRecAddTimer():
 
@@ -1089,7 +1126,7 @@ class serienRecAddTimer():
 		return timers		
 
 	@staticmethod
-	def removeTimerEntry(serien_name, start_time):
+	def removeTimerEntry(serien_name, start_time, eit=0):
 
 		recordHandler = NavigationInstance.instance.RecordTimer
 		timers = []
@@ -1097,15 +1134,19 @@ class serienRecAddTimer():
 		print "[Serien Recorder] try to temove enigma2 Timer:", serien_name, start_time
 		for timer in recordHandler.timer_list:
 			if timer and timer.service_ref:
+				if eit > 0:
+					if timer.eit == eit:
+						recordHandler.removeEntry(timer)
+						removed = True
+						break
 				if str(timer.name) == serien_name and int(timer.begin) == int(start_time):
 					#if str(timer.service_ref) == entry_dict['channelref']:
-					removed = "removed"
 					recordHandler.removeEntry(timer)
 					removed = True
 		return removed
 
 	@staticmethod	
-	def addTimer(session, serviceref, begin, end, name, description, disabled, justplay, afterevent, dirname, tags, repeated, logentries=None, eit=0, recordfile=None):
+	def addTimer(session, serviceref, begin, end, name, description, disabled, justplay, afterevent, dirname, tags, repeated, logentries=None, eit=0, recordfile=None, forceWrite=True):
 
 		recordHandler = NavigationInstance.instance.RecordTimer
 		#config.plugins.serienRec.seriensubdir
@@ -1170,7 +1211,8 @@ class serienRecAddTimer():
 		#if not config.plugins.skyrecorder.silent_timer_mode or config.plugins.skyrecorder.silent_timer_mode.value == False:
 		#message = session.open(MessageBox, _("%s - %s added.\nZiel: %s") % (name, description, dirname), MessageBox.TYPE_INFO, timeout=3)
 		print "[Serien Recorder] Versuche Timer anzulegen:", name, dirname
-		writeLog("[Serien Recorder] Versuche Timer anzulegen: ' %s - %s '" % (name, dirname))
+		if forceWrite:
+			writeLog("[Serien Recorder] Versuche Timer anzulegen: ' %s - %s '" % (name, dirname))
 		return {
 			"result": True,
 			"message": "Timer '%s' added" % name,
@@ -1284,21 +1326,6 @@ class serienRecMain(Screen):
 		self.loading = True
 		self.page = 0
 
-		initDB()
-		self.db = dbSerRec.cursor()
-		
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-		if not fileExists(self.markerFile):
-			open(self.markerFile, 'w').close()
-
-		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
-		if not fileExists(self.timerFile):
-			open(self.timerFile, 'w').close()
-
-		self.addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
-		if not fileExists(self.addedFile):
-			open(self.addedFile, 'w').close()
-
 		self['cover'] = Pixmap()
 		self['title'] = Label("Loading infos from Web...")
 		self['headline'] = Label("")
@@ -1314,6 +1341,7 @@ class serienRecMain(Screen):
 	def importFromFile(self):
 		ImportFilesToDB()
 		self['title'].setText("File-Import erfolgreich ausgeführt")
+		self['title'].instance.setForegroundColor(parseColor("white"))
 		
 	def showProposalDB(self):
 		self.session.open(serienRecShowProposal)
@@ -1412,106 +1440,128 @@ class serienRecMain(Screen):
 				
 				# encode utf-8
 				serien_name = iso8859_Decode(serien_name)
+				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				sender = iso8859_Decode(sender)
-				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				title = iso8859_Decode(title)
 
-				if checkInt(staffel):
-					if int(staffel) < 10 and len(staffel) == 1:
-						staffel = str("0"+staffel)
-				if checkInt(episode):
-					if int(episode) < 10 and len(episode) == 1:
-						episode = str("0"+episode)
-				title = "S%sE%s - %s" % (staffel, episode, title)
-				if self.checkTimer(serien_name, title, start_time, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')):
+				if self.checkTimer(serien_name, staffel, episode, title, start_time, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')):
 					aufnahme = True
-					
+				else:
+					##############################
+					#
+					# try to get eventID (eit) from epgCache
+					#
+					if config.plugins.serienRec.eventid.value:
+						cSener_list = self.checkSender(sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)',''))
+						if len(cSener_list) != 0:
+							(webChannel, stbChannel, stbRef, status) = cSener_list[0]
+
+						# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
+						event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_time)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_time)+(int(config.plugins.serienRec.margin_before.value) * 60))
+						print "event matches %s" % len(event_matches)
+						if event_matches and len(event_matches) > 0:
+							for event_entry in event_matches:
+								print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+								start_time = int(event_entry[3])
+								if self.checkTimer(serien_name, staffel, episode, title, start_time, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')):
+									aufnahme = True
+								break
+				
 				if self.checkMarker(serien_name):
 					serieAdded = True
 
+				staffel = str(staffel).zfill(2)
+				episode = str(episode).zfill(2)
+
+				##############################
+				#
+				# CHECK
+				#
+				# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
+				#
+				if config.plugins.serienRec.seriensubdir.value:
+					dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
+				else:
+					dirname = config.plugins.serienRec.savetopath.value
+				check_SeasonEpisode = "S%sE%s" % (staffel, episode)
+
+				# check hdd
+				bereits_vorhanden = False
+				if fileExists(dirname):
+					dirs = os.listdir(dirname)
+					for dir in dirs:
+						if re.search(serien_name+'.*?'+check_SeasonEpisode, dir):
+							bereits_vorhanden = True
+							break
+
+				title = "S%sE%s - %s" % (staffel, episode, title)
 				if self.pNeu == 0:
-					self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,serien_id))
+					self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 				elif self.pNeu == 1:
 					if int(neu) == 1:
-						self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,serien_id))
+						self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 				elif self.pNeu == 2:
 					cSener_list = self.checkSender(sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)',''))
 					if len(cSener_list) != 0:
 						(webChannel, stbChannel, stbRef, status) = cSener_list[0]
 						if int(status) == 1:
-							self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme, serieAdded,serien_id))
+							self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 
 		print "[Serien Recorder] Es wurden %s Serie(n) gefunden" % len(self.daylist)
 		
 		if len(self.daylist) != 0:
 			if head_datum:
 				self['title'].setText("Es wurden für - %s - %s Serie(n) gefunden." % (head_datum[0], len(self.daylist)))
+				self['title'].instance.setForegroundColor(parseColor("white"))
 			else:
 				self['title'].setText("Es wurden für heute %s Serie(n) gefunden." % len(self.daylist))
+				self['title'].instance.setForegroundColor(parseColor("white"))
 			self.chooseMenuList.setList(map(self.buildList, self.daylist))
 			self.loading = False
 			self.getCover()
 		else:
 			if int(self.page) < 1 and not int(self.page) == 0:
 				self.page -= 1
-			self.chooseMenuList.setList(map(self.buildList, self.daylist))
 			self['title'].setText("Es wurden für heute %s Serie(n) gefunden." % len(self.daylist))
+			self['title'].instance.setForegroundColor(parseColor("white"))
 			print "[Serien Recorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
+			self.chooseMenuList.setList(map(self.buildList, self.daylist))
 
 	def buildList(self, entry):
-		(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,serien_id) = entry
-		#entry = [(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,serien_id)]
-		dirNeu = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/neu.png"
-		imageNeu = loadPNG(dirNeu)
-		dirTimer = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/timer.png"
-		imageTimer = loadPNG(dirTimer)
-		#folge = "S%sE%s" % (staffel,episode)
+		(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id) = entry
+		#entry = [(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id)]
+		
+		imageNone = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/black.png"
+		imageNeu = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/neu.png"
+		imageTimer = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/timer.png"
+		imageHDD = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/hdd_24x24.png"
 		
 		if serieAdded:
 			setFarbe = self.green
 		else:
 			setFarbe = self.white
-			if checkInt(episode):
+			if str(episode).isdigit():
 				if int(episode) == 1:
 					setFarbe = self.red
-					
-		if int(neu) == 1 and aufnahme:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 5, 30, 17, imageNeu),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 28, 30, 17, imageTimer),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
-				]
-		elif int(neu) == 1 and not aufnahme:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 5, 30, 17, imageNeu),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
-				]
-		elif int(neu) == 0 and aufnahme:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 28, 30, 17, imageTimer),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
-				]
-		elif int(neu) == 0 and not aufnahme:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
-				]
-			#entry.append((eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')))
-			#entry.append((eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow))
-			#entry.append((eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe))
-			#entry.append((eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow))
-			#return entry
+
+		if int(neu) == 0:					
+			imageNeu = imageNone
+			
+		if bereits_vorhanden:
+			imageHDDTimer = imageHDD
+		elif aufnahme:
+			imageHDDTimer = imageTimer
+		else:
+			imageHDDTimer = imageNone
+		
+		return [entry,
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 7, 30, 22, loadPNG(imageNeu)),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 30, 30, 22, loadPNG(imageHDDTimer)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
+			]
 
 	def keyOK(self):
 		if self.modus == "list":
@@ -1525,25 +1575,19 @@ class serienRecMain(Screen):
 			serien_neu = self['list'].getCurrent()[0][2]
 			serien_url = self['list'].getCurrent()[0][5]
 			serien_name = self['list'].getCurrent()[0][6]
-			serien_id = self['list'].getCurrent()[0][13]
-			
-			serien_id = "http://www.wunschliste.de/epg_print.pl?s="+serien_id
+			serien_id = self['list'].getCurrent()[0][14]
 
-			self.db.execute("SELECT * FROM SerienMarker WHERE Serie=?", (serien_name,))
-											#sql = "SELECT * FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=?"
-											#cNeueStaffel.execute(sql, (serien_name, staffel))
-			checkExist = self.db.fetchone()
-			if checkExist is None:
-				self['title'].instance.setForegroundColor(parseColor("green"))
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+			row = cCursor.fetchone()
+			if not row:
+				cCursor.execute("INSERT INTO SerienMarker (Serie, Url, AlleStaffelnAb) VALUES (?, ?, 0)", (serien_name, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id))
 				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
-
-				# ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, VorlaufZeit, Nachlaufzeit, AufnahmeZeitVon, AufnahmezeitBis, AnzahlWiederholungen
-				self.db.execute('INSERT INTO SerienMarker VALUES (NULL,?,?,?,?,?,?,?,?,?,?)', (serien_name, serien_id, 'Alle', 'Alle', '', '', '', '', '', ''))
-				dbSerRec.commit()
-
+				self['title'].instance.setForegroundColor(parseColor("green"))
 			else:
-				self['title'].instance.setForegroundColor(parseColor("red"))
 				self['title'].setText("Serie '- %s -' existiert bereits im Serien Marker." % serien_name)
+				self['title'].instance.setForegroundColor(parseColor("red"))
+			cCursor.close()
 
 		elif self.modus == "popup":
 			status = self['popup'].getCurrent()[0][0]
@@ -1562,6 +1606,9 @@ class serienRecMain(Screen):
 			config.plugins.serienRec.screenmode.save()
 			config.plugins.serienRec.screeplaner.save()
 			configfile.save()
+			self.chooseMenuList.setList(map(self.buildList, []))
+			self['title'].instance.setForegroundColor(parseColor("white"))
+			self['title'].setText("Loading infos from Web...")
 			self.readWebpage()
 
 	def getCover(self):
@@ -1575,7 +1622,7 @@ class serienRecMain(Screen):
 		url = self['list'].getCurrent()[0][5]
 		serien_name = self['list'].getCurrent()[0][6]
 
-		serien_nameCover = "/tmp/serienrecorder/"+serien_name+".png"
+		serien_nameCover = "/tmp/serienrecorder/%s.png" % serien_name
 
 		if not fileExists("/tmp/serienrecorder/"):
 			shutil.os.mkdir("/tmp/serienrecorder/")
@@ -1646,48 +1693,37 @@ class serienRecMain(Screen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 800, 30, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name)
 			]
 
-	def checkTimer(self, xSerie, xTitle, xStart_time, xWebchannel):
-		if not fileExists(self.timerFile):
-			open(self.timerFile, 'w').close()
-
-		#print xSerie, xStart_time, xWebchannel
-		timerList = []
-		timerFile_leer = os.path.getsize(self.timerFile)
-		if not timerFile_leer == 0:
-			readTimer = open(self.timerFile, "r")
-			for rawData in readTimer.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie, title, start_time, sRef, webChannel) = data[0]
-				#print serie, title, start_time, sRef, webChannel
-				if xSerie.lower() == serie.lower() and int(xStart_time) == (int(start_time) + (config.plugins.serienRec.margin_before.value * 60)) and webChannel.lower() == xWebchannel.lower():
-					readTimer.close()
-					return True
-			readTimer.close()
-			return False
+	def checkTimer(self, serie, staffel, episode, title, start_time, webchannel):
+		cCursor = dbSerRec.cursor()
+		sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=? AND LOWER(webChannel)=?"
+		cCursor.execute(sql, (serie.lower(), (int(start_time) - (int(config.plugins.serienRec.margin_before.value) * 60)), webchannel.lower()))
+		if cCursor.fetchone():
+			cCursor.close()
+			return True
 		else:
+			cCursor.close()
 			return False
 
 	def checkSender(self, mSender):
 		fSender = []
-		cChannels = dbSerRec.cursor()
-		sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels WHERE WebChannel=?"
-		cChannels.execute(sql, (mSender,))
-		row = cChannels.fetchone()
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (mSender.lower(),))
+		row = cCursor.fetchone()
 		if row:
 			(webChannel, stbChannel, stbRef, status) = row
 			fSender.append((webChannel, stbChannel, stbRef, status))
+		cCursor.close()
 		return fSender
 
-	def checkMarker(self, mSerie):
-		readMarker = open(self.markerFile, "r")
-		for rawData in readMarker.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(serie, url, staffel, sender) = data[0]
-			if serie.lower() == mSerie.lower():
-				readMarker.close()
-				return True
-		readMarker.close()
-		return False
+	def checkMarker(self, Serie):
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (Serie.lower(),))
+		row = cCursor.fetchone()
+		cCursor.close()
+		if row:
+			return True
+		else:
+			return False
 
 	def keyGreen(self):
 		self.session.open(serienRecMainChannelEdit)
@@ -1701,7 +1737,7 @@ class serienRecMain(Screen):
 
 	def keyCheck(self):
 		self.session.open(serienRecLogReader, True)
-
+		
 	def keyLeft(self):
 		if self.modus == "list":
 			self['list'].pageUp()
@@ -1732,11 +1768,17 @@ class serienRecMain(Screen):
 
 	def nextPage(self):
 		self.page += 1
+		self.chooseMenuList.setList(map(self.buildList, []))
+		self['title'].instance.setForegroundColor(parseColor("white"))
+		self['title'].setText("Loading infos from Web...")
 		self.readWebpage()
 
 	def backPage(self):
 		if not self.page < 1:
 			self.page -= 1
+		self.chooseMenuList.setList(map(self.buildList, []))
+		self['title'].instance.setForegroundColor(parseColor("white"))
+		self['title'].setText("Loading infos from Web...")
 		self.readWebpage()
 
 	def keyCancel(self):
@@ -1749,6 +1791,9 @@ class serienRecMain(Screen):
 			self.modus = "list"
 
 	def dataError(self, error):
+		self['title'].setText("Suche auf 'Wunschliste.de' erfolglos")
+		self['title'].instance.setForegroundColor(parseColor("white"))
+		print "[Serien Recorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
 		print error
 
 class serienRecMainChannelEdit(Screen):
@@ -1823,12 +1868,14 @@ class serienRecMainChannelEdit(Screen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 
-		cChannels = dbSerRec.cursor()
-		cChannels.execute("SELECT * FROM Channels")
-		row = cChannels.fetchone()
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT * FROM Channels")
+		row = cCursor.fetchone()
 		if row:
+			cCursor.close()
 			self.onLayoutFinish.append(self.showChannels)
 		else:
+			cCursor.close()
 			self.stbChlist = buildSTBchannellist()
 			self.onLayoutFinish.append(self.readWebChannels)
 
@@ -1843,10 +1890,9 @@ class serienRecMainChannelEdit(Screen):
 
 	def showChannels(self):
 		self.serienRecChlist = []
-		cChannels = dbSerRec.cursor()
-		sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels"
-		cChannels.execute(sql)
-		for row in cChannels:
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels")
+		for row in cCursor:
 			(webSender, servicename, serviceref, status) = row
 			self.serienRecChlist.append((webSender, servicename, status))
 
@@ -1855,7 +1901,8 @@ class serienRecMainChannelEdit(Screen):
 			self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
 		else:
 			print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
-
+		cCursor.close()
+		
 	def readWebChannels(self):
 		print "[SerienRecorder] call webpage.."
 		self['title'].setText("Read Web-Channels...")
@@ -1877,28 +1924,27 @@ class serienRecMainChannelEdit(Screen):
 			self.serienRecChlist = []
 			if len(web_chlist) != 0:
 				self['title'].setText("Build Channels-List...")
-				cChannels = dbSerRec.cursor()
-				sqlCheck = "SELECT * FROM Channels WHERE WebChannel=?"
-				sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannelHD, ServiceRefHD, Erlaubt) VALUES (?, ?, ?, ?)"
+				cCursor = dbSerRec.cursor()
+				sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)"
 				for webSender in web_chlist:
 					#print webSender
-					cChannels.execute(sqlCheck, (webSender,))
-					row = cChannels.fetchone()
+					cCursor.execute("SELECT * FROM Channels WHERE LOWER(WebChannel)=?", (webSender.lower(),))
+					row = cCursor.fetchone()
 					if not row:
 						found = False
 						for servicename,serviceref in self.stbChlist:
 							#print servicename
 							if re.search(webSender.lower(), servicename.lower(), re.S):
-								cChannels.execute(sql, (webSender, servicename, serviceref, 1))
+								cCursor.execute(sql, (webSender, servicename, serviceref, 1))
 								#print webSender, servicename
 								self.serienRecChlist.append((webSender, servicename, "1"))
 								found = True
 								break
 						if not found:
-							cChannels.execute(sql, (webSender, "", "", 0))
+							cCursor.execute(sql, (webSender, "", "", 0))
 							self.serienRecChlist.append((webSender, "", "0"))
 				dbSerRec.commit()
-
+				cCursor.close()
 			else:
 				print "[SerienRecorder] webChannel list leer.."
 
@@ -1915,22 +1961,16 @@ class serienRecMainChannelEdit(Screen):
 
 	def buildList(self, entry):
 		(webSender, stbSender, status) = entry
-		minus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
-		plus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
-		imageMinus = loadPNG(minus)
-		imagePlus = loadPNG(plus)
 		if int(status) == 0:		
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imageMinus),
-				(eListboxPythonMultiContent.TYPE_TEXT, 65, 0, 350, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 450, 0, 350, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, stbSender)
-				]
+			imageStatus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
 		else:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imagePlus),
-				(eListboxPythonMultiContent.TYPE_TEXT, 65, 0, 350, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 450, 0, 350, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, stbSender)
-				]
+			imageStatus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
+			
+		return [entry,
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, loadPNG(imageStatus)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 65, 0, 350, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
+			(eListboxPythonMultiContent.TYPE_TEXT, 450, 0, 350, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, stbSender)
+			]
 
 	def buildList_popup(self, entry):
 		(servicename,serviceref) = entry
@@ -1965,13 +2005,14 @@ class serienRecMainChannelEdit(Screen):
 			stbSender = self['popup_list'].getCurrent()[0][0]
 			stbRef = self['popup_list'].getCurrent()[0][1]
 			print "[SerienRecorder] select:", chlistSender, stbSender, stbRef
-			cChannels = dbSerRec.cursor()
-			sql = "UPDATE Channels SET STBChannelHD=?, ServiceRefHD=?, Erlaubt=? WHERE WebChannel=?"
+			cCursor = dbSerRec.cursor()
+			sql = "UPDATE Channels SET STBChannel=?, ServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?"
 			if stbSender != "":
-				cChannels.execute(sql, (stbSender, stbRef, 1, chlistSender))
+				cCursor.execute(sql, (stbSender, stbRef, 1, chlistSender.lower()))
 			else:
-				cChannels.execute(sql, (stbSender, stbRef, 0, chlistSender))
+				cCursor.execute(sql, (stbSender, stbRef, 0, chlistSender.lower()))
 			dbSerRec.commit()
+			cCursor.close()
 			self.showChannels()
 				
 	def keyRed(self):
@@ -1985,27 +2026,27 @@ class serienRecMainChannelEdit(Screen):
 			sender_status = self['list'].getCurrent()[0][2]
 			print sender_status
 
-			cChannels = dbSerRec.cursor()
-			sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels WHERE WebChannel=?"
-			cChannels.execute(sql, (chlistSender,))
-			row = cChannels.fetchone()
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (chlistSender.lower(),))
+			row = cCursor.fetchone()
 			if row:
 				(webSender, servicename, serviceref, status) = row
-				sql = "UPDATE Channels SET Erlaubt=? WHERE WebChannel=?"
+				sql = "UPDATE Channels SET Erlaubt=? WHERE LOWER(WebChannel)=?"
 				if int(status) == 0:
-					cChannels.execute(sql, (1, chlistSender))
+					cCursor.execute(sql, (1, chlistSender.lower()))
 					print "[SerienRecorder] change to:", webSender, servicename, serviceref, "1"
 					self['title'].instance.setForegroundColor(parseColor("red"))
 					self['title'].setText("")
 					self['title'].setText("Sender '- %s -' wurde aktiviert." % webSender)
 				else:
-					cChannels.execute(sql, (0, chlistSender))
+					cCursor.execute(sql, (0, chlistSender.lower()))
 					print "[SerienRecorder] change to:",webSender, servicename, serviceref, "0"
 					self['title'].instance.setForegroundColor(parseColor("red"))
 					self['title'].setText("")
 					self['title'].setText("Sender '- %s -' wurde deaktiviert." % webSender)
 				dbSerRec.commit()
 				
+			cCursor.close()	
 			self['title'].instance.setForegroundColor(parseColor("white"))
 			self.showChannels()
 
@@ -2013,7 +2054,7 @@ class serienRecMainChannelEdit(Screen):
 		self.session.openWithCallback(self.channelReset, MessageBox, _("Sender-Liste zurücksetzen ?"), MessageBox.TYPE_YESNO)
 		
 	def channelReset(self, answer):
-		if answer == True:
+		if answer:
 			print "[Serien Recorder] channel-list reset..."
 
 			self.stbChlist = buildSTBchannellist()
@@ -2131,7 +2172,6 @@ class serienRecMarker(Screen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
 		self.searchTitle = ""
 		self.serien_nameCover = "nix"
 		self.loading = True
@@ -2157,7 +2197,7 @@ class serienRecMarker(Screen):
 		serien_name = self['list'].getCurrent()[0][0]
 		url = self['list'].getCurrent()[0][1]
 
-		serien_nameCover = "/tmp/serienrecorder/"+serien_name+".png"
+		serien_nameCover = "/tmp/serienrecorder/%s.png" % serien_name
 
 		if not fileExists("/tmp/serienrecorder/"):
 			shutil.os.mkdir("/tmp/serienrecorder/")
@@ -2202,46 +2242,56 @@ class serienRecMarker(Screen):
 		self.serien_nameCover = serien_nameCover
 
 	def readSerienMarker(self):
-		if not fileExists(self.markerFile):
-			open(self.markerFile, 'w').close()
-
 		markerList = []
-		markerFile_leer = os.path.getsize(self.markerFile)
-		if not markerFile_leer == 0:
-			readMarker = open(self.markerFile, "r")
-			for rawData in readMarker.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie, url, staffeln, sendern) = data[0]
-				markerList.append((serie, url, staffeln, sendern))
-
-			self['title'].setText("Serien Marker - %s Serien vorgemerkt." % len(markerList))
-			if len(markerList) != 0:
-				markerList.sort()
-				self.chooseMenuList.setList(map(self.buildList, markerList))
-				self.loading = False
-				self.getCover()
-		else:
-			self['title'].setText("Serien Marker - 0 Serien vorgemerkt.")
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT * FROM SerienMarker ORDER BY Serie")
+		cMarkerList = cCursor.fetchall()
+		for row in cMarkerList:
+			(ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AufnahmezeitVon, AufnahmezeitBis, AnzahlWiederholungen, preferredChannel, useAlternativeChannel) = row
+			if alleSender:
+				sender = ['Alle',]
+			else:
+				sender = []
+				cSender = dbSerRec.cursor()
+				cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY ErlaubterSender", (ID,))
+				cSenderList = cSender.fetchall()
+				if len(cSenderList) > 0:
+					sender = list(zip(*cSenderList)[0])
+				cSender.close()
+			
+			if AlleStaffelnAb == -2:			# 'Manuell'
+				staffeln = ['Manuell',]
+			elif AlleStaffelnAb == 0:			# 'Alle'
+				staffeln = ['Alle',]
+			else:
+				staffeln = []
+				cStaffel = dbSerRec.cursor()
+				cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
+				cStaffelList = cStaffel.fetchall()
+				if len(cStaffelList) > 0:
+					staffeln = list(zip(*cStaffelList)[0])
+					staffeln.sort()
+				if AlleStaffelnAb < 999999:
+					staffeln.append('ab %s' % AlleStaffelnAb)
+				cStaffel.close()
+			
+			markerList.append((Serie, Url, str(staffeln).replace("[","").replace("]","").replace("'","").replace('"',""), str(sender).replace("[","").replace("]","").replace("'","").replace('"',"")))
+				
+		cCursor.close()
+		self['title'].setText("Serien Marker - %s Serien vorgemerkt." % len(markerList))
+		if len(markerList) != 0:
+			#markerList.sort()
+			self.chooseMenuList.setList(map(self.buildList, markerList))
+			self.loading = False
+			self.getCover()
 
 	def buildList(self, entry):
 		(serie, url, staffeln, sendern) = entry
-		dirNeu = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/neu.png"
-		imageNeu = loadPNG(dirNeu)
-
-		#if "Neu" in staffeln:
 		return [entry,
-			#(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 4, 30, 17, imageNeu),
 			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, self.yellow, self.yellow),
-			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Staffel: "+staffeln),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Sender: "+sendern)
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Staffel: %s" % staffeln),
+			(eListboxPythonMultiContent.TYPE_TEXT, 400, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Sender: %s" % sendern)
 			]
-
-		#else:
-		#	return [entry,
-		#		(eListboxPythonMultiContent.TYPE_TEXT, 65, 0, 450, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie),
-		#		(eListboxPythonMultiContent.TYPE_TEXT, 520, 0, 300, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffeln),
-		#		(eListboxPythonMultiContent.TYPE_TEXT, 520, 0, 300, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sendern)
-		#		]
 
 	def keyCheck(self):
 		check = self['list'].getCurrent()
@@ -2257,51 +2307,28 @@ class serienRecMarker(Screen):
 			self.select_serie = self['list'].getCurrent()[0][0]
 			select_staffel = self['popup_list'].getCurrent()[0][0]
 			select_mode = self['popup_list'].getCurrent()[0][1]
-			tmp_staffel_liste = []
+			select_index = self['popup_list'].getCurrent()[0][2]
 			print select_staffel, select_mode
-			for staffel,mode in self.staffel_liste:
-				if checkInt(select_staffel):
-					if checkInt(staffel):
-						if int(staffel) == int(select_staffel):
-							if int(mode) == 1:
-								tmp_staffel_liste.append((staffel, "0"))
-							else:
-								tmp_staffel_liste.append((staffel, "1"))
-						else:
-							tmp_staffel_liste.append((staffel, mode))
-					else:
-						tmp_staffel_liste.append((staffel, mode))
-				else:
-					if str(select_staffel) == str(staffel):
-						if int(mode) == 1:
-							tmp_staffel_liste.append((staffel, "0"))
-						else:
-							tmp_staffel_liste.append((staffel, "1"))
-					else:
-						tmp_staffel_liste.append((staffel, mode))
-
-			self.staffel_liste = tmp_staffel_liste
+			if select_mode == 0:
+				select_mode = 1
+			else:
+				select_mode = 0
+			self.staffel_liste[select_index] = list(self.staffel_liste[select_index])
+			self.staffel_liste[select_index][1] = select_mode
 			self.chooseMenuList_popup.setList(map(self.buildList2, self.staffel_liste))
 		elif self.modus == "popup_list2":
 			self.select_serie = self['list'].getCurrent()[0][0]
 			select_sender = self['popup_list'].getCurrent()[0][0]
 			select_mode = self['popup_list'].getCurrent()[0][1]
-			tmp_sender_liste = []
+			select_index = self['popup_list'].getCurrent()[0][2]
 			print select_sender, select_mode
-			for sender,mode in self.sender_liste:
-				#if checkInt(select_sender):
-					#if checkInt(staffel):
-				if sender.lower() == select_sender.lower():
-					if int(mode) == 1:
-						tmp_sender_liste.append((sender, "0"))
-					else:
-						tmp_sender_liste.append((sender, "1"))
-				else:
-					tmp_sender_liste.append((sender, mode))
-
-			self.sender_liste = tmp_sender_liste
+			if select_mode == 0:
+				select_mode = 1
+			else:
+				select_mode = 0
+			self.sender_liste[select_index] = list(self.sender_liste[select_index])
+			self.sender_liste[select_index][1] = select_mode
 			self.chooseMenuList_popup.setList(map(self.buildList2, self.sender_liste))
-			print "selected sender:"
 		else:
 			self.staffelSelect()
 
@@ -2316,33 +2343,57 @@ class serienRecMarker(Screen):
 			self.select_serie = self['list'].getCurrent()[0][0]
 			self['popup_list'].show()
 			self['popup_bg'].show()
-			serien_staffeln = self['list'].getCurrent()[0][2]
-			print serien_staffeln
-			self.staffel_liste = []
-			staffeln = ['Manuell','Alle','folgende','00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30']
-			for staffel in staffeln:
-				if staffel in serien_staffeln:
-					self.staffel_liste.append((staffel, "1"))
-				else:
-					self.staffel_liste.append((staffel, "0"))
+			
+			staffeln = ['Manuell','Alle','folgende']
+			staffeln.extend(range(31))
+			mode_list = [0,]*len(staffeln)
+			index_list = range(len(staffeln))
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
+			row = cCursor.fetchone()
+			if row:
+				(ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AufnahmezeitVon, AufnahmezeitBis, AnzahlWiederholungen, preferredChannel, useAlternativeChannel) = row
+				if AlleStaffelnAb == -2:
+					mode_list[0] = 1
+				else:	
+					if AlleStaffelnAb == 0:
+						mode_list[1] = 1
+					elif (AlleStaffelnAb > 0) and (AlleStaffelnAb <= (len(staffeln)-4)):
+						cStaffelList = []
+						mode_list[AlleStaffelnAb + 3] = 1
+						mode_list[2] = 1
+						cStaffel = dbSerRec.cursor()
+						cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
+						cStaffelList = cStaffel.fetchall()
+						if len(cStaffelList) > 0:
+							cStaffelList = zip(*cStaffelList)[0]
+						for staffel in cStaffelList:
+							mode_list[staffel + 3] = 1
+							if (staffel + 1) == AlleStaffelnAb:
+								mode_list[AlleStaffelnAb + 3] = 0
+								AlleStaffelnAb = staffel
+								
+						cStaffel.close()
+					
+			else:
+				print "kein Eintrag in DB (SerienMarker)"
+			cCursor.close()
+			if mode_list.count(1) == 0:
+				mode_list[0] = 1
+			self.staffel_liste = zip(staffeln, mode_list, index_list)
 			self.chooseMenuList_popup.setList(map(self.buildList2, self.staffel_liste))
 
 	def buildList2(self, entry):
-		(staffel, mode) = entry
-		minus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
-		plus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
-		imageMinus = loadPNG(minus)
-		imagePlus = loadPNG(plus)
+		(staffel, mode, index) = entry
 		if int(mode) == 0:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 4, 30, 17, imageMinus),
-				(eListboxPythonMultiContent.TYPE_TEXT, 65, 0, 500, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffel)
-				]
+			imageMode = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
 		else:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 4, 30, 17, imagePlus),
-				(eListboxPythonMultiContent.TYPE_TEXT, 65, 0, 500, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffel)
-				]
+			imageMode = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
+
+		return [entry,
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 4, 30, 17, loadPNG(imageMode)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 65, 0, 500, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(staffel).zfill(2))
+			]
 
 	def keyGreen(self):
 		if self.modus == "list":
@@ -2357,25 +2408,31 @@ class serienRecMarker(Screen):
 				self.modus = "popup_list2"
 				self['popup_list'].show()
 				self['popup_bg'].show()
-				self.sender_liste = []
-				self.serie_select = self['list'].getCurrent()[0][0]
-				self.serie_sender = self['list'].getCurrent()[0][3]
+				self.select_serie = self['list'].getCurrent()[0][0]
 
-				for sender in getSender:
-					if sender in self.serie_sender:
-						self.sender_liste.append((sender, "1"))
+				getSender.insert(0, 'Alle')
+				mode_list = [0,]*len(getSender)
+				index_list = range(len(getSender))
+				cCursor = dbSerRec.cursor()
+				cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
+				row = cCursor.fetchone()
+				if row:
+					(ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AufnahmezeitVon, AufnahmezeitBis, AnzahlWiederholungen, preferredChannel, useAlternativeChannel) = row
+					if alleSender:
+						mode_list[0] = 1
 					else:
-						self.sender_liste.append((sender, "0"))
-				
-				# bisschen magic damit 'Alle' oben in der liste auftaucht..
-				self.sender_liste.sort()
-				self.sender_liste.reverse()
-				if "Alle" in self.serie_sender:
-					self.sender_liste.append(("Alle", "1"))
+						cSender = dbSerRec.cursor()
+						cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=?", (ID,))
+						for row in cSender:
+							(sender,) = row
+							if sender in getSender:
+								idx = getSender.index(sender)
+								mode_list[idx] = 1
+						cSender.close()
 				else:
-					self.sender_liste.append(("Alle", "0"))
-				self.sender_liste.reverse()
-
+					print "kein Eintrag in DB (SerienMarker)"
+				cCursor.close()
+				self.sender_liste = zip(getSender, mode_list, index_list)
 				self.chooseMenuList_popup.setList(map(self.buildList2, self.sender_liste))
 
 	def keyYellow(self):
@@ -2386,12 +2443,11 @@ class serienRecMarker(Screen):
 
 			serien_name = self['list'].getCurrent()[0][0]
 			serien_url = self['list'].getCurrent()[0][1]
-			serien_staffeln = self['list'].getCurrent()[0][2]
 
 			print "teestt"
 			#serien_url = getUrl(serien_url.replace('epg_print.pl?s=',''))
 			print serien_url
-			self.session.open(serienRecSendeTermine, serien_name, serien_url, serien_staffeln, self.serien_nameCover)
+			self.session.open(serienRecSendeTermine, serien_name, serien_url, self.serien_nameCover)
 
 	def callSaveMsg(self, answer):
 		if answer:
@@ -2401,25 +2457,15 @@ class serienRecMarker(Screen):
 			return
 			
 	def removeSerienMarker(self, serien_name):
-		markerList = []
-		markerFile_leer = os.path.getsize(self.markerFile)
-		if not markerFile_leer == 0:
-			readMarker = open(self.markerFile, "r")
-			writeMarker = open(self.markerFile+".tmp", "w")
-			for rawData in readMarker.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie2, url2, staffel2, sendern2) = data[0]
-				if not serien_name.lower() == serie2.lower():
-					markerList.append((serie2, url2, staffel2, sendern2))
-					writeMarker.write('"%s" "%s" "%s" "%s"\n' % (serie2, url2, staffel2, sendern2))
-
-			readMarker.close()
-			writeMarker.close()
-			markerList.sort()
-			self.chooseMenuList.setList(map(self.buildList, markerList))
-			shutil.move(self.markerFile+".tmp", self.markerFile)
-			self['title'].instance.setForegroundColor(parseColor("red"))
-			self['title'].setText("Serie '- %s -' entfernt." % serien_name)
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
+		cCursor.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
+		cCursor.execute("DELETE FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+		dbSerRec.commit()
+		cCursor.close()
+		self.readSerienMarker()	
+		self['title'].instance.setForegroundColor(parseColor("red"))
+		self['title'].setText("Serie '- %s -' entfernt." % serien_name)
 			
 	def keyRed(self):
 		if self.modus == "list":
@@ -2429,19 +2475,11 @@ class serienRecMarker(Screen):
 				return
 			else:
 				serien_name = self['list'].getCurrent()[0][0]
-				found = False
-				markerFile_leer = os.path.getsize(self.markerFile)
-				if not markerFile_leer == 0:
-					readMarker = open(self.markerFile, "r")
-					for rawData in readMarker.readlines():
-						data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-						(serie1, url1, staffel1, sendern1) = data[0]
-						print serie1, serien_name, staffel1, sendern1, url1
-						if serien_name.lower() == serie1.lower():
-							found = True
-							print "gefunden."
-							break
-				if found:
+				cCursor = dbSerRec.cursor()
+				cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+				row = cCursor.fetchone()
+				if row:
+					print "gefunden."
 					if config.plugins.serienRec.confirmOnDelete.value:
 						self.session.openWithCallback(self.callSaveMsg, MessageBox, _("Soll '%s' wirklich entfernt werden?" % serien_name), MessageBox.TYPE_YESNO, default = False)				
 					else:
@@ -2449,51 +2487,76 @@ class serienRecMarker(Screen):
 
 	def insertStaffelMarker(self):
 		print self.select_serie
-		markerList = []
-		markerFile_leer = os.path.getsize(self.markerFile)
-		if not markerFile_leer == 0:
-			readMarker = open(self.markerFile, "r")
-			writeMarker = open(self.markerFile+".tmp", "w")
-			for rawData in readMarker.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie2, url2, staffel2, sendern2) = data[0]
-				if not self.select_serie.lower() == serie2.lower():
-					markerList.append((serie2, url2, staffel2, sendern2))
-					writeMarker.write('"%s" "%s" "%s" "%s"\n' % (serie2, url2, staffel2, sendern2))
-				else:
-					markerList.append((serie2, url2, self.return_staffe_list, sendern2))
-					writeMarker.write('"%s" "%s" "%s" "%s"\n' % (serie2, url2, self.return_staffe_list, sendern2))
-
-			readMarker.close()
-			writeMarker.close()
-			#if len(markerList) != 0:
-			#	self.chooseMenuList.setList(map(self.buildList, markerList))
-			shutil.move(self.markerFile+".tmp", self.markerFile)
-			self.readSerienMarker()
+		AlleStaffelnAb = 999999
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
+		row = cCursor.fetchone()
+		if row:
+			(ID,) = row
+			cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID=?", (ID,))
+			AlleStaffelnAb = -2
+			for row in self.staffel_liste:
+				(staffel, mode, index) = row
+				if (index == 0) and (mode == 1):		# 'Manuell'
+					break
+				elif (index == 1) and (mode == 1):		# 'Alle'
+					AlleStaffelnAb = 0
+					break
+				elif (index == 2) and (mode == 1):		#'folgende'
+					liste = self.staffel_liste[3:]
+					liste.reverse()
+					liste = zip(*liste)
+					if 1 in liste[1]:
+						idx = liste[1].index(1)
+						AlleStaffelnAb = liste[0][idx]
+						try:
+							idx = liste[1].index(0, idx+1, len(liste[1])-1)
+							AlleStaffelnAb = liste[0][idx-1]
+						except:
+							AlleStaffelnAb = 0
+							break
+				elif mode == 1:
+					if str(staffel).isdigit():
+						if staffel >= AlleStaffelnAb:
+							#break
+							continue
+						elif (staffel + 1) == AlleStaffelnAb:
+							AlleStaffelnAb = staffel
+						else:	
+							cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, staffel))
+			
+		cCursor.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=? WHERE LOWER(Serie)=?", (AlleStaffelnAb, self.select_serie.lower()))
+		dbSerRec.commit()
+		cCursor.close()
+		self.readSerienMarker()
 
 	def insertSenderMarker(self):
-		print self.serie_select
-		markerList = []
-		markerFile_leer = os.path.getsize(self.markerFile)
-		if not markerFile_leer == 0:
-			readMarker = open(self.markerFile, "r")
-			writeMarker = open(self.markerFile+".tmp", "w")
-			for rawData in readMarker.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie2, url2, staffel2, sendern2) = data[0]
-				if not self.serie_select.lower() == serie2.lower():
-					markerList.append((serie2, url2, staffel2, sendern2))
-					writeMarker.write('"%s" "%s" "%s" "%s"\n' % (serie2, url2, staffel2, sendern2))
-				else:
-					markerList.append((serie2, url2, staffel2, self.return_sender_list))
-					writeMarker.write('"%s" "%s" "%s" "%s"\n' % (serie2, url2, staffel2, self.return_sender_list))
-
-			readMarker.close()
-			writeMarker.close()
-			#if len(markerList) != 0:
-			#	self.chooseMenuList.setList(map(self.buildList, markerList))
-			shutil.move(self.markerFile+".tmp", self.markerFile)
-			self.readSerienMarker()
+		print self.select_serie
+		alleSender = 0
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
+		row = cCursor.fetchone()
+		if row:
+			(ID,) = row
+			cCursor.execute("DELETE FROM SenderAuswahl WHERE ID=?", (ID,))
+			liste = self.sender_liste[1:]
+			liste = zip(*liste)
+			if 1 in liste[1]:
+				idx = liste[1].index(1)
+				for row in self.sender_liste:
+					(sender, mode, index) = row
+					if (index == 0) and (mode == 1):		# 'Alle'
+						alleSender = 1
+						break
+					elif mode == 1:		# Sender erlaubt
+						cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, sender))
+			else:
+				alleSender = 1
+			
+		cCursor.execute("UPDATE OR IGNORE SerienMarker SET alleSender=? WHERE LOWER(Serie)=?", (alleSender, self.select_serie.lower()))
+		dbSerRec.commit()
+		cCursor.close()
+		self.readSerienMarker()
 
 	def keyBlue(self):
 		if self.modus == "list":
@@ -2539,7 +2602,7 @@ class serienRecMarker(Screen):
 #				return
 #
 #			serien_name = self['list'].getCurrent()[0][0]
-#			serien_nameCover = "/tmp/serienrecorder/"+serien_name+".png"
+#			serien_nameCover = "/tmp/serienrecorder/%s.png" % serien_name
 #
 #			if fileExists(serien_nameCover):
 #				self.showCover(serien_nameCover, serien_nameCover)
@@ -2565,31 +2628,12 @@ class serienRecMarker(Screen):
 			self.modus = "list"
 			self['popup_list'].hide()
 			self['popup_bg'].hide()
-			self.return_staffe_list = []
-			for staffel,mode in self.staffel_liste:
-				if int(mode) == 1:
-					self.return_staffe_list.append((staffel))
-
-			if len(self.return_staffe_list) == 0:
-				self.return_staffe_list.append("Alle")
-			elif len(self.return_staffe_list) == 1 and 'folgende' in self.return_staffe_list:
-				self.return_staffe_list.append(('01'))
-			elif len(self.return_staffe_list) == 2 and 'folgende' in self.return_staffe_list and 'Alle' in self.return_staffe_list:
-				self.return_staffe_list.remove('folgende')
 			self.insertStaffelMarker()
 
 		elif self.modus == "popup_list2":
 			self.modus = "list"
 			self['popup_list'].hide()
 			self['popup_bg'].hide()
-			print "ok"
-			self.return_sender_list = []
-			for sender,mode in self.sender_liste:
-				if int(mode) == 1:
-					self.return_sender_list.append((sender))
-
-			if len(self.return_sender_list) == 0:
-				self.return_sender_list.append(("Alle"))
 			self.insertSenderMarker()
 		else:
 			self.close()
@@ -2650,7 +2694,6 @@ class serienRecAddSerie(Screen):
 		self['cover'] = Pixmap()
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
 		self.loading = True
 
 		self.onLayoutFinish.append(self.searchSerie)
@@ -2667,7 +2710,8 @@ class serienRecAddSerie(Screen):
 	def searchSerie(self):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText("Suche nach ' %s '" % self.serien_name)
-		url = "http://www.wunschliste.de/ajax/search_dropdown.pl?"+urlencode({'q': self.serien_name})
+		self['title'].instance.setForegroundColor(parseColor("white"))
+		url = "http://www.wunschliste.de/ajax/search_dropdown.pl?%s" % urlencode({'q': self.serien_name})
 		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.results).addErrback(self.dataError)
 
 	def results(self, data):
@@ -2692,6 +2736,7 @@ class serienRecAddSerie(Screen):
 
 		self.chooseMenuList.setList(map(self.buildList, self.serienlist))
 		self['title'].setText("Die Suche für ' %s ' ergab %s Teffer." % (self.serien_name, str(len(self.serienlist))))
+		self['title'].instance.setForegroundColor(parseColor("white"))
 		self.loading = False
 		self.getCover()
 
@@ -2712,35 +2757,24 @@ class serienRecAddSerie(Screen):
 			print "[Serien Recorder] keine infos gefunden"
 			return
 
-		xSerie = self['list'].getCurrent()[0][0]
-		xYear = self['list'].getCurrent()[0][1]
-		xId = self['list'].getCurrent()[0][2]
-		print xSerie, xYear, xId
+		Serie = self['list'].getCurrent()[0][0]
+		Year = self['list'].getCurrent()[0][1]
+		Id = self['list'].getCurrent()[0][2]
+		print Serie, Year, Id
 
-		if not fileExists(self.markerFile):
-			open(self.markerFile, 'w').close()
-
-		found = False
-		readMarker = open(self.markerFile, "r")
-		for rawData in readMarker.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			if data:
-				(serie, url, staffel, sender) = data[0]
-				if serie.lower() == xSerie.lower():
-					found = True
-					break
-		readMarker.close()
-
-		if not found:
-			link = 'http://www.wunschliste.de/epg_print.pl?s='+str(xId)
-			writeMarker = open(self.markerFile, "a")
-			writeMarker.write('"%s" "%s" "%s" "%s"\n' % (xSerie, link, "['Manuell']", "['Alle']"))
-			writeMarker.close()
-			self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % xSerie)
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (Serie.lower(),))
+		row = cCursor.fetchone()	
+		if not row:
+			Url = 'http://www.wunschliste.de/epg_print.pl?s='+str(Id)
+			cCursor.execute("INSERT INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender) VALUES (?, ?, -2, 1)", (Serie, Url))
+			self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % Serie)
 			self['title'].instance.setForegroundColor(parseColor("green"))
 		else:
-			self['title'].setText("Serie '- %s -' existiert bereits im Serien Marker." % xSerie)
+			self['title'].setText("Serie '- %s -' existiert bereits im Serien Marker." % Serie)
 			self['title'].instance.setForegroundColor(parseColor("red"))
+		dbSerRec.commit()
+		cCursor.close()
 
 	def keyRed(self):
 		self.close()
@@ -2771,9 +2805,9 @@ class serienRecAddSerie(Screen):
 
 		serien_name = self['list'].getCurrent()[0][0]
 		xId = self['list'].getCurrent()[0][2]
-		serien_nameCover = "/tmp/serienrecorder/"+serien_name+".png"
+		serien_nameCover = "/tmp/serienrecorder/%s.png" % serien_name
 
-		serien_nameCover = "/tmp/serienrecorder/"+serien_name+".png"
+		serien_nameCover = "/tmp/serienrecorder/%s.png" % serien_name
 		if not fileExists("/tmp/serienrecorder/"):
 			shutil.os.mkdir("/tmp/serienrecorder/")
 		if fileExists(serien_nameCover):
@@ -2824,6 +2858,7 @@ class serienRecAddSerie(Screen):
 			print("Coverfile not found: %s" %  serien_nameCover)
 
 	def keyCancel(self):
+		self['title'].instance.setForegroundColor(parseColor("white"))
 		self.close()
 
 	def dataError(self, error):
@@ -2857,12 +2892,11 @@ class serienRecSendeTermine(Screen):
 			<widget name="yellow" position="860,656" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>"""
 
-	def __init__(self, session, serien_name, serie_url, serie_staffeln, serien_cover):
+	def __init__(self, session, serien_name, serie_url, serien_cover):
 		Screen.__init__(self, session)
 		self.session = session
 		self.serien_name = serien_name
 		self.serie_url = serie_url
-		self.serie_staffeln = serie_staffeln
 		self.serien_cover = serien_cover
 		self.picload = ePicLoad()
 
@@ -2892,8 +2926,6 @@ class serienRecSendeTermine(Screen):
 		self['cover'] = Pixmap()
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
 		self.sendetermine_list = []
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -2945,8 +2977,8 @@ class serienRecSendeTermine(Screen):
 			for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
 				# umlaute umwandeln
 				serien_name = iso8859_Decode(serien_name)
+				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				sender = iso8859_Decode(sender)
-				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				title = iso8859_Decode(title)
 
 				if self.FilterEnabled:
@@ -2966,15 +2998,7 @@ class serienRecSendeTermine(Screen):
 						print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel)
 						continue
 					
-				# replace S1 to S01
-				if checkInt(staffel):
-					if int(staffel) < 10 and len(staffel) == 1:
-						staffel = str("0"+staffel)
-				if checkInt(episode):
-					if int(episode) < 10 and len(episode) == 1:
-						episode = str("0"+episode)
-
-				self.sendetermine_list.append((serien_name, sender, datum, startzeit, endzeit, staffel, episode, title, "0"))
+				self.sendetermine_list.append([serien_name, sender, datum, startzeit, endzeit, str(staffel).zfill(2), str(episode).zfill(2), title, "0"])
 
 			self['red'].setText("Abbrechen")
 			self['green'].setText("Timer erstellen")
@@ -2994,121 +3018,60 @@ class serienRecSendeTermine(Screen):
 		(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
 
 		check_SeasonEpisode = "S%sE%s" % (staffel, episode)
-		bereits_vorhanden = 0
-		dirname = config.plugins.serienRec.savetopath.value
+		if config.plugins.serienRec.seriensubdir.value:
+			dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
+		else:
+			dirname = config.plugins.serienRec.savetopath.value
 		
-		isTimer = False
-
-		minus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
-		imageMinus = loadPNG(minus)
-		
-		plus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
-		imagePlus = loadPNG(plus)
-		
-		hdd = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/hdd.png"
-		imageHDD = loadPNG(hdd)
-		
-		itimer = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/timerlist.png"
-		imageTimer = loadPNG(itimer)
-
-		iadded = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/added.png"
-		imageAdded = loadPNG(iadded)
+		imageMinus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
+		imagePlus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
+		imageNone = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/black.png"
+		imageHDD = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/hdd.png"
+		imageTimer = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/timerlist.png"
+		imageAdded = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/added.png"
+		#imageAdded = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
 
 		#check 1 (hdd)
+		bereits_vorhanden = False
+		rightImage = imageNone
 		if fileExists(dirname):
 			dirs = os.listdir(dirname)
 			for dir in dirs:
 				if re.search(serien_name+'.*?'+check_SeasonEpisode, dir):
-					bereits_vorhanden = 1
+					bereits_vorhanden = True
+					rightImage = imageHDD
 					break
 
-		# formatiere start/end-zeit
-		(day, month) = datum.split('.')
-		(start_hour, start_min) = start.split('.')
+		if not bereits_vorhanden:
+			# formatiere start/end-zeit
+			(day, month) = datum.split('.')
+			(start_hour, start_min) = start.split('.')
 
-		# check 2 (im timer file)
-		start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
-		if checkTimerAdded(serien_name, check_SeasonEpisode, start_unixtime):
-			isTimer = True
-			bereits_vorhanden = 2
-
-		# check 2 (im added file)
-		if checkAlreadyAdded(serien_name+' '+check_SeasonEpisode) and not isTimer:
-			print "3"
-			bereits_vorhanden = 3
+			# check 2 (im timer file)
+			start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
+			start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
+			if checkTimerAdded(sender, serien_name, staffel, episode, int(start_unixtime)):
+				rightImage = imageTimer
+			else:
+				# check 2 (im added file)
+				if checkAlreadyAdded(serien_name, staffel, episode):
+					rightImage = imageAdded
+				else:
+					rightImage = imageNone
 
 		if int(status) == 0:
-			if bereits_vorhanden == 0:
-				return [entry,
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imageMinus),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, datum+" "+start, self.yellow),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S"+staffel+"E"+episode+" - "+title, self.yellow)
-					]
-			elif bereits_vorhanden == 1:
-				return [entry,
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imageMinus),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, datum+" "+start, self.yellow),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S"+staffel+"E"+episode+" - "+title, self.yellow),
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, imageHDD)
-					]
-			elif bereits_vorhanden == 2:
-				return [entry,
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imageMinus),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, datum+" "+start, self.yellow),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S"+staffel+"E"+episode+" - "+title, self.yellow),
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, imageTimer)
-					]
-			elif bereits_vorhanden == 3:
-				return [entry,
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imageMinus),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, datum+" "+start, self.yellow),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S"+staffel+"E"+episode+" - "+title, self.yellow),
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, imageAdded)
-					]
+			leftImage = imageMinus
 		else:
-			if bereits_vorhanden == 0:
-				return [entry,
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imagePlus),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, datum+" "+start, self.yellow),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S"+staffel+"E"+episode+" - "+title, self.yellow)
-					]
-			elif bereits_vorhanden == 1:
-				return [entry,
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imagePlus),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, datum+" "+start, self.yellow),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S"+staffel+"E"+episode+" - "+title, self.yellow),
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, imageHDD)
-					]
-			elif bereits_vorhanden == 2:
-				return [entry,
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imagePlus),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, datum+" "+start, self.yellow),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S"+staffel+"E"+episode+" - "+title, self.yellow),
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, imageTimer)
-					]
-			elif bereits_vorhanden == 3:
-				return [entry,
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 5, 16, 16, imagePlus),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, datum+" "+start, self.yellow),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-					(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S"+staffel+"E"+episode+" - "+title, self.yellow),
-					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, imageAdded)
-					]
+			leftImage = imagePlus
+			
+		return [entry,
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 15, 16, 16, loadPNG(leftImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S%sE%s - %s" % (staffel, episode, title), self.yellow),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, loadPNG(rightImage))
+			]
 
 	def getTimes(self):
 		self.countTimer = 0
@@ -3145,11 +3108,11 @@ class serienRecSendeTermine(Screen):
 					# erstellt das serien verzeichnis
 					mkdir = False
 					if config.plugins.serienRec.seriensubdir.value:
-						dirname = config.plugins.serienRec.savetopath.value+serien_name+"/"
-						if not fileExists(config.plugins.serienRec.savetopath.value+serien_name+"/"):
+						dirname = "%s%S/" % (config.plugins.serienRec.savetopath.value, serien_name)
+						if not fileExists("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)):
 							print "[Serien Recorder] erstelle Subdir %s" % config.plugins.serienRec.savetopath.value+serien_name+"/"
 							writeLog("[Serien Recorder] erstelle Subdir: ' %s%s%s '" % (config.plugins.serienRec.savetopath.value, serien_name, "/"))
-							os.makedirs(config.plugins.serienRec.savetopath.value+serien_name+"/")
+							os.makedirs("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name))
 							mkdir = True
 					else:
 						dirname = config.plugins.serienRec.savetopath.value
@@ -3167,7 +3130,7 @@ class serienRecSendeTermine(Screen):
 								break
 
 					# check 2 (im added file)
-					#if checkAlreadyAdded(serien_name+' '+check_SeasonEpisode):
+					#if checkAlreadyAdded(serien_name, staffel, episode):
 					#	bereits_vorhanden = True
 
 					if not bereits_vorhanden:
@@ -3190,24 +3153,20 @@ class serienRecSendeTermine(Screen):
 							eit = 0
 							if config.plugins.serienRec.eventid.value:
 								# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-								event_matches = getEPGevent(['RITBDSE',(stbRef, 0, start_unixtime+config.plugins.serienRec.margin_before.value, -1)], stbRef, serien_name, start_unixtime+config.plugins.serienRec.margin_before.value)
+								event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60))
 								print "event matches %s" % len(event_matches)
 								if event_matches and len(event_matches) > 0:
 									for event_entry in event_matches:
 										print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
 										eit = int(event_entry[1])
-										start_unixtime = int(event_entry[3])
-										start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
+										start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
 										break
 
-							# setze strings für addtimer
-							title = "S%sE%s - %s" % (staffel, episode, title)
 							# versuche timer anzulegen
-							result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, title, 0, self.justplay, 3, dirname, self.tags, 0, None, eit, recordfile=".ts")
+							result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (staffel, episode, title), 0, self.justplay, 3, dirname, self.tags, 0, None, eit, recordfile=".ts")
 							if result["result"]:
 								self.countTimer += 1
-								self.addRecTimer(serien_name, title, str(start_unixtime), stbRef, webChannel)
-								addAlreadyAdded(serien_name+' '+check_SeasonEpisode)
+								self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime), stbRef, webChannel, eit)
 							else:
 								print "[Serien Recorder] Attention !!! -> %s" % result["message"]
 								konflikt = result["message"]
@@ -3242,74 +3201,38 @@ class serienRecSendeTermine(Screen):
 		episode = self['termine'].getCurrent()[0][5]
 		title = self['termine'].getCurrent()[0][6]
 
-		print serie, sender, datum, start, staffel, episode, title
-		print sindex
-		print self.changeIndex(sindex)
-
-	def changeIndex(self, idx):
-		count = 0
-		self.sendetermine_list_tmp = []
 		if len(self.sendetermine_list) != 0:
-			for (serien_name, sender, datum, start, end, staffel, episode, title, status) in self.sendetermine_list:
-				if int(count) == int(idx):
-					if int(status) == 1:
-						count += 1
-						self.sendetermine_list_tmp.append((serien_name, sender, datum, start, end, staffel, episode, title, "0"))
-					else:
-						count += 1
-						self.sendetermine_list_tmp.append((serien_name, sender, datum, start, end, staffel, episode, title, "1"))
-				else:
-					count += 1
-					self.sendetermine_list_tmp.append((serien_name, sender, datum, start, end, staffel, episode, title, status))
-
-			self.sendetermine_list = self.sendetermine_list_tmp
+			if int(self.sendetermine_list[sindex][8]) == 0:
+				self.sendetermine_list[sindex][8] = "1"
+			else:
+				self.sendetermine_list[sindex][8] = "0"
 			self.chooseMenuList2.setList(map(self.buildList_termine, self.sendetermine_list))
-
-	def checkMarkerStaffel(self, mSerie):
-		readMarker = open(self.markerFile, "r")
-		for rawData in readMarker.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(serie, url, staffel, sender) = data[0]
-			if serie.lower() == mSerie.lower():
-				readMarker.close()
-				staffel = eval(staffel)
-				return staffel
-		readMarker.close()
 
 	def checkSender(self, mSender):
 		fSender = []
-		cChannels = dbSerRec.cursor()
-		sql = "SELECT WebChannel, STBChannelHD, ServiceRefHD, Erlaubt FROM Channels WHERE WebChannel=?"
-		cChannels.execute(sql, (mSender,))
-		row = cChannels.fetchone()
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (mSender.lower(),))
+		row = cCursor.fetchone()
 		if row:
 			(webChannel, stbChannel, stbRef, status) = row
 			fSender.append((webChannel, stbChannel, stbRef, status))
-
+		cCursor.close()
 		return fSender
 
-	def addRecTimer(self, serien_name, title, start_time, stbRef, webChannel):
-		found = False
-		readTimer = open(self.timerFile, "r")
-		for rawData in readTimer.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			if data:
-				(serie, tTitle, tStart_time, tRref, twebChannel) = data[0]
-				if serie == serien_name and int(tStart_time) == int(start_time):
-					found = True
-					break
-		readTimer.close()
-
-		if not found:
-			writeTimer = open(self.timerFile, "a")
-			writeTimer.write('"%s" "%s" "%s" "%s" "%s"\n' % (serien_name, title, start_time, stbRef, webChannel))
-			writeTimer.close()
-			print "[Serien Recorder] Timer angelegt: %s %s" % (serien_name, title)
-			writeLog("[Serien Recorder] Timer angelegt: %s %s" % (serien_name, title))
+	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit):
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=?", (serien_name.lower(), start_time))
+		row = cCursor.fetchone()
+		if row:
+			print "[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+			writeLog("[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
 		else:
-			print "[Serien Recorder] Timer bereits vorhanden: %s %s" % (serien_name, title)
-			writeLog("[Serien Recorder] Timer bereits vorhanden: %s %s" % (serien_name, title))
-
+			cCursor.execute("INSERT INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit))
+			dbSerRec.commit()
+			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+			writeLog("[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+		cCursor.close()
+		
 	def keyRed(self):
 		self.close()
 
@@ -3374,6 +3297,12 @@ class serienRecTimer(Screen):
 			
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/green_round.png" position="310,651" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="green" position="350,656" size="250,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+			
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/yellow_round.png" position="820,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="yellow" position="860,656" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+			
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/blue_round.png" position="1060,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="blue" position="1100,656" size="250,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>"""
 
 	def __init__(self, session):
@@ -3385,6 +3314,8 @@ class serienRecTimer(Screen):
 			"cancel": self.keyCancel,
 			"red"	: self.keyRed,
 			"green" : self.viewChange,
+			"yellow": self.keyYellow,
+			"blue"  : self.keyBlue,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile,
 			"3"		: self.showProposalDB
@@ -3396,6 +3327,8 @@ class serienRecTimer(Screen):
 		self['list'] = self.chooseMenuList
 		self['title'] = Label("")
 		self['red'] = Label("Entferne Timer")
+		self['yellow'] = Label("Zeige auch alte Timer")
+		self['blue'] = Label("Entferne alle alten")
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		
 		if config.plugins.serienRec.recordListView.value == 0:
@@ -3408,8 +3341,8 @@ class serienRecTimer(Screen):
 		self.blue = 0x0064c7
 		self.yellow = 0xbab329
 		self.white = 0xffffff
-		self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
-
+		self.filter = True
+		
 		self.onLayoutFinish.append(self.readTimer)
 
 	def readLogFile(self):
@@ -3431,167 +3364,149 @@ class serienRecTimer(Screen):
 		config.plugins.serienRec.recordListView.save()
 		self.readTimer()
 
-	def readTimer(self):
-		if not fileExists(self.timerFile):
-			open(self.timerFile, 'w').close()
-
+	def readTimer(self, showTitle=True):
 		current_time = int(time.time())
 		deltimer = 0
 		timerList = []
-		timerFile_leer = os.path.getsize(self.timerFile)
-		
-		if config.plugins.serienRec.pastTimer.value:
-			writeNewTimer = open(self.timerFile+".tmp", "w")
 
-		if not timerFile_leer == 0:
-			readTimer = open(self.timerFile, "r")
-			for rawData in readTimer.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie, title, start_time, sRef, webChannel) = data[0]
-				if config.plugins.serienRec.pastTimer.value:
-					if int(current_time) > int(start_time):
-						deltimer += 1
-					else:
-						writeNewTimer.write('"%s" "%s" "%s" "%s" "%s"\n' % (serie, title, start_time, sRef, webChannel))
-						timerList.append((serie, title, start_time, webChannel, "0"))
-				else:
-					if int(current_time) > int(start_time):
-						deltimer += 1
-						timerList.append((serie, title, start_time, webChannel, "1"))
-					else:
-						timerList.append((serie, title, start_time, webChannel, "0"))
-
-			readTimer.close()
-
-			if config.plugins.serienRec.pastTimer.value:
-				writeNewTimer.close()
-				shutil.move(self.timerFile+".tmp", self.timerFile)
-				if int(deltimer) != 0:
-					self['title'].setText("TimerList: %s alte Aufnahme(n) entfernt." % deltimer)
-				else:
-					self['title'].setText("TimerList: %s Aufnahme(n) und %s Timer sind vorhanden." % (deltimer, len(timerList)))
-			else:
-				self['title'].setText("TimerList: %s Aufnahme(n) und %s Timer sind vorhanden." % (deltimer, len(timerList)))
-
-			if config.plugins.serienRec.recordListView.value == 0:
-				timerList.sort(key=lambda t : t[2])
-			elif config.plugins.serienRec.recordListView.value == 1:
-				timerList.sort(key=lambda t : t[2])
-				timerList.reverse()
-
-			self.chooseMenuList.setList(map(self.buildList, timerList))
+		cCursor = dbSerRec.cursor()
+		if self.filter:
+			cCursor.execute("SELECT * FROM AngelegteTimer WHERE StartZeitstempel>=?", (current_time, ))
 		else:
-			self['title'].setText("Serien Timer - 0 Serien in der Aufnahmeliste.")
+			cCursor.execute("SELECT * FROM AngelegteTimer")
+		for row in cCursor:
+			(serie, staffel, episode, title, start_time, sRef, webChannel, eit) = row
+			if int(start_time) < int(current_time):
+				deltimer += 1
+				timerList.append((serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), start_time, webChannel, "1", eit))
+			else:
+				timerList.append((serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), start_time, webChannel, "0", eit))
+		cCursor.close()
+		
+		if showTitle:			
+			self['title'].instance.setForegroundColor(parseColor("white"))
+			if self.filter:
+				self['title'].setText("TimerList: %s Timer sind vorhanden." % len(timerList))
+			else:
+				self['title'].setText("TimerList: %s Aufnahme(n) und %s Timer sind vorhanden." % (deltimer, len(timerList)-deltimer))
+
+		if config.plugins.serienRec.recordListView.value == 0:
+			timerList.sort(key=lambda t : t[2])
+		elif config.plugins.serienRec.recordListView.value == 1:
+			timerList.sort(key=lambda t : t[2])
+			timerList.reverse()
+
+		self.chooseMenuList.setList(map(self.buildList, timerList))
+		if len(timerList) == 0:
+			if showTitle:			
+				self['title'].instance.setForegroundColor(parseColor("white"))
+				self['title'].setText("Serien Timer - 0 Serien in der Aufnahmeliste.")
 
 	def buildList(self, entry):
-		(serie, title, start_time, webChannel, foundIcon) = entry
+		(serie, title, start_time, webChannel, foundIcon, eit) = entry
 		WochenTag=["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 		xtime = time.strftime(WochenTag[time.localtime(int(start_time)).tm_wday]+", %d.%m.%Y - %H:%M", time.localtime(int(start_time)))
 
 		if int(foundIcon) == 1:
-			dirFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
-			imageFound = loadPNG(dirFound)
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 8, 32, 32, imageFound),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 250, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow)
-				]
+			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
 		else:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 250, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow)
-				]
+			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/black.png"
+			
+		return [entry,
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 8, 32, 32, loadPNG(imageFound)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 250, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow)
+			]
 
 	def keyOK(self):
 		pass
 
-	def callSaveMsg(self, answer):
+	def callDeleteSelectedTimer(self, answer):
 		if answer:
-			current_time = int(time.time())
 			serien_name = self['list'].getCurrent()[0][0]
 			serien_title = self['list'].getCurrent()[0][1]
 			serien_time = self['list'].getCurrent()[0][2]
 			serien_channel = self['list'].getCurrent()[0][3]
-			self.removeTimer(serien_name, serien_title, serien_time, serien_channel, current_time)
+			serien_eit = self['list'].getCurrent()[0][5]
+			self.removeTimer(serien_name, serien_title, serien_time, serien_channel, serien_eit)
 		else:
 			return
 			
-	def removeTimer(self, serien_name, serien_title, serien_time, serien_channel, current_time):
-		timerList = []
-		timerFile_leer = os.path.getsize(self.timerFile)
-		if not timerFile_leer == 0:
-			readTimer = open(self.timerFile, "r")
-			writeTimer = open(self.timerFile+".tmp", "w")
-			for rawData in readTimer.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie, xtitle, xtime, xsref, webchannel) = data[0]
-				if serien_name.lower() == serie.lower() and int(serien_time) == int(xtime) and serien_channel.lower() == webchannel.lower():
-					print "[Serien Recorder] Timer %s removed." % serie
-					title = "%s - %s" % (serien_name, serien_title)
-					removed = serienRecAddTimer.removeTimerEntry(title, serien_time)
-					if removed:
-						print "[Serien Recorder] enigma2 Timer removed."
-					else:
-						print "[Serien Recorder] enigma2 NOOOTTT removed"
-				else:
-					if int(current_time) > int(xtime):
-						timerList.append((serie, xtitle, xtime, webchannel, "1"))
-						writeTimer.write('"%s" "%s" "%s" "%s" "%s" "%s"\n' % (serie, xtitle, xtime, xsref, webchannel, "1"))
-					else:
-						writeTimer.write('"%s" "%s" "%s" "%s" "%s" "%s"\n' % (serie, xtitle, xtime, xsref, webchannel, "0"))
-						timerList.append((serie, xtitle, xtime, webchannel, "0"))
+	def removeTimer(self, serien_name, serien_title, serien_time, serien_channel, serien_eit=0):
+		title = "%s - %s" % (serien_name, serien_title)
+		removed = serienRecAddTimer.removeTimerEntry(title, serien_time, serien_eit)
+		if not removed:
+			print "[Serien Recorder] enigma2 NOOOTTT removed"
+		else:
+			print "[Serien Recorder] enigma2 Timer removed."
+		cCursor = dbSerRec.cursor()
+		if serien_eit > 0:
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE EventID=?", (serien_eit, ))
+		else:
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (serien_name.lower(), serien_time, serien_channel.lower()))
+		dbSerRec.commit()
+		cCursor.close()
+		
+		self.readTimer(False)
+		self['title'].instance.setForegroundColor(parseColor("red"))
+		self['title'].setText("Timer '- %s -' entfernt." % serien_name)
 
-			readTimer.close()
-			writeTimer.close()
-
-			if config.plugins.serienRec.recordListView.value == 0:
-				timerList.sort(key=lambda t : t[2])
-			elif config.plugins.serienRec.recordListView.value == 1:
-				timerList.sort(key=lambda t : t[2])
-				timerList.reverse()
-
-			self.chooseMenuList.setList(map(self.buildList, timerList))
-			shutil.move(self.timerFile+".tmp", self.timerFile)
-			#self.readTimer()
-			self['title'].instance.setForegroundColor(parseColor("red"))
-			self['title'].setText("Timer '- %s -' entfernt." % serien_name)
-			
 	def keyRed(self):
 		check = self['list'].getCurrent()
 		if check == None:
 			print "[Serien Recorder] Serien Timer leer."
 			return
 		else:
-			current_time = int(time.time())
 			serien_name = self['list'].getCurrent()[0][0]
 			serien_title = self['list'].getCurrent()[0][1]
 			serien_time = self['list'].getCurrent()[0][2]
 			serien_channel = self['list'].getCurrent()[0][3]
+			serien_eit = self['list'].getCurrent()[0][5]
 			found = False
 			print self['list'].getCurrent()[0]
-			timerFile_leer = os.path.getsize(self.timerFile)
-			if not timerFile_leer == 0:
-				readTimer = open(self.timerFile, "r")
-				for rawData in readTimer.readlines():
-					data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-					(serie, xtitle, xtime, xsref, webchannel) = data[0]
-					if serien_name.lower() == serie.lower() and int(serien_time) == int(xtime) and serien_channel.lower() == webchannel.lower():
-						found = True
-						break
-				readTimer.close()
+
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (serien_name.lower(), serien_time, serien_channel.lower()))
+			if cCursor.fetchone():
+				if config.plugins.serienRec.confirmOnDelete.value:
+					self.session.openWithCallback(self.callDeleteSelectedTimer, MessageBox, _("Soll '%s - %s' wirklich entfernt werden?" % (serien_name, serien_title)), MessageBox.TYPE_YESNO, default = False)				
+				else:
+					self.removeTimer(serien_name, serien_title, serien_time, serien_channel, serien_eit)
 			else:
 				print "[Serien Recorder] keinen passenden timer gefunden."
+			cCursor.close()
+			
+	def keyYellow(self):
+		if self.filter:
+			self['yellow'].setText("Zeige nur neue Timer")
+			self.filter = False
+		else:
+			self['yellow'].setText("Zeige auch alte Timer")
+			self.filter = True
+		self.readTimer(self)
+		
+	def removeOldTimerFromDB(self, answer):
+		if answer:
+			current_time = int(time.time())
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE StartZeitstempel<?", (current_time, ))
+			dbSerRec.commit()
+			cCursor.close()
+		
+			self.readTimer(False)
+			self['title'].instance.setForegroundColor(parseColor("red"))
+			self['title'].setText("Alle alten Timer wurden entfernt.")
+		else:
+			return
 
-			if found:
-				if config.plugins.serienRec.confirmOnDelete.value:
-					self.session.openWithCallback(self.callSaveMsg, MessageBox, _("Soll '%s' wirklich entfernt werden?" % serien_name), MessageBox.TYPE_YESNO, default = False)				
-				else:
-					self.removeTimer(serien_name, serien_title, serien_time, serien_channel, current_time)
-						
+	def keyBlue(self):
+		if config.plugins.serienRec.confirmOnDelete.value:
+			self.session.openWithCallback(self.removeOldTimerFromDB, MessageBox, _("Sollen wirklich alle alten Timer entfernt werden?"), MessageBox.TYPE_YESNO, default = False)				
+		else:
+			self.removeOldTimerFromDB(True)
+			
 	def keyCancel(self):
 		self.close()
 
@@ -3661,11 +3576,12 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Immer aufnehmen wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
 		self.list.append(getConfigListEntry("Timervorlauf (in Min.):", config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
-		self.list.append(getConfigListEntry("Entferne alte Timer aus der Record-List:", config.plugins.serienRec.pastTimer))
+		#self.list.append(getConfigListEntry("Entferne alte Timer aus der Record-List:", config.plugins.serienRec.pastTimer))
 		self.list.append(getConfigListEntry("Automatisches Plugin-Update:", config.plugins.serienRec.Autoupdate))
 		self.list.append(getConfigListEntry("Aus Deep-StandBy aufwecken:", config.plugins.serienRec.wakeUpDSB))
 		self.list.append(getConfigListEntry("Nach dem automatischen Suchlauf in Deep-StandBy gehen:", config.plugins.serienRec.afterAutocheck))
 		self.list.append(getConfigListEntry("Vor Löschen in SerienMarker und TimerList Benutzer fragen:", config.plugins.serienRec.confirmOnDelete))
+		self.list.append(getConfigListEntry("Zeige Nachricht bei Timerkonflikten:", config.plugins.serienRec.showMessageOnConflicts))
 		self.list.append(getConfigListEntry("Aktion bei neuer Serie/Staffel:", config.plugins.serienRec.ActionOnNew))
 		self.list.append(getConfigListEntry("DEBUG LOG (/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log):", config.plugins.serienRec.writeLog))
 		self.list.append(getConfigListEntry("DEBUG LOG - Senderliste:", config.plugins.serienRec.writeLogChannels))
@@ -3676,7 +3592,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("DEBUG LOG - Tageszeit:", config.plugins.serienRec.writeLogTimeRange))
 		self.list.append(getConfigListEntry("DEBUG LOG - Zeitbegrenzung:", config.plugins.serienRec.writeLogTimeLimit))
 		self.list.append(getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
-		self.list.append(getConfigListEntry("Timer für ALLE Wiederholungen erstellen:", config.plugins.serienRec.recordAll))
+		#self.list.append(getConfigListEntry("Timer für ALLE Wiederholungen erstellen:", config.plugins.serienRec.recordAll))
 
 	def changedEntry(self):
 		self.createConfigList()
@@ -3684,7 +3600,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 
 	def ok(self):
 		if self["config"].getCurrent() == self.get_media:
-			start_dir = "/media/hdd/movie/"
+			#start_dir = "/media/hdd/movie/"
+			start_dir = config.plugins.serienRec.savetopath.value
 			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir)
 
 	def selectedMediaFile(self, res):
@@ -3723,7 +3640,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.toTime.save()
 		config.plugins.serienRec.timeUpdate.save()
 		config.plugins.serienRec.deltime.save()
-		config.plugins.serienRec.pastTimer.save()
+		#config.plugins.serienRec.pastTimer.save()
 		config.plugins.serienRec.wakeUpDSB.save()
 		config.plugins.serienRec.afterAutocheck.save()
 		config.plugins.serienRec.eventid.save()
@@ -3738,7 +3655,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.writeLogTimerDebug.save()
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.ActionOnNew.save()
-		config.plugins.serienRec.recordAll.save()
+		#config.plugins.serienRec.recordAll.save()
+		config.plugins.serienRec.showMessageOnConflicts.save()
 		
 		configfile.save()
 		self.close(True)
@@ -3800,7 +3718,7 @@ class SerienRecFileList(Screen):
 		if (directory.endswith("/")):
 			self.fullpath = self["folderlist"].getSelection()[0]
 		else:
-			self.fullpath = self["folderlist"].getSelection()[0] + "/"
+			self.fullpath = "%s/" % self["folderlist"].getSelection()[0]
 	  	self.close(self.fullpath)
 
 	def up(self):
@@ -4027,26 +3945,7 @@ class checkupdate():
 			return
 
 	def startUpdate(self,answer):
-		if answer is True:
-			if self.delete_files == "True":
-				print "[Serien Recorder] lösche config files.."
-
-				self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
-				if fileExists(self.markerFile):
-					os.remove(self.markerFile)
-
-				self.channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
-				if fileExists(self.channelFile):
-					os.remove(self.channelFile)
-
-				self.timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
-				if fileExists(self.timerFile):
-					os.remove(self.timerFile)
-
-				self.logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
-				if fileExists(self.logFile):
-					os.remove(self.logFile)
-
+		if answer:
 			self.session.open(SerienRecorderUpdateScreen,self.updateurl)
 		else:
 			return
@@ -4079,13 +3978,13 @@ class SerienRecorderUpdateScreen(Screen):
 		self.container.stdoutAvail.append(self.mplog)
 		#self.container.stderrAvail.append(self.mplog)
 		#self.container.dataAvail.append(self.mplog)
-		self.container.execute("opkg install --force-overwrite --force-depends " + str(self.updateurl))
+		self.container.execute("opkg install --force-overwrite --force-depends %s" % str(self.updateurl))
 
 	def finishedPluginUpdate(self,retval):
 		self.session.openWithCallback(self.restartGUI, MessageBox, _("Serien Recorder successfully updated!\nDo you want to restart the Enigma2 GUI now?"), MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, answer):
-		if answer is True:
+		if answer:
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
@@ -4128,6 +4027,7 @@ def autostart(reason, **kwargs):
 	session = kwargs.get("session", None)
 	color_print = "\033[93m"
 	color_end = "\33[0m"
+	initDB()
 	if config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
 		print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
 		serienRecCheckForRecording(session, False)
@@ -4148,11 +4048,79 @@ def Plugins(path, **kwargs):
 		PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=main)
 		]
 
+def initDB():
+	#dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
+	#dbSerRec.text_factory = str
+	cCursor = dbSerRec.cursor()
+	#cCursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
+	#tables = cCursor.fetchall()
+	#for table in tables:
+	#	if table[0] == "AngelegteTimer":
+	#		cCursor.execute("DROP TABLE %s" % table[0])
+	#	if table[0] == "SerienMarker":
+	#		cCursor.execute("DROP TABLE %s" % table[0])
+	#dbSerRec.commit()
+
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, 
+	                                                                  Staffel INTEGER, 
+																	  Sender TEXT NOT NULL, 
+																	  StaffelStart TEXT NOT NULL, 
+																	  UTCStaffelStart INTEGER, 
+																	  Url TEXT NOT NULL, 
+																	  CreationFlag INTEGER DEFAULT 1)''') 
+																	  
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, 
+	                                                        STBChannel TEXT NOT NULL DEFAULT "", 
+															ServiceRef TEXT NOT NULL DEFAULT "", 
+															alternativSTBChannel TEXT NOT NULL DEFAULT "", 
+															alternativServiceRef TEXT NOT NULL DEFAULT "", 
+															Erlaubt INTEGER DEFAULT 0, 
+															Vorlaufzeit INTEGER DEFAULT NULL, 
+															Nachlaufzeit INTEGER DEFAULT NULL)''')
+															
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+	                                                            Serie TEXT NOT NULL, 
+																Url TEXT NOT NULL, 
+																AufnahmeVerzeichnis TEXT, 
+																AlleStaffelnAb INTEGER DEFAULT 0, 
+																alleSender INTEGER DEFAULT 1, 
+																Vorlaufzeit INTEGER DEFAULT NULL, 
+																Nachlaufzeit INTEGER DEFAULT NULL, 
+																AufnahmezeitVon INTEGER DEFAULT NULL,  
+																AufnahmezeitBis INTEGER DEFAULT NULL, 
+																AnzahlWiederholungen INTEGER DEFAULT NULL,
+																preferredChannel INTEGER DEFAULT 1,
+																useAlternativeChannel INTEGER DEFAULT 0)''')
+																
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
+	                                                             ErlaubterSender TEXT NOT NULL, 
+																 FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
+																 
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, 
+	                                                              ErlaubteStaffel INTEGER, 
+																  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
+
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS AngelegteTimer (Serie TEXT NOT NULL, 
+	                                                              Staffel INTEGER, 
+																  Episode TEXT, 
+																  Titel TEXT, 
+																  StartZeitstempel INTEGER NOT NULL, 
+																  ServiceRef TEXT NOT NULL, 
+																  webChannel TEXT NOT NULL, 
+																  EventID INTEGER DEFAULT 0)''')
+																  
+	dbSerRec.commit()
+	cCursor.close()
+	
 def ImportFilesToDB():
 	channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
-	if fileExists(channelFile ):
-		cChannels = dbSerRec.cursor()
-		sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannelHD, ServiceRefHD, Erlaubt) VALUES (?, ?, ?, ?)"
+	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
+	timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
+	markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+
+	initDB()
+	if fileExists(channelFile):
+		cCursor = dbSerRec.cursor()
 		readChannel = open(channelFile, "r")
 		for rawData in readChannel.readlines():
 			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
@@ -4161,9 +4129,101 @@ def ImportFilesToDB():
 				stbChannel = ""
 			if stbRef == "serviceref":
 				stbRef = ""
-			cChannels.execute(sql, (webChannel, stbChannel, stbRef, status))
+			cCursor.execute("INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)", (webChannel, stbChannel, stbRef, status))
 		dbSerRec.commit()
+		cCursor.close()
+		
 		readChannel.close()
+		shutil.move(channelFile, "%s_old" % channelFile)
+		#os.remove(channelFile)
+		
+	if fileExists(addedFile):
+		cCursor = dbSerRec.cursor()
+		readAdded = open(addedFile, "r")
+		for rawData in readAdded.readlines():
+			data = rawData.strip().rsplit(" ", 1)
+			serie = data[0]
+			data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
+			(staffel, episode) = data[0]
+			cCursor.execute('INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, "", 0, "", "")', (serie, staffel, episode))
+		dbSerRec.commit()
+		cCursor.close()
+		
+		readAdded.close()
+		shutil.move(addedFile, "%s_old" % addedFile)
+		#os.remove(addedFile)
+		
+	if fileExists(timerFile):
+		cCursor = dbSerRec.cursor()
+		readTimer = open(timerFile, "r")
+		for rawData in readTimer.readlines():
+			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+			(serie, xtitle, start_time, stbRef, webChannel) = data[0]
+			data = re.findall('"S(.*?)E(.*?) - (.*?)"', '"%s"' % xtitle, re.S)
+			(staffel, episode, title) = data[0]
+			cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", (serie.lower(), staffel, episode))
+			if not cCursor.fetchone():
+				sql = "INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, ?, ?, ?, ?)"
+				cCursor.execute(sql, (serie, staffel, episode, title, start_time, stbRef, webChannel))
+			else:
+				sql = "UPDATE OR IGNORE AngelegteTimer SET Titel=?, StartZeitstempel=?, ServiceRef=?, webChannel=? WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?"
+				cCursor.execute(sql, (title, start_time, stbRef, webChannel, serie.lower(), staffel, episode))
+		dbSerRec.commit()
+		cCursor.close()
+		
+		readTimer.close()
+		shutil.move(timerFile, "%s_old" % timerFile)
+		#os.remove(timerFile)
+		
+	if fileExists(markerFile):
+		cCursor = dbSerRec.cursor()
+		readMarker = open(markerFile, "r")
+		for rawData in readMarker.readlines():
+			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+			(serie, url, staffeln, sender) = data[0]
+			staffeln = staffeln.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
+			AlleStaffelnAb = 999999
+			if "Manuell" in staffeln:
+				AlleStaffelnAb = -2
+				staffeln = []
+			elif "Alle" in staffeln:
+				AlleStaffelnAb = 0
+				staffeln = []
+			else:
+				if "folgende" in staffeln:
+					staffeln.remove("folgende")
+					staffeln.sort(key=int, reverse=True)
+					AlleStaffelnAb = int(staffeln[0])
+					staffeln = staffeln[1:]
+					
+				staffeln.sort(key=int)
+
+			sender = sender.replace("[","").replace("]","").replace("'","").split(",")
+			alleSender = 0
+			if "Alle" in sender:
+				alleSender = 1
+				sender = []
+			else:
+				sender.sort()
+
+			cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender) VALUES (?, ?, ?, ?)", (serie, url, AlleStaffelnAb, alleSender))
+			ID = cCursor.lastrowid
+			if len(staffeln) > 0:
+				IDs = [ID,]*len(staffeln)					
+				staffel_list = zip(IDs, staffeln)
+				cCursor.executemany("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", staffel_list)
+			if len(sender) > 0:
+				IDs = [ID,]*len(sender)					
+				sender_list = zip(IDs, sender)
+				cCursor.executemany("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", sender_list)
+				
+		dbSerRec.commit()
+		cCursor.close()
+		
+		readMarker.close()
+		shutil.move(markerFile, "%s_old" % markerFile)
+		#os.remove(markerFile)
+		
 	return True
 		
 class serienRecModifyAdded(Screen):
@@ -4220,41 +4280,37 @@ class serienRecModifyAdded(Screen):
 		self.sortedList = False
 		self.addedliste = []
 		self.addedliste_tmp = []
-		self.addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
-
+		#self.dbCommands = []
+		self.dbData = []
+		
 		self.onLayoutFinish.append(self.readAdded)
 
 	def save(self):
 		if self.delAdded:
-			writeAddedFile = open(self.addedFile, 'w')
-			for zeile in self.addedliste:
-				writeAddedFile.write('%s\n' % (zeile))
-			writeAddedFile.close()
-			
+			cCursor = dbSerRec.cursor()
+			#for row in self.dbCommands:
+			#	cCursor.execute(row[0], (row[1], row[2], row[3]))
+			cCursor.executemany("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", self.dbData)
+			dbSerRec.commit()
+			cCursor.close()
 		self.close()
 			
 	def readAdded(self):
-		# copy addedFile to _old
-		if fileExists(self.addedFile):
-			shutil.copy(self.addedFile,self.addedFile+"_old")
-		else:
-			return
-
-		addedFile_leer = os.path.getsize(self.addedFile)
 		self.addedliste = []
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT Serie, Staffel, Episode FROM AngelegteTimer")
+		for row in cCursor:
+			(Serie, Staffel, Episode) = row
+			zeile = "%s S%sE%s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2))
+			self.addedliste.append((zeile, Serie, Staffel, Episode))
+		cCursor.close()
 		
-		if not addedFile_leer == 0:
-			readAddedFile = open(self.addedFile, "r")
-			for zeile in readAddedFile.readlines():
-				self.addedliste.append((zeile.replace('\n','')))
-			readAddedFile.close()
-
-		self['title'].setText("AddedFile: (/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added)")
+		self['title'].setText("Liste der angelegten Timer editieren")
 		self.addedliste_tmp = self.addedliste[:]
 		self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
 			
 	def buildList(self, entry):
-		(zeile) = entry
+		(zeile, Serie, Staffel, Episode) = entry
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
 			]
@@ -4268,12 +4324,18 @@ class serienRecModifyAdded(Screen):
 			print "[Serien Recorder] Added-File leer."
 			return
 		else:
-			zeile = self['list'].getCurrent()[0]
+			zeile = self['list'].getCurrent()[0][0]
+			data = zeile.rsplit(" ", 1)
+			serie = data[0]
+			data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
+			(staffel, episode) = data[0]
+			#self.dbCommands.append(("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", serie.lower(), staffel, episode))
+			self.dbData.append((serie.lower(), staffel, episode))
 			self.addedliste_tmp.remove((zeile))
 			self.addedliste.remove((zeile))
 			self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
 			self.delAdded = True;
-
+			
 	def keyYellow(self):
 		if len(self.addedliste_tmp) != 0:
 			if self.sortedList:
@@ -4348,6 +4410,7 @@ class serienRecShowProposal(Screen):
 		self['blue'] = Label("Liste leeren")
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		self.red = 0xf23d21
+		self.white = 0xffffff
 		
 		self.filter = False
 		self.proposalList = []
@@ -4357,37 +4420,36 @@ class serienRecShowProposal(Screen):
 
 	def readProposal(self):
 		self.proposalList = []
-		cNeueStaffel = dbSerRec.cursor()
-		sql = "SELECT Serie, Staffel, Sender, StaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel"
-		cNeueStaffel.execute(sql, (self.filter, ))
-		for row in cNeueStaffel:
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel", (self.filter, ))
+		for row in cCursor:
 			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = row
-			if Staffel < 10:
-				Staffel = "0"+str(Staffel)
+			Staffel = str(Staffel).zfill(2)
 			self.proposalList.append((Serie, Staffel, Sender, Datum, Url, CreationFlag))
-
+		cCursor.close()
+		
 		self['title'].setText("Neue Serie(n) / Staffel(n):")
-		dirFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
-		self.imageFound = loadPNG(dirFound)
 		
 		self.proposalList.sort(key=lambda x: time.strptime(x[3].split(",")[1].strip(), "%d.%m.%Y"))
 		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
 			
 	def buildList(self, entry):
 		(Serie, Staffel, Sender, Datum, Url, CreationFlag) = entry
+		
 		if CreationFlag == 0:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 0, 32, 32, self.imageFound),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)))
-				]
-		elif CreationFlag == 2:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)), self.red, self.red)
-				]
+			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
 		else:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)))
-				]
+			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/black.png"
+		
+		if CreationFlag == 2:
+			setFarbe = self.red
+		else:
+			setFarbe = self.white
+		
+		return [entry,
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 0, 32, 32, loadPNG(imageFound)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)))
+			]
 				
 	def keyRed(self):
 		check = self['list'].getCurrent()
@@ -4396,13 +4458,11 @@ class serienRecShowProposal(Screen):
 			return
 		else:
 			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = self['list'].getCurrent()[0]
-			cNeueStaffel = dbSerRec.cursor()
+			cCursor = dbSerRec.cursor()
 			data = (Serie, Staffel, Sender, Datum) 
-			#sql = "UPDATE NeuerStaffelbeginn SET CreationFlag=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
-			sql = "DELETE FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
-			cNeueStaffel.execute(sql, data)
+			cCursor.execute("DELETE FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?", data)
 			dbSerRec.commit()
-			
+			cCursor.close()
 			self.readProposal()
 
 	def keyGreen(self):
@@ -4413,54 +4473,47 @@ class serienRecShowProposal(Screen):
 		else:
 			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = self['list'].getCurrent()[0]
 			if CreationFlag:
-				if self.checkMarker(Serie):
-					readMarker = open(self.markerFile, "r")
-					writeMarkerFile = open(self.markerFile+".tmp", 'w')
-					for rawData in readMarker.readlines():
-						data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-						(mSerie, mUrl, mStaffel, mSender) = data[0]
-						if mSerie.lower() == Serie.lower():
-							staffeln2 = []
-							sender2 = []
-							if re.search('Alle', str(mStaffel), re.S|re.I):
-								staffeln2.append('Alle')
-							else:
-								staffeln2.append('%s' % Staffel)
-								staffeln1 = mStaffel.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
-								for x in staffeln1:
-									if x != "folgende":
-										staffeln2.append('%s' % x)
-								staffeln2.sort()
-								if "folgende" in staffeln1:
-									staffeln2.insert(0, 'folgende')
-								
-							if re.search('Alle', str(mSender), re.S|re.I):
-								sender2.append('Alle')
-							else:
-								sender1 = mSender.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
-								for x in sender1:
-									sender2.append('%s' % x)
-								if not Sender in sender1:
-									sender2.append('%s' % Sender)
-								sender2.sort()
-							writeMarkerFile.write('"%s" "%s" "%s" "%s"\n' % (Serie, Url, staffeln2, sender2))
-						else:
-							writeMarkerFile.write(rawData)
-						
-					writeMarkerFile.close()
-					readMarker.close()
-					shutil.move(self.markerFile+".tmp", self.markerFile)
+				(ID, AbStaffel, AlleSender) = self.checkMarker(Serie)
+				if ID > 0:
+					cCursor = dbSerRec.cursor()
+					if AbStaffel > Staffel:
+						cCursor.execute("SELECT * FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel=?", (ID, Staffel))
+						row = cCursor.fetchone()
+						if not row:
+							cCursor.execute("INSERT INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, Staffel))
+							cCursor.execute("SELECT * FROM StaffelAuswahl WHERE ID=? ORDER DESC BY ErlaubteStaffel", (ID,))
+							staffel_Liste = cCursor.fetchall()
+							for row in staffel_Liste:
+								(ID, ErlaubteStaffel) = row
+								if AbStaffel == (ErlaubteStaffel + 1):
+									AbStaffel = ErlaubteStaffel
+								else:
+									break
+							cCursor.execute("UPDATE SerienMarker SET AlleStaffelnAb=? WHERE ID=?", (AbStaffel, ID))
+							cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel>=?", (ID, AbStaffel))
+					
+					if not AlleSender:
+						cCursor.execute("SELECT * FROM SenderAuswahl WHERE ID=? AND ErlaubterSender=?", (ID, Sender))
+						row = cCursor.fetchone()
+						if not row:
+							cCursor.execute("INSERT INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
+					
+					dbSerRec.commit()
+					cCursor.close()
 				else:
-					writeMarkerFile = open(self.markerFile, 'a')
-					writeMarkerFile.write('"%s" "%s" "[\'%s\']" "[\'%s\']"\n' % (Serie, Url, Staffel, Sender))
-					writeMarkerFile.close()
+					cCursor = dbSerRec.cursor()
+					cCursor.execute("INSERT INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender) VALUES (?, ?, ?, ?)", (Serie, Url, AbStaffel, AlleSender))
+					ID = cCursor.lastrowid
+					cCursor.execute("INSERT INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
+					cCursor.execute("INSERT INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, Staffel))
+					dbSerRec.commit()
+					cCursor.close()
 
-				cNeueStaffel = dbSerRec.cursor()
+				cCursor = dbSerRec.cursor()
 				data = (Serie, Staffel, Sender, Datum) 
-				sql = "UPDATE NeuerStaffelbeginn SET CreationFlag=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?"
-				cNeueStaffel.execute(sql, data)
+				cCursor.execute("UPDATE NeuerStaffelbeginn SET CreationFlag=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?", data)
 				dbSerRec.commit()
-
+				cCursor.close()
 			self.readProposal()
 		
 	def keyYellow(self):
@@ -4482,10 +4535,10 @@ class serienRecShowProposal(Screen):
 			if config.plugins.serienRec.confirmOnDelete.value:
 				self.session.openWithCallback(self.callDeleteMsg, MessageBox, _("Soll die Liste wirklich geleert werden?"), MessageBox.TYPE_YESNO, default = False)				
 			else:
-				cNeueStaffel = dbSerRec.cursor()
-				cNeueStaffel.execute("DELETE FROM NeuerStaffelbeginn")
+				cCursor = dbSerRec.cursor()
+				cCursor.execute("DELETE FROM NeuerStaffelbeginn")
 				dbSerRec.commit()
-				
+				cCursor.close()
 				self.readProposal()
 
 	def keyOK(self):
@@ -4493,22 +4546,21 @@ class serienRecShowProposal(Screen):
 
 	def callDeleteMsg(self, answer):
 		if answer:
-			cNeueStaffel = dbSerRec.cursor()
-			cNeueStaffel.execute("DELETE FROM NeuerStaffelbeginn")
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("DELETE FROM NeuerStaffelbeginn")
 			dbSerRec.commit()
-			
+			cCursor.close()
 			self.readProposal()
 		else:
 			return
 			
 	def checkMarker(self, mSerie):
-		readMarker = open(self.markerFile, "r")
-		for rawData in readMarker.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(serie, url, staffel, sender) = data[0]
-			if serie.lower() == mSerie.lower():
-				readMarker.close()
-				return True
-		readMarker.close()
-		return False
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT ID, AlleStaffelnAb, alleSender FROM SerienMarker WHERE LOWER(Serie)=?", (mSerie.lower(),))
+		row = cCursor.fetchone()
+		if not row:
+			row = (0, 999999, 0)
+		cCursor.close()
+		return row
 
+		
