@@ -4172,7 +4172,10 @@ def ImportFilesToDB():
 		for rawData in readAdded.readlines():
 			data = rawData.strip().rsplit(" ", 1)
 			serie = data[0]
-			data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
+			try:
+				data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
+			except:
+				continue
 			(staffel, episode) = data[0]
 			cCursor.execute('INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, "", 0, "", "")', (serie, staffel, episode))
 		dbSerRec.commit()
