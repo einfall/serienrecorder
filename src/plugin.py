@@ -1251,6 +1251,15 @@ class serienRecMain(Screen):
 
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/blue_round.png" position="1060,651" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="blue" position="1100,656" size="250,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_0.png" position="20,685" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="0" position="60,691" size="250,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_1.png" position="310,685" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="1" position="350,691" size="210,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_3.png" position="560,685" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="3" position="600,691" size="220,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>"""
 
 	def __init__(self, session):
@@ -1335,6 +1344,9 @@ class serienRecMain(Screen):
 		self['info'] = Label("Timer suchen")
 		self['yellow'] = Label("Serien Marker")
 		self['blue'] = Label("Timer-Liste")
+		self['0'] = Label("Zeige Log")
+		self['1'] = Label("Added Liste")
+		self['3'] = Label("Neue Serienstarts")
 
 		#self.onLayoutFinish.append(self.startScreen)
 		self.onFirstExecBegin.append(self.startScreen)
@@ -3171,7 +3183,7 @@ class serienRecSendeTermine(Screen):
 							if config.plugins.serienRec.eventid.value:
 								# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 								event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60))
-								print "event matches %s" % len(event_matches)
+								#print "event matches %s" % len(event_matches)
 								if event_matches and len(event_matches) > 0:
 									for event_entry in event_matches:
 										print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
