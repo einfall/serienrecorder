@@ -1336,7 +1336,8 @@ class serienRecMain(Screen):
 		self['yellow'] = Label("Serien Marker")
 		self['blue'] = Label("Timer-Liste")
 
-		self.onLayoutFinish.append(self.startScreen)
+		#self.onLayoutFinish.append(self.startScreen)
+		self.onFirstExecBegin.append(self.startScreen)
 
 	def importFromFile(self):
 		ImportFilesToDB()
@@ -1417,7 +1418,11 @@ class serienRecMain(Screen):
 	def startScreen(self):
 		if config.plugins.serienRec.Autoupdate.value:
 			checkupdate(self.session).checkforupdate()
-		self.readWebpage()
+		if self.isChannelsListEmpty():
+			print "[Serien Recorder] Channellist is empty !"
+			self.session.openWithCallback(self.readWebpage, serienRecMainChannelEdit)
+		else:
+			self.readWebpage()
 
 	def readWebpage(self):
 		url = "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(self.page))
@@ -1458,7 +1463,7 @@ class serienRecMain(Screen):
 
 						# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 						event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_time)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_time)+(int(config.plugins.serienRec.margin_before.value) * 60))
-						print "event matches %s" % len(event_matches)
+						#print "event matches %s" % len(event_matches)
 						if event_matches and len(event_matches) > 0:
 							for event_entry in event_matches:
 								print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
@@ -1693,6 +1698,18 @@ class serienRecMain(Screen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 800, 30, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name)
 			]
 
+	def isChannelsListEmpty(self):
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT Count(*) from Channels")
+		(count,) = cCursor.fetchone()
+		print "[Serien Recorder] count channels %s" % count
+		if count == 0:
+			print "channels: true"
+			return True
+		else:
+			print "channels: false"
+			return False
+
 	def checkTimer(self, serie, staffel, episode, title, start_time, webchannel):
 		cCursor = dbSerRec.cursor()
 		sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=? AND LOWER(webChannel)=?"
@@ -1849,7 +1866,7 @@ class serienRecMainChannelEdit(Screen):
 		self['title'] = Label("Loading Web-Channel / STB-Channels...")
 		self['red'] = Label("Sender An/Aus-Schalten")
 		self['ok'] = Label("Sender Auswählen")
-		self['green'] = Label("Sender-Liste Zurücksetzen")
+		self['green'] = Label("Reset Senderliste")
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		
 		# popup
@@ -2960,7 +2977,7 @@ class serienRecSendeTermine(Screen):
 		#('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
 		if raw:
 			parsingOK = True
-			print "raw"
+			#print "raw"
 		else:
 			raw2 = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
 			if raw2:
@@ -2971,7 +2988,7 @@ class serienRecSendeTermine(Screen):
 					each.insert(4, "0")
 					raw.append(each)
 				parsingOK = True
-				print "raw2"
+				#print "raw2"
 
 		if parsingOK:
 			for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
@@ -4305,7 +4322,7 @@ class serienRecModifyAdded(Screen):
 			self.addedliste.append((zeile, Serie, Staffel, Episode))
 		cCursor.close()
 		
-		self['title'].setText("Liste der angelegten Timer editieren")
+		self['title'].setText("Liste der angelegten Timer editieren (Diese Episoden werden nicht mehr aufgenommen !)")
 		self.addedliste_tmp = self.addedliste[:]
 		self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
 			
