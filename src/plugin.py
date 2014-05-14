@@ -4356,15 +4356,21 @@ class serienRecModifyAdded(Screen):
 			print "[Serien Recorder] Added-File leer."
 			return
 		else:
-			zeile = self['list'].getCurrent()[0][0]
-			data = zeile.rsplit(" ", 1)
-			serie = data[0]
-			data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
-			(staffel, episode) = data[0]
+			zeile = self['list'].getCurrent()[0]
+			#data = zeile.rsplit(" ", 1)
+			#serie = data[0]
+			try:
+				serie = zeile[1]
+				staffel = zeile[2]
+				episode = zeile[3]
+				#data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
+			except:
+				return
+			#(staffel, episode) = data[1]
 			#self.dbCommands.append(("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", serie.lower(), staffel, episode))
 			self.dbData.append((serie.lower(), staffel, episode))
-			self.addedliste_tmp.remove((zeile))
-			self.addedliste.remove((zeile))
+			self.addedliste_tmp.remove(zeile)
+			self.addedliste.remove(zeile)
 			self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
 			self.delAdded = True;
 			
