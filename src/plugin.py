@@ -3137,7 +3137,7 @@ class serienRecSendeTermine(Screen):
 					# erstellt das serien verzeichnis
 					mkdir = False
 					if config.plugins.serienRec.seriensubdir.value:
-						dirname = "%s%S/" % (config.plugins.serienRec.savetopath.value, serien_name)
+						dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
 						if not fileExists("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)):
 							print "[Serien Recorder] erstelle Subdir %s" % config.plugins.serienRec.savetopath.value+serien_name+"/"
 							writeLog("[Serien Recorder] erstelle Subdir: ' %s%s%s '" % (config.plugins.serienRec.savetopath.value, serien_name, "/"))
