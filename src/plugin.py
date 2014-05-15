@@ -4159,6 +4159,7 @@ def ImportFilesToDB():
 	initDB()
 	if fileExists(channelFile):
 		cCursor = dbSerRec.cursor()
+		cCursor.execute("DELETE FROM Channels")
 		readChannel = open(channelFile, "r")
 		for rawData in readChannel.readlines():
 			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
