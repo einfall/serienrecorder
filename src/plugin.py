@@ -1390,6 +1390,10 @@ class serienRecMain(Screen):
 		elif int(config.plugins.serienRec.screenmode.value) == 2 and int(config.plugins.serienRec.screeplaner.value) == 1:
 			self.pNeu = 2
 			self['headline'].setText("Nach aktivierten Sendern (aktuelle internationale Serien)")
+		## E01
+		elif int(config.plugins.serienRec.screenmode.value) == 3 and int(config.plugins.serienRec.screeplaner.value) == 1:
+			self.pNeu = 3
+			self['headline'].setText("Alle Serienstarts")
 		# soaps
 		#elif int(config.plugins.serienRec.screenmode.value) == 0 and int(config.plugins.serienRec.screeplaner.value) == 2:
 		#	self.pNeu = 0
@@ -1523,6 +1527,9 @@ class serienRecMain(Screen):
 						(webChannel, stbChannel, stbRef, status) = cSener_list[0]
 						if int(status) == 1:
 							self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+				elif self.pNeu == 3:
+					if re.search('01', episode, re.S):
+						self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 
 		print "[Serien Recorder] Es wurden %s Serie(n) gefunden" % len(self.daylist)
 		
@@ -1696,6 +1703,8 @@ class serienRecMain(Screen):
 			self.popup_list.append(('0', '3', 'Alle Serien (internationale Serienklassiker)'))
 			self.popup_list.append(('1', '3', 'Neue Serien (internationale Serienklassiker)'))
 			self.popup_list.append(('2', '3', 'Nach aktivierten Sendern (internationale Serienklassiker)'))
+			# E01
+			self.popup_list.append(('3', '1', 'Alle Serienstarts'))
 			self.chooseMenuList_popup.setList(map(self.buildList_popup, self.popup_list))
 			self['popup_bg'].show()
 			self['popup'].show()
