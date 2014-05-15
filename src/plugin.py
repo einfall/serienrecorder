@@ -2387,6 +2387,15 @@ class serienRecMarker(Screen):
 				else:	
 					if AlleStaffelnAb == 0:
 						mode_list[1] = 1
+					elif AlleStaffelnAb >= 999999:
+						cStaffelList = []
+						cStaffel = dbSerRec.cursor()
+						cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
+						cStaffelList = cStaffel.fetchall()
+						if len(cStaffelList) > 0:
+							cStaffelList = zip(*cStaffelList)[0]
+						for staffel in cStaffelList:
+							mode_list[staffel + 3] = 1
 					elif (AlleStaffelnAb > 0) and (AlleStaffelnAb <= (len(staffeln)-4)):
 						cStaffelList = []
 						mode_list[AlleStaffelnAb + 3] = 1
@@ -2523,10 +2532,10 @@ class serienRecMarker(Screen):
 		if row:
 			(ID,) = row
 			cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID=?", (ID,))
-			AlleStaffelnAb = -2
 			for row in self.staffel_liste:
 				(staffel, mode, index) = row
 				if (index == 0) and (mode == 1):		# 'Manuell'
+					AlleStaffelnAb = -2
 					break
 				elif (index == 1) and (mode == 1):		# 'Alle'
 					AlleStaffelnAb = 0
@@ -2544,7 +2553,7 @@ class serienRecMarker(Screen):
 						except:
 							AlleStaffelnAb = 0
 							break
-				elif mode == 1:
+				elif (index > 2) and mode == 1:
 					if str(staffel).isdigit():
 						if staffel >= AlleStaffelnAb:
 							#break
@@ -4312,7 +4321,6 @@ class serienRecModifyAdded(Screen):
 		self.sortedList = False
 		self.addedliste = []
 		self.addedliste_tmp = []
-		#self.dbCommands = []
 		self.dbData = []
 		
 		self.onLayoutFinish.append(self.readAdded)
@@ -4320,8 +4328,6 @@ class serienRecModifyAdded(Screen):
 	def save(self):
 		if self.delAdded:
 			cCursor = dbSerRec.cursor()
-			#for row in self.dbCommands:
-			#	cCursor.execute(row[0], (row[1], row[2], row[3]))
 			cCursor.executemany("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", self.dbData)
 			dbSerRec.commit()
 			cCursor.close()
@@ -4357,17 +4363,12 @@ class serienRecModifyAdded(Screen):
 			return
 		else:
 			zeile = self['list'].getCurrent()[0]
-			#data = zeile.rsplit(" ", 1)
-			#serie = data[0]
 			try:
 				serie = zeile[1]
 				staffel = zeile[2]
 				episode = zeile[3]
-				#data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
 			except:
 				return
-			#(staffel, episode) = data[1]
-			#self.dbCommands.append(("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", serie.lower(), staffel, episode))
 			self.dbData.append((serie.lower(), staffel, episode))
 			self.addedliste_tmp.remove(zeile)
 			self.addedliste.remove(zeile)
