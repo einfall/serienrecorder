@@ -4489,8 +4489,46 @@ class serienRecModifyAdded(Screen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
 			]
 
+	def answerStaffel(self, aStaffel):
+		self.aStaffel = aStaffel
+		self.session.openWithCallback(self.answerFromEpisode, VirtualKeyBoard, title = (_("von Episode:")), text = "")
+	
+	def answerFromEpisode(self, aFromEpisode):
+		self.aFromEpisode = aFromEpisode
+		self.session.openWithCallback(self.answerToEpisode, VirtualKeyBoard, title = (_("bis Episode:")), text = "")
+	
+	def answerToEpisode(self, aToEpisode):
+		self.aToEpisode = aToEpisode
+		print "[Serien Recorder] Staffel: %s" % self.aStaffel
+		print "[Serien Recorder] von Episode: %s" % self.aFromEpisode
+		print "[Serien Recorder] bis Episode: %s" % self.aToEpisode
+		
+		if self.aToEpisode == None or self.aFromEpisode == None or self.aStaffel == None:
+			return
+		else:
+			if int(self.aFromEpisode) != 0 or int(self.aToEpisode) != 0:
+				cCursor = dbSerRec.cursor()
+				for i in range(int(self.aFromEpisode), int(self.aToEpisode)+1):
+					print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(self.aSerie), str(self.aStaffel), str(i))
+					cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (self.aSerie, self.aStaffel, i, "dump", 0, "dump", "dump", 0))
+				dbSerRec.commit()
+				cCursor.close()
+				self.readAdded()
+
 	def keyOK(self):
-		pass
+		check = self['list'].getCurrent()
+		if check == None:
+			print "[Serien Recorder] Added-File leer."
+			return
+		else:
+			self.aStaffel = 0
+			self.aFromEpisode = 0
+			self.aToEpisode = 0
+			zeile = self['list'].getCurrent()[0]
+			(title, serie, staffel, episode) = zeile
+			self.aSerie = serie
+			print "[Serien Recorder] Serie: %s" % title
+			self.session.openWithCallback(self.answerStaffel, VirtualKeyBoard, title = (_("Staffel eingeben:")), text = "")
 
 	def keyRed(self):
 		check = self['list'].getCurrent()
@@ -4701,7 +4739,7 @@ class serienRecShowProposal(Screen):
 			return
 		else:
 			if config.plugins.serienRec.confirmOnDelete.value:
-				self.session.openWithCallback(self.callDeleteMsg, MessageBox, _("Soll die Liste wirklich geleert werden?"), MessageBox.TYPE_YESNO, default = False)				
+				self.session.openWithCallback(self.callDeleteMsg, MessageBox, _("Soll die Liste wirklich geleert werden?"), MessageBox.TYPE_YESNO, default = False)
 			else:
 				cCursor = dbSerRec.cursor()
 				cCursor.execute("DELETE FROM NeuerStaffelbeginn")
