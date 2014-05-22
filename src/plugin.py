@@ -2582,21 +2582,27 @@ class serienRecMarker(Screen):
 
 	def callSaveMsg(self, answer):
 		if answer:
-			serien_name = self['list'].getCurrent()[0][0]
-			self.removeSerienMarker(serien_name)
+			self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Added Liste entfernt werden?" % self.selected_serien_name), MessageBox.TYPE_YESNO, default = False)
 		else:
 			return
-			
-	def removeSerienMarker(self, serien_name):
+
+	def callDelMsg(self, answer):
+		print self.selected_serien_name, answer
+		self.removeSerienMarker(self.selected_serien_name, answer)
+		
+	def removeSerienMarker(self, serien_name, answer):
 		cCursor = dbSerRec.cursor()
+		if answer:
+			print "[Serien Recorder] lösche %s aus der added liste" % serien_name
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=?", (serien_name.lower(),))
 		cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
 		cCursor.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
 		cCursor.execute("DELETE FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
 		dbSerRec.commit()
 		cCursor.close()
-		self.readSerienMarker()	
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Serie '- %s -' entfernt." % serien_name)
+		self.readSerienMarker()	
 			
 	def keyRed(self):
 		if self.modus == "list":
@@ -2605,16 +2611,16 @@ class serienRecMarker(Screen):
 				print "[Serien Recorder] Serien Marker leer."
 				return
 			else:
-				serien_name = self['list'].getCurrent()[0][0]
+				self.selected_serien_name = self['list'].getCurrent()[0][0]
 				cCursor = dbSerRec.cursor()
-				cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+				cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (self.selected_serien_name.lower(),))
 				row = cCursor.fetchone()
 				if row:
 					print "gefunden."
 					if config.plugins.serienRec.confirmOnDelete.value:
-						self.session.openWithCallback(self.callSaveMsg, MessageBox, _("Soll '%s' wirklich entfernt werden?" % serien_name), MessageBox.TYPE_YESNO, default = False)				
+						self.session.openWithCallback(self.callSaveMsg, MessageBox, _("Soll '%s' wirklich entfernt werden?" % self.selected_serien_name), MessageBox.TYPE_YESNO, default = False)
 					else:
-						self.removeSerienMarker(serien_name)
+						self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Added Liste entfernt werden?" % self.selected_serien_name), MessageBox.TYPE_YESNO, default = False)
 
 	def insertStaffelMarker(self):
 		print self.select_serie
