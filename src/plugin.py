@@ -117,6 +117,7 @@ config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
 config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
 config.plugins.serienRec.recordAll = ConfigYesNo(default = False)
 config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
+config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
@@ -346,6 +347,21 @@ def getUrl(url):
 	res = urllib2.urlopen(req)
 	finalurl = res.geturl()
 	return finalurl
+
+class PicLoader:
+    def __init__(self, width, height, sc=None):
+        self.picload = ePicLoad()
+        if(not sc):
+            sc = AVSwitch().getFramebufferScale()
+        self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
+
+    def load(self, filename):
+        self.picload.startDecode(filename, 0, 0, False)
+        data = self.picload.getData()
+        return data
+    
+    def destroy(self):
+        del self.picload
 
 class serienRecCheckForRecording():
 
@@ -1309,7 +1325,7 @@ class serienRecMain(Screen):
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
 			<widget source="session.VideoPicture" render="Pig" position="915,120" size="328,186" zPosition="3" backgroundColor="transparent" />
-			<widget name="list" position="20,120" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
+			<widget name="list" position="20,120" size="870,500" foregroundColorSelected="#ffffff" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
 			<widget name="popup_bg" position="170,130" size="600,480" backgroundColor="#000000" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/popup_bg.png" transparent="1" zPosition="4" />
 			<widget name="popup" position="180,170" size="580,370" backgroundColor="#00181d20" scrollbarMode="showOnDemand" transparent="1" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
 			<widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/no_cover.png" position="915,320" size="320,300" transparent="1" alphatest="blend" />
@@ -1654,6 +1670,8 @@ class serienRecMain(Screen):
 		imageTimer = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/timer.png"
 		imageHDD = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/hdd_24x24.png"
 		
+		sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
+		
 		if serieAdded:
 			setFarbe = self.green
 		else:
@@ -1672,14 +1690,28 @@ class serienRecMain(Screen):
 		else:
 			imageHDDTimer = imageNone
 		
-		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 7, 30, 22, loadPNG(imageNeu)),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 30, 30, 22, loadPNG(imageHDDTimer)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
-			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
-			]
+		if config.plugins.serienRec.showPicons.value:
+			self.picloader = PicLoader(80, 40)
+			picon = self.picloader.load("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sender/"+sender+".png")
+			self.picloader.destroy()
+			return [entry,
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5, 80, 40, picon),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 7, 30, 22, loadPNG(imageNeu)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 30, 30, 22, loadPNG(imageHDDTimer)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 100, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 100, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 350, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 350, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
+				]
+		else:
+			return [entry,
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 7, 30, 22, loadPNG(imageNeu)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 30, 30, 22, loadPNG(imageHDDTimer)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
+				]
 
 	def keyOK(self):
 		if self.modus == "list":
@@ -3723,6 +3755,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list = []
 		self.get_media = getConfigListEntry("Speicherort der Aufnahmen:" + "   " + config.plugins.serienRec.savetopath.value, config.plugins.serienRec.fake_entry)
 		self.list.append(self.get_media)
+		self.list.append(getConfigListEntry("Zeige Picons:", config.plugins.serienRec.showPicons))
 		self.list.append(getConfigListEntry("Nur zum Sender zappen:", config.plugins.serienRec.justplay))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry("Zeige Nachricht wenn Suchlauf startet:", config.plugins.serienRec.showNotification))
@@ -3821,7 +3854,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.ActionOnNew.save()
 		#config.plugins.serienRec.recordAll.save()
 		config.plugins.serienRec.showMessageOnConflicts.save()
-		
+		config.plugins.serienRec.showPicons.save()
+
 		configfile.save()
 		self.close(True)
 
