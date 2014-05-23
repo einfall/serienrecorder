@@ -120,7 +120,7 @@ config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta5"))
+config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta6"))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -517,9 +517,8 @@ class serienRecCheckForRecording():
 		else:
 			self.startCheck3()
 
-			
 	def startCheck2(self, amanuell):
-		ds = defer.DeferredSemaphore(tokens=100)
+		ds = defer.DeferredSemaphore(tokens=2)
 		downloads = [ds.run(self.readWebpageForNewStaffel, "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))).addCallback(self.parseWebpageForNewStaffel, amanuell).addErrback(self.dataError) for daypage in range(int(config.plugins.serienRec.checkfordays.value))]
 		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.checkError)
 		
@@ -711,7 +710,7 @@ class serienRecCheckForRecording():
 		self.countTimer = 0
 		self.countTimerUpdate = 0
 		self.countSerien = self.countMarker()
-		ds = defer.DeferredSemaphore(tokens=100)
+		ds = defer.DeferredSemaphore(tokens=2)
 		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode in self.urls]
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
@@ -1338,6 +1337,9 @@ class serienRecMain(Screen):
 
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_3.png" position="560,685" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="3" position="600,691" size="220,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_4.png" position="820,685" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="4" position="860,691" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>"""
 
 	def __init__(self, session):
@@ -1364,6 +1366,7 @@ class serienRecMain(Screen):
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile,
 			"3"		: self.showProposalDB,
+			"4"		: self.serieInfo,
 			"9"     : self.importFromFile
 		}, -1)
 
@@ -1427,6 +1430,7 @@ class serienRecMain(Screen):
 		self['0'] = Label("Zeige Log")
 		self['1'] = Label("Added Liste")
 		self['3'] = Label("Neue Serienstarts")
+		self['4'] = Label("Serien Beschreibung")
 
 		#self.onLayoutFinish.append(self.startScreen)
 		self.onFirstExecBegin.append(self.startScreen)
@@ -1435,7 +1439,17 @@ class serienRecMain(Screen):
 		ImportFilesToDB()
 		self['title'].setText("File-Import erfolgreich ausgeführt")
 		self['title'].instance.setForegroundColor(parseColor("white"))
+
+	def serieInfo(self):
+		check = self['list'].getCurrent()
+		if check == None:
+			return
+		serien_url = self['list'].getCurrent()[0][5]
+		serien_name = self['list'].getCurrent()[0][6]
+		serien_id = self['list'].getCurrent()[0][14]
 		
+		self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de"+serien_url)
+
 	def showProposalDB(self):
 		self.session.open(serienRecShowProposal)
 
@@ -4427,6 +4441,9 @@ class serienRecModifyAdded(Screen):
 
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/yellow_round.png" position="820,651" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="yellow" position="860,656" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="1060,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="ok" position="1100,656" size="250,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>"""
 
 	def __init__(self, session):
@@ -4450,6 +4467,7 @@ class serienRecModifyAdded(Screen):
 		self['green'] = Label("Speichern")
 		self['cancel'] = Label("Abbrechen")
 		self['yellow'] = Label("Sortieren")
+		self['ok'] = Label("Eintrag Anlegen")
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
 		
 		self.delAdded = False
@@ -4491,10 +4509,14 @@ class serienRecModifyAdded(Screen):
 
 	def answerStaffel(self, aStaffel):
 		self.aStaffel = aStaffel
+		if self.aStaffel == None or self.aStaffel == "":
+			return
 		self.session.openWithCallback(self.answerFromEpisode, VirtualKeyBoard, title = (_("von Episode:")), text = "")
 	
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
+		if self.aFromEpisode == None or self.aFromEpisode == "":
+			return
 		self.session.openWithCallback(self.answerToEpisode, VirtualKeyBoard, title = (_("bis Episode:")), text = "")
 	
 	def answerToEpisode(self, aToEpisode):
@@ -4503,7 +4525,7 @@ class serienRecModifyAdded(Screen):
 		print "[Serien Recorder] von Episode: %s" % self.aFromEpisode
 		print "[Serien Recorder] bis Episode: %s" % self.aToEpisode
 		
-		if self.aToEpisode == None or self.aFromEpisode == None or self.aStaffel == None:
+		if self.aToEpisode == None or self.aFromEpisode == None or self.aStaffel == None or self.aToEpisode == "":
 			return
 		else:
 			if int(self.aFromEpisode) != 0 or int(self.aToEpisode) != 0:
@@ -4559,7 +4581,6 @@ class serienRecModifyAdded(Screen):
 		
 	def keyCancel(self):
 		self.close()
-
 
 class serienRecShowProposal(Screen):
 	skin = """
@@ -4769,4 +4790,77 @@ class serienRecShowProposal(Screen):
 		cCursor.close()
 		return row
 
+class serienRecShowInfo(Screen):
+	skin = """
+		<screen position="center,center" size="1280,720" title="Serien Recorder">
+			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
+			<widget name="title" position="50,50" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,10" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
+			<widget source="global.CurrentTime" render="Label" position="850,50" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
+				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
+			</widget>
+			<widget source="session.VideoPicture" render="Pig" position="915,120" size="328,186" zPosition="3" backgroundColor="transparent" />
+			<widget name="list" position="25,120" size="870,500" font="Regular;24" backgroundColor="#00000000" transparent="1" zPosition="1" />
+			<widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/no_cover.png" position="915,320" size="320,300" transparent="1" alphatest="blend" />
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/red_round.png" position="20,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="red" position="60,656" size="250,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
+		</screen>"""
+
+	def __init__(self, session, serieName, serieUrl):
+		Screen.__init__(self, session)
+		self.session = session
+		self.serieName = serieName
+		self.serieUrl = serieUrl
+
+		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions"], {
+			"up"	: self.pageUp,
+			"down"	: self.pageDown,
+			"cancel": self.keyCancel
+		}, -1)
+
+		self["list"] = ScrollLabel()
+		self['title'] = Label("Serien Beschreibung: %s" % self.serieName)
+		self['red'] = Label("Zurück")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
+		self['cover'] = Pixmap()
 		
+		self.onLayoutFinish.append(self.getData)
+
+	def getData(self):
+		getPage(self.serieUrl, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		self.showCover()
+
+	def parseData(self, data):
+		info = re.findall('<p class="mb4 credits">(.*?)</div>', data, re.S)
+		if info:
+			beschreibung = re.sub('<.*?>', '', info[0])
+			self["list"].setText(str(beschreibung.replace('&amp:','&')))
+
+	def showCover(self):
+		serien_nameCover = "/tmp/serienrecorder/%s.png" % self.serieName
+		if fileExists(serien_nameCover):
+			self.picload = ePicLoad()
+			self['cover'].instance.setPixmap(gPixmapPtr())
+			scale = AVSwitch().getFramebufferScale()
+			size = self['cover'].instance.size()
+			self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#FF000000"))
+			if self.picload.startDecode(serien_nameCover, 0, 0, False) == 0:
+				ptr = self.picload.getData()
+				if ptr != None:
+					self['cover'].instance.setPixmap(ptr)
+					self['cover'].show()
+					del self.picload
+		else:
+			print("Coverfile not found: %s" %  serien_nameCover)
+
+	def dataError(self, error):
+		print error
+
+	def pageUp(self):
+		self["list"].pageUp()
+
+	def pageDown(self):
+		self["list"].pageDown()
+
+	def keyCancel(self):
+		self.close()
