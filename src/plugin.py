@@ -1325,7 +1325,7 @@ class serienRecMain(Screen):
 				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 			</widget>
 			<widget source="session.VideoPicture" render="Pig" position="915,120" size="328,186" zPosition="3" backgroundColor="transparent" />
-			<widget name="list" position="20,120" size="870,500" foregroundColorSelected="#ffffff" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
+			<widget name="list" position="10,120" size="870,500" foregroundColorSelected="#ffffff" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
 			<widget name="popup_bg" position="170,130" size="600,480" backgroundColor="#000000" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/popup_bg.png" transparent="1" zPosition="4" />
 			<widget name="popup" position="180,170" size="580,370" backgroundColor="#00181d20" scrollbarMode="showOnDemand" transparent="1" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
 			<widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/no_cover.png" position="915,320" size="320,300" transparent="1" alphatest="blend" />
@@ -1695,13 +1695,13 @@ class serienRecMain(Screen):
 			picon = self.picloader.load("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sender/"+sender+".png")
 			self.picloader.destroy()
 			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5, 80, 40, picon),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 7, 30, 22, loadPNG(imageNeu)),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 30, 30, 22, loadPNG(imageHDDTimer)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 350, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 350, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80, 40, picon),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340, 7, 30, 22, loadPNG(imageNeu)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340, 30, 30, 22, loadPNG(imageHDDTimer)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 375, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 375, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
 				]
 		else:
 			return [entry,
@@ -4182,62 +4182,6 @@ class SerienRecorderUpdateScreen(Screen):
 	def mplog(self,str):
 		self["mplog"].setText(str)
 
-def getNextWakeup():
-	color_print = "\033[93m"
-	color_end = "\33[0m"
-
-	if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.timeUpdate.value:
-		#writeLog("[Serien Recorder] Deep-Standby WakeUp: AN")
-		print color_print+"[Serien Recorder] Deep-Standby WakeUp: AN" +color_end
-		now = time.localtime()
-		current_time = int(time.time())
-		
-		begin = int(time.mktime((now.tm_year, now.tm_mon, now.tm_mday, config.plugins.serienRec.deltime.value[0], config.plugins.serienRec.deltime.value[1], 0, now.tm_wday, now.tm_yday, now.tm_isdst)))
-
-		# überprüfe ob die aktuelle zeit größer ist als der clock-timer + 1 day.
-		if int(current_time) > int(begin):
-			#writeLog("[Serien Recorder] WakeUp-Timer + 1 day.")
-			print color_print+"[Serien Recorder] WakeUp-Timer + 1 day."+color_end
-			begin = begin + 86400
-		# 5 min. bevor der Clock-Check anfängt wecken.
-		begin = begin - 300
-
-		wakeupUhrzeit = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(begin)))
-		#writeLog("[Serien Recorder] Deep-Standby WakeUp um %s" % wakeupUhrzeit)
-		print color_print+"[Serien Recorder] Deep-Standby WakeUp um %s" % wakeupUhrzeit +color_end
-
-		return begin
-	else:
-		#writeLog("[Serien Recorder] Deep-Standby WakeUp: AUS")
-		print color_print+"[Serien Recorder] Deep-Standby WakeUp: AUS" +color_end
-
-		#return
-
-def autostart(reason, **kwargs):
-	session = kwargs.get("session", None)
-	color_print = "\033[93m"
-	color_end = "\33[0m"
-	initDB()
-	if config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
-		print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
-		serienRecCheckForRecording(session, False)
-		#autocheck = serienRecCheckForRecording(session, False)
-	else:
-		print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
-
-def main(session, **kwargs):
-	session.open(serienRecMain)
-
-def Plugins(path, **kwargs):
-	global plugin_path
-	plugin_path = path
-	return [
-		PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc=autostart, wakeupfnc=getNextWakeup),
-		#PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc = autostart, wakeupfnc=getNextWakeup,
-		PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_EXTENSIONSMENU], fnc=main),
-		PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=main)
-		]
-
 def initDB():
 	#dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
 	#dbSerRec.text_factory = str
@@ -4333,7 +4277,6 @@ def initDB():
 	dbTmp.commit()
 	cTmp.close()
 
-	
 def ImportFilesToDB():
 	channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
 	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
@@ -4898,3 +4841,59 @@ class serienRecShowInfo(Screen):
 
 	def keyCancel(self):
 		self.close()
+
+def getNextWakeup():
+	color_print = "\033[93m"
+	color_end = "\33[0m"
+
+	if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.timeUpdate.value:
+		#writeLog("[Serien Recorder] Deep-Standby WakeUp: AN")
+		print color_print+"[Serien Recorder] Deep-Standby WakeUp: AN" +color_end
+		now = time.localtime()
+		current_time = int(time.time())
+		
+		begin = int(time.mktime((now.tm_year, now.tm_mon, now.tm_mday, config.plugins.serienRec.deltime.value[0], config.plugins.serienRec.deltime.value[1], 0, now.tm_wday, now.tm_yday, now.tm_isdst)))
+
+		# überprüfe ob die aktuelle zeit größer ist als der clock-timer + 1 day.
+		if int(current_time) > int(begin):
+			#writeLog("[Serien Recorder] WakeUp-Timer + 1 day.")
+			print color_print+"[Serien Recorder] WakeUp-Timer + 1 day."+color_end
+			begin = begin + 86400
+		# 5 min. bevor der Clock-Check anfängt wecken.
+		begin = begin - 300
+
+		wakeupUhrzeit = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(begin)))
+		#writeLog("[Serien Recorder] Deep-Standby WakeUp um %s" % wakeupUhrzeit)
+		print color_print+"[Serien Recorder] Deep-Standby WakeUp um %s" % wakeupUhrzeit +color_end
+
+		return begin
+	else:
+		#writeLog("[Serien Recorder] Deep-Standby WakeUp: AUS")
+		print color_print+"[Serien Recorder] Deep-Standby WakeUp: AUS" +color_end
+
+		#return
+
+def autostart(reason, **kwargs):
+	session = kwargs.get("session", None)
+	color_print = "\033[93m"
+	color_end = "\33[0m"
+	initDB()
+	if config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
+		print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
+		serienRecCheckForRecording(session, False)
+		#autocheck = serienRecCheckForRecording(session, False)
+	else:
+		print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
+
+def main(session, **kwargs):
+	session.open(serienRecMain)
+
+def Plugins(path, **kwargs):
+	global plugin_path
+	plugin_path = path
+	return [
+		PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc=autostart, wakeupfnc=getNextWakeup),
+		#PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc = autostart, wakeupfnc=getNextWakeup,
+		PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_EXTENSIONSMENU], fnc=main),
+		PluginDescriptor(name="SerienRecorder", description="Record your favorite series.", where = [PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=main)
+		]
