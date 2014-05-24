@@ -4570,7 +4570,9 @@ class serienRecShowProposal(Screen):
 			</widget>
 			<widget source="session.VideoPicture" render="Pig" position="915,120" size="328,186" zPosition="3" backgroundColor="transparent" />
 			<widget name="list" position="20,120" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
-			
+
+			<widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/no_cover.png" position="915,320" size="320,300" transparent="1" alphatest="blend" />
+
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/red_round.png" position="20,651" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="red" position="60,656" size="250,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
 			
@@ -4585,6 +4587,9 @@ class serienRecShowProposal(Screen):
 
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/blue_round.png" position="1060,651" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="blue" position="1100,656" size="250,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_4.png" position="820,685" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="4" position="860,691" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>"""
 
 	def __init__(self, session):
@@ -4597,14 +4602,19 @@ class serienRecShowProposal(Screen):
 			"red"	: self.keyRed,
 			"green" : self.keyGreen,
 			"yellow": self.keyYellow,
-			"blue"	: self.keyBlue
+			"blue"	: self.keyBlue,
+			"right" : self.keyRight,
+			"up"    : self.keyUp,
+			"down"  : self.keyDown,
+			"4"		: self.serieInfo
 		}, -1)
 
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
-		self.chooseMenuList.l.setItemHeight(25)
+		self.chooseMenuList.l.setItemHeight(50)
 
-
+		self.picload = ePicLoad()
+		self['cover'] = Pixmap()
 		self['list'] = self.chooseMenuList
 		self['title'] = Label("")
 		self['red'] = Label("Eintrag löschen")
@@ -4613,7 +4623,12 @@ class serienRecShowProposal(Screen):
 		self['yellow'] = Label("Zeige nur neue")
 		self['blue'] = Label("Liste leeren")
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
+		self['4'] = Label("Serien Beschreibung")
+
 		self.red = 0xf23d21
+		self.green = 0x389416
+		self.blue = 0x0064c7
+		self.yellow = 0xbab329
 		self.white = 0xffffff
 		
 		self.filter = False
@@ -4636,6 +4651,7 @@ class serienRecShowProposal(Screen):
 		
 		self.proposalList.sort(key=lambda x: time.strptime(x[3].split(",")[1].strip(), "%d.%m.%Y"))
 		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
+		self.getCover()
 			
 	def buildList(self, entry):
 		(Serie, Staffel, Sender, Datum, Url, CreationFlag) = entry
@@ -4649,12 +4665,93 @@ class serienRecShowProposal(Screen):
 			setFarbe = self.red
 		else:
 			setFarbe = self.white
+			
+		Staffel = "S%sE01" % Staffel
+
+		if config.plugins.serienRec.showPicons.value:
+			self.picloader = PicLoader(80, 40)
+			picon = self.picloader.load("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sender/"+Sender+".png")
+			self.picloader.destroy()
+			return [entry,
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80, 40, picon),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340, 15, 30, 30, loadPNG(imageFound)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Datum, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 375, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 375, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, self.yellow, self.yellow)
+				]
+		else:
+			return [entry,
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15, 30, 30, loadPNG(imageFound)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Datum, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, self.yellow, self.yellow)
+				]
+
+	def serieInfo(self):
+		check = self['list'].getCurrent()
+		if check == None:
+			return
+		url = self['list'].getCurrent()[0][4]
+		id = re.findall('epg_print.pl\?s=([0-9]+)', url)
+		serien_name = self['list'].getCurrent()[0][0]
 		
-		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 0, 32, 32, loadPNG(imageFound)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 1280, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("%s - S%sE01 - %s - %s" % (Serie, Staffel, Datum, Sender)))
-			]
-				
+		if id:
+			self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de/"+id[0])
+
+	def getCover(self):
+		check = self['list'].getCurrent()
+		if check == None:
+			return
+
+		url = self['list'].getCurrent()[0][4]
+		id = re.findall('epg_print.pl\?s=([0-9]+)', url)
+		serien_name = self['list'].getCurrent()[0][0]
+
+		serien_nameCover = "/tmp/serienrecorder/%s.png" % serien_name
+
+		if not fileExists("/tmp/serienrecorder/"):
+			shutil.os.mkdir("/tmp/serienrecorder/")
+		if fileExists(serien_nameCover):
+			self.showCover(serien_nameCover, serien_nameCover)
+		else:
+			if id:
+				url = "http://www.wunschliste.de/%s/links" % id[0]
+				print url
+				getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink, serien_nameCover).addErrback(self.dataError)
+
+	def getImdblink(self, data, serien_nameCover):
+		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
+		if ilink:
+			getPage(ilink[0], headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.loadImdbCover, serien_nameCover).addErrback(self.dataError)
+		else:
+			print "[Serien Recorder] es wurde kein imdb-link für ein cover gefunden."
+
+	def loadImdbCover(self, data, serien_nameCover):
+		imageLink_raw = re.findall('<link rel="image_src" href="http://ia.media-imdb.com/(.*?)"', data, re.S)
+		if imageLink_raw:
+			print imageLink_raw
+			extra_imdb_convert = "@._V1_SX320.jpg"
+			aufgeteilt = imageLink_raw[0].split('._V1._')
+			imdb_url = "http://ia.media-imdb.com/%s._V1._SX420_SY420_.jpg" % aufgeteilt[0]
+			print imdb_url
+			downloadPage(imdb_url, serien_nameCover).addCallback(self.showCover, serien_nameCover).addErrback(self.dataError)
+
+	def showCover(self, data, serien_nameCover):
+		if fileExists(serien_nameCover):
+			self['cover'].instance.setPixmap(gPixmapPtr())
+			scale = AVSwitch().getFramebufferScale()
+			size = self['cover'].instance.size()
+			self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#FF000000"))
+			if self.picload.startDecode(serien_nameCover, 0, 0, False) == 0:
+				ptr = self.picload.getData()
+				if ptr != None:
+					self['cover'].instance.setPixmap(ptr)
+					self['cover'].show()
+		else:
+			print("Coverfile not found: %s" %  serien_nameCover)
+
 	def keyRed(self):
 		check = self['list'].getCurrent()
 		if check == None:
@@ -4766,6 +4863,25 @@ class serienRecShowProposal(Screen):
 			row = (0, 999999, 0)
 		cCursor.close()
 		return row
+
+	def keyLeft(self):
+		self['list'].pageUp()
+		self.getCover()
+
+	def keyRight(self):
+		self['list'].pageDown()
+		self.getCover()
+
+	def keyDown(self):
+		self['list'].down()
+		self.getCover()
+
+	def keyUp(self):
+		self['list'].up()
+		self.getCover()
+
+	def dataError(self, error):
+		print error
 
 class serienRecShowInfo(Screen):
 	skin = """
