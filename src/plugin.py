@@ -3310,7 +3310,16 @@ class serienRecSendeTermine(Screen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S%sE%s - %s" % (staffel, episode, title), self.yellow),
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, loadPNG(rightImage))
 			]
-
+			
+	def get_staffel_name(staffel):
+		if staffel[0] == '0':
+			s = staffel[1:len(staffel)+1:1]
+		else:
+			s = staffel
+		
+		staffel_name = 'Season ' + str(s)
+		return staffel_name
+	
 	def getTimes(self):
 		self.countTimer = 0
 		if len(self.sendetermine_list) != 0:
@@ -3323,6 +3332,7 @@ class serienRecSendeTermine(Screen):
 				if int(status) == 1:
 					# setze label string
 					label_serie = "%s - S%sE%s - %s" % (serien_name, staffel, episode, title)
+					staffel_name = get_staffel_name(staffel)
 					self.tags = None
 					self.justplay = False
 					
@@ -3346,11 +3356,11 @@ class serienRecSendeTermine(Screen):
 					# erstellt das serien verzeichnis
 					mkdir = False
 					if config.plugins.serienRec.seriensubdir.value:
-						dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
-						if not fileExists("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)):
-							print "[Serien Recorder] erstelle Subdir %s" % config.plugins.serienRec.savetopath.value+serien_name+"/"
-							writeLog("[Serien Recorder] erstelle Subdir: ' %s%s%s '" % (config.plugins.serienRec.savetopath.value, serien_name, "/"))
-							os.makedirs("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name))
+						dirname = "%s%s/%s/" % (config.plugins.serienRec.savetopath.value, serien_name, staffel_name)
+						if not fileExists(dirname):
+							print "[Serien Recorder] erstelle Subdir %s" % dirname
+							writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
+							os.makedirs(dirname)
 							mkdir = True
 					else:
 						dirname = config.plugins.serienRec.savetopath.value
