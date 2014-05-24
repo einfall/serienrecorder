@@ -241,7 +241,7 @@ def getStaffelName(staffel):
 
 def getDirname(serien_name, staffel_name):
 	if config.plugins.serienRec.seriensubdir.value:
-		if config.plugins.serienRec.seasonsubdir.value && staffel_name:
+		if config.plugins.serienRec.seasonsubdir.value:
 			dirname = "%s%s/%s/" % (config.plugins.serienRec.savetopath.value, serien_name, staffel_name)
 		else:
 			dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
