@@ -230,13 +230,9 @@ def getRealUnixTime(min, std, day, month, year):
 	return datetime.datetime(int(year), int(month), int(day), int(std), int(min)).strftime("%s")
 
 def getStaffelName(staffel):
-	if staffel:
-		if staffel[0] == '0':
-			s = staffel[1:len(staffel)+1:1]
-		else:
-			s = staffel
-		
-		staffel_name = 'Season ' + str(s)
+	print 'Staffel: %s' % staffel
+	staffel_name = 'Season ' + str(int(staffel))
+	print 'Staffel Name: %s' % staffel_name
 	return staffel_name
 
 def getDirname(serien_name, staffel_name):
@@ -3331,7 +3327,6 @@ class serienRecSendeTermine(Screen):
 				if int(status) == 1:
 					# setze label string
 					label_serie = "%s - S%sE%s - %s" % (serien_name, staffel, episode, title)
-					staffel_name = getStaffelName(staffel)
 					self.tags = None
 					self.justplay = False
 					
