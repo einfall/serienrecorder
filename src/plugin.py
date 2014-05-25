@@ -118,6 +118,8 @@ config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine
 config.plugins.serienRec.recordAll = ConfigYesNo(default = False)
 config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
+config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
+config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
@@ -132,6 +134,21 @@ dbTmp.text_factory = str
 dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
 dbSerRec.text_factory = str
 #dbSerRec.text_factory = unicode
+
+def checkTuner(check):
+	timers = serienRecAddTimer.getTimersTime()
+	cTuner = 1
+	for name, begin, end in timers:
+		print name, begin, end
+		if int(begin) <= int(check) <= int(end):
+			print "between"
+			cTuner += 1
+			break
+			
+	if cTuner <= int(config.plugins.serienRec.tuner.value):
+		return True
+	else:
+		return False
 
 def iso8859_Decode(txt):
 	#txt = txt.replace('\xe4','ä').replace('\xf6','ö').replace('\xfc','ü').replace('\xdf','ß')
@@ -742,7 +759,7 @@ class serienRecCheckForRecording():
 		#('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
 		if raw:
 			parsingOK = True
-			print "raw"
+			#print "raw"
 		else:
 			raw2 = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
 			if raw2:
@@ -753,7 +770,7 @@ class serienRecCheckForRecording():
 					each.insert(4, "0")
 					nlist.append(each)
 				parsingOK = True
-				print "raw2"
+				#print "raw2"
 				raw = nlist
 
 		# check for parsing error
@@ -894,7 +911,7 @@ class serienRecCheckForRecording():
 			if config.plugins.serienRec.eventid.value:
 				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60))
-				print "event matches %s" % len(event_matches)
+				#print "event matches %s" % len(event_matches)
 				if event_matches and len(event_matches) > 0:
 					for event_entry in event_matches:
 						print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
@@ -1102,21 +1119,25 @@ class serienRecCheckForRecording():
 			
 		# versuche timer anzulegen
 		# setze strings für addtimer
-		result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), 0, self.justplay, 3, dirname, self.tags, 0, None, eit=eit, recordfile=".ts")
-		if result["result"]:
-			self.countTimer += 1
-			# Eintrag in das timer file
-			self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit)
-			# Eintrag in das added file
-			writeLog("[Serien Recorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s" % (label_serie, show_start, label_serie, stbChannel), True)
-			return True
-		
-		self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
-		#if config.plugins.serienRec.showMessageOnConflicts.value:
-		#	Notifications.AddPopup(_("[Serien Recorder]\nACHTUNG!  -  %s" % self.konflikt), MessageBox.TYPE_INFO, timeout=-1)
-		print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
-		writeLog("[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"]), True)
-		return False
+		if checkTuner(start_unixtime):
+			result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), 0, self.justplay, 3, dirname, self.tags, 0, None, eit=eit, recordfile=".ts")
+			if result["result"]:
+				self.countTimer += 1
+				# Eintrag in das timer file
+				self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit)
+				# Eintrag in das added file
+				writeLog("[Serien Recorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s" % (label_serie, show_start, label_serie, stbChannel), True)
+				return True
+			
+			self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
+			#if config.plugins.serienRec.showMessageOnConflicts.value:
+			#	Notifications.AddPopup(_("[Serien Recorder]\nACHTUNG!  -  %s" % self.konflikt), MessageBox.TYPE_INFO, timeout=-1)
+			print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
+			writeLog("[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"]), True)
+			return False
+		else:
+			print "[Serien Recorder] Tuner belegt %s %s" % (label_serie, show_start)
+			writeLog("[Serien Recorder] Tuner belegt: %s %s" % (label_serie, show_start), True)
 			
 	def checkMarker(self, Serie):
 		cCursor = dbSerRec.cursor()
@@ -1184,7 +1205,20 @@ class serienRecCheckForRecording():
 
 class serienRecAddTimer():
 
-	@staticmethod	
+	@staticmethod
+	def getTimersTime():
+
+		recordHandler = NavigationInstance.instance.RecordTimer
+
+		entry = None
+		timers = []
+		#serienRec_chlist = buildSTBchannellist()
+
+		for timer in recordHandler.timer_list:
+			timers.append((timer.name, timer.begin, timer.end))
+		return timers
+
+	@staticmethod
 	def getTimersList():
 
 		recordHandler = NavigationInstance.instance.RecordTimer
@@ -1201,9 +1235,10 @@ class serienRecAddTimer():
 				recordedfile ='NULL' 
 				if timer.dirname:
 					location = timer.dirname
-				channel = getChannelByRef(serienRec,str(timer.service_ref))
+				channel = getChannelByRef(serienRec_chlist,str(timer.service_ref))
 				if channel:
-					recordedfile = getRecordFilename(timer.name,timer.description,timer.begin,channel)
+					#recordedfile = getRecordFilename(timer.name,timer.description,timer.begin,channel)
+					recordedfile = str(timer.begin) + " - " + str(timer.service_ref) + " - " + str(timer.name)
 				timers.append({
 					"title": timer.name,
 					"description": timer.description,
@@ -1383,7 +1418,8 @@ class serienRecMain(Screen):
 			"1"		: self.modifyAddedFile,
 			"3"		: self.showProposalDB,
 			"4"		: self.serieInfo,
-			"9"     : self.importFromFile
+			"9"     : self.importFromFile,
+			"5"		: self.test
 		}, -1)
 
 		initDB()
@@ -1450,6 +1486,10 @@ class serienRecMain(Screen):
 
 		#self.onLayoutFinish.append(self.startScreen)
 		self.onFirstExecBegin.append(self.startScreen)
+
+	def test(self):
+		check = "1400949910"
+		checkTuner(check)
 
 	def importFromFile(self):
 		ImportFilesToDB()
@@ -3164,7 +3204,7 @@ class serienRecSendeTermine(Screen):
 			if raw2:
 				raw = []
 				for each in raw2:
-					print each
+					#print each
 					each = list(each)
 					each.insert(4, "0")
 					raw.append(each)
@@ -3361,14 +3401,18 @@ class serienRecSendeTermine(Screen):
 										break
 
 							# versuche timer anzulegen
-							result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (staffel, episode, title), 0, self.justplay, 3, dirname, self.tags, 0, None, eit, recordfile=".ts")
-							if result["result"]:
-								self.countTimer += 1
-								self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime), stbRef, webChannel, eit)
+							if checkTuner(start_unixtime):
+								result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (staffel, episode, title), 0, self.justplay, 3, dirname, self.tags, 0, None, eit, recordfile=".ts")
+								if result["result"]:
+									self.countTimer += 1
+									self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime), stbRef, webChannel, eit)
+								else:
+									print "[Serien Recorder] Attention !!! -> %s" % result["message"]
+									konflikt = result["message"]
+									writeLog("[Serien Recorder] Attention -> %s" % str(konflikt))
 							else:
-								print "[Serien Recorder] Attention !!! -> %s" % result["message"]
-								konflikt = result["message"]
-								writeLog("[Serien Recorder] Attention -> %s" % str(konflikt))
+								print "[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit)
+								writeLog("[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit), True)
 					else:
 						writeLog("[Serien Recorder] Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '" % (serien_name, check_SeasonEpisode))
 
@@ -3756,6 +3800,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.get_media = getConfigListEntry("Speicherort der Aufnahmen:" + "   " + config.plugins.serienRec.savetopath.value, config.plugins.serienRec.fake_entry)
 		self.list.append(self.get_media)
 		self.list.append(getConfigListEntry("Zeige Picons:", config.plugins.serienRec.showPicons))
+		self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen:", config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry("Nur zum Sender zappen:", config.plugins.serienRec.justplay))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry("Zeige Nachricht wenn Suchlauf startet:", config.plugins.serienRec.showNotification))
@@ -3788,6 +3833,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("DEBUG LOG - Tageszeit:", config.plugins.serienRec.writeLogTimeRange))
 		self.list.append(getConfigListEntry("DEBUG LOG - Zeitbegrenzung:", config.plugins.serienRec.writeLogTimeLimit))
 		self.list.append(getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
+		self.list.append(getConfigListEntry("DEBUG LOG - Scroll zum Ende:", config.plugins.serienRec.logScrollLast))
 		#self.list.append(getConfigListEntry("Timer für ALLE Wiederholungen erstellen:", config.plugins.serienRec.recordAll))
 
 	def changedEntry(self):
@@ -3855,6 +3901,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		#config.plugins.serienRec.recordAll.save()
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.showPicons.save()
+		config.plugins.serienRec.tuner.save()
+		config.plugins.serienRec.logScrollLast.save()
 
 		configfile.save()
 		self.close(True)
@@ -3994,10 +4042,14 @@ class serienRecReadLog(Screen):
 			readLog = open(self.logFile, "r")
 			self.logliste = []
 			for zeile in readLog.readlines():
-					self.logliste.append((zeile.replace('[Serien Recorder]','')))
+				self.logliste.append((zeile.replace('[Serien Recorder]','')))
 			readLog.close()
 			self['title'].setText("LogFile: (/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log)")
 			self.chooseMenuList.setList(map(self.buildList, self.logliste))
+			if config.plugins.serienRec.logScrollLast.value:
+				count = len(self.logliste)
+				if count != 0:
+					self["list"].moveToIndex(int(count-1))
 
 	def buildList(self, entry):
 		(zeile) = entry
@@ -4086,6 +4138,10 @@ class serienRecLogReader(Screen):
 				for zeile in readLog.readlines():
 						self.logliste.append((zeile.replace('[Serien Recorder]','')))
 				self.chooseMenuList.setList(map(self.buildList, self.logliste))
+				if config.plugins.serienRec.logScrollLast.value:
+					count = len(self.logliste)
+					if count != 0:
+						self["list"].moveToIndex(int(count-1))
 			else:
 				self.points += " ."
 				self['title'].setText('Suche nach neuen Timern läuft.%s' % self.points)
