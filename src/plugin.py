@@ -229,20 +229,12 @@ def getRealUnixTime(min, std, day, month, year):
 	#print now.year, now.month, now.day, std, min
 	return datetime.datetime(int(year), int(month), int(day), int(std), int(min)).strftime("%s")
 
-def getStaffelName(staffel):
-	print 'Staffel: %s' % staffel
-	staffel_name = 'Season ' + str(int(staffel))
-	print 'Staffel Name: %s' % staffel_name
-	return staffel_name
-
-def getDirname(serien_name, staffel_name):
+def getDirname(serien_name, staffel):
+	dirname = config.plugins.serienRec.savetopath.value
 	if config.plugins.serienRec.seriensubdir.value:
+		dirname = "%s%s/" % (dirname, serien_name)
 		if config.plugins.serienRec.seasonsubdir.value:
-			dirname = "%s%s/%s/" % (config.plugins.serienRec.savetopath.value, serien_name, staffel_name)
-		else:
-			dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
-	else:
-		dirname = config.plugins.serienRec.savetopath.value
+			dirname = "%sSeason %s/" % (dirname, str(int(staffel)))
 	return dirname	
 
 def getMarker():
@@ -674,7 +666,7 @@ class serienRecCheckForRecording():
 				if event_matches and len(event_matches) > 0:
 					for event_entry in event_matches:
 						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-						dirname = getDirname(serien_name, getStaffelName(staffel))
+						dirname = getDirname(serien_name, staffel)
 						writeLog("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
 						eit = int(event_entry[1])
 						new_start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
@@ -714,7 +706,7 @@ class serienRecCheckForRecording():
 				if int(eventid) == int(eit):
 					if int(begin) != (int(serien_time) + (int(config.plugins.serienRec.margin_before.value) * 60)):
 						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-						dirname = getDirname(serien_name, getStaffelName(staffel))
+						dirname = getDirname(serien_name, staffel)
 						writeLog("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
 						start_unixtime = int(begin)
 						start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
@@ -930,7 +922,7 @@ class serienRecCheckForRecording():
 						start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
 						break
 						
-			dirname = getDirname(serien_name, getStaffelName(staffel))
+			dirname = getDirname(serien_name, staffel)
 				
 			check_SeasonEpisode = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
@@ -990,7 +982,7 @@ class serienRecCheckForRecording():
 			#
 			# erstellt das serien verzeichnis
 			if config.plugins.serienRec.seriensubdir.value:
-				dirname = getDirname(serien_name, getStaffelName(staffel))
+				dirname = getDirname(serien_name, staffel)
 				if not fileExists(dirname):
 					print "[Serien Recorder] erstelle Subdir %s" % dirname
 					writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
@@ -1659,7 +1651,7 @@ class serienRecMain(Screen):
 				#
 				# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 				#
-				dirname = getDirname (serien_name, getStaffelName(staffel))
+				dirname = getDirname(serien_name, staffel)
 
 				check_SeasonEpisode = "S%sE%s" % (staffel, episode)
 
@@ -3263,7 +3255,7 @@ class serienRecSendeTermine(Screen):
 		(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
 
 		check_SeasonEpisode = "S%sE%s" % (staffel, episode)
-		dirname = getDirname(serien_name, getStaffelName(staffel))
+		dirname = getDirname(serien_name, staffel)
 		
 		imageMinus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
 		imagePlus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
@@ -3350,7 +3342,7 @@ class serienRecSendeTermine(Screen):
 					# erstellt das serien verzeichnis
 					mkdir = False
 					if config.plugins.serienRec.seriensubdir.value:
-						dirname = getDirname(serien_name, getStaffelName(staffel))
+						dirname = getDirname(serien_name, staffel)
 						if not fileExists(dirname):
 							print "[Serien Recorder] erstelle Subdir %s" % dirname
 							writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
