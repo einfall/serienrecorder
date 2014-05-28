@@ -4565,7 +4565,7 @@ class serienRecModifyAdded(Screen):
 				cCursor = dbSerRec.cursor()
 				for i in range(int(self.aFromEpisode), int(self.aToEpisode)+1):
 					print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(self.aSerie), str(self.aStaffel), str(i))
-					cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (self.aSerie, self.aStaffel, i, "dump", 0, "dump", "dump", 0))
+					cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (self.aSerie, self.aStaffel, str(i).zfill(2), "dump", 0, "dump", "dump", 0))
 				dbSerRec.commit()
 				cCursor.close()
 				self.readAdded()
