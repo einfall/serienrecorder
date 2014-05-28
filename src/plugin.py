@@ -85,6 +85,7 @@ config.plugins.serienRec = ConfigSubsection()
 config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/",  fixed_size=False)
 config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
+config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
 config.plugins.serienRec.justplay = ConfigYesNo(default = False)
 config.plugins.serienRec.eventid = ConfigYesNo(default = True)
 config.plugins.serienRec.update = ConfigYesNo(default = False)
@@ -227,6 +228,14 @@ def getRealUnixTime(min, std, day, month, year):
 	#now = datetime.datetime.now()
 	#print now.year, now.month, now.day, std, min
 	return datetime.datetime(int(year), int(month), int(day), int(std), int(min)).strftime("%s")
+
+def getDirname(serien_name, staffel):
+	dirname = config.plugins.serienRec.savetopath.value
+	if config.plugins.serienRec.seriensubdir.value:
+		dirname = "%s%s/" % (dirname, serien_name)
+		if config.plugins.serienRec.seasonsubdir.value:
+			dirname = "%sSeason %s/" % (dirname, str(int(staffel)))
+	return dirname	
 
 def getMarker():
 	return_list = []
@@ -657,10 +666,7 @@ class serienRecCheckForRecording():
 				if event_matches and len(event_matches) > 0:
 					for event_entry in event_matches:
 						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-						if config.plugins.serienRec.seriensubdir.value:
-							dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
-						else:
-							dirname = config.plugins.serienRec.savetopath.value
+						dirname = getDirname(serien_name, staffel)
 						writeLog("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
 						eit = int(event_entry[1])
 						new_start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
@@ -700,10 +706,7 @@ class serienRecCheckForRecording():
 				if int(eventid) == int(eit):
 					if int(begin) != (int(serien_time) + (int(config.plugins.serienRec.margin_before.value) * 60)):
 						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-						if config.plugins.serienRec.seriensubdir.value:
-							dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
-						else:
-							dirname = config.plugins.serienRec.savetopath.value
+						dirname = getDirname(serien_name, staffel)
 						writeLog("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
 						start_unixtime = int(begin)
 						start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
@@ -919,10 +922,7 @@ class serienRecCheckForRecording():
 						start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
 						break
 						
-			if config.plugins.serienRec.seriensubdir.value:
-				dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
-			else:
-				dirname = config.plugins.serienRec.savetopath.value
+			dirname = getDirname(serien_name, staffel)
 				
 			check_SeasonEpisode = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
@@ -982,10 +982,11 @@ class serienRecCheckForRecording():
 			#
 			# erstellt das serien verzeichnis
 			if config.plugins.serienRec.seriensubdir.value:
-				if not fileExists("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)):
-					print "[Serien Recorder] erstelle Subdir %s" % config.plugins.serienRec.savetopath.value+serien_name+"/"
-					writeLog("[Serien Recorder] erstelle Subdir: ' %s%s%s '" % (config.plugins.serienRec.savetopath.value, serien_name, "/"))
-					os.makedirs("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name))
+				dirname = getDirname(serien_name, staffel)
+				if not fileExists(dirname):
+					print "[Serien Recorder] erstelle Subdir %s" % dirname
+					writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
+					os.makedirs(dirname)
 					if fileExists("/var/volatile/tmp/serienrecorder/%s.png" % (serien_name)) and not fileExists("/var/volatile/tmp/serienrecorder/%s.jpg" % (serien_name)):
 						#print "vorhanden...:", "/var/volatile/tmp/serienrecorder/"+serien_name+".png"
 						shutil.copy("/var/volatile/tmp/serienrecorder/%s.png" % serien_name, "%s%s/%s.jpg" % (config.plugins.serienRec.savetopath.value, serien_name, serien_name))
@@ -1650,10 +1651,8 @@ class serienRecMain(Screen):
 				#
 				# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 				#
-				if config.plugins.serienRec.seriensubdir.value:
-					dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
-				else:
-					dirname = config.plugins.serienRec.savetopath.value
+				dirname = getDirname(serien_name, staffel)
+
 				check_SeasonEpisode = "S%sE%s" % (staffel, episode)
 
 				# check hdd
@@ -3256,10 +3255,7 @@ class serienRecSendeTermine(Screen):
 		(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
 
 		check_SeasonEpisode = "S%sE%s" % (staffel, episode)
-		if config.plugins.serienRec.seriensubdir.value:
-			dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
-		else:
-			dirname = config.plugins.serienRec.savetopath.value
+		dirname = getDirname(serien_name, staffel)
 		
 		imageMinus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
 		imagePlus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
@@ -3346,11 +3342,11 @@ class serienRecSendeTermine(Screen):
 					# erstellt das serien verzeichnis
 					mkdir = False
 					if config.plugins.serienRec.seriensubdir.value:
-						dirname = "%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)
-						if not fileExists("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name)):
-							print "[Serien Recorder] erstelle Subdir %s" % config.plugins.serienRec.savetopath.value+serien_name+"/"
-							writeLog("[Serien Recorder] erstelle Subdir: ' %s%s%s '" % (config.plugins.serienRec.savetopath.value, serien_name, "/"))
-							os.makedirs("%s%s/" % (config.plugins.serienRec.savetopath.value, serien_name))
+						dirname = getDirname(serien_name, staffel)
+						if not fileExists(dirname):
+							print "[Serien Recorder] erstelle Subdir %s" % dirname
+							writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
+							os.makedirs(dirname)
 							mkdir = True
 					else:
 						dirname = config.plugins.serienRec.savetopath.value
@@ -3803,6 +3799,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen:", config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry("Nur zum Sender zappen:", config.plugins.serienRec.justplay))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
+		self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", config.plugins.serienRec.seasonsubdir))
 		self.list.append(getConfigListEntry("Zeige Nachricht wenn Suchlauf startet:", config.plugins.serienRec.showNotification))
 		#self.list.append(getConfigListEntry("Automatischen Suchlauf stundenweise ausführen:", config.plugins.serienRec.update))
 		self.list.append(getConfigListEntry("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):", config.plugins.serienRec.updateInterval)) #3600000
@@ -3872,6 +3869,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.savetopath.save()
 		config.plugins.serienRec.justplay.save()
 		config.plugins.serienRec.seriensubdir.save()
+		config.plugins.serienRec.seasonsubdir.save()
 		config.plugins.serienRec.update.save()
 		config.plugins.serienRec.updateInterval.save()
 		config.plugins.serienRec.checkfordays.save()
