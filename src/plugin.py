@@ -82,7 +82,7 @@ else:
 	epgTranslatorInstalled = False
 
 config.plugins.serienRec = ConfigSubsection()
-config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/",  fixed_size=False)
+config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=50)
 config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
 config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
@@ -101,7 +101,6 @@ config.plugins.serienRec.margin_after = ConfigInteger(default_after, (00,99))
 config.plugins.serienRec.max_season = ConfigInteger(30, (01,999))
 config.plugins.serienRec.Alternatetimer = ConfigYesNo(default = True)
 config.plugins.serienRec.Autoupdate = ConfigYesNo(default = True)
-#config.plugins.serienRec.pastTimer = ConfigYesNo(default = False)
 config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
 config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
 config.plugins.serienRec.writeLog = ConfigYesNo(default = True)
@@ -137,6 +136,7 @@ dbSerRec.text_factory = str
 #dbSerRec.text_factory = unicode
 
 def checkTuner(check):
+	#return True
 	timers = serienRecAddTimer.getTimersTime()
 	cTuner = 1
 	for name, begin, end in timers:
@@ -1475,7 +1475,7 @@ class serienRecMain(Screen):
 		self['title'] = Label("Loading infos from Web...")
 		self['headline'] = Label("")
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
-		self['red'] = Label("Serientyp auswählen")
+		self['red'] = Label("Anzeige-Modus")
 		self['green'] = Label("Channels zuweisen")
 		self['info'] = Label("Timer suchen")
 		self['yellow'] = Label("Serien Marker")
@@ -1616,7 +1616,7 @@ class serienRecMain(Screen):
 				sender = iso8859_Decode(sender)
 				title = iso8859_Decode(title)
 
-				if self.checkTimer(serien_name, staffel, episode, title, start_time, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')):
+				if self.checkTimer(serien_name, staffel, episode, title, start_time, sender):
 					aufnahme = True
 				else:
 					##############################
@@ -1624,7 +1624,7 @@ class serienRecMain(Screen):
 					# try to get eventID (eit) from epgCache
 					#
 					if config.plugins.serienRec.eventid.value:
-						cSener_list = self.checkSender(sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)',''))
+						cSener_list = self.checkSender(sender)
 						if len(cSener_list) != 0:
 							(webChannel, stbChannel, stbRef, status) = cSener_list[0]
 
@@ -1635,7 +1635,7 @@ class serienRecMain(Screen):
 							for event_entry in event_matches:
 								print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
 								start_time = int(event_entry[3])
-								if self.checkTimer(serien_name, staffel, episode, title, start_time, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')):
+								if self.checkTimer(serien_name, staffel, episode, title, start_time, sender):
 									aufnahme = True
 								break
 				
@@ -1709,8 +1709,6 @@ class serienRecMain(Screen):
 		imageTimer = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/timer.png"
 		imageHDD = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/hdd_24x24.png"
 		
-		sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
-		
 		if serieAdded:
 			setFarbe = self.green
 		else:
@@ -1746,7 +1744,7 @@ class serienRecMain(Screen):
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 7, 30, 22, loadPNG(imageNeu)),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 30, 30, 22, loadPNG(imageHDDTimer)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
 				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
 				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
@@ -3789,38 +3787,44 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 		self.createConfigList()
-		ConfigListScreen.__init__(self, self.list, session = self.session)
+		ConfigListScreen.__init__(self, self.list)
 
 	def createConfigList(self):
 		self.list = []
-		self.get_media = getConfigListEntry("Speicherort der Aufnahmen:" + "   " + config.plugins.serienRec.savetopath.value, config.plugins.serienRec.fake_entry)
-		self.list.append(self.get_media)
-		self.list.append(getConfigListEntry("Zeige Picons:", config.plugins.serienRec.showPicons))
-		self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen:", config.plugins.serienRec.tuner))
+		self.list.append(getConfigListEntry("---------  SYSTEM:  -------------------------------------------------------------------------------------------"))
+		self.list.append(getConfigListEntry("Speicherort der Aufnahmen:", config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry("Nur zum Sender zappen:", config.plugins.serienRec.justplay))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", config.plugins.serienRec.seasonsubdir))
-		self.list.append(getConfigListEntry("Zeige Nachricht wenn Suchlauf startet:", config.plugins.serienRec.showNotification))
-		#self.list.append(getConfigListEntry("Automatischen Suchlauf stundenweise ausführen:", config.plugins.serienRec.update))
 		self.list.append(getConfigListEntry("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):", config.plugins.serienRec.updateInterval)) #3600000
-		#self.list.append(getConfigListEntry("Automatischen Suchlauf nach Uhrzeit ausführen:", config.plugins.serienRec.timeUpdate))
 		self.list.append(getConfigListEntry("Uhrzeit für automatischen Suchlauf (nur wenn Intervall = 24):", config.plugins.serienRec.deltime))
-		self.list.append(getConfigListEntry("Versuche die Eventid vom EPGCACHE zu holen:", config.plugins.serienRec.eventid))
-		#self.list.append(getConfigListEntry("Suche nach alternativer Sendezeit bei Konflikten:", config.plugins.serienRec.Alternatetimer))
+		self.list.append(getConfigListEntry("Automatisches Plugin-Update:", config.plugins.serienRec.Autoupdate))
+
+		self.list.append(getConfigListEntry(""))
+		self.list.append(getConfigListEntry("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------"))
 		self.list.append(getConfigListEntry("Timer für X Tage erstellen:", config.plugins.serienRec.checkfordays))
 		self.list.append(getConfigListEntry("Früheste Zeit für Timer (hh:00):", config.plugins.serienRec.fromTime))
 		self.list.append(getConfigListEntry("Späteste Zeit für Timer (hh:59):", config.plugins.serienRec.toTime))
-		self.list.append(getConfigListEntry("Immer aufnehmen wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
 		self.list.append(getConfigListEntry("Timervorlauf (in Min.):", config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
-		self.list.append(getConfigListEntry("Anzahl der wählbaren Staffeln im Menü SerienMarker:", config.plugins.serienRec.max_season))
-		#self.list.append(getConfigListEntry("Entferne alte Timer aus der Record-List:", config.plugins.serienRec.pastTimer))
-		self.list.append(getConfigListEntry("Automatisches Plugin-Update:", config.plugins.serienRec.Autoupdate))
+		self.list.append(getConfigListEntry("Versuche die Eventid vom EPGCACHE zu holen:", config.plugins.serienRec.eventid))
+		self.list.append(getConfigListEntry("Immer aufnehmen wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
+		#self.list.append(getConfigListEntry("Timer für ALLE Wiederholungen erstellen:", config.plugins.serienRec.recordAll))
+		self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen:", config.plugins.serienRec.tuner))
+		self.list.append(getConfigListEntry("Aktion bei neuer Serie/Staffel:", config.plugins.serienRec.ActionOnNew))
 		self.list.append(getConfigListEntry("Aus Deep-StandBy aufwecken:", config.plugins.serienRec.wakeUpDSB))
 		self.list.append(getConfigListEntry("Nach dem automatischen Suchlauf in Deep-StandBy gehen:", config.plugins.serienRec.afterAutocheck))
+
+		self.list.append(getConfigListEntry(""))
+		self.list.append(getConfigListEntry("---------  GUI:  ----------------------------------------------------------------------------------------------"))
+		self.list.append(getConfigListEntry("Zeige Picons:", config.plugins.serienRec.showPicons))
+		self.list.append(getConfigListEntry("Anzahl der wählbaren Staffeln im Menü SerienMarker:", config.plugins.serienRec.max_season))
 		self.list.append(getConfigListEntry("Vor Löschen in SerienMarker und TimerList Benutzer fragen:", config.plugins.serienRec.confirmOnDelete))
+		self.list.append(getConfigListEntry("Zeige Nachricht wenn Suchlauf startet:", config.plugins.serienRec.showNotification))
 		self.list.append(getConfigListEntry("Zeige Nachricht bei Timerkonflikten:", config.plugins.serienRec.showMessageOnConflicts))
-		self.list.append(getConfigListEntry("Aktion bei neuer Serie/Staffel:", config.plugins.serienRec.ActionOnNew))
+
+		self.list.append(getConfigListEntry(""))
+		self.list.append(getConfigListEntry("---------  LOG:  ----------------------------------------------------------------------------------------------"))
 		self.list.append(getConfigListEntry("DEBUG LOG (/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log):", config.plugins.serienRec.writeLog))
 		self.list.append(getConfigListEntry("DEBUG LOG - Senderliste:", config.plugins.serienRec.writeLogChannels))
 		self.list.append(getConfigListEntry("DEBUG LOG - Seriensender:", config.plugins.serienRec.writeLogAllowedSender))
@@ -3831,21 +3835,21 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("DEBUG LOG - Zeitbegrenzung:", config.plugins.serienRec.writeLogTimeLimit))
 		self.list.append(getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
 		self.list.append(getConfigListEntry("DEBUG LOG - Scroll zum Ende:", config.plugins.serienRec.logScrollLast))
-		#self.list.append(getConfigListEntry("Timer für ALLE Wiederholungen erstellen:", config.plugins.serienRec.recordAll))
 
 	def changedEntry(self):
 		self.createConfigList()
 		self["config"].setList(self.list)
 
 	def ok(self):
-		if self["config"].getCurrent() == self.get_media:
+		ConfigListScreen.keyOK(self)
+		if self["config"].getCurrent()[1] == config.plugins.serienRec.savetopath:
 			#start_dir = "/media/hdd/movie/"
 			start_dir = config.plugins.serienRec.savetopath.value
 			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir)
 
 	def selectedMediaFile(self, res):
 		if res is not None:
-			if self["config"].getCurrent() == self.get_media:
+			if self["config"].getCurrent()[1] == config.plugins.serienRec.savetopath:
 				print res
 				config.plugins.serienRec.savetopath.value = res
 				config.plugins.serienRec.savetopath.save()
@@ -3853,8 +3857,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 				self.changedEntry()
 
 	def save(self):
-		#for x in self["config"].list:
-		#	x[1].save()
 		config.plugins.serienRec.showNotification.save()
 		if config.plugins.serienRec.updateInterval.value == 24:
 			config.plugins.serienRec.timeUpdate.value = True
@@ -3881,7 +3883,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.toTime.save()
 		config.plugins.serienRec.timeUpdate.save()
 		config.plugins.serienRec.deltime.save()
-		#config.plugins.serienRec.pastTimer.save()
 		config.plugins.serienRec.wakeUpDSB.save()
 		config.plugins.serienRec.afterAutocheck.save()
 		config.plugins.serienRec.eventid.save()
@@ -3896,12 +3897,12 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.writeLogTimerDebug.save()
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.ActionOnNew.save()
-		#config.plugins.serienRec.recordAll.save()
+		config.plugins.serienRec.forceRecording.save()
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
-		config.plugins.serienRec.forceRecording.save()
+		#config.plugins.serienRec.recordAll.save()
 
 		configfile.save()
 		self.close(True)
