@@ -3901,6 +3901,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
+		config.plugins.serienRec.forceRecording.save()
 
 		configfile.save()
 		self.close(True)
