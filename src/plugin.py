@@ -127,6 +127,7 @@ config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta6"))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
+config.plugins.serienRec.serienRecShowProposal_filter = ConfigYesNo(default = False)
 
 dbTmp = sqlite3.connect(":memory:")
 #dbTmp = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SR_Tmp.db")
@@ -4714,7 +4715,11 @@ class serienRecShowProposal(Screen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 		
-		self.filter = False
+		self.filter = config.plugins.serienRec.serienRecShowProposal_filter.value
+		if self.filter:
+			self['yellow'].setText("Zeige alle")
+		else:
+			self['yellow'].setText("Zeige nur neue")
 		self.proposalList = []
 		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
 
@@ -4723,7 +4728,12 @@ class serienRecShowProposal(Screen):
 	def readProposal(self):
 		self.proposalList = []
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel", (self.filter, ))
+		if self.filter:
+			now = datetime.datetime.now()
+			current_time = datetime.datetime(now.year, now.month, now.day, 00, 00).strftime("%s")
+			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE UTCStaffelStart >= ? GROUP BY Serie, Staffel", (current_time, ))
+		else:
+			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel", (self.filter, ))
 		for row in cCursor:
 			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = row
 			Staffel = str(Staffel).zfill(2)
@@ -4903,10 +4913,14 @@ class serienRecShowProposal(Screen):
 	def keyYellow(self):
 		if not self.filter:
 			self.filter = True
+			config.plugins.serienRec.serienRecShowProposal_filter.value = True
+			config.plugins.serienRec.serienRecShowProposal_filter.save()
 			self.readProposal()
 			self['yellow'].setText("Zeige alle")
 		else:
 			self.filter = False
+			config.plugins.serienRec.serienRecShowProposal_filter.value = False
+			config.plugins.serienRec.serienRecShowProposal_filter.save()
 			self.readProposal()
 			self['yellow'].setText("Zeige nur neue")
 
