@@ -238,9 +238,9 @@ def getDirname(serien_name, staffel):
 		dirname = "%s%s/" % (dirname, serien_name)
 		if config.plugins.serienRec.seasonsubdir.value:
 			if str(staffel).isdigit():
-				dirname = "%sSeason %s/" % (dirname, str(int(staffel)).zfill(2))
+				dirname = "%sSeason %s/" % (dirname, str(int(staffel)))
 			else:
-				dirname = "%sSeason %s/" % (dirname, str(staffel).zfill(2))
+				dirname = "%sSeason %s/" % (dirname, str(staffel))
 	return dirname	
 
 def getMarker():
