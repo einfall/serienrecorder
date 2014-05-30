@@ -235,7 +235,10 @@ def getDirname(serien_name, staffel):
 	if config.plugins.serienRec.seriensubdir.value:
 		dirname = "%s%s/" % (dirname, serien_name)
 		if config.plugins.serienRec.seasonsubdir.value:
-			dirname = "%sSeason %s/" % (dirname, str(int(staffel)))
+			if str(staffel).isdigit():
+				dirname = "%sSeason %s/" % (dirname, str(int(staffel)).zfill(2))
+			else:
+				dirname = "%sSeason %s/" % (dirname, str(staffel).zfill(2))
 	return dirname	
 
 def getMarker():
@@ -4732,13 +4735,13 @@ class serienRecShowProposal(Screen):
 		if self.filter:
 			now = datetime.datetime.now()
 			current_time = datetime.datetime(now.year, now.month, now.day, 00, 00).strftime("%s")
-			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE UTCStaffelStart >= ? GROUP BY Serie, Staffel", (current_time, ))
+			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE UTCStaffelStart >= ? GROUP BY Serie, Staffel", (current_time, ))
 		else:
-			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel", (self.filter, ))
+			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel", (self.filter, ))
 		for row in cCursor:
-			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = row
+			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = row
 			Staffel = str(Staffel).zfill(2)
-			self.proposalList.append((Serie, Staffel, Sender, Datum, Url, CreationFlag))
+			self.proposalList.append((Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag))
 		cCursor.close()
 		
 		self['title'].setText("Neue Serie(n) / Staffel(n):")
@@ -4748,7 +4751,7 @@ class serienRecShowProposal(Screen):
 		self.getCover()
 			
 	def buildList(self, entry):
-		(Serie, Staffel, Sender, Datum, Url, CreationFlag) = entry
+		(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = entry
 		
 		if CreationFlag == 0:
 			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
@@ -4761,6 +4764,8 @@ class serienRecShowProposal(Screen):
 			setFarbe = self.white
 			
 		Staffel = "S%sE01" % Staffel
+		WochenTag=["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+", %d.%m.%Y", time.localtime(int(UTCTime)))
 
 		if config.plugins.serienRec.showPicons.value:
 			self.picloader = PicLoader(80, 40)
@@ -4770,7 +4775,7 @@ class serienRecShowProposal(Screen):
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80, 40, picon),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340, 15, 30, 30, loadPNG(imageFound)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 110, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 110, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Datum, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow, self.yellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 375, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
 				(eListboxPythonMultiContent.TYPE_TEXT, 375, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, self.yellow, self.yellow)
 				]
@@ -4778,7 +4783,7 @@ class serienRecShowProposal(Screen):
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15, 30, 30, loadPNG(imageFound)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Datum, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow, self.yellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
 				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, self.yellow, self.yellow)
 				]
@@ -4787,7 +4792,7 @@ class serienRecShowProposal(Screen):
 		check = self['list'].getCurrent()
 		if check == None:
 			return
-		url = self['list'].getCurrent()[0][4]
+		url = self['list'].getCurrent()[0][5]
 		id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 		serien_name = self['list'].getCurrent()[0][0]
 		
@@ -4799,7 +4804,7 @@ class serienRecShowProposal(Screen):
 		if check == None:
 			return
 
-		url = self['list'].getCurrent()[0][4]
+		url = self['list'].getCurrent()[0][5]
 		id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 		serien_name = self['list'].getCurrent()[0][0]
 
@@ -4852,7 +4857,7 @@ class serienRecShowProposal(Screen):
 			print "[Serien Recorder] Proposal-DB leer."
 			return
 		else:
-			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = self['list'].getCurrent()[0]
+			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = self['list'].getCurrent()[0]
 			cCursor = dbSerRec.cursor()
 			data = (Serie, Staffel, Sender, Datum) 
 			cCursor.execute("DELETE FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?", data)
@@ -4866,7 +4871,7 @@ class serienRecShowProposal(Screen):
 			print "[Serien Recorder] Proposal-DB leer."
 			return
 		else:
-			(Serie, Staffel, Sender, Datum, Url, CreationFlag) = self['list'].getCurrent()[0]
+			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = self['list'].getCurrent()[0]
 			if CreationFlag:
 				(ID, AbStaffel, AlleSender) = self.checkMarker(Serie)
 				if ID > 0:
@@ -4914,16 +4919,13 @@ class serienRecShowProposal(Screen):
 	def keyYellow(self):
 		if not self.filter:
 			self.filter = True
-			config.plugins.serienRec.serienRecShowProposal_filter.value = True
-			config.plugins.serienRec.serienRecShowProposal_filter.save()
-			self.readProposal()
 			self['yellow'].setText("Zeige alle")
 		else:
 			self.filter = False
-			config.plugins.serienRec.serienRecShowProposal_filter.value = False
-			config.plugins.serienRec.serienRecShowProposal_filter.save()
-			self.readProposal()
 			self['yellow'].setText("Zeige nur neue")
+		self.readProposal()
+		config.plugins.serienRec.serienRecShowProposal_filter.value = self.filter
+		config.plugins.serienRec.serienRecShowProposal_filter.save()
 
 	def keyBlue(self):
 		check = self['list'].getCurrent()
