@@ -1585,6 +1585,7 @@ class serienRecMain(Screen):
 			print self.color_print+"[Serien Recorder] AutoCheck Clock-Timer: %s" % config.plugins.serienRec.timeUpdate.value +self.color_end
 		
 	def startScreen(self):
+		print "[Serien Recorder] version %s is running..." % config.plugins.serienRec.showversion.value
 		if config.plugins.serienRec.Autoupdate.value:
 			checkupdate(self.session).checkforupdate()
 		if self.isChannelsListEmpty():
