@@ -3774,7 +3774,11 @@ class serienRecSetup(Screen, ConfigListScreen):
 			"red"	: self.cancel,
 			"green"	: self.save,
 			"cancel": self.cancel,
-			"ok"	: self.ok
+			"ok"	: self.ok,
+			"up"    : self.keyUp,
+			"down"  : self.keyDown,
+			"nextBouquet":	self.bouquetPlus,
+			"prevBouquet":	self.bouquetMinus
 		}, -1)
 
 		self['title'] = Label("Serien Recorder - Einstellungen:")
@@ -3788,6 +3792,24 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.white = 0xffffff
 		self.createConfigList()
 		ConfigListScreen.__init__(self, self.list)
+
+	def bouquetPlus(self):
+		self["config"].instance.moveSelection(self["config"].instance.pageUp)
+
+	def bouquetMinus(self):
+		self["config"].instance.moveSelection(self["config"].instance.pageDown)
+
+	def keyDown(self):
+		if self["config"].instance.getCurrentIndex() >= (len(self.list) - 1):
+			self["config"].instance.moveSelectionTo(0)
+		else:
+			self["config"].instance.moveSelection(self["config"].instance.moveDown)
+
+	def keyUp(self):
+		if self["config"].instance.getCurrentIndex() <= 1:
+			self["config"].instance.moveSelectionTo(len(self.list) - 1)
+		else:
+			self["config"].instance.moveSelection(self["config"].instance.moveUp)
 
 	def createConfigList(self):
 		self.list = []
