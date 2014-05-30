@@ -241,10 +241,7 @@ def getDirname(serien_name, staffel):
 	if config.plugins.serienRec.seriensubdir.value:
 		dirname = "%s%s/" % (dirname, serien_name)
 		if config.plugins.serienRec.seasonsubdir.value:
-			if str(staffel).isdigit():
-				dirname = "%sSeason %s/" % (dirname, str(int(staffel)).zfill(2))
-			else:
-				dirname = "%sSeason %s/" % (dirname, str(staffel).zfill(2))
+			dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0'))
 	return dirname	
 
 def doPushOver(serien_name, staffel, episode, title):
