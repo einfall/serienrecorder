@@ -4383,16 +4383,19 @@ def ImportFilesToDB():
 	initDB()
 	if fileExists(channelFile):
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("DELETE FROM Channels")
-		readChannel = open(channelFile, "r")
-		for rawData in readChannel.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(webChannel, stbChannel, stbRef, status) = data[0]
-			if stbChannel == "Nicht gefunden":
-				stbChannel = ""
-			if stbRef == "serviceref":
-				stbRef = ""
-			cCursor.execute("INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)", (webChannel, stbChannel, stbRef, status))
+		cCursor.execute("SELECT * FROM Channels")
+		row = cCursor.fetchone()
+		if not row:
+			cCursor.execute("DELETE FROM Channels")
+			readChannel = open(channelFile, "r")
+			for rawData in readChannel.readlines():
+				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+				(webChannel, stbChannel, stbRef, status) = data[0]
+				if stbChannel == "Nicht gefunden":
+					stbChannel = ""
+				if stbRef == "serviceref":
+					stbRef = ""
+				cCursor.execute("INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)", (webChannel, stbChannel, stbRef, status))
 		dbSerRec.commit()
 		cCursor.close()
 		
@@ -4402,16 +4405,19 @@ def ImportFilesToDB():
 		
 	if fileExists(addedFile):
 		cCursor = dbSerRec.cursor()
-		readAdded = open(addedFile, "r")
-		for rawData in readAdded.readlines():
-			data = rawData.strip().rsplit(" ", 1)
-			serie = data[0]
-			try:
-				data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
-			except:
-				continue
-			(staffel, episode) = data[0]
-			cCursor.execute('INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, "", 0, "", "")', (serie, staffel, episode))
+		cCursor.execute("SELECT * FROM AngelegteTimer")
+		row = cCursor.fetchone()
+		if not row:
+			readAdded = open(addedFile, "r")
+			for rawData in readAdded.readlines():
+				data = rawData.strip().rsplit(" ", 1)
+				serie = data[0]
+				try:
+					data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
+				except:
+					continue
+				(staffel, episode) = data[0]
+				cCursor.execute('INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, "", 0, "", "")', (serie, staffel, episode))
 		dbSerRec.commit()
 		cCursor.close()
 		
@@ -4421,19 +4427,22 @@ def ImportFilesToDB():
 		
 	if fileExists(timerFile):
 		cCursor = dbSerRec.cursor()
-		readTimer = open(timerFile, "r")
-		for rawData in readTimer.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(serie, xtitle, start_time, stbRef, webChannel) = data[0]
-			data = re.findall('"S(.*?)E(.*?) - (.*?)"', '"%s"' % xtitle, re.S)
-			(staffel, episode, title) = data[0]
-			cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", (serie.lower(), staffel, episode))
-			if not cCursor.fetchone():
-				sql = "INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, ?, ?, ?, ?)"
-				cCursor.execute(sql, (serie, staffel, episode, title, start_time, stbRef, webChannel))
-			else:
-				sql = "UPDATE OR IGNORE AngelegteTimer SET Titel=?, StartZeitstempel=?, ServiceRef=?, webChannel=? WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?"
-				cCursor.execute(sql, (title, start_time, stbRef, webChannel, serie.lower(), staffel, episode))
+		cCursor.execute("SELECT * FROM AngelegteTimer")
+		row = cCursor.fetchone()
+		if not row:
+			readTimer = open(timerFile, "r")
+			for rawData in readTimer.readlines():
+				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+				(serie, xtitle, start_time, stbRef, webChannel) = data[0]
+				data = re.findall('"S(.*?)E(.*?) - (.*?)"', '"%s"' % xtitle, re.S)
+				(staffel, episode, title) = data[0]
+				cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", (serie.lower(), staffel, episode))
+				if not cCursor.fetchone():
+					sql = "INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, ?, ?, ?, ?)"
+					cCursor.execute(sql, (serie, staffel, episode, title, start_time, stbRef, webChannel))
+				else:
+					sql = "UPDATE OR IGNORE AngelegteTimer SET Titel=?, StartZeitstempel=?, ServiceRef=?, webChannel=? WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?"
+					cCursor.execute(sql, (title, start_time, stbRef, webChannel, serie.lower(), staffel, episode))
 		dbSerRec.commit()
 		cCursor.close()
 		
@@ -4443,52 +4452,75 @@ def ImportFilesToDB():
 		
 	if fileExists(markerFile):
 		cCursor = dbSerRec.cursor()
-		readMarker = open(markerFile, "r")
-		for rawData in readMarker.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(serie, url, staffeln, sender) = data[0]
-			staffeln = staffeln.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
-			AlleStaffelnAb = 999999
-			if "Manuell" in staffeln:
-				AlleStaffelnAb = -2
-				staffeln = []
-			elif "Alle" in staffeln:
-				AlleStaffelnAb = 0
-				staffeln = []
-			else:
-				if "folgende" in staffeln:
-					staffeln.remove("folgende")
-					staffeln.sort(key=int, reverse=True)
-					AlleStaffelnAb = int(staffeln[0])
-					staffeln = staffeln[1:]
-					
-				staffeln.sort(key=int)
+		cCursor.execute("SELECT * FROM AngelegteTimer")
+		row = cCursor.fetchone()
+		if not row:
+			readMarker = open(markerFile, "r")
+			for rawData in readMarker.readlines():
+				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+				(serie, url, staffeln, sender) = data[0]
+				staffeln = staffeln.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
+				AlleStaffelnAb = 999999
+				if "Manuell" in staffeln:
+					AlleStaffelnAb = -2
+					staffeln = []
+				elif "Alle" in staffeln:
+					AlleStaffelnAb = 0
+					staffeln = []
+				else:
+					if "folgende" in staffeln:
+						staffeln.remove("folgende")
+						staffeln.sort(key=int, reverse=True)
+						AlleStaffelnAb = int(staffeln[0])
+						staffeln = staffeln[1:]
+						
+					staffeln.sort(key=int)
 
-			sender = sender.replace("[","").replace("]","").replace("'","").split(",")
-			alleSender = 0
-			if "Alle" in sender:
-				alleSender = 1
-				sender = []
-			else:
-				sender.sort()
+				sender = sender.replace("[","").replace("]","").replace("'","").split(",")
+				alleSender = 0
+				if "Alle" in sender:
+					alleSender = 1
+					sender = []
+				else:
+					sender.sort()
 
-			cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender) VALUES (?, ?, ?, ?)", (serie, url, AlleStaffelnAb, alleSender))
-			ID = cCursor.lastrowid
-			if len(staffeln) > 0:
-				IDs = [ID,]*len(staffeln)					
-				staffel_list = zip(IDs, staffeln)
-				cCursor.executemany("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", staffel_list)
-			if len(sender) > 0:
-				IDs = [ID,]*len(sender)					
-				sender_list = zip(IDs, sender)
-				cCursor.executemany("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", sender_list)
-				
+				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender) VALUES (?, ?, ?, ?)", (serie, url, AlleStaffelnAb, alleSender))
+				ID = cCursor.lastrowid
+				if len(staffeln) > 0:
+					IDs = [ID,]*len(staffeln)					
+					staffel_list = zip(IDs, staffeln)
+					cCursor.executemany("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", staffel_list)
+				if len(sender) > 0:
+					IDs = [ID,]*len(sender)					
+					sender_list = zip(IDs, sender)
+					cCursor.executemany("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", sender_list)
 		dbSerRec.commit()
 		cCursor.close()
 		
 		readMarker.close()
 		shutil.move(markerFile, "%s_old" % markerFile)
 		#os.remove(markerFile)
+
+	dbSerRec.text_factory = str
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT WebChannel FROM Channels")
+	for row in cCursor:
+		(WebChannel,) = row
+		try:
+			x = str(WebChannel.decode("utf-8"))
+		except:
+			cTmp = dbSerRec.cursor()
+			cTmp.execute ("DELETE FROM Channels WHERE WebChannel=?", (WebChannel,))
+			cTmp.close()
+	cCursor.close()
+	dbSerRec.commit()
+	
+	dbSerRec.text_factory = unicode
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("INSERT OR IGNORE INTO Channels (WebChannel) VALUES (?)", (u'Sky Fußball Bundesliga',))
+	cCursor.close()
+	dbSerRec.commit()
+	dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 		
 	return True
 		
