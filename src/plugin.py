@@ -64,6 +64,7 @@ from enigma import eEPGCache, eServiceReference, eServiceCenter, iServiceInforma
 
 from Tools import Notifications
 import sqlite3
+import httplib, urllib
 
 try:
 	default_before = int(config.recording.margin_before.value)
@@ -120,6 +121,9 @@ config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
 config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
 config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
+config.plugins.serienRec.pushover = ConfigYesNo(default = False)
+config.plugins.serienRec.pushoverAPIKey = ConfigText(default = "", fixed_size=False, visible_width=50)
+config.plugins.serienRec.pushoverUserKey = ConfigText(default = "", fixed_size=False, visible_width=50)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
@@ -242,6 +246,18 @@ def getDirname(serien_name, staffel):
 			else:
 				dirname = "%sSeason %s/" % (dirname, str(staffel).zfill(2))
 	return dirname	
+
+def doPushOver(serien_name, staffel, episode, title):
+	if config.plugins.serienRec.pushover.value:	
+		conn = httplib.HTTPSConnection("api.pushover.net:443")
+		conn.request("POST", "/1/messages.json",
+			urllib.urlencode({
+				"token": config.plugins.serienRec.pushoverAPIKey.value, 
+				"user": config.plugins.serienRec.pushoverUserKey.value, 
+				"title": "Timer angelegt",
+				"message": "%s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title),
+			}), { "Content-type": "application/x-www-form-urlencoded" })
+		conn.getresponse()
 
 def getMarker():
 	return_list = []
@@ -1199,6 +1215,8 @@ class serienRecCheckForRecording():
 			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit))
 			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
 			writeLogFilter("timerDebug", "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			doPushOver(serien_name, staffel, episode, title)			
+				
 		dbSerRec.commit()
 		cCursor.close()
 		
@@ -3486,6 +3504,7 @@ class serienRecSendeTermine(Screen):
 			dbSerRec.commit()
 			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
 			writeLog("[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			doPushOver(serien_name, staffel, episode, title)
 		cCursor.close()
 		
 	def keyRed(self):
@@ -3877,6 +3896,12 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
 		self.list.append(getConfigListEntry("DEBUG LOG - Scroll zum Ende:", config.plugins.serienRec.logScrollLast))
 
+		self.list.append(getConfigListEntry(""))
+		self.list.append(getConfigListEntry("---------  Pushover Notifications -----------------------------------------------------------------------------"))
+		self.list.append(getConfigListEntry("Bei Timer-Anlage Pushover Notification senden:", config.plugins.serienRec.pushover))
+		self.list.append(getConfigListEntry("Pushover API Key:", config.plugins.serienRec.pushoverAPIKey))
+		self.list.append(getConfigListEntry("Pushover User Key:", config.plugins.serienRec.pushoverUserKey))
+
 	def changedEntry(self):
 		self.createConfigList()
 		self["config"].setList(self.list)
@@ -3943,6 +3968,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
+		config.plugins.serienRec.pushover.save()
+		config.plugins.serienRec.pushoverAPIKey.save()
+		config.plugins.serienRec.pushoverUserKey.save()
 		#config.plugins.serienRec.recordAll.save()
 
 		configfile.save()
