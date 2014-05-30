@@ -123,7 +123,7 @@ config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta6"))
+config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta7"))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -131,10 +131,9 @@ config.plugins.serienRec.serienRecShowProposal_filter = ConfigYesNo(default = Fa
 
 dbTmp = sqlite3.connect(":memory:")
 #dbTmp = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SR_Tmp.db")
-dbTmp.text_factory = str
+dbTmp.text_factory = lambda x: str(x.decode("utf-8"))
 dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
-dbSerRec.text_factory = str
-#dbSerRec.text_factory = unicode
+dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 
 def checkTuner(check):
 	#return True
@@ -153,11 +152,14 @@ def checkTuner(check):
 		return False
 
 def iso8859_Decode(txt):
-	#txt = txt.replace('\xe4','ä').replace('\xf6','ö').replace('\xfc','ü').replace('\xdf','ß')
-	#txt = txt.replace('\xc4','Ä').replace('\xd6','Ö').replace('\xdc','Ü')
-	txt = txt.replace('\xe4','ae').replace('\xf6','oe').replace('\xfc','ue').replace('\xdf','ss')
-	txt = txt.replace('\xc4','Ae').replace('\xd6','Oe').replace('\xdc','Ue')
-	txt = txt.replace('...','').replace('..','').replace(':','').replace('\xb2','2')
+	##txt = txt.replace('\xe4','ä').replace('\xf6','ö').replace('\xfc','ü').replace('\xdf','ß')
+	##txt = txt.replace('\xc4','Ä').replace('\xd6','Ö').replace('\xdc','Ü')
+	#txt = txt.replace('\xe4','ae').replace('\xf6','oe').replace('\xfc','ue').replace('\xdf','ss')
+	#txt = txt.replace('\xc4','Ae').replace('\xd6','Oe').replace('\xdc','Ue')
+	#txt = txt.replace('...','').replace('..','').replace(':','').replace('\xb2','2')
+	txt = unicode(txt, 'ISO-8859-1')
+	txt = txt.encode('utf-8')
+	txt = txt.replace('...','').replace('..','').replace(':','')
 	return txt
 
 def checkTimerAdded(sender, serie, staffel, episode, start_unixtime):
@@ -587,8 +589,9 @@ class serienRecCheckForRecording():
 			for regional,paytv,neu,prime,time,url,serien_name,serien_id,sender,staffel,episode,title in raw:
 				# encode utf-8
 				serien_name = iso8859_Decode(serien_name)
-				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
+				#sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				sender = iso8859_Decode(sender)
+				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 
 				if str(episode).isdigit() and str(staffel).isdigit():
 					if int(episode) == 1:
@@ -798,9 +801,9 @@ class serienRecCheckForRecording():
 		# loop over all transmissions
 		for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
 			# umlaute umwandeln
-			serien_name = iso8859_Decode(serien_name)
-			sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
+			#sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 			sender = iso8859_Decode(sender)
+			sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 			title = iso8859_Decode(title)
 
 			# setze label string
@@ -1116,7 +1119,7 @@ class serienRecCheckForRecording():
 			#print start_unixtime, future_time, current_time
 			if int(start_unixtime) > int(future_time):
 				show_future = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(future_time)))
-				writeLogFilter("timeLimit", "[Serien Recorder] ' %s ' - Timer wird spaeter angelegt -> Sendetermin: %s - Erlaubte Zeitspanne bis %s" % (label_serie, show_start, show_future))
+				writeLogFilter("timeLimit", "[Serien Recorder] ' %s ' - Timer wird später angelegt -> Sendetermin: %s - Erlaubte Zeitspanne bis %s" % (label_serie, show_start, show_future))
 			elif int(current_time) > int(start_unixtime):
 				show_current = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(current_time)))
 				writeLogFilter("timeLimit", "[Serien Recorder] ' %s ' - Der Sendetermin liegt in der Vergangenheit: %s - Aktuelles Datum: %s" % (label_serie, show_start, show_current))
@@ -1621,8 +1624,9 @@ class serienRecMain(Screen):
 				
 				# encode utf-8
 				serien_name = iso8859_Decode(serien_name)
-				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
+				#sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				sender = iso8859_Decode(sender)
+				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 				title = iso8859_Decode(title)
 				self.ErrorMsg = "%s - S%sE%s - %s (%s)" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title, sender)
 				
@@ -1681,7 +1685,7 @@ class serienRecMain(Screen):
 					if int(neu) == 1:
 						self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 				elif self.pNeu == 2:
-					cSener_list = self.checkSender(sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)',''))
+					cSener_list = self.checkSender(sender)
 					if len(cSener_list) != 0:
 						(webChannel, stbChannel, stbRef, status) = cSener_list[0]
 						if int(status) == 1:
@@ -2129,7 +2133,9 @@ class serienRecMainChannelEdit(Screen):
 			web_chlist = []
 			for station in stations:
 				if station != 'alle':
-					web_chlist.append((station.replace('\xdf','ß').replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','')))
+					#web_chlist.append((station.replace('\xdf','ß').replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')))
+					station = iso8859_Decode(station)
+					web_chlist.append((station.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')))
 
 			web_chlist.sort(key=lambda x: x.lower())
 			print web_chlist
@@ -3224,9 +3230,9 @@ class serienRecSendeTermine(Screen):
 		if parsingOK:
 			for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
 				# umlaute umwandeln
-				serien_name = iso8859_Decode(serien_name)
-				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
+				#sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				sender = iso8859_Decode(sender)
+				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 				title = iso8859_Decode(title)
 
 				if self.FilterEnabled:
@@ -3661,7 +3667,7 @@ class serienRecTimer(Screen):
 			
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 8, 32, 32, loadPNG(imageFound)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel),
 			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 250, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow)
