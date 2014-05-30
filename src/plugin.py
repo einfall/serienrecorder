@@ -1135,10 +1135,10 @@ class serienRecCheckForRecording():
 			#	Notifications.AddPopup(_("[Serien Recorder]\nACHTUNG!  -  %s" % self.konflikt), MessageBox.TYPE_INFO, timeout=-1)
 			print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
 			writeLog("[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"]), True)
-			return False
 		else:
 			print "[Serien Recorder] Tuner belegt %s %s" % (label_serie, show_start)
 			writeLog("[Serien Recorder] Tuner belegt: %s %s" % (label_serie, show_start), True)
+		return False
 			
 	def checkMarker(self, Serie):
 		cCursor = dbSerRec.cursor()
@@ -1431,7 +1431,8 @@ class serienRecMain(Screen):
 		self.chooseMenuList.l.setItemHeight(50)
 		self['list'] = self.chooseMenuList
 		self.modus = "list"
-
+		self.ErrorMsg = "unbekannt"
+		
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
@@ -1615,7 +1616,8 @@ class serienRecMain(Screen):
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (Schweiz)','').replace(' (RP)','').replace(' (F)','').replace(' (\xd6sterreich)','')
 				sender = iso8859_Decode(sender)
 				title = iso8859_Decode(title)
-
+				self.ErrorMsg = "%s - S%sE%s - %s (%s)" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title, sender)
+				
 				if self.checkTimer(serien_name, staffel, episode, title, start_time, sender):
 					aufnahme = True
 				else:
@@ -1691,6 +1693,7 @@ class serienRecMain(Screen):
 				self['title'].instance.setForegroundColor(parseColor("white"))
 			self.chooseMenuList.setList(map(self.buildList, self.daylist))
 			self.loading = False
+			self.ErrorMsg = "'getCover()'"
 			self.getCover()
 		else:
 			if int(self.page) < 1 and not int(self.page) == 0:
@@ -1994,7 +1997,9 @@ class serienRecMain(Screen):
 	def dataError(self, error):
 		self['title'].setText("Suche auf 'Wunschliste.de' erfolglos")
 		self['title'].instance.setForegroundColor(parseColor("white"))
-		print "[Serien Recorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
+		writeLog("[Serien Recorder] Fehler bei: %s" % self.ErrorMsg, True)
+		print "[Serien Recorder] Fehler bei: %s" % self.ErrorMsg
+		#print "[Serien Recorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
 		print error
 
 class serienRecMainChannelEdit(Screen):
