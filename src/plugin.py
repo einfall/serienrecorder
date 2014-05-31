@@ -117,7 +117,7 @@ config.plugins.serienRec.writeLogTimeLimit = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
 config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
 config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
-config.plugins.serienRec.recordAll = ConfigYesNo(default = False)
+config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
 config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
@@ -177,14 +177,12 @@ def checkTimerAdded(sender, serie, staffel, episode, start_unixtime):
 	return found
 
 def checkAlreadyAdded(serie, staffel, episode):
-	found = False
+	Anzahl = 0
 	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", (serie.lower(), staffel, episode))
-	row = cCursor.fetchone()
-	if row:
-		found = True
+	cCursor.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", (serie.lower(), staffel, episode))
+	(Anzahl,) = cCursor.fetchone()	
 	cCursor.close()
-	return found
+	return Anzahl
 
 def allowedTimeRange(f,t):
 	liste = ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23']
@@ -946,8 +944,10 @@ class serienRecCheckForRecording():
 		dbTmp.commit()
 		self.cCursorTmp.close()
 
-		# jetzt die Timer erstellen		
-		self.searchTimer()
+		# jetzt die Timer erstellen	
+		for x in range(config.plugins.serienRec.NoOfRecords.value): 
+			self.searchTimer(x)
+			dbTmp.commit()
 		
 		# gleiche alte Timer mit EPG ab
 		current_time = int(time.time())
@@ -978,7 +978,14 @@ class serienRecCheckForRecording():
 			self.session.open(TryQuitMainloop, 1)
 		return result
 				
-	def searchTimer(self):
+	def searchTimer(self, NoOfRecords):
+		if NoOfRecords:
+			optionalText = " (%s. Wiederholung)" % NoOfRecords
+		else:
+			optionalText = ""
+
+		writeLog("\n---------' Erstelle Timer%s '-------------------------------------------------------------------------------\n" % optionalText, True)
+			
 		# prepare valid time range
 		timeRangeList = allowedTimeRange(config.plugins.serienRec.fromTime.value, config.plugins.serienRec.toTime.value)
 		timeRange = {}.fromkeys(timeRangeList, 0)
@@ -1021,27 +1028,32 @@ class serienRecCheckForRecording():
 				#
 				# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 				#
-				# check im added file
-				if checkAlreadyAdded(serien_name, staffel, episode):
-					writeLogFilter("added", "[Serien Recorder] ' %s ' - Staffel/Episode bereits in added vorhanden -> ' %s '" % (label_serie, check_SeasonEpisode))
-					if not config.plugins.serienRec.recordAll.value: 
-						TimerDone = True
-						break
+				# check ob timer existiert
+				if checkTimerAdded(webChannel, serien_name, staffel, episode, int(start_unixtime)):
+					writeLogFilter("added", "[Serien Recorder] ' %s ' - Staffel/Episode%s Timer wurde bereits erstellt -> ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
+					cAdded = dbTmp.cursor()
+					cAdded.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND Staffel=? AND LOWER(Episode)=? AND StartTime=? AND LOWER(ServiceRef)=?", (serien_name.lower(), staffel, episode.lower(), start_unixtime, stbRef.lower()))
+					cAdded.close()
+					continue
 
-				# check hdd
-				bereits_vorhanden = False
+				# check anzahl timer
+				if checkAlreadyAdded(serien_name, staffel, episode) > NoOfRecords:
+					writeLogFilter("added", "[Serien Recorder] ' %s ' - Staffel/Episode%s bereits in added vorhanden -> ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
+					TimerDone = True
+					break
+
+				# check anzahl auf hdd
+				bereits_vorhanden = 0
 				if fileExists(dirname):
 					dirs = os.listdir(dirname)
 					for dir in dirs:
-						if re.search(serien_name+'.*?'+check_SeasonEpisode, dir):
-							bereits_vorhanden = True
-							break
+						if re.search(serien_name+'.*?'+check_SeasonEpisode+'.*?\.ts\Z', dir):
+							bereits_vorhanden += 1
 
-				if bereits_vorhanden:
-					writeLogFilter("disk", "[Serien Recorder] ' %s ' - Staffel/Episode bereits auf hdd vorhanden -> ' %s '" % (label_serie, check_SeasonEpisode))
-					if not config.plugins.serienRec.recordAll.value: 
-						TimerDone = True
-						break
+				if bereits_vorhanden > NoOfRecords:
+					writeLogFilter("disk", "[Serien Recorder] ' %s ' - Staffel/Episode%s bereits auf hdd vorhanden -> ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
+					TimerDone = True
+					break
 					
 				##############################
 				#
@@ -1078,7 +1090,10 @@ class serienRecCheckForRecording():
 				#
 				# Setze Timer
 				#
-				if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode):
+				if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, optionalText):
+					cAdded = dbTmp.cursor()
+					cAdded.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND Staffel=? AND LOWER(Episode)=? AND StartTime=? AND LOWER(ServiceRef)=?", (serien_name.lower(), staffel, episode.lower(), start_unixtime, stbRef.lower()))
+					cAdded.close()
 					TimerDone = True
 					break
 				#else:
@@ -1087,7 +1102,7 @@ class serienRecCheckForRecording():
 				#		( title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode ) = timer_backup
 				#		show_start_old = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 				#		writeLog("[Serien Recorder] ' %s ' - Wiederholung konnte nicht programmiert werden -> %s -> Versuche Timer Backup -> %s" % (label_serie, show_start, show_start_old), True)
-				#		if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode):
+				#		if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, optionalText):
 				#			TimerDone = True
 				#			break
 					
@@ -1100,7 +1115,10 @@ class serienRecCheckForRecording():
 					show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 					writeLog("[Serien Recorder] ' %s ' - Keine Wiederholung gefunden! -> %s" % (label_serie, show_start), True)
 					# programmiere Timer
-					if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode):
+					if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, optionalText):
+						cAdded = dbTmp.cursor()
+						cAdded.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND Staffel=? AND LOWER(Episode)=? AND StartTime=? AND LOWER(ServiceRef)=?", (serien_name.lower(), staffel, episode.lower(), start_unixtime, stbRef.lower()))
+						cAdded.close()
 						TimerDone = True
 						break
 						
@@ -1110,7 +1128,7 @@ class serienRecCheckForRecording():
 						
 		cTmp.close()
 
-	def doTimer(self, current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode):
+	def doTimer(self, current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, optionalText = ''):
 		##############################
 		#
 		# CHECK
@@ -1137,7 +1155,7 @@ class serienRecCheckForRecording():
 				# Eintrag in das timer file
 				self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit)
 				# Eintrag in das added file
-				writeLog("[Serien Recorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s" % (label_serie, show_start, label_serie, stbChannel), True)
+				writeLog("[Serien Recorder] ' %s ' - Timer wurde angelegt%s -> %s %s @ %s" % (label_serie, optionalText, show_start, label_serie, stbChannel), True)
 				return True
 			
 			self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
@@ -1677,7 +1695,7 @@ class serienRecMain(Screen):
 				if fileExists(dirname):
 					dirs = os.listdir(dirname)
 					for dir in dirs:
-						if re.search(serien_name+'.*?'+check_SeasonEpisode, dir):
+						if re.search(serien_name+'.*?'+check_SeasonEpisode+'.*?\.ts\Z', dir):
 							bereits_vorhanden = True
 							break
 
@@ -3212,6 +3230,7 @@ class serienRecSendeTermine(Screen):
 		getPage(self.serie_url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
 
 	def resultsTermine(self, data, serien_name):
+		parsingOK = False
 		self.sendetermine_list = []
 		raw = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)x(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
 		#('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
@@ -3257,18 +3276,19 @@ class serienRecSendeTermine(Screen):
 					
 				self.sendetermine_list.append([serien_name, sender, datum, startzeit, endzeit, str(staffel).zfill(2), str(episode).zfill(2), title, "0"])
 
-			self['red'].setText("Abbrechen")
 			self['green'].setText("Timer erstellen")
-			if self.FilterEnabled:
-				self['yellow'].setText("Filter ausschalten")
-				txt = "gefiltert"
-			else:
-				self['yellow'].setText("Filter einschalten")
-				txt = "alle"
-
-			self.chooseMenuList2.setList(map(self.buildList_termine, self.sendetermine_list))
-			self.loading = False
-			self['title'].setText("%s Sendetermine für ' %s ' gefunden. (%s)" % (str(len(self.sendetermine_list)), self.serien_name, txt))
+			
+		self['red'].setText("Abbrechen")
+		if self.FilterEnabled:
+			self['yellow'].setText("Filter ausschalten")
+			txt = "gefiltert"
+		else:
+			self['yellow'].setText("Filter einschalten")
+			txt = "alle"
+		
+		self.chooseMenuList2.setList(map(self.buildList_termine, self.sendetermine_list))
+		self.loading = False
+		self['title'].setText("%s Sendetermine für ' %s ' gefunden. (%s)" % (str(len(self.sendetermine_list)), self.serien_name, txt))
 
 	def buildList_termine(self, entry):
 		#(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
@@ -3291,7 +3311,7 @@ class serienRecSendeTermine(Screen):
 		if fileExists(dirname):
 			dirs = os.listdir(dirname)
 			for dir in dirs:
-				if re.search(serien_name+'.*?'+check_SeasonEpisode, dir):
+				if re.search(serien_name+'.*?'+check_SeasonEpisode+'.*?\.ts\Z', dir):
 					bereits_vorhanden = True
 					rightImage = imageHDD
 					break
@@ -3373,21 +3393,16 @@ class serienRecSendeTermine(Screen):
 
 					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 					check_SeasonEpisode = "S%sE%s" % (staffel, episode)
-					bereits_vorhanden = False
 
 					#check 1 (hdd)
+					bereits_vorhanden = 0
 					if fileExists(dirname):
 						dirs = os.listdir(dirname)
 						for dir in dirs:
-							if re.search(serien_name+'.*?'+check_SeasonEpisode, dir):
-								bereits_vorhanden = True
-								break
+							if re.search(serien_name+'.*?'+check_SeasonEpisode+'.*?\.ts\Z', dir):
+								bereits_vorhanden += 1
 
-					# check 2 (im added file)
-					#if checkAlreadyAdded(serien_name, staffel, episode):
-					#	bereits_vorhanden = True
-
-					if not bereits_vorhanden:
+					if bereits_vorhanden < config.plugins.serienRec.NoOfRecords.value:
 						# check sender
 						cSener_list = self.checkSender(sender)
 						if len(cSener_list) == 0:
@@ -3864,7 +3879,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
 		self.list.append(getConfigListEntry("Versuche die Eventid vom EPGCACHE zu holen:", config.plugins.serienRec.eventid))
 		self.list.append(getConfigListEntry("Immer aufnehmen wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
-		#self.list.append(getConfigListEntry("Timer für ALLE Wiederholungen erstellen:", config.plugins.serienRec.recordAll))
+		self.list.append(getConfigListEntry("Anzahl der Aufnahmen pro Episode:", config.plugins.serienRec.NoOfRecords))
 		self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen:", config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry("Aktion bei neuer Serie/Staffel:", config.plugins.serienRec.ActionOnNew))
 		self.list.append(getConfigListEntry("Aus Deep-StandBy aufwecken:", config.plugins.serienRec.wakeUpDSB))
@@ -3959,7 +3974,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
-		#config.plugins.serienRec.recordAll.save()
+		config.plugins.serienRec.NoOfRecords.save()
 
 		configfile.save()
 		self.close(True)
@@ -4371,7 +4386,6 @@ def initDB():
 
 	
 	cTmp = dbTmp.cursor()
-	#def doTimer(self, current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode):
 	cTmp.execute('''CREATE TABLE IF NOT EXISTS GefundeneFolgen (CurrentTime INTEGER,
 	                                                            FutureTime INTEGER,
 	                                                            Title TEXT,
