@@ -4412,10 +4412,10 @@ def ImportFilesToDB():
 				if stbRef == "serviceref":
 					stbRef = ""
 				cCursor.execute("INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)", (webChannel, stbChannel, stbRef, status))
+			readChannel.close()
 		dbSerRec.commit()
 		cCursor.close()
 		
-		readChannel.close()
 		shutil.move(channelFile, "%s_old" % channelFile)
 		#os.remove(channelFile)
 		
@@ -4434,10 +4434,10 @@ def ImportFilesToDB():
 					continue
 				(staffel, episode) = data[0]
 				cCursor.execute('INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, "", 0, "", "")', (serie, staffel, episode))
+			readAdded.close()
 		dbSerRec.commit()
 		cCursor.close()
 		
-		readAdded.close()
 		shutil.move(addedFile, "%s_old" % addedFile)
 		#os.remove(addedFile)
 		
@@ -4459,10 +4459,10 @@ def ImportFilesToDB():
 				else:
 					sql = "UPDATE OR IGNORE AngelegteTimer SET Titel=?, StartZeitstempel=?, ServiceRef=?, webChannel=? WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?"
 					cCursor.execute(sql, (title, start_time, stbRef, webChannel, serie.lower(), staffel, episode))
+			readTimer.close()
 		dbSerRec.commit()
 		cCursor.close()
 		
-		readTimer.close()
 		shutil.move(timerFile, "%s_old" % timerFile)
 		#os.remove(timerFile)
 		
@@ -4510,10 +4510,10 @@ def ImportFilesToDB():
 					IDs = [ID,]*len(sender)					
 					sender_list = zip(IDs, sender)
 					cCursor.executemany("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", sender_list)
+			readMarker.close()
 		dbSerRec.commit()
 		cCursor.close()
 		
-		readMarker.close()
 		shutil.move(markerFile, "%s_old" % markerFile)
 		#os.remove(markerFile)
 
