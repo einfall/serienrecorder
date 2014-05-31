@@ -86,6 +86,8 @@ config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", 
 config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
 config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
+config.plugins.serienRec.seasonsubdirnumerlength = ConfigInteger(1, (1,4))
+config.plugins.serienRec.seasonsubdirfillchar = ConfigSelection(choices = [("0", _("'0'")), (" ", _("<SPACE>"))], default="0")
 config.plugins.serienRec.justplay = ConfigYesNo(default = False)
 config.plugins.serienRec.eventid = ConfigYesNo(default = True)
 config.plugins.serienRec.update = ConfigYesNo(default = False)
@@ -237,10 +239,11 @@ def getDirname(serien_name, staffel):
 	if config.plugins.serienRec.seriensubdir.value:
 		dirname = "%s%s/" % (dirname, serien_name)
 		if config.plugins.serienRec.seasonsubdir.value:
-			if str(staffel).isdigit():
-				dirname = "%sSeason %s/" % (dirname, str(int(staffel)))
-			else:
-				dirname = "%sSeason %s/" % (dirname, str(staffel))
+			#if str(staffel).isdigit():
+			#	dirname = "%sSeason %s/" % (dirname, str(int(staffel)))
+			#else:
+			#	dirname = "%sSeason %s/" % (dirname, str(staffel))
+			dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, config.plugins.serienRec.seasonsubdirfillchar.value))
 	return dirname	
 
 def getMarker():
@@ -3830,6 +3833,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 		else:
 			self["config"].instance.moveSelection(self["config"].instance.moveUp)
 
+	def keyLeft(self):
+		ConfigListScreen.keyLeft(self)
+		self.changedEntry()
+
+	def keyRight(self):
+		ConfigListScreen.keyRight(self)
+		self.changedEntry()
+
 	def createConfigList(self):
 		self.list = []
 		self.list.append(getConfigListEntry("---------  SYSTEM:  -------------------------------------------------------------------------------------------"))
@@ -3837,6 +3848,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Nur zum Sender zappen:", config.plugins.serienRec.justplay))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", config.plugins.serienRec.seasonsubdir))
+		if config.plugins.serienRec.seasonsubdir.value:
+			self.list.append(getConfigListEntry("    Mindestlänge der Staffelnummer im Verzeichnisnamen:", config.plugins.serienRec.seasonsubdirnumerlength))
+			self.list.append(getConfigListEntry("    Füllzeichen für Staffelnummer im Verzeichnisnamen:", config.plugins.serienRec.seasonsubdirfillchar))
 		self.list.append(getConfigListEntry("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):", config.plugins.serienRec.updateInterval)) #3600000
 		self.list.append(getConfigListEntry("Uhrzeit für automatischen Suchlauf (nur wenn Intervall = 24):", config.plugins.serienRec.deltime))
 		self.list.append(getConfigListEntry("Automatisches Plugin-Update:", config.plugins.serienRec.Autoupdate))
@@ -3913,6 +3927,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.justplay.save()
 		config.plugins.serienRec.seriensubdir.save()
 		config.plugins.serienRec.seasonsubdir.save()
+		config.plugins.serienRec.seasonsubdirnumerlength.save()
+		config.plugins.serienRec.seasonsubdirfillchar.save()
 		config.plugins.serienRec.update.save()
 		config.plugins.serienRec.updateInterval.save()
 		config.plugins.serienRec.checkfordays.save()
