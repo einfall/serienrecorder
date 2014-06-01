@@ -4531,27 +4531,143 @@ def ImportFilesToDB():
 		shutil.move(markerFile, "%s_old" % markerFile)
 		#os.remove(markerFile)
 
-	dbSerRec.text_factory = str
+	# Codierung Channels korrigieren
+	dbSerRec.text_factory=str
 	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT WebChannel FROM Channels")
+	cCursor.execute("SELECT * FROM Channels")
 	for row in cCursor:
-		(WebChannel,) = row
+		(WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit) = row
 		try:
-			x = str(WebChannel.decode("utf-8"))
+			WebChannelNew = WebChannel.decode('utf-8')
 		except:
+			WebChannelNew = unicode(WebChannel, 'ISO-8859-1')
+			WebChannelNew = WebChannelNew.encode('utf-8')
 			cTmp = dbSerRec.cursor()
 			cTmp.execute ("DELETE FROM Channels WHERE WebChannel=?", (WebChannel,))
+			sql = "INSERT OR IGNORE INTO Channels (WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit) VALUES (?,?,?,?,?,?,?,?)"
+			cTmp.execute(sql, (WebChannelNew,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit))
 			cTmp.close()
+
+		try:
+			STBChannelNew = STBChannel.decode('utf-8')
+		except:
+			STBChannelNew = unicode(STBChannel, 'ISO-8859-1')
+			STBChannelNew = STBChannelNew.encode('utf-8')
+			cTmp = dbSerRec.cursor()
+			cTmp.execute("UPDATE OR IGNORE Channels SET STBChannel=? WHERE STBChannel=?", (STBChannelNew,STBChannel))
+			cTmp.close()
+			
+	cCursor.close()
+
+	# Codierung NeuerStaffelbeginn korrigieren
+	dbSerRec.text_factory=str
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT Serie,Sender FROM NeuerStaffelbeginn")
+	for row in cCursor:
+		(Serie,Sender) = row
+		try:
+			SerieNew = Serie.decode("utf-8")
+		except:
+			SerieNew = unicode(Serie, 'ISO-8859-1')
+			SerieNew = SerieNew.encode("utf-8")
+			cTmp = dbSerRec.cursor()
+			cTmp.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET Serie=? WHERE Serie=?", (SerieNew,Serie))
+			cTmp.close()
+			
+		try:
+			SenderNew = Sender.decode('utf-8')
+		except:
+			SenderNew = unicode(Sender, 'ISO-8859-1')
+			SenderNew = SenderNew.encode('utf-8')
+			cTmp = dbSerRec.cursor()
+			cTmp.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET Sender=? WHERE Sender=?", (SenderNew,Sender))
+			cTmp.close()
+			
+	cCursor.close()
+
+	# Codierung SerienMarker korrigieren
+	dbSerRec.text_factory=str
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT Serie FROM SerienMarker")
+	for row in cCursor:
+		(Serie,) = row
+		try:
+			SerieNew = Serie.decode('utf-8')
+		except:
+			SerieNew = unicode(Serie, 'ISO-8859-1')
+			SerieNew = SerieNew.encode('utf-8')
+			cTmp = dbSerRec.cursor()
+			cTmp.execute("UPDATE OR IGNORE SerienMarker SET Serie=? WHERE Serie=?", (SerieNew,Serie))
+			cTmp.close()
+			
+	cCursor.close()
+
+	# Codierung SenderAuswahl korrigieren
+	dbSerRec.text_factory=str
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT ErlaubterSender FROM SenderAuswahl")
+	for row in cCursor:
+		(ErlaubterSender,) = row
+		try:
+			ErlaubterSenderNew = ErlaubterSender.decode('utf-8')
+		except:
+			ErlaubterSenderNew = unicode(ErlaubterSender, 'ISO-8859-1')
+			ErlaubterSenderNew = ErlaubterSenderNew.encode('utf-8')
+			cTmp = dbSerRec.cursor()
+			cTmp.execute("UPDATE OR IGNORE SenderAuswahl SET ErlaubterSender=? WHERE ErlaubterSender=?", (ErlaubterSenderNew,ErlaubterSender))
+			cTmp.close()
+			
+	cCursor.close()
+
+	# Codierung AngelegteTimer korrigieren
+	dbSerRec.text_factory=str
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT Serie,Titel,webChannel FROM AngelegteTimer")
+	for row in cCursor:
+		(Serie,Titel,webChannel) = row
+		try:
+			SerieNew = Serie.decode('utf-8')
+		except:
+			SerieNew = unicode(Serie, 'ISO-8859-1')
+			SerieNew = SerieNew.encode('utf-8')
+			cTmp = dbSerRec.cursor()
+			cTmp.execute("UPDATE OR IGNORE AngelegteTimer SET Serie=? WHERE Serie=?", (SerieNew,Serie))
+			cTmp.close()
+			
+		try:
+			TitelNew = Titel.decode('utf-8')
+		except:
+			TitelNew = unicode(Titel, 'ISO-8859-1')
+			TitelNew = TitelNew.encode('utf-8')
+			cTmp = dbSerRec.cursor()
+			cTmp.execute("UPDATE OR IGNORE AngelegteTimer SET Titel=? WHERE Titel=?", (TitelNew,Titel))
+			cTmp.close()
+			
+		try:
+			webChannelNew = webChannel.decode('utf-8')
+		except:
+			webChannelNew = unicode(webChannel, 'ISO-8859-1')
+			webChannelNew = webChannelNew.encode('utf-8')
+			cTmp = dbSerRec.cursor()
+			cTmp.execute("UPDATE OR IGNORE AngelegteTimer SET webChannel=? WHERE webChannel=?", (webChannelNew,webChannel))
+			cTmp.close()
+			
 	cCursor.close()
 	dbSerRec.commit()
-	
-	dbSerRec.text_factory = unicode
+
+	# remove old Tables
 	cCursor = dbSerRec.cursor()
-	cCursor.execute("INSERT OR IGNORE INTO Channels (WebChannel) VALUES (?)", (u'Sky Fußball Bundesliga',))
+	try:
+		cCursor.execute("DROP TABLE NeueStaffel")
+	except:
+		pass
+	dbSerRec.commit()
+	cCursor.execute("VACUUM")
 	cCursor.close()
+	
 	dbSerRec.commit()
 	dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
-		
+	
 	return True
 		
 class serienRecModifyAdded(Screen):
