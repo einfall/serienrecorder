@@ -256,7 +256,7 @@ def doPushOver(serien_name, staffel, episode, title):
 				"token": config.plugins.serienRec.pushoverAPIKey.value,
 				"user": config.plugins.serienRec.pushoverUserKey.value,
 				"title": "Timer angelegt",
-				"message": "%s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title),
+				"message": "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title),
 			}), { "Content-type": "application/x-www-form-urlencoded" })
 		conn.getresponse()
 
