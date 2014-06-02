@@ -4504,23 +4504,20 @@ def ImportFilesToDB():
 		
 	if fileExists(timerFile):
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT * FROM AngelegteTimer")
-		row = cCursor.fetchone()
-		if not row:
-			readTimer = open(timerFile, "r")
-			for rawData in readTimer.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie, xtitle, start_time, stbRef, webChannel) = data[0]
-				data = re.findall('"S(.*?)E(.*?) - (.*?)"', '"%s"' % xtitle, re.S)
-				(staffel, episode, title) = data[0]
-				cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", (serie.lower(), staffel, episode))
-				if not cCursor.fetchone():
-					sql = "INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, ?, ?, ?, ?)"
-					cCursor.execute(sql, (serie, staffel, episode, title, start_time, stbRef, webChannel))
-				else:
-					sql = "UPDATE OR IGNORE AngelegteTimer SET Titel=?, StartZeitstempel=?, ServiceRef=?, webChannel=? WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?"
-					cCursor.execute(sql, (title, start_time, stbRef, webChannel, serie.lower(), staffel, episode))
-			readTimer.close()
+		readTimer = open(timerFile, "r")
+		for rawData in readTimer.readlines():
+			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
+			(serie, xtitle, start_time, stbRef, webChannel) = data[0]
+			data = re.findall('"S(.*?)E(.*?) - (.*?)"', '"%s"' % xtitle, re.S)
+			(staffel, episode, title) = data[0]
+			cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?", (serie.lower(), staffel, episode))
+			if not cCursor.fetchone():
+				sql = "INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, ?, ?, ?, ?)"
+				cCursor.execute(sql, (serie, staffel, episode, title, start_time, stbRef, webChannel))
+			else:
+				sql = "UPDATE OR IGNORE AngelegteTimer SET Titel=?, StartZeitstempel=?, ServiceRef=?, webChannel=? WHERE LOWER(Serie)=? AND Staffel=? AND Episode=?"
+				cCursor.execute(sql, (title, start_time, stbRef, webChannel, serie.lower(), staffel, episode))
+		readTimer.close()
 		dbSerRec.commit()
 		cCursor.close()
 		
@@ -4529,7 +4526,7 @@ def ImportFilesToDB():
 		
 	if fileExists(markerFile):
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT * FROM AngelegteTimer")
+		cCursor.execute("SELECT * FROM SerienMarker")
 		row = cCursor.fetchone()
 		if not row:
 			readMarker = open(markerFile, "r")
