@@ -395,6 +395,41 @@ class PicLoader:
     
     def destroy(self):
         del self.picload
+		
+class imdbVideo():
+	def __init__(self):
+		print "imdbvideos.."
+
+	def videolist(self, url):
+		url = url + "videogallery"
+		print url
+		headers = { 'User-Agent' : 'Mozilla/5.0' }
+		req = urllib2.Request(url, None, headers)
+		data = urllib2.urlopen(req).read()
+		lst = []
+		videos = re.findall('viconst="(.*?)".*?src="(.*?)" class="video" />', data, re.S)
+		if videos:
+			for id,image in videos:
+				url = "http://www.imdb.com/video/screenplay/%s/imdb/single" % id
+				lst.append((url, image))
+			
+		if len(lst) != 0:
+			return lst
+		else:
+			return None
+
+	def stream_url(self, url):
+		headers = { 'User-Agent' : 'Mozilla/5.0' }
+		req = urllib2.Request(url, None, headers)
+		data = urllib2.urlopen(req).read()
+		stream_url = re.findall('"start":0,"url":"(.*?)"', data, re.S)
+		if stream_url:
+			return stream_url[0]
+		else:
+			return None
+
+	def dataError(self, error):
+		return None
 
 class serienRecCheckForRecording():
 
@@ -1518,8 +1553,20 @@ class serienRecMain(Screen):
 		self.onFirstExecBegin.append(self.startScreen)
 
 	def test(self):
-		check = "1400949910"
-		checkTuner(check)
+		check = self['list'].getCurrent()
+		if check == None:
+			return
+
+		serien_id = self['list'].getCurrent()[0][14]
+		url = "http://www.wunschliste.de/%s/links" % serien_id
+		print url
+		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
+			
+	def getImdblink2(self, data):
+		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
+		if ilink:
+			print ilink
+			self.session.open(serienRecShowImdbVideos, ilink[0])
 
 	def importFromFile(self):
 		ImportFilesToDB()
@@ -5241,6 +5288,93 @@ class serienRecShowInfo(Screen):
 
 	def pageDown(self):
 		self["list"].pageDown()
+
+	def keyCancel(self):
+		self.close()
+
+class serienRecShowImdbVideos(Screen):
+	skin = """
+		<screen position="center,center" size="1280,720" title="Serien Recorder">
+			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
+			<widget name="title" position="50,50" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;24" valign="center" halign="left" />
+			<widget name="version" position="850,10" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
+			<widget source="global.CurrentTime" render="Label" position="850,50" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
+				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
+			</widget>
+			<widget source="session.VideoPicture" render="Pig" position="915,120" size="328,186" zPosition="3" backgroundColor="transparent" />
+			<widget name="list" position="20,120" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
+
+			<widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/no_cover.png" position="915,320" size="320,300" transparent="1" alphatest="blend" />
+		</screen>"""
+
+	def __init__(self, session, ilink):
+		Screen.__init__(self, session)
+		self.session = session
+		self.ilink = ilink
+
+		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions"], {
+			"ok"    : self.keyOK,
+			"cancel": self.keyCancel
+			#"red"	: self.keyRed,
+			#"green" : self.keyGreen,
+			#"yellow": self.keyYellow,
+			#"blue"	: self.keyBlue,
+			#"right" : self.keyRight,
+			#"up"    : self.keyUp,
+			#"down"  : self.keyDown
+		}, -1)
+
+		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setItemHeight(50)
+
+		self.picload = ePicLoad()
+		self['cover'] = Pixmap()
+		self['list'] = self.chooseMenuList
+		self['title'] = Label("Loading imdbVideos..")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
+
+		self.red = 0xf23d21
+		self.green = 0x389416
+		self.blue = 0x0064c7
+		self.yellow = 0xbab329
+		self.white = 0xffffff
+		
+		self.onLayoutFinish.append(self.getVideos)
+
+	def getVideos(self):
+			videos = imdbVideo().videolist(self.ilink.replace('combined',''))
+			if videos != None:
+				count = len(videos)
+				self['title'].setText("Found (%s) imdbVideos." % str(count))
+				self.chooseMenuList.setList(map(self.buildList, videos))
+			else:
+				self['title'].setText("Found No imdbVideos.")
+			
+	def buildList(self, entry):
+		(id, image) = entry
+
+		#self.picloader = PicLoader(250, 150)
+		#picon = self.picloader.load("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sender/"+Sender+".png")
+		#self.picloader.destroy()
+		return [entry,
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, id)
+			]
+
+	def keyOK(self):
+		check = self['list'].getCurrent()
+		if check == None:
+			return
+
+		url = self['list'].getCurrent()[0][0]
+		image = self['list'].getCurrent()[0][1]
+		print url
+		
+		stream = imdbVideo().stream_url(url)
+		if stream != None:
+			#sref = eServiceReference(0x1001, 0, stream)
+			sref = eServiceReference(4097, 0, stream)
+			self.session.open(MoviePlayer, sref)
 
 	def keyCancel(self):
 		self.close()
