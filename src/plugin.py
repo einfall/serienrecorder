@@ -94,6 +94,7 @@ config.plugins.serienRec.update = ConfigYesNo(default = False)
 config.plugins.serienRec.updateInterval = ConfigInteger(0, (0,24))
 config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
 config.plugins.serienRec.deltime = ConfigClock(default = 6*3600)
+config.plugins.serienRec.maxWebRequests = ConfigInteger(1, (1,99))
 config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
 config.plugins.serienRec.fromTime = ConfigInteger(00, (00,23))
 config.plugins.serienRec.toTime = ConfigInteger(23, (00,23))
@@ -105,6 +106,7 @@ config.plugins.serienRec.Alternatetimer = ConfigYesNo(default = True)
 config.plugins.serienRec.Autoupdate = ConfigYesNo(default = True)
 config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
 config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
+config.plugins.serienRec.DSBTimeout = ConfigInteger(20, (0,999))
 config.plugins.serienRec.writeLog = ConfigYesNo(default = True)
 config.plugins.serienRec.showNotification = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogChannels = ConfigYesNo(default = True)
@@ -117,6 +119,7 @@ config.plugins.serienRec.writeLogTimeLimit = ConfigYesNo(default = True)
 config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
 config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
 config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
+config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
 config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
@@ -602,7 +605,10 @@ class serienRecCheckForRecording():
 			self.startCheck3()
 
 	def startCheck2(self, amanuell):
-		ds = defer.DeferredSemaphore(tokens=2)
+		if str(config.plugins.serienRec.maxWebRequests.value).isdigit():
+			ds = defer.DeferredSemaphore(tokens=int(config.plugins.serienRec.maxWebRequests.value))
+		else:
+			ds = defer.DeferredSemaphore(tokens=1)
 		downloads = [ds.run(self.readWebpageForNewStaffel, "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))).addCallback(self.parseWebpageForNewStaffel, amanuell).addErrback(self.dataError) for daypage in range(int(config.plugins.serienRec.checkfordays.value))]
 		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.checkError)
 		
@@ -687,7 +693,13 @@ class serienRecCheckForRecording():
 				cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (cCursor.lastrowid, Sender))
 				writeLog("[Serien Recorder] Neuer Marker für '%s' wurde angelegt" % Serie, True)
 			cCursor.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET CreationFlag=0 WHERE CreationFlag=1")
-			dbSerRec.commit()
+			
+		if config.plugins.serienRec.ActionOnNew.value != "0":
+			date = datetime.datetime.now() - datetime.timedelta(days=config.plugins.serienRec.deleteOlderThan.value)
+			date = date.strftime("%s")
+			cCursor.execute("DELETE FROM NeuerStaffelbeginn WHERE UTCStaffelStart<=?", (date,))
+			
+		dbSerRec.commit()
 		cCursor.close()
 		return result
 
@@ -789,7 +801,10 @@ class serienRecCheckForRecording():
 		self.countTimer = 0
 		self.countTimerUpdate = 0
 		self.countSerien = self.countMarker()
-		ds = defer.DeferredSemaphore(tokens=2)
+		if str(config.plugins.serienRec.maxWebRequests.value).isdigit():
+			ds = defer.DeferredSemaphore(tokens=int(config.plugins.serienRec.maxWebRequests.value))
+		else:
+			ds = defer.DeferredSemaphore(tokens=1)
 		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode in self.urls]
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
@@ -1008,11 +1023,21 @@ class serienRecCheckForRecording():
 		
 		# in den deep-standby fahren.
 		if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.afterAutocheck.value and not self.manuell:
+			if config.plugins.serienRec.DSBTimeout.value > 0:
+				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in Deep-Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+			else:
+				self.gotoDeepStandby(True)
+			#print "[Serien Recorder] gehe in Deep-Standby"
+			#writeLog("[Serien Recorder] gehe in Deep-Standby")
+			#self.session.open(TryQuitMainloop, 1)
+		return result
+				
+	def gotoDeepStandby(self, answer):
+		if answer:
 			print "[Serien Recorder] gehe in Deep-Standby"
 			writeLog("[Serien Recorder] gehe in Deep-Standby")
 			self.session.open(TryQuitMainloop, 1)
-		return result
-				
+
 	def searchTimer(self, NoOfRecords):
 		if NoOfRecords:
 			optionalText = " (%s. Wiederholung)" % NoOfRecords
@@ -3884,12 +3909,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self["config"].instance.moveSelection(self["config"].instance.pageDown)
 
 	def keyDown(self):
+		self.changedEntry()
 		if self["config"].instance.getCurrentIndex() >= (len(self.list) - 1):
 			self["config"].instance.moveSelectionTo(0)
 		else:
 			self["config"].instance.moveSelection(self["config"].instance.moveDown)
 
 	def keyUp(self):
+		self.changedEntry()
 		if self["config"].instance.getCurrentIndex() <= 1:
 			self["config"].instance.moveSelectionTo(len(self.list) - 1)
 		else:
@@ -3914,7 +3941,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self.list.append(getConfigListEntry("    Mindestlänge der Staffelnummer im Verzeichnisnamen:", config.plugins.serienRec.seasonsubdirnumerlength))
 			self.list.append(getConfigListEntry("    Füllzeichen für Staffelnummer im Verzeichnisnamen:", config.plugins.serienRec.seasonsubdirfillchar))
 		self.list.append(getConfigListEntry("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):", config.plugins.serienRec.updateInterval)) #3600000
-		self.list.append(getConfigListEntry("Uhrzeit für automatischen Suchlauf (nur wenn Intervall = 24):", config.plugins.serienRec.deltime))
+		if config.plugins.serienRec.updateInterval.value == 24:
+			self.list.append(getConfigListEntry("    Uhrzeit für automatischen Suchlauf (nur wenn Intervall = 24):", config.plugins.serienRec.deltime))
+		self.list.append(getConfigListEntry("Anzahl gleichzeitiger Web-Anfragen:", config.plugins.serienRec.maxWebRequests))
 		self.list.append(getConfigListEntry("Automatisches Plugin-Update:", config.plugins.serienRec.Autoupdate))
 
 		self.list.append(getConfigListEntry(""))
@@ -3929,8 +3958,12 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Anzahl der Aufnahmen pro Episode:", config.plugins.serienRec.NoOfRecords))
 		self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen:", config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry("Aktion bei neuer Serie/Staffel:", config.plugins.serienRec.ActionOnNew))
+		if config.plugins.serienRec.ActionOnNew.value != "0":
+			self.list.append(getConfigListEntry("    Einträge löschen die älter sind als X Tage:", config.plugins.serienRec.deleteOlderThan))
 		self.list.append(getConfigListEntry("Aus Deep-StandBy aufwecken:", config.plugins.serienRec.wakeUpDSB))
 		self.list.append(getConfigListEntry("Nach dem automatischen Suchlauf in Deep-StandBy gehen:", config.plugins.serienRec.afterAutocheck))
+		if config.plugins.serienRec.afterAutocheck.value:
+			self.list.append(getConfigListEntry("    Timeout für Deep-StandBy-Abfrage (in Sek.):", config.plugins.serienRec.DSBTimeout))
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry("---------  GUI:  ----------------------------------------------------------------------------------------------"))
@@ -3994,6 +4027,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.update.save()
 		config.plugins.serienRec.updateInterval.save()
 		config.plugins.serienRec.checkfordays.save()
+		config.plugins.serienRec.maxWebRequests.save()
 		config.plugins.serienRec.margin_before.save()
 		config.plugins.serienRec.margin_after.save()
 		config.plugins.serienRec.max_season.save()
@@ -4016,12 +4050,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.writeLogTimerDebug.save()
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.ActionOnNew.save()
+		config.plugins.serienRec.deleteOlderThan.save()
 		config.plugins.serienRec.forceRecording.save()
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
 		config.plugins.serienRec.NoOfRecords.save()
+		config.plugins.serienRec.DSBTimeout.save()
 
 		configfile.save()
 		self.close(True)
