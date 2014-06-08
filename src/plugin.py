@@ -236,17 +236,48 @@ def getRealUnixTime(min, std, day, month, year):
 	return datetime.datetime(int(year), int(month), int(day), int(std), int(min)).strftime("%s")
 
 def getDirname(serien_name, staffel):
-	dirname = config.plugins.serienRec.savetopath.value
-	if config.plugins.serienRec.seriensubdir.value:
-		dirname = "%s%s/" % (dirname, serien_name)
-		if config.plugins.serienRec.seasonsubdir.value:
-			#if str(staffel).isdigit():
-			#	dirname = "%sSeason %s/" % (dirname, str(int(staffel)))
-			#else:
-			#	dirname = "%sSeason %s/" % (dirname, str(staffel))
-			dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, config.plugins.serienRec.seasonsubdirfillchar.value))
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT AufnahmeVerzeichnis FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+	row = cCursor.fetchone()
+	if not row:
+		dirname = config.plugins.serienRec.savetopath.value
+		if config.plugins.serienRec.seriensubdir.value:
+			dirname = "%s%s/" % (dirname, serien_name)
+			if config.plugins.serienRec.seasonsubdir.value:
+				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, config.plugins.serienRec.seasonsubdirfillchar.value))
+	else:
+		(dirname,) = row
+		if dirname:
+			if not re.search('.*?/\Z', dirname):
+				dirname = "%s/" % dirname
+			if config.plugins.serienRec.seasonsubdir.value:
+				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, config.plugins.serienRec.seasonsubdirfillchar.value))
+		else:
+			dirname = config.plugins.serienRec.savetopath.value
+			if config.plugins.serienRec.seriensubdir.value:
+				dirname = "%s%s/" % (dirname, serien_name)
+				if config.plugins.serienRec.seasonsubdir.value:
+					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, config.plugins.serienRec.seasonsubdirfillchar.value))
+		
+	cCursor.close()	
 	return dirname	
 
+def getMargins(serien_name):
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT Vorlaufzeit, Nachlaufzeit FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
+	data = cCursor.fetchone()
+	if data:
+		(margin_before, margin_after) = data
+		if not margin_before:
+			margin_before = config.plugins.serienRec.margin_before.value
+		if not margin_after:
+			margin_after = config.plugins.serienRec.margin_after.value
+	else:
+		margin_before = config.plugins.serienRec.margin_before.value
+		margin_after = config.plugins.serienRec.margin_after.value
+	cCursor.close()
+	return (margin_before, margin_after)	
+	
 def getMarker():
 	return_list = []
 	cCursor = dbSerRec.cursor()
@@ -707,32 +738,36 @@ class serienRecCheckForRecording():
 		cTimer = dbSerRec.cursor()
 		cCursor = dbSerRec.cursor()
 
-		cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>? AND EventID=0", (current_time, ))
-		for row in cCursor:
-			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
-					
-			##############################
-			#
-			# try to get eventID (eit) from epgCache
-			#
-			if config.plugins.serienRec.eventid.value:
+		##############################
+		#
+		# try to get eventID (eit) from epgCache
+		#
+		if config.plugins.serienRec.eventid.value:
+			cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>? AND EventID=0", (current_time, ))
+			for row in cCursor:
+				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
+						
+				(margin_before, margin_after) = getMargins(serien_name)
+		
 				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(serien_time)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(serien_time)+(int(config.plugins.serienRec.margin_before.value) * 60))
+				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(serien_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(serien_time)+(int(margin_before) * 60))
 				if event_matches and len(event_matches) > 0:
 					for event_entry in event_matches:
 						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 						dirname = getDirname(serien_name, staffel)
 						writeLog("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
 						eit = int(event_entry[1])
-						new_start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
-						new_end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(config.plugins.serienRec.margin_after.value) * 60)
+						new_start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
+						new_end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
 						
 						print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
 						recordHandler = NavigationInstance.instance.RecordTimer
 						try:
 							for timer in recordHandler.timer_list:
-								if timer and timer.service_ref:
-									if (timer.begin == int(serien_time)) and (timer.eit != eit):
+								#if timer and timer.service_ref:
+								#	if (timer.begin == int(serien_time)) and (timer.eit != eit):
+								if timer:
+									if (timer.begin == int(serien_time)) and (timer.service_ref == stbRef) and (timer.eit == 0):
 										timer.begin = new_start_unixtime
 										timer.end = new_end_unixtime
 										timer.eit = eit
@@ -753,20 +788,22 @@ class serienRecCheckForRecording():
 		for row in cCursor:
 			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
 
+			(margin_before, margin_after) = getMargins(serien_name)
+
 			epgmatches = []
 			epgcache = eEPGCache.getInstance()
 			allevents = epgcache.lookupEvent(['IBD',(stbRef, 2, eit, -1)]) or []
 
 			for eventid, begin, duration in allevents:
 				if int(eventid) == int(eit):
-					if int(begin) != (int(serien_time) + (int(config.plugins.serienRec.margin_before.value) * 60)):
+					if int(begin) != (int(serien_time) + (int(margin_before) * 60)):
 						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 						dirname = getDirname(serien_name, staffel)
 						writeLog("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
 						start_unixtime = int(begin)
-						start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
+						start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
 						end_unixtime = int(begin) + int(duration)
-						end_unixtime = int(end_unixtime) + (int(config.plugins.serienRec.margin_after.value) * 60)
+						end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 						
 						print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
 						recordHandler = NavigationInstance.instance.RecordTimer
@@ -848,7 +885,9 @@ class serienRecCheckForRecording():
 		current_time = int(time.time())
 		future_time = int(config.plugins.serienRec.checkfordays.value) * 86400
 		future_time += int(current_time)
-
+		
+		(margin_before, margin_after) = getMargins(serien_name)
+		
 		# loop over all transmissions
 		for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
 			# umlaute umwandeln
@@ -878,8 +917,8 @@ class serienRecCheckForRecording():
 
 			# setze die vorlauf/nachlauf-zeit
 			# print startzeit, start_unixtime, endzeit, end_unixtime
-			start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
-			end_unixtime = int(end_unixtime) + (int(config.plugins.serienRec.margin_after.value) * 60)
+			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
 			##############################
 			#
@@ -971,13 +1010,13 @@ class serienRecCheckForRecording():
 			eit = 0
 			if config.plugins.serienRec.eventid.value:
 				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60))
+				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(margin_before) * 60))
 				#print "event matches %s" % len(event_matches)
 				if event_matches and len(event_matches) > 0:
 					for event_entry in event_matches:
 						print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
 						eit = int(event_entry[1])
-						start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
+						start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
 						break
 						
 			dirname = getDirname(serien_name, staffel)
@@ -1064,13 +1103,9 @@ class serienRecCheckForRecording():
 					print "[Serien Recorder] erstelle Subdir %s" % dirname
 					writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
 					os.makedirs(dirname)
-					if fileExists("/var/volatile/tmp/serienrecorder/%s.png" % (serien_name)) and not fileExists("/var/volatile/tmp/serienrecorder/%s.jpg" % (serien_name)):
-						#print "vorhanden...:", "/var/volatile/tmp/serienrecorder/"+serien_name+".png"
-						shutil.copy("/var/volatile/tmp/serienrecorder/%s.png" % serien_name, "%s%s/%s.jpg" % (config.plugins.serienRec.savetopath.value, serien_name, serien_name))
-				else:
-					if fileExists("/var/volatile/tmp/serienrecorder/%s.png" % serien_name) and not fileExists("/var/volatile/tmp/serienrecorder/%s.jpg" % serien_name):
-						#print "vorhanden...:", "/var/volatile/tmp/serienrecorder/"+serien_name+".png"
-						shutil.copy("/var/volatile/tmp/serienrecorder/%s.png" % serien_name, "%s%s/%s.jpg" % (config.plugins.serienRec.savetopath.value, serien_name, serien_name))
+				if fileExists("/var/volatile/tmp/serienrecorder/%s.png" % serien_name) and not fileExists("/var/volatile/tmp/serienrecorder/%s.jpg" % serien_name):
+					#print "vorhanden...:", "/var/volatile/tmp/serienrecorder/"+serien_name+".png"
+					shutil.copy("/var/volatile/tmp/serienrecorder/%s.png" % serien_name, "%s%s.jpg" % (dirname, serien_name))
 
 			# prepare postprocessing for forced recordings
 			forceRecordings = []
@@ -1266,14 +1301,15 @@ class serienRecCheckForRecording():
 		return (webChannel, stbChannel, stbRef, status)
 
 	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit):
+		(margin_before, margin_after) = getMargins(serien_name)
 		cCursor = dbSerRec.cursor()
 		sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND ServiceRef=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
 		#sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND ?<=StartZeitstempel<=?"
-		cCursor.execute(sql, (serien_name.lower(), stbRef, int(start_time) + (int(config.plugins.serienRec.margin_before.value) * 60) - (int(EPGTimeSpan) * 60), int(start_time) + (int(config.plugins.serienRec.margin_before.value) * 60) + (int(EPGTimeSpan) * 60)))
+		cCursor.execute(sql, (serien_name.lower(), stbRef, int(start_time) + (int(margin_before) * 60) - (int(EPGTimeSpan) * 60), int(start_time) + (int(margin_before) * 60) + (int(EPGTimeSpan) * 60)))
 		row = cCursor.fetchone()
 		if row:
 			sql = "UPDATE OR IGNORE AngelegteTimer SET EventID=? WHERE LOWER(Serie)=? AND ServiceRef=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
-			cCursor.execute(sql, (eit, serien_name.lower(), stbRef, int(start_time) + (int(config.plugins.serienRec.margin_before.value) * 60) - (int(EPGTimeSpan) * 60), int(start_time) + (int(config.plugins.serienRec.margin_before.value) * 60) + (int(EPGTimeSpan) * 60)))
+			cCursor.execute(sql, (eit, serien_name.lower(), stbRef, int(start_time) + (int(margin_before) * 60) - (int(EPGTimeSpan) * 60), int(start_time) + (int(margin_before) * 60) + (int(EPGTimeSpan) * 60)))
 			print "[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
 			writeLogFilter("timerDebug", "[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
 		else:
@@ -1731,12 +1767,14 @@ class serienRecMain(Screen):
 					# try to get eventID (eit) from epgCache
 					#
 					if config.plugins.serienRec.eventid.value:
+						(margin_before, margin_after) = getMargins(serien_name)
+		
 						cSener_list = self.checkSender(sender)
 						if len(cSener_list) != 0:
 							(webChannel, stbChannel, stbRef, status) = cSener_list[0]
 
 						# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-						event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_time)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_time)+(int(config.plugins.serienRec.margin_before.value) * 60))
+						event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_time)+(int(margin_before) * 60))
 						#print "event matches %s" % len(event_matches)
 						if event_matches and len(event_matches) > 0:
 							for event_entry in event_matches:
@@ -2003,9 +2041,11 @@ class serienRecMain(Screen):
 			return False
 
 	def checkTimer(self, serie, staffel, episode, title, start_time, webchannel):
+		(margin_before, margin_after) = getMargins(serie)
+
 		cCursor = dbSerRec.cursor()
 		sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=? AND LOWER(webChannel)=?"
-		cCursor.execute(sql, (serie.lower(), (int(start_time) - (int(config.plugins.serienRec.margin_before.value) * 60)), webchannel.lower()))
+		cCursor.execute(sql, (serie.lower(), (int(start_time) - (int(margin_before) * 60)), webchannel.lower()))
 		if cCursor.fetchone():
 			cCursor.close()
 			return True
@@ -2445,6 +2485,7 @@ class serienRecMarker(Screen):
 			"right" : self.keyRight,
 			"up"    : self.keyUp,
 			"down"  : self.keyDown,
+			"menu" : self.markerSetup,
 			"0"		: self.readLogFile,
 			"1"		: self.modifyAddedFile,
 			"3"		: self.showProposalDB
@@ -2486,6 +2527,13 @@ class serienRecMarker(Screen):
 		self.loading = True
 		self.onLayoutFinish.append(self.readSerienMarker)
 
+	def markerSetup(self):
+		serien_name = self['list'].getCurrent()[0][0]
+		self.session.openWithCallback(self.SetupFinished, serienRecMarkerSetup, serien_name)
+
+	def SetupFinished(self, result):
+		return
+		
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
@@ -3389,13 +3437,15 @@ class serienRecSendeTermine(Screen):
 					break
 
 		if not bereits_vorhanden:
+			(margin_before, margin_after) = getMargins(serien_name)
+
 			# formatiere start/end-zeit
 			(day, month) = datum.split('.')
 			(start_hour, start_min) = start.split('.')
 
 			# check 2 (im timer file)
 			start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
-			start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
+			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
 			if checkTimerAdded(sender, serien_name, staffel, episode, int(start_unixtime)):
 				rightImage = imageTimer
 			else:
@@ -3448,20 +3498,17 @@ class serienRecSendeTermine(Screen):
 
 					# setze die vorlauf/nachlauf-zeit
 					# print startzeit, start_unixtime, endzeit, end_unixtime
-					start_unixtime = int(start_unixtime) - (int(config.plugins.serienRec.margin_before.value) * 60)
-					end_unixtime = int(end_unixtime) + (int(config.plugins.serienRec.margin_after.value) * 60)
+					(margin_before, margin_after) = getMargins(serien_name)
+					start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+					end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
 					# erstellt das serien verzeichnis
-					mkdir = False
+					dirname = getDirname(serien_name, staffel)
 					if config.plugins.serienRec.seriensubdir.value:
-						dirname = getDirname(serien_name, staffel)
 						if not fileExists(dirname):
 							print "[Serien Recorder] erstelle Subdir %s" % dirname
 							writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
 							os.makedirs(dirname)
-							mkdir = True
-					else:
-						dirname = config.plugins.serienRec.savetopath.value
 
 					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 					check_SeasonEpisode = "S%sE%s" % (staffel, episode)
@@ -3494,13 +3541,13 @@ class serienRecSendeTermine(Screen):
 							eit = 0
 							if config.plugins.serienRec.eventid.value:
 								# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-								event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(config.plugins.serienRec.margin_before.value) * 60))
+								event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(margin_before) * 60))
 								#print "event matches %s" % len(event_matches)
 								if event_matches and len(event_matches) > 0:
 									for event_entry in event_matches:
 										print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
 										eit = int(event_entry[1])
-										start_unixtime = int(event_entry[3]) - (int(config.plugins.serienRec.margin_before.value) * 60)
+										start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
 										break
 
 							# versuche timer anzulegen
@@ -5249,6 +5296,143 @@ class serienRecShowProposal(Screen):
 
 	def dataError(self, error):
 		print error
+
+class serienRecMarkerSetup(Screen, ConfigListScreen):
+	skin = """
+		<screen position="center,center" size="1280,720" title="Serien Recorder">
+			<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
+			<widget name="title" position="50,50" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="version" position="850,10" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
+			<widget source="global.CurrentTime" render="Label" position="850,50" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
+				<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
+			</widget>
+			<widget source="session.VideoPicture" render="Pig" position="915,120" size="328,186" zPosition="3" backgroundColor="transparent" />
+			<widget name="config" position="20,120" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
+			
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/red_round.png" position="20,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="red" position="60,656" size="250,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
+			
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/green_round.png" position="310,651" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="green" position="350,656" size="210,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+		</screen>"""
+
+	def __init__(self, session, Serie):
+		Screen.__init__(self, session)
+		self.session = session
+		self.Serie = Serie
+		
+		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions"], {
+			"red"	: self.cancel,
+			"green"	: self.save,
+			"cancel": self.cancel,
+			"ok"	: self.ok
+		}, -1)
+
+		self['title'] = Label("Serien Recorder - Einstellungen für '%s':" % self.Serie)
+		self['red'] = Label("Abbrechen")
+		self['green'] = Label("Speichern")
+		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
+		self.red = 0xf23d21
+		self.green = 0x389416
+		self.blue = 0x0064c7
+		self.yellow = 0xbab329
+		self.white = 0xffffff
+
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
+		row = cCursor.fetchone()
+		if not row:
+			row = (None, None, None)
+		(AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit) = row
+		cCursor.close()
+		if not AufnahmeVerzeichnis:
+			AufnahmeVerzeichnis = ""
+		if not Vorlaufzeit:
+			Vorlaufzeit = ""
+		if not Nachlaufzeit:
+			Nachlaufzeit = ""
+			
+		self.savetopath = ConfigText(default = AufnahmeVerzeichnis, fixed_size=False, visible_width=50)
+		self.margin_before = ConfigInteger(Vorlaufzeit, (0,99))
+		if Vorlaufzeit:
+			self.enable_margin_before = ConfigYesNo(default = True)
+		else:
+			self.enable_margin_before = ConfigYesNo(default = False)
+		self.margin_after = ConfigInteger(Nachlaufzeit, (0,99))
+		if Nachlaufzeit:
+			self.enable_margin_after = ConfigYesNo(default = True)
+		else:
+			self.enable_margin_after = ConfigYesNo(default = False)
+
+		self.createConfigList()
+		ConfigListScreen.__init__(self, self.list)
+		
+	def createConfigList(self):
+		self.list = []
+		self.list.append(getConfigListEntry("Speicherort der Aufnahmen:", self.savetopath))
+		self.list.append(getConfigListEntry("Timervorlauf aktivieren:", self.enable_margin_before))
+		if self.enable_margin_before.value:
+			self.list.append(getConfigListEntry("      Timervorlauf (in Min.):", self.margin_before))
+		self.list.append(getConfigListEntry("Timernachlauf aktivieren:", self.enable_margin_after))
+		if self.enable_margin_after.value:
+			self.list.append(getConfigListEntry("      Timernachlauf (in Min.):", self.margin_after))
+
+	def changedEntry(self):
+		self.createConfigList()
+		self["config"].setList(self.list)
+
+	def keyLeft(self):
+		ConfigListScreen.keyLeft(self)
+		if self["config"].instance.getCurrentIndex() == 1:
+				if self.enable_margin_before.value and not self.margin_before.value:
+					self.margin_before.value = 0
+		if (self.enable_margin_before.value and (self["config"].instance.getCurrentIndex() == 3)) or ((not self.enable_margin_before.value) and (self["config"].instance.getCurrentIndex() == 2)):
+				if self.enable_margin_after.value and not self.margin_after.value:
+					self.margin_after.value = 0
+		self.changedEntry()
+
+	def keyRight(self):
+		ConfigListScreen.keyRight(self)
+		if self["config"].instance.getCurrentIndex() == 1:
+				if self.enable_margin_before.value and not self.margin_before.value:
+					self.margin_before.value = 0
+		if (self.enable_margin_before.value and (self["config"].instance.getCurrentIndex() == 3)) or ((not self.enable_margin_before.value) and (self["config"].instance.getCurrentIndex() == 2)):
+				if self.enable_margin_after.value and not self.margin_after.value:
+					self.margin_after.value = 0
+		self.changedEntry()
+
+	def ok(self):
+		ConfigListScreen.keyOK(self)
+		if self["config"].instance.getCurrentIndex() == 0:
+			start_dir = self.savetopath.value
+			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir)
+
+	def selectedMediaFile(self, res):
+		if res is not None:
+			if self["config"].instance.getCurrentIndex() == 0:
+				print res
+				self.savetopath.value = res
+				if self.savetopath.value == "":
+					self.savetopath.value = None
+				#cCursor = dbSerRec.cursor()
+				#cCursor.execute("UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=? WHERE LOWER(Serie)=?", (self.savetopath.value, self.Serie.lower()))
+				#dbSerRec.commit()
+				#cCursor.close()
+				self.changedEntry()
+
+	def save(self):
+		if not self.enable_margin_before.value:
+			self.margin_before.value = None
+		if not self.enable_margin_after.value:
+			self.margin_after.value = None
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=? WHERE LOWER(Serie)=?", (self.savetopath.value, self.margin_before.value, self.margin_after.value, self.Serie.lower()))
+		dbSerRec.commit()
+		cCursor.close()
+		self.close(True)
+
+	def cancel(self):
+		self.close(False)
 
 class serienRecShowInfo(Screen):
 	skin = """
