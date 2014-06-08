@@ -764,16 +764,14 @@ class serienRecCheckForRecording():
 						recordHandler = NavigationInstance.instance.RecordTimer
 						try:
 							for timer in recordHandler.timer_list:
-								#if timer and timer.service_ref:
-								#	if (timer.begin == int(serien_time)) and (timer.eit != eit):
-								if timer:
-									if (timer.begin == int(serien_time)) and (timer.service_ref == stbRef) and (timer.eit == 0):
+								if timer and timer.service_ref:
+									if (timer.begin == int(serien_time)) and (timer.eit != eit):
 										timer.begin = new_start_unixtime
 										timer.end = new_end_unixtime
 										timer.eit = eit
 										NavigationInstance.instance.RecordTimer.timeChanged(timer)
-										sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=? WHERE StartZeitstempel>? AND ServiceRef=? AND EventID=0"
-										cTimer.execute(sql, (new_start_unixtime, eit, current_time, stbRef))
+										sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=? WHERE StartZeitstempel=? AND ServiceRef=? AND EventID=0"
+										cTimer.execute(sql, (new_start_unixtime, eit, serien_time, stbRef))
 										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(new_start_unixtime)))
 										writeLog("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> %s %s @ %s" % (title, show_start, title, webChannel), True)
 										self.countTimerUpdate += 1
@@ -814,8 +812,8 @@ class serienRecCheckForRecording():
 										timer.begin = start_unixtime
 										timer.end = end_unixtime
 										NavigationInstance.instance.RecordTimer.timeChanged(timer)
-										sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=? WHERE StartZeitstempel>? AND ServiceRef=? AND EventID=?"
-										cTimer.execute(sql, (start_unixtime, current_time, stbRef, eit))
+										sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=? WHERE StartZeitstempel=? AND ServiceRef=? AND EventID=?"
+										cTimer.execute(sql, (start_unixtime, serien_time, stbRef, eit))
 										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 										writeLog("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> %s %s @ %s" % (title, show_start, title, webChannel), True)
 										self.countTimerUpdate += 1
