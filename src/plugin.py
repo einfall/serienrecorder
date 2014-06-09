@@ -99,6 +99,7 @@ config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
 config.plugins.serienRec.fromTime = ConfigInteger(00, (00,23))
 config.plugins.serienRec.toTime = ConfigInteger(23, (00,23))
 config.plugins.serienRec.forceRecording = ConfigYesNo(default = False)
+config.plugins.serienRec.forceManualRecording = ConfigYesNo(default = False)
 config.plugins.serienRec.margin_before = ConfigInteger(default_before, (00,99))
 config.plugins.serienRec.margin_after = ConfigInteger(default_after, (00,99))
 config.plugins.serienRec.max_season = ConfigInteger(30, (01,999))
@@ -310,7 +311,11 @@ def getMarker():
 				staffeln.append(AlleStaffelnAb)
 			cStaffel.close()
 		
-		return_list.append((serie, url, staffeln, sender, AbEpisode))
+		AnzahlAufnahmen = int(config.plugins.serienRec.NoOfRecords.value)
+		if str(AnzahlWiederholungen).isdigit():
+			AnzahlAufnahmen = int(AnzahlWiederholungen)
+				
+		return_list.append((serie, url, staffeln, sender, AbEpisode, AnzahlAufnahmen))
 	cCursor.close()
 	return return_list
 
@@ -836,18 +841,19 @@ class serienRecCheckForRecording():
 		self.countTimer = 0
 		self.countTimerUpdate = 0
 		self.countSerien = self.countMarker()
+		self.NoOfRecords = int(config.plugins.serienRec.NoOfRecords.value)
 		if str(config.plugins.serienRec.maxWebRequests.value).isdigit():
 			ds = defer.DeferredSemaphore(tokens=int(config.plugins.serienRec.maxWebRequests.value))
 		else:
 			ds = defer.DeferredSemaphore(tokens=1)
-		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode in self.urls]
+		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen in self.urls]
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
 		return getPage(url, timeout=20, headers={'Content-Type':'application/x-www-form-urlencoded'})
 
-	def parseWebpage(self, data, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode):
+	def parseWebpage(self, data, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen):
 		self.count_url += 1
 		parsingOK = True
 		#writeLog("[Serien Recorder] LOG READER: '%s/%s'" % (str(self.count_url), str(self.countSerien)))
@@ -885,6 +891,8 @@ class serienRecCheckForRecording():
 		future_time += int(current_time)
 		
 		(margin_before, margin_after) = getMargins(serien_name)
+		if self.NoOfRecords < AnzahlAufnahmen:
+			self.NoOfRecords = AnzahlAufnahmen
 		
 		# loop over all transmissions
 		for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
@@ -1022,8 +1030,8 @@ class serienRecCheckForRecording():
 			check_SeasonEpisode = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
 			self.cCursorTmp = dbTmp.cursor()
-			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, Title, Staffel, Episode, LabelSerie, StartTime, EndTime, ServiceRef, EventID, DirName, SerieName, webChannel, stbChannel, SeasonEpisode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-			self.cCursorTmp.execute(sql, (current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode))
+			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, Title, Staffel, Episode, LabelSerie, StartTime, EndTime, ServiceRef, EventID, DirName, SerieName, webChannel, stbChannel, SeasonEpisode, AnzahlAufnahmen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			self.cCursorTmp.execute(sql, (current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, AnzahlAufnahmen))
 			
 	def createTimer(self, result=True):
 		#dbTmp.commit()
@@ -1032,7 +1040,7 @@ class serienRecCheckForRecording():
 		self.cCursorTmp.close()
 
 		# jetzt die Timer erstellen	
-		for x in range(config.plugins.serienRec.NoOfRecords.value): 
+		for x in range(self.NoOfRecords): 
 			self.searchTimer(x)
 			dbTmp.commit()
 		
@@ -1113,7 +1121,7 @@ class serienRecCheckForRecording():
 			cTimer = dbTmp.cursor()
 			cTimer.execute("SELECT * FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND Staffel=? AND LOWER(Episode)=? ORDER BY StartTime", (serien_name.lower(), staffel, episode.lower()))
 			for row2 in cTimer:
-				(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode) = row2
+				(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, AnzahlAufnahmen) = row2
 		
 				##############################
 				#
@@ -1130,7 +1138,7 @@ class serienRecCheckForRecording():
 					continue
 
 				# check anzahl timer
-				if checkAlreadyAdded(serien_name, staffel, episode) > NoOfRecords:
+				if checkAlreadyAdded(serien_name, staffel, episode) >= AnzahlAufnahmen:
 					writeLogFilter("added", "[Serien Recorder] ' %s ' - Staffel/Episode%s bereits in added vorhanden -> ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
 					TimerDone = True
 					break
@@ -1143,7 +1151,7 @@ class serienRecCheckForRecording():
 						if re.search(serien_name+'.*?'+check_SeasonEpisode+'.*?\.ts\Z', dir):
 							bereits_vorhanden += 1
 
-				if bereits_vorhanden > NoOfRecords:
+				if bereits_vorhanden >= AnzahlAufnahmen:
 					writeLogFilter("disk", "[Serien Recorder] ' %s ' - Staffel/Episode%s bereits auf hdd vorhanden -> ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
 					TimerDone = True
 					break
@@ -3518,52 +3526,26 @@ class serienRecSendeTermine(Screen):
 						for dir in dirs:
 							if re.search(serien_name+'.*?'+check_SeasonEpisode+'.*?\.ts\Z', dir):
 								bereits_vorhanden += 1
+					
+					bereits_vorhanden += checkAlreadyAdded(serien_name, staffel, episode)
+					
+					NoOfRecords = config.plugins.serienRec.NoOfRecords.value
+					cCursor = dbSerRec.cursor()
+					cCursor.execute("SELECT AnzahlWiederholungen FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+					row = cCursor.fetchone()
+					if row:
+						(NoOfRecords,) = row
+					if not NoOfRecords:
+						NoOfRecords = config.plugins.serienRec.NoOfRecords.value
+					cCursor.close()
 
-					if bereits_vorhanden < config.plugins.serienRec.NoOfRecords.value:
-						# check sender
-						cSener_list = self.checkSender(sender)
-						if len(cSener_list) == 0:
-							webChannel = sender
-							stbChannel = ""
-						else:
-							(webChannel, stbChannel, stbRef, status) = cSener_list[0]
-
-						if stbChannel == "":
-							#print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel)
-							writeLog("[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel))
-						elif int(status) == 0:
-							#print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel)
-							writeLog("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel))
-						else:
-							# try to get eventID (eit) from epgCache
-							eit = 0
-							if config.plugins.serienRec.eventid.value:
-								# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-								event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(margin_before) * 60))
-								#print "event matches %s" % len(event_matches)
-								if event_matches and len(event_matches) > 0:
-									for event_entry in event_matches:
-										print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
-										eit = int(event_entry[1])
-										start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
-										break
-
-							# versuche timer anzulegen
-							if checkTuner(start_unixtime):
-								result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (staffel, episode, title), 0, self.justplay, 3, dirname, self.tags, 0, None, eit, recordfile=".ts")
-								if result["result"]:
-									self.countTimer += 1
-									self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime), stbRef, webChannel, eit)
-								else:
-									print "[Serien Recorder] Attention !!! -> %s" % result["message"]
-									konflikt = result["message"]
-									writeLog("[Serien Recorder] Attention -> %s" % str(konflikt))
-							else:
-								print "[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit)
-								writeLog("[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit), True)
+					params = (serien_name, sender, startzeit, start_unixtime, margin_before, end_unixtime, label_serie, staffel, episode, title, dirname)
+					if bereits_vorhanden < NoOfRecords:
+						self.doTimer(params)
 					else:
 						writeLog("[Serien Recorder] Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '" % (serien_name, check_SeasonEpisode))
-
+						self.doTimer(params, config.plugins.serienRec.forceManualRecording.value)
+						
 			writeLog("[Serien Recorder] Es wurde(n) %s Timer erstellt." % str(self.countTimer), True)
 			print "[Serien Recorder] Es wurde(n) %s Timer erstellt." % str(self.countTimer)
 			writeLog("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------", True)
@@ -3574,6 +3556,51 @@ class serienRecSendeTermine(Screen):
 			self['title'].setText("Keine Sendetermine ausgewählt.")
 			print "[Serien Recorder] keine Sendetermine ausgewählt."
 
+	def doTimer(self, params, answer=True):
+		if answer:
+			(serien_name, sender, startzeit, start_unixtime, margin_before, end_unixtime, label_serie, staffel, episode, title, dirname) = params
+			# check sender
+			cSener_list = self.checkSender(sender)
+			if len(cSener_list) == 0:
+				webChannel = sender
+				stbChannel = ""
+			else:
+				(webChannel, stbChannel, stbRef, status) = cSener_list[0]
+
+			if stbChannel == "":
+				#print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel)
+				writeLog("[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel))
+			elif int(status) == 0:
+				#print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel)
+				writeLog("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel))
+			else:
+				# try to get eventID (eit) from epgCache
+				eit = 0
+				if config.plugins.serienRec.eventid.value:
+					# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
+					event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(margin_before) * 60))
+					#print "event matches %s" % len(event_matches)
+					if event_matches and len(event_matches) > 0:
+						for event_entry in event_matches:
+							print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+							eit = int(event_entry[1])
+							start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
+							break
+
+				# versuche timer anzulegen
+				if checkTuner(start_unixtime):
+					result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (staffel, episode, title), 0, self.justplay, 3, dirname, self.tags, 0, None, eit, recordfile=".ts")
+					if result["result"]:
+						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime), stbRef, webChannel, eit):
+							self.countTimer += 1
+					else:
+						print "[Serien Recorder] Attention !!! -> %s" % result["message"]
+						konflikt = result["message"]
+						writeLog("[Serien Recorder] Attention -> %s" % str(konflikt))
+				else:
+					print "[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit)
+					writeLog("[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit), True)
+		
 	def keyOK(self):
 		if self.loading:
 			return
@@ -3610,6 +3637,7 @@ class serienRecSendeTermine(Screen):
 		return fSender
 
 	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit):
+		result = False
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=?", (serien_name.lower(), start_time))
 		row = cCursor.fetchone()
@@ -3621,7 +3649,9 @@ class serienRecSendeTermine(Screen):
 			dbSerRec.commit()
 			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
 			writeLog("[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			result = True
 		cCursor.close()
+		return result	
 		
 	def keyRed(self):
 		self.close()
@@ -3924,13 +3954,15 @@ class serienRecSetup(Screen, ConfigListScreen):
 		Screen.__init__(self, session)
 		self.session = session
 
-		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions"], {
+		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "KeyboardInputActions"], {
 			"red"	: self.cancel,
 			"green"	: self.save,
 			"cancel": self.cancel,
 			"ok"	: self.ok,
 			"up"    : self.keyUp,
 			"down"  : self.keyDown,
+			"deleteForward" : self.keyDelForward,
+			"deleteBackward": self.keyDelBackward,
 			"nextBouquet":	self.bouquetPlus,
 			"prevBouquet":	self.bouquetMinus
 		}, -1)
@@ -3946,6 +3978,12 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.white = 0xffffff
 		self.createConfigList()
 		ConfigListScreen.__init__(self, self.list)
+
+	def keyDelForward(self):
+		self.changedEntry()
+
+	def keyDelBackward(self):
+		self.changedEntry()
 
 	def bouquetPlus(self):
 		self["config"].instance.moveSelection(self["config"].instance.pageUp)
@@ -4000,6 +4038,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
 		self.list.append(getConfigListEntry("Versuche die Eventid vom EPGCACHE zu holen:", config.plugins.serienRec.eventid))
 		self.list.append(getConfigListEntry("Immer aufnehmen wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
+		self.list.append(getConfigListEntry("Manuelle Timer immer erstellen:", config.plugins.serienRec.forceManualRecording))
 		self.list.append(getConfigListEntry("Anzahl der Aufnahmen pro Episode:", config.plugins.serienRec.NoOfRecords))
 		self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen:", config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry("Aktion bei neuer Serie/Staffel:", config.plugins.serienRec.ActionOnNew))
@@ -4097,6 +4136,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.ActionOnNew.save()
 		config.plugins.serienRec.deleteOlderThan.save()
 		config.plugins.serienRec.forceRecording.save()
+		config.plugins.serienRec.forceManualRecording.save()
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.tuner.save()
@@ -4528,7 +4568,8 @@ def initDB():
 																SerieName TEXT,
 															    webChannel TEXT, 
 															    stbChannel TEXT, 
-															    SeasonEpisode TEXT)''')
+															    SeasonEpisode TEXT,
+																AnzahlAufnahmen INTEGER)''')
 	dbTmp.commit()
 	cTmp.close()
 
@@ -5319,9 +5360,11 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self.session = session
 		self.Serie = Serie
 		
-		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions"], {
+		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "KeyboardInputActions"], {
 			"red"	: self.cancel,
 			"green"	: self.save,
+			"deleteForward" : self.keyDelForward,
+			"deleteBackward": self.keyDelBackward,
 			"cancel": self.cancel,
 			"ok"	: self.ok
 		}, -1)
@@ -5337,11 +5380,11 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self.white = 0xffffff
 
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
+		cCursor.execute("SELECT AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
 		row = cCursor.fetchone()
 		if not row:
-			row = (None, None, None)
-		(AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit) = row
+			row = (None, None, None, None)
+		(AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen) = row
 		cCursor.close()
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -5349,54 +5392,89 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			Vorlaufzeit = ""
 		if not Nachlaufzeit:
 			Nachlaufzeit = ""
+		if not AnzahlWiederholungen:
+			AnzahlWiederholungen = ""
 			
 		self.savetopath = ConfigText(default = AufnahmeVerzeichnis, fixed_size=False, visible_width=50)
+		
 		self.margin_before = ConfigInteger(Vorlaufzeit, (0,99))
 		if Vorlaufzeit:
 			self.enable_margin_before = ConfigYesNo(default = True)
 		else:
 			self.enable_margin_before = ConfigYesNo(default = False)
+			
 		self.margin_after = ConfigInteger(Nachlaufzeit, (0,99))
 		if Nachlaufzeit:
 			self.enable_margin_after = ConfigYesNo(default = True)
 		else:
 			self.enable_margin_after = ConfigYesNo(default = False)
+			
+		self.NoRecords = ConfigInteger(AnzahlWiederholungen, (1,9))
+		if AnzahlWiederholungen:
+			self.enable_NoRecords = ConfigYesNo(default = True)
+		else:
+			self.enable_NoRecords = ConfigYesNo(default = False)
 
 		self.createConfigList()
 		ConfigListScreen.__init__(self, self.list)
 		
 	def createConfigList(self):
+		self.margin_before_index = 1
 		self.list = []
 		self.list.append(getConfigListEntry("Speicherort der Aufnahmen:", self.savetopath))
+
+		self.margin_after_index = self.margin_before_index + 1
+
 		self.list.append(getConfigListEntry("Timervorlauf aktivieren:", self.enable_margin_before))
 		if self.enable_margin_before.value:
 			self.list.append(getConfigListEntry("      Timervorlauf (in Min.):", self.margin_before))
+			self.margin_after_index += 1
+
+		self.NoRecords_index = self.margin_after_index + 1
+			
 		self.list.append(getConfigListEntry("Timernachlauf aktivieren:", self.enable_margin_after))
 		if self.enable_margin_after.value:
 			self.list.append(getConfigListEntry("      Timernachlauf (in Min.):", self.margin_after))
+			self.NoRecords_index += 1
+			
+		self.list.append(getConfigListEntry("Anzahl der Aufnahmen aktivieren:", self.enable_NoRecords))
+		if self.enable_NoRecords.value:
+			self.list.append(getConfigListEntry("      Anzahl der Aufnahmen:", self.NoRecords))
 
 	def changedEntry(self):
 		self.createConfigList()
 		self["config"].setList(self.list)
 
+	def keyDelForward(self):
+		self.changedEntry()
+
+	def keyDelBackward(self):
+		self.changedEntry()
+
 	def keyLeft(self):
 		ConfigListScreen.keyLeft(self)
-		if self["config"].instance.getCurrentIndex() == 1:
-				if self.enable_margin_before.value and not self.margin_before.value:
-					self.margin_before.value = 0
-		if (self.enable_margin_before.value and (self["config"].instance.getCurrentIndex() == 3)) or ((not self.enable_margin_before.value) and (self["config"].instance.getCurrentIndex() == 2)):
-				if self.enable_margin_after.value and not self.margin_after.value:
-					self.margin_after.value = 0
+		if self["config"].instance.getCurrentIndex() == self.margin_before_index:
+			if self.enable_margin_before.value and not self.margin_before.value:
+				self.margin_before.value = config.plugins.serienRec.margin_before.value
+		if self["config"].instance.getCurrentIndex() == self.margin_after_index:
+			if self.enable_margin_after.value and not self.margin_after.value:
+				self.margin_after.value = config.plugins.serienRec.margin_after.value
+		if self["config"].instance.getCurrentIndex() == self.NoRecords_index:
+			if self.enable_NoRecords.value and not self.NoRecords.value:
+				self.NoRecords.value = config.plugins.serienRec.NoOfRecords.value
 		self.changedEntry()
 
 	def keyRight(self):
 		ConfigListScreen.keyRight(self)
-		if self["config"].instance.getCurrentIndex() == 1:
-				if self.enable_margin_before.value and not self.margin_before.value:
-					self.margin_before.value = 0
-		if (self.enable_margin_before.value and (self["config"].instance.getCurrentIndex() == 3)) or ((not self.enable_margin_before.value) and (self["config"].instance.getCurrentIndex() == 2)):
-				if self.enable_margin_after.value and not self.margin_after.value:
-					self.margin_after.value = 0
+		if self["config"].instance.getCurrentIndex() == self.margin_before_index:
+			if self.enable_margin_before.value and not self.margin_before.value:
+				self.margin_before.value = config.plugins.serienRec.margin_before.value
+		if self["config"].instance.getCurrentIndex() == self.margin_after_index:
+			if self.enable_margin_after.value and not self.margin_after.value:
+				self.margin_after.value = config.plugins.serienRec.margin_after.value
+		if self["config"].instance.getCurrentIndex() == self.NoRecords_index:
+			if self.enable_NoRecords.value and not self.NoRecords.value:
+				self.NoRecords.value = config.plugins.serienRec.NoOfRecords.value
 		self.changedEntry()
 
 	def ok(self):
@@ -5423,8 +5501,11 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			self.margin_before.value = None
 		if not self.enable_margin_after.value:
 			self.margin_after.value = None
+		if not self.enable_NoRecords.value:
+			self.NoRecords.value = None
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=? WHERE LOWER(Serie)=?", (self.savetopath.value, self.margin_before.value, self.margin_after.value, self.Serie.lower()))
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=? WHERE LOWER(Serie)=?"
+		cCursor.execute(sql, (self.savetopath.value, self.margin_before.value, self.margin_after.value, self.NoRecords.value, self.Serie.lower()))
 		dbSerRec.commit()
 		cCursor.close()
 		self.close(True)
