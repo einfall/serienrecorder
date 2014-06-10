@@ -2627,7 +2627,7 @@ class serienRecMarker(Screen):
 		cCursor.execute("SELECT * FROM SerienMarker ORDER BY Serie")
 		cMarkerList = cCursor.fetchall()
 		for row in cMarkerList:
-			(ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AufnahmezeitVon, AufnahmezeitBis, AnzahlWiederholungen, preferredChannel, useAlternativeChannel, AbEpisode) = row
+			(ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AufnahmezeitVon, AufnahmezeitBis, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode) = row
 			if alleSender:
 				sender = ['Alle',]
 			else:
@@ -2657,7 +2657,7 @@ class serienRecMarker(Screen):
 					staffeln.insert(0, '0 ab E%s' % AbEpisode)
 				cStaffel.close()
 			
-			markerList.append((Serie, Url, str(staffeln).replace("[","").replace("]","").replace("'","").replace('"',""), str(sender).replace("[","").replace("]","").replace("'","").replace('"',""), AufnahmeVerzeichnis, AnzahlWiederholungen))
+			markerList.append((Serie, Url, str(staffeln).replace("[","").replace("]","").replace("'","").replace('"',""), str(sender).replace("[","").replace("]","").replace("'","").replace('"',""), AufnahmeVerzeichnis, AnzahlAufnahmen))
 				
 		cCursor.close()
 		self['title'].setText("Serien Marker - %s Serien vorgemerkt." % len(markerList))
@@ -2668,18 +2668,20 @@ class serienRecMarker(Screen):
 			self.getCover()
 
 	def buildList(self, entry):
-		(serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlWiederholungen) = entry
+		(serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen) = entry
 		if not AufnahmeVerzeichnis:
-			AufnahmeVerzeichnis = "/hdd/movie/"
+			AufnahmeVerzeichnis = config.plugins.serienRec.savetopath.value
 
-		if not AnzahlWiederholungen:
-			AnzahlWiederholungen = "0"
+		if not AnzahlAufnahmen:
+			AnzahlAufnahmen = 1
+		elif AnzahlAufnahmen < 1:
+			AnzahlAufnahmen = 1
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, self.yellow, self.yellow),
 			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Staffel: %s" % staffeln),
 			(eListboxPythonMultiContent.TYPE_TEXT, 400, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Sender: %s" % sendern),
-			(eListboxPythonMultiContent.TYPE_TEXT, 50, 49, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Aufnahme Wdh.: %s" % AnzahlWiederholungen),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 49, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Aufnahme Wdh.: %s" % (int(AnzahlAufnahmen) - 1)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 400, 49, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Dir: %s" % AufnahmeVerzeichnis)
 			]
 
@@ -5416,34 +5418,39 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			
 		self.savetopath = ConfigText(default = AufnahmeVerzeichnis, fixed_size=False, visible_width=50)
 		
-		self.margin_before = ConfigInteger(config.plugins.serienRec.margin_before.value, (0,99))
 		if Vorlaufzeit:
+			self.margin_before = ConfigInteger(Vorlaufzeit, (0,99))
 			self.enable_margin_before = ConfigYesNo(default = True)
 		else:
+			self.margin_before = ConfigInteger(config.plugins.serienRec.margin_before.value, (0,99))
 			self.enable_margin_before = ConfigYesNo(default = False)
 			
-		self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0,99))
 		if Nachlaufzeit:
+			self.margin_after = ConfigInteger(Nachlaufzeit, (0,99))
 			self.enable_margin_after = ConfigYesNo(default = True)
 		else:
+			self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0,99))
 			self.enable_margin_after = ConfigYesNo(default = False)
 			
-		self.NoOfRecords = ConfigInteger(config.plugins.serienRec.NoOfRecords.value, (1,9))
 		if AnzahlWiederholungen:
+			self.NoOfRecords = ConfigInteger(AnzahlWiederholungen, (1,9))
 			self.enable_NoOfRecords = ConfigYesNo(default = True)
 		else:
+			self.NoOfRecords = ConfigInteger(config.plugins.serienRec.NoOfRecords.value, (1,9))
 			self.enable_NoOfRecords = ConfigYesNo(default = False)
 
-		self.fromTime = ConfigInteger(config.plugins.serienRec.fromTime.value, (0,23))
 		if AufnahmezeitVon:
+			self.fromTime = ConfigInteger(AufnahmezeitVon, (0,23))
 			self.enable_fromTime = ConfigYesNo(default = True)
 		else:
+			self.fromTime = ConfigInteger(config.plugins.serienRec.fromTime.value, (0,23))
 			self.enable_fromTime = ConfigYesNo(default = False)
 			
-		self.toTime = ConfigInteger(config.plugins.serienRec.toTime.value, (0,23))
 		if AufnahmezeitBis:
+			self.toTime = ConfigInteger(AufnahmezeitBis, (0,23))
 			self.enable_toTime = ConfigYesNo(default = True)
 		else:
+			self.toTime = ConfigInteger(config.plugins.serienRec.toTime.value, (0,23))
 			self.enable_toTime = ConfigYesNo(default = False)
 			
 		self.createConfigList()
