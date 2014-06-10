@@ -5540,15 +5540,30 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 
 	def save(self):
 		if not self.enable_margin_before.value:
-			self.margin_before.value = None
+			Vorlaufzeit = None
+		else:
+			Vorlaufzeit = self.margin_before.value
+
 		if not self.enable_margin_after.value:
-			self.margin_after.value = None
+			Nachlaufzeit = None
+		else:
+			Nachlaufzeit = self.margin_after.value
+			
 		if not self.enable_NoOfRecords.value:
-			self.NoOfRecords.value = None
+			AnzahlWiederholungen = None
+		else:
+			AnzahlWiederholungen = self.NoOfRecords.value
+			
 		if not self.enable_fromTime.value:
-			self.fromTime.value = None
+			AufnahmezeitVon = None
+		else:
+			AufnahmezeitVon = self.fromTime.value
+			
 		if not self.enable_toTime.value:
-			self.toTime.value = None
+			AufnahmezeitBis = None
+		else:
+			AufnahmezeitBis = self.toTime.value
+			
 		cCursor = dbSerRec.cursor()
 		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=? WHERE LOWER(Serie)=?"
 		cCursor.execute(sql, (self.savetopath.value, self.margin_before.value, self.margin_after.value, self.NoOfRecords.value, self.fromTime.value, self.toTime.value, self.Serie.lower()))
