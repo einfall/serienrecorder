@@ -279,6 +279,22 @@ def getMargins(serien_name):
 	cCursor.close()
 	return (margin_before, margin_after)	
 	
+def getTimeSpan(serien_name):
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT AufnahmezeitVon, AufnahmezeitBis FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
+	data = cCursor.fetchone()
+	if data:
+		(fromTime, toTime) = data
+		if not fromTime:
+			fromTime = config.plugins.serienRec.fromTime.value
+		if not toTime:
+			toTime = config.plugins.serienRec.toTime.value
+	else:
+		fromTime = config.plugins.serienRec.fromTime.value
+		toTime = config.plugins.serienRec.toTime.value
+	cCursor.close()
+	return (fromTime, toTime)	
+	
 def getMarker():
 	return_list = []
 	cCursor = dbSerRec.cursor()
@@ -891,6 +907,7 @@ class serienRecCheckForRecording():
 		future_time += int(current_time)
 		
 		(margin_before, margin_after) = getMargins(serien_name)
+		(fromTime, toTime) = getTimeSpan(serien_name)
 		if self.NoOfRecords < AnzahlAufnahmen:
 			self.NoOfRecords = AnzahlAufnahmen
 		
@@ -1030,8 +1047,8 @@ class serienRecCheckForRecording():
 			check_SeasonEpisode = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
 			self.cCursorTmp = dbTmp.cursor()
-			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, Title, Staffel, Episode, LabelSerie, StartTime, EndTime, ServiceRef, EventID, DirName, SerieName, webChannel, stbChannel, SeasonEpisode, AnzahlAufnahmen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-			self.cCursorTmp.execute(sql, (current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, AnzahlAufnahmen))
+			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, Title, Staffel, Episode, LabelSerie, StartTime, EndTime, ServiceRef, EventID, DirName, SerieName, webChannel, stbChannel, SeasonEpisode, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			self.cCursorTmp.execute(sql, (current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, AnzahlAufnahmen, fromTime, toTime))
 			
 	def createTimer(self, result=True):
 		#dbTmp.commit()
@@ -1091,10 +1108,6 @@ class serienRecCheckForRecording():
 
 		writeLog("\n---------' Erstelle Timer%s '-------------------------------------------------------------------------------\n" % optionalText, True)
 			
-		# prepare valid time range
-		timeRangeList = allowedTimeRange(config.plugins.serienRec.fromTime.value, config.plugins.serienRec.toTime.value)
-		timeRange = {}.fromkeys(timeRangeList, 0)
-		
 		cTmp = dbTmp.cursor()
 		cTmp.execute("SELECT * FROM (SELECT SerieName, Staffel, Episode, COUNT(*) AS Anzahl FROM GefundeneFolgen GROUP BY SerieName, Staffel, Episode) ORDER BY Anzahl")
 		for row in cTmp:
@@ -1121,7 +1134,7 @@ class serienRecCheckForRecording():
 			cTimer = dbTmp.cursor()
 			cTimer.execute("SELECT * FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND Staffel=? AND LOWER(Episode)=? ORDER BY StartTime", (serien_name.lower(), staffel, episode.lower()))
 			for row2 in cTimer:
-				(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, AnzahlAufnahmen) = row2
+				(current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, AnzahlAufnahmen, fromTime, toTime) = row2
 		
 				##############################
 				#
@@ -1162,6 +1175,10 @@ class serienRecCheckForRecording():
 				#
 				# Ueberpruefe ob der sendetermin zwischen der fromTime und toTime liegt und finde Wiederholungen auf dem gleichen Sender
 				#
+				# prepare valid time range
+				timeRangeList = allowedTimeRange(fromTime, toTime)
+				timeRange = {}.fromkeys(timeRangeList, 0)
+		
 				start_hour = str(time.localtime(int(start_unixtime)).tm_hour).zfill(2)
 				if not start_hour in timeRange:
 					writeLogFilter("timeRange", "[Serien Recorder] ' %s ' - Zeitspanne %s nicht in %s" % (label_serie, start_hour, timeRangeList))
@@ -4094,8 +4111,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 			if self["config"].getCurrent()[1] == config.plugins.serienRec.savetopath:
 				print res
 				config.plugins.serienRec.savetopath.value = res
-				config.plugins.serienRec.savetopath.save()
-				configfile.save()
+				#config.plugins.serienRec.savetopath.save()
+				#configfile.save()
 				self.changedEntry()
 
 	def save(self):
@@ -4577,7 +4594,9 @@ def initDB():
 															    webChannel TEXT, 
 															    stbChannel TEXT, 
 															    SeasonEpisode TEXT,
-																AnzahlAufnahmen INTEGER)''')
+																AnzahlAufnahmen INTEGER,
+																AufnahmezeitVon INTEGER,  
+																AufnahmezeitBis INTEGER)''')
 	dbTmp.commit()
 	cTmp.close()
 
@@ -5368,11 +5387,9 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self.session = session
 		self.Serie = Serie
 		
-		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "KeyboardInputActions"], {
+		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions"], {
 			"red"	: self.cancel,
 			"green"	: self.save,
-			"deleteForward" : self.keyDelForward,
-			"deleteBackward": self.keyDelBackward,
 			"cancel": self.cancel,
 			"ok"	: self.ok
 		}, -1)
@@ -5388,41 +5405,47 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self.white = 0xffffff
 
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
+		cCursor.execute("SELECT AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
 		row = cCursor.fetchone()
 		if not row:
 			row = (None, None, None, None)
-		(AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen) = row
+		(AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis) = row
 		cCursor.close()
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
-		if not Vorlaufzeit:
-			Vorlaufzeit = ""
-		if not Nachlaufzeit:
-			Nachlaufzeit = ""
-		if not AnzahlWiederholungen:
-			AnzahlWiederholungen = ""
 			
 		self.savetopath = ConfigText(default = AufnahmeVerzeichnis, fixed_size=False, visible_width=50)
 		
-		self.margin_before = ConfigInteger(Vorlaufzeit, (0,99))
+		self.margin_before = ConfigInteger(config.plugins.serienRec.margin_before.value, (0,99))
 		if Vorlaufzeit:
 			self.enable_margin_before = ConfigYesNo(default = True)
 		else:
 			self.enable_margin_before = ConfigYesNo(default = False)
 			
-		self.margin_after = ConfigInteger(Nachlaufzeit, (0,99))
+		self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0,99))
 		if Nachlaufzeit:
 			self.enable_margin_after = ConfigYesNo(default = True)
 		else:
 			self.enable_margin_after = ConfigYesNo(default = False)
 			
-		self.NoRecords = ConfigInteger(AnzahlWiederholungen, (1,9))
+		self.NoOfRecords = ConfigInteger(config.plugins.serienRec.NoOfRecords.value, (1,9))
 		if AnzahlWiederholungen:
-			self.enable_NoRecords = ConfigYesNo(default = True)
+			self.enable_NoOfRecords = ConfigYesNo(default = True)
 		else:
-			self.enable_NoRecords = ConfigYesNo(default = False)
+			self.enable_NoOfRecords = ConfigYesNo(default = False)
 
+		self.fromTime = ConfigInteger(config.plugins.serienRec.fromTime.value, (0,23))
+		if AufnahmezeitVon:
+			self.enable_fromTime = ConfigYesNo(default = True)
+		else:
+			self.enable_fromTime = ConfigYesNo(default = False)
+			
+		self.toTime = ConfigInteger(config.plugins.serienRec.toTime.value, (0,23))
+		if AufnahmezeitBis:
+			self.enable_toTime = ConfigYesNo(default = True)
+		else:
+			self.enable_toTime = ConfigYesNo(default = False)
+			
 		self.createConfigList()
 		ConfigListScreen.__init__(self, self.list)
 		
@@ -5438,52 +5461,60 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			self.list.append(getConfigListEntry("      Timervorlauf (in Min.):", self.margin_before))
 			self.margin_after_index += 1
 
-		self.NoRecords_index = self.margin_after_index + 1
+		self.NoOfRecords_index = self.margin_after_index + 1
 			
 		self.list.append(getConfigListEntry("Timernachlauf aktivieren:", self.enable_margin_after))
 		if self.enable_margin_after.value:
 			self.list.append(getConfigListEntry("      Timernachlauf (in Min.):", self.margin_after))
-			self.NoRecords_index += 1
+			self.NoOfRecords_index += 1
 			
-		self.list.append(getConfigListEntry("Anzahl der Aufnahmen aktivieren:", self.enable_NoRecords))
-		if self.enable_NoRecords.value:
-			self.list.append(getConfigListEntry("      Anzahl der Aufnahmen:", self.NoRecords))
+		self.fromTime_index = self.NoOfRecords_index + 1
+			
+		self.list.append(getConfigListEntry("Anzahl der Aufnahmen aktivieren:", self.enable_NoOfRecords))
+		if self.enable_NoOfRecords.value:
+			self.list.append(getConfigListEntry("      Anzahl der Aufnahmen:", self.NoOfRecords))
+			self.fromTime_index += 1
 
+		self.toTime_index = self.fromTime_index + 1
+			
+		self.list.append(getConfigListEntry("Früheste Zeit für Timer aktivieren:", self.enable_fromTime))
+		if self.enable_fromTime.value:
+			self.list.append(getConfigListEntry("      Früheste Zeit für Timer (hh:00):", self.fromTime))
+			self.toTime_index += 1
+
+		self.list.append(getConfigListEntry("Späteste Zeit für Timer aktivieren:", self.enable_toTime))
+		if self.enable_toTime.value:
+			self.list.append(getConfigListEntry("      Späteste Zeit für Timer (hh:59):", self.toTime))
+
+	def UpdateMenuValues(self):
+		if self["config"].instance.getCurrentIndex() == self.margin_before_index:
+			if self.enable_margin_before.value and not self.margin_before.value:
+				self.margin_before.value = config.plugins.serienRec.margin_before.value
+		if self["config"].instance.getCurrentIndex() == self.margin_after_index:
+			if self.enable_margin_after.value and not self.margin_after.value:
+				self.margin_after.value = config.plugins.serienRec.margin_after.value
+		if self["config"].instance.getCurrentIndex() == self.NoOfRecords_index:
+			if self.enable_NoOfRecords.value and not self.NoOfRecords.value:
+				self.NoOfRecords.value = config.plugins.serienRec.NoOfRecords.value
+		if self["config"].instance.getCurrentIndex() == self.fromTime_index:
+			if self.enable_fromTime.value and not self.fromTime.value:
+				self.fromTime.value = config.plugins.serienRec.fromTime.value
+		if self["config"].instance.getCurrentIndex() == self.toTime_index:
+			if self.enable_toTime.value and not self.toTime.value:
+				self.toTime.value = config.plugins.serienRec.toTime.value
+		self.changedEntry()
+	
 	def changedEntry(self):
 		self.createConfigList()
 		self["config"].setList(self.list)
 
-	def keyDelForward(self):
-		self.changedEntry()
-
-	def keyDelBackward(self):
-		self.changedEntry()
-
 	def keyLeft(self):
 		ConfigListScreen.keyLeft(self)
-		if self["config"].instance.getCurrentIndex() == self.margin_before_index:
-			if self.enable_margin_before.value and not self.margin_before.value:
-				self.margin_before.value = config.plugins.serienRec.margin_before.value
-		if self["config"].instance.getCurrentIndex() == self.margin_after_index:
-			if self.enable_margin_after.value and not self.margin_after.value:
-				self.margin_after.value = config.plugins.serienRec.margin_after.value
-		if self["config"].instance.getCurrentIndex() == self.NoRecords_index:
-			if self.enable_NoRecords.value and not self.NoRecords.value:
-				self.NoRecords.value = config.plugins.serienRec.NoOfRecords.value
-		self.changedEntry()
+		self.UpdateMenuValues()
 
 	def keyRight(self):
 		ConfigListScreen.keyRight(self)
-		if self["config"].instance.getCurrentIndex() == self.margin_before_index:
-			if self.enable_margin_before.value and not self.margin_before.value:
-				self.margin_before.value = config.plugins.serienRec.margin_before.value
-		if self["config"].instance.getCurrentIndex() == self.margin_after_index:
-			if self.enable_margin_after.value and not self.margin_after.value:
-				self.margin_after.value = config.plugins.serienRec.margin_after.value
-		if self["config"].instance.getCurrentIndex() == self.NoRecords_index:
-			if self.enable_NoRecords.value and not self.NoRecords.value:
-				self.NoRecords.value = config.plugins.serienRec.NoOfRecords.value
-		self.changedEntry()
+		self.UpdateMenuValues()
 
 	def ok(self):
 		ConfigListScreen.keyOK(self)
@@ -5498,10 +5529,6 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 				self.savetopath.value = res
 				if self.savetopath.value == "":
 					self.savetopath.value = None
-				#cCursor = dbSerRec.cursor()
-				#cCursor.execute("UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=? WHERE LOWER(Serie)=?", (self.savetopath.value, self.Serie.lower()))
-				#dbSerRec.commit()
-				#cCursor.close()
 				self.changedEntry()
 
 	def save(self):
@@ -5509,11 +5536,15 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			self.margin_before.value = None
 		if not self.enable_margin_after.value:
 			self.margin_after.value = None
-		if not self.enable_NoRecords.value:
-			self.NoRecords.value = None
+		if not self.enable_NoOfRecords.value:
+			self.NoOfRecords.value = None
+		if not self.enable_fromTime.value:
+			self.fromTime.value = None
+		if not self.enable_toTime.value:
+			self.toTime.value = None
 		cCursor = dbSerRec.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=? WHERE LOWER(Serie)=?"
-		cCursor.execute(sql, (self.savetopath.value, self.margin_before.value, self.margin_after.value, self.NoRecords.value, self.Serie.lower()))
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=? WHERE LOWER(Serie)=?"
+		cCursor.execute(sql, (self.savetopath.value, self.margin_before.value, self.margin_after.value, self.NoOfRecords.value, self.fromTime.value, self.toTime.value, self.Serie.lower()))
 		dbSerRec.commit()
 		cCursor.close()
 		self.close(True)
