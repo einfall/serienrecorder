@@ -2454,7 +2454,7 @@ class serienRecMarker(Screen):
 			</widget>
 			<widget source="session.VideoPicture" render="Pig" position="915,120" size="328,186" zPosition="3" backgroundColor="transparent" />
 			<widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/no_cover.png" position="915,320" size="320,300" transparent="1" alphatest="blend" />
-			<widget name="list" position="20,120" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
+			<widget name="list" position="20,120" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel70_1200.png" />
 			<widget name="popup_bg" position="170,130" size="600,480" backgroundColor="#000000" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/popup_bg.png" transparent="1" zPosition="4" />
 			<widget name="popup_list" position="180,170" size="580,370" backgroundColor="#00181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel25_1200.png" />
 
@@ -2500,7 +2500,7 @@ class serienRecMarker(Screen):
 		#normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
-		self.chooseMenuList.l.setItemHeight(50)
+		self.chooseMenuList.l.setItemHeight(70)
 		self['list'] = self.chooseMenuList
 
 		# popup
@@ -2640,7 +2640,7 @@ class serienRecMarker(Screen):
 					staffeln.insert(0, '0 ab E%s' % AbEpisode)
 				cStaffel.close()
 			
-			markerList.append((Serie, Url, str(staffeln).replace("[","").replace("]","").replace("'","").replace('"',""), str(sender).replace("[","").replace("]","").replace("'","").replace('"',"")))
+			markerList.append((Serie, Url, str(staffeln).replace("[","").replace("]","").replace("'","").replace('"',""), str(sender).replace("[","").replace("]","").replace("'","").replace('"',""), AufnahmeVerzeichnis, AnzahlWiederholungen))
 				
 		cCursor.close()
 		self['title'].setText("Serien Marker - %s Serien vorgemerkt." % len(markerList))
@@ -2651,11 +2651,19 @@ class serienRecMarker(Screen):
 			self.getCover()
 
 	def buildList(self, entry):
-		(serie, url, staffeln, sendern) = entry
+		(serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlWiederholungen) = entry
+		if not AufnahmeVerzeichnis:
+			AufnahmeVerzeichnis = "/hdd/movie/"
+
+		if not AnzahlWiederholungen:
+			AnzahlWiederholungen = "0"
+
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, self.yellow, self.yellow),
 			(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Staffel: %s" % staffeln),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Sender: %s" % sendern)
+			(eListboxPythonMultiContent.TYPE_TEXT, 400, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Sender: %s" % sendern),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 49, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Aufnahme Wdh.: %s" % AnzahlWiederholungen),
+			(eListboxPythonMultiContent.TYPE_TEXT, 400, 49, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Dir: %s" % AufnahmeVerzeichnis)
 			]
 
 	def keyCheck(self):
