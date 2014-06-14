@@ -5410,7 +5410,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		cCursor.execute("SELECT AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
 		row = cCursor.fetchone()
 		if not row:
-			row = (None, None, None, None)
+			row = (None, None, None, None, None, None)
 		(AufnahmeVerzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis) = row
 		cCursor.close()
 		if not AufnahmeVerzeichnis:
@@ -5566,7 +5566,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			
 		cCursor = dbSerRec.cursor()
 		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=? WHERE LOWER(Serie)=?"
-		cCursor.execute(sql, (self.savetopath.value, self.margin_before.value, self.margin_after.value, self.NoOfRecords.value, self.fromTime.value, self.toTime.value, self.Serie.lower()))
+		cCursor.execute(sql, (self.savetopath.value, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, self.Serie.lower()))
 		dbSerRec.commit()
 		cCursor.close()
 		self.close(True)
