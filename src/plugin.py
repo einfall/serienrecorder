@@ -79,7 +79,7 @@ except Exception:
 	default_after = 0
 
 EPGTimeSpan = 10
-	
+
 # init EPGTranslator
 if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/EPGTranslator/plugin.pyo"):
 	from Plugins.Extensions.EPGTranslator.plugin import searchYouTube
@@ -4559,7 +4559,10 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.selectBouquets.save()
 		config.plugins.serienRec.MainBouquet.save()
 		config.plugins.serienRec.AlternativeBouquet.save()
-		config.plugins.serienRec.bouquetList.value = str(list(zip(*self.bouquetList)[1]))
+		if config.plugins.serienRec.selectBouquets.value:
+			config.plugins.serienRec.bouquetList.value = str(list(zip(*self.bouquetList)[1]))
+		else:
+			config.plugins.serienRec.bouquetList.value = ""
 		config.plugins.serienRec.bouquetList.save()
 		config.plugins.serienRec.justplay.value = bool(int(self.kindOfTimer.value) & (1 << self.__C_JUSTPLAY__))
 		config.plugins.serienRec.zapbeforerecord.value = bool(int(self.kindOfTimer.value) & (1 << self.__C_ZAPBEFORERECORD__))
