@@ -1613,6 +1613,19 @@ class serienRecAddTimer():
 			except Exception:
 				sys.exc_clear()
 
+				timer = RecordTimerEntry(
+					ServiceReference(serviceref),
+					begin,
+					end,
+					name,
+					description,
+					eit,
+					disabled,
+					config.plugins.serienRec.justplay.value | config.plugins.serienRec.justremind.value,
+					AFTEREVENT.AUTO,
+					dirname = dirname,
+					tags = None)
+
 			timer.repeated = 0
 
 			if logentries:
