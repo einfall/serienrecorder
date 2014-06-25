@@ -288,9 +288,9 @@ def getMargins(serien_name):
 	data = cCursor.fetchone()
 	if data:
 		(margin_before, margin_after) = data
-		if not margin_before:
+		if not str(margin_before).isdigit():
 			margin_before = config.plugins.serienRec.margin_before.value
-		if not margin_after:
+		if not str(margin_after).isdigit():
 			margin_after = config.plugins.serienRec.margin_after.value
 	else:
 		margin_before = config.plugins.serienRec.margin_before.value
