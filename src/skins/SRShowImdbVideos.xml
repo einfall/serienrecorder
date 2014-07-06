@@ -1,0 +1,13 @@
+<screen name="SerienRecorderShowImdbVideos" position="center,center" size="1280,720" title="Serien Recorder">
+	<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
+	<widget name="title" position="50,50" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+	<widget name="version" position="850,10" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
+	<widget source="global.CurrentTime" render="Label" position="850,50" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
+		<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
+	</widget>
+	<eLabel position="912,123" zPosition="3" size="322,183" backgroundColor="transparent" />
+	<widget source="session.VideoPicture" render="Pig" position="915,140" size="284,160" zPosition="-8" />
+	<widget name="list" position="20,120" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
+
+	<widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/no_cover.png" position="915,320" size="320,300" transparent="1" alphatest="blend" />
+</screen>

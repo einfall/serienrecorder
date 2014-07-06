@@ -1,0 +1,3 @@
+<screen name="SerienRecorderUpdate" position="0,0" size="1280,720" title="Serien Recorder Update" backgroundColor="#26181d20" flags="wfNoBorder">
+	<widget name="mplog" position="287,240" size="720,320" font="Regular;24" valign="top" halign="left" backgroundColor="#00000000" transparent="1" zPosition="1" />
+</screen>
