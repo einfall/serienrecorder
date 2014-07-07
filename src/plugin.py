@@ -1301,14 +1301,13 @@ class serienRecCheckForRecording():
 			#
 			# erstellt das serien verzeichnis
 			dirname = getDirname(serien_name, staffel)
-			if config.plugins.serienRec.seriensubdir.value:
-				if not fileExists(dirname):
-					print "[Serien Recorder] erstelle Subdir %s" % dirname
-					writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
-					os.makedirs(dirname)
-				if fileExists("/var/volatile/tmp/serienrecorder/%s.png" % serien_name) and not fileExists("/var/volatile/tmp/serienrecorder/%s.jpg" % serien_name):
-					#print "vorhanden...:", "/var/volatile/tmp/serienrecorder/"+serien_name+".png"
-					shutil.copy("/var/volatile/tmp/serienrecorder/%s.png" % serien_name, "%s%s.jpg" % (dirname, serien_name))
+			if not fileExists(dirname):
+				print "[Serien Recorder] erstelle Subdir %s" % dirname
+				writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
+				os.makedirs(dirname)
+			if fileExists("/var/volatile/tmp/serienrecorder/%s.png" % serien_name) and not fileExists("/var/volatile/tmp/serienrecorder/%s.jpg" % serien_name):
+				#print "vorhanden...:", "/var/volatile/tmp/serienrecorder/"+serien_name+".png"
+				shutil.copy("/var/volatile/tmp/serienrecorder/%s.png" % serien_name, "%s%s.jpg" % (dirname, serien_name))
 
 			self.konflikt = ""
 			TimerDone = self.searchTimer2(serien_name, staffel, episode, optionalText, preferredChannel, dirname)
@@ -3887,11 +3886,10 @@ class serienRecSendeTermine(Screen):
 
 					# erstellt das serien verzeichnis
 					dirname = getDirname(serien_name, staffel)
-					if config.plugins.serienRec.seriensubdir.value:
-						if not fileExists(dirname):
-							print "[Serien Recorder] erstelle Subdir %s" % dirname
-							writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
-							os.makedirs(dirname)
+					if not fileExists(dirname):
+						print "[Serien Recorder] erstelle Subdir %s" % dirname
+						writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
+						os.makedirs(dirname)
 
 					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 					check_SeasonEpisode = "S%sE%s" % (staffel, episode)
