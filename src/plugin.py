@@ -65,13 +65,16 @@ from enigma import eEPGCache, eServiceReference, eServiceCenter, iServiceInforma
 from Tools import Notifications
 import sqlite3
 
+serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
+logFile = "%slog" % serienRecMainPath
+serienRecDataBase = "%sSerienRecorder.db" % serienRecMainPath
+
 dbTmp = sqlite3.connect(":memory:")
-#dbTmp = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SR_Tmp.db")
+#dbTmp = sqlite3.connect("%sSR_Tmp.db" % serienRecMainPath)
 dbTmp.text_factory = lambda x: str(x.decode("utf-8"))
-dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
+dbSerRec = sqlite3.connect(serienRecDataBase)
 dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 
-logFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/log"
 
 try:
 	default_before = int(config.recording.margin_before.value)
@@ -99,6 +102,8 @@ config.plugins.serienRec.seasonsubdirfillchar = ConfigSelection(choices = [("0",
 config.plugins.serienRec.justplay = ConfigYesNo(default = False)
 config.plugins.serienRec.justremind = ConfigYesNo(default = False)
 config.plugins.serienRec.zapbeforerecord = ConfigYesNo(default = False)
+config.plugins.serienRec.AutoBackup = ConfigYesNo(default = False)
+config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
 config.plugins.serienRec.eventid = ConfigYesNo(default = True)
 config.plugins.serienRec.update = ConfigYesNo(default = False)
 config.plugins.serienRec.updateInterval = ConfigInteger(0, (0,24))
@@ -120,7 +125,7 @@ config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
 config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
 config.plugins.serienRec.DSBTimeout = ConfigInteger(20, (0,999))
 config.plugins.serienRec.showNotification = ConfigYesNo(default = True)
-config.plugins.serienRec.LogFilePath = ConfigText(default = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/", fixed_size=False, visible_width=80)
+config.plugins.serienRec.LogFilePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
 config.plugins.serienRec.longLogFileName = ConfigYesNo(default = False)
 config.plugins.serienRec.deleteLogFilesOlderThan = ConfigInteger(14, (0,999))
 config.plugins.serienRec.writeLog = ConfigYesNo(default = True)
@@ -166,6 +171,8 @@ config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
 config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
 config.plugins.serienRec.dbversion = ConfigText(default="")
+
+autoCheckFinished = False
 
 def checkTuner(check):
 	if not config.plugins.serienRec.selectNoOfTuners.value:
@@ -259,8 +266,6 @@ def getUnixTimeWithDayOffset(std, min, AddDays):
 	return date.strftime("%s")
 
 def getRealUnixTime(min, std, day, month, year):
-	#now = datetime.datetime.now()
-	#print now.year, now.month, now.day, std, min
 	return datetime.datetime(int(year), int(month), int(day), int(std), int(min)).strftime("%s")
 
 def getDirname(serien_name, staffel):
@@ -425,7 +430,6 @@ def getEPGevent(query, channelref, title, starttime):
 	for serviceref, eit, name, begin, duration, shortdesc, extdesc in allevents:
 		#print name.lower(), title.lower(), int(begin), int(starttime)
 		if channelref == serviceref: # and name.lower() == title.lower()
-			#if int(int(starttime)-60) == int(begin) or int(int(starttime)+60) == int(begin) or int(starttime) == int(begin):
 			if int(int(begin)-(int(EPGTimeSpan)*60)) <= int(starttime) <= int(int(begin)+(int(EPGTimeSpan)*60)):
 				#print "MATCHHHHHHH", name
 				epgmatches.append((serviceref, eit, name, begin, duration, shortdesc, extdesc))
@@ -660,6 +664,22 @@ class serienRecCheckForRecording():
 				writeLog("[Serien Recorder] AutoCheck Clock-Timer gestartet.", True)
 				writeLog("[Serien Recorder] Minutes left: %s" % str(deltatime), True)
 
+		if config.plugins.serienRec.AutoBackup.value:
+			BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
+			if not os.access(BackupPath, os.F_OK):
+				os.makedirs(BackupPath)
+				
+			global dbSerRec
+			f = dbSerRec.text_factory
+			dbSerRec.close()
+			shutil.copy(serienRecDataBase, BackupPath)
+			dbSerRec = sqlite3.connect(serienRecDataBase)
+			dbSerRec.text_factory = f
+			shutil.copy(logFile, BackupPath)
+			shutil.copy("/etc/enigma2/timers.xml", BackupPath)
+			for filename in os.listdir(BackupPath):
+				os.chmod("%s%s" % (BackupPath, filename), 0777)
+				
 		if not config.plugins.serienRec.longLogFileName.value:
 			# logFile leeren (renamed to _old)
 			if fileExists(logFile):
@@ -673,7 +693,6 @@ class serienRecCheckForRecording():
 					
 		open(logFile, 'w').close()
 
-		#current_time = int(time.time())
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("DELETE FROM TimerKonflikte WHERE StartZeitstempel<=?", (int(time.time()),))
 		dbSerRec.commit()
@@ -859,7 +878,6 @@ class serienRecCheckForRecording():
 										cTimer.execute(sql, (start_unixtime, eit, serien_time, stbRef))
 										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 										old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-										#writeLog("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> %s %s @ %s" % (title, show_start, title, webChannel), True)
 										writeLog("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s" % (title, old_start, show_start, webChannel), True)
 										self.countTimerUpdate += 1
 										timerFound = True
@@ -1232,7 +1250,10 @@ class serienRecCheckForRecording():
 
 		if config.plugins.serienRec.longLogFileName.value:
 			shutil.copy(logFile, logFileSave)
-
+		
+		global autoCheckFinished
+		autoCheckFinished = True
+		
 		# in den deep-standby fahren.
 		if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.afterAutocheck.value and not self.manuell:
 			if config.plugins.serienRec.DSBTimeout.value > 0:
@@ -1610,7 +1631,6 @@ class serienRecAddTimer():
 
 		entry = None
 		timers = []
-		#serienRec_chlist = buildSTBchannellist()
 
 		for timer in recordHandler.timer_list:
 			timers.append((timer.name, timer.begin, timer.end))
@@ -1773,7 +1793,7 @@ class serienRecMain(Screen):
 		self.skinName = "SerienRecorderMain"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRMain.xml"
+		skin = "%sskins/SRMain.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -2122,10 +2142,10 @@ class serienRecMain(Screen):
 		(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id) = entry
 		#entry = [(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id)]
 		
-		imageNone = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/black.png"
-		imageNeu = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/neu.png"
-		imageTimer = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/timer.png"
-		imageHDD = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/hdd_24x24.png"
+		imageNone = "%simages/black.png" % serienRecMainPath
+		imageNeu = "%simages/neu.png" % serienRecMainPath
+		imageTimer = "%simages/timer.png" % serienRecMainPath
+		imageHDD = "%simages/hdd_24x24.png" % serienRecMainPath
 		
 		if serieAdded:
 			setFarbe = self.green
@@ -2147,7 +2167,7 @@ class serienRecMain(Screen):
 		
 		if config.plugins.serienRec.showPicons.value:
 			self.picloader = PicLoader(80, 40)
-			picon = self.picloader.load("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sender/"+sender+".png")
+			picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, sender))
 			self.picloader.destroy()
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80, 40, picon),
@@ -2435,7 +2455,7 @@ class serienRecMainChannelEdit(Screen):
 		self.skinName = "SerienRecorderMainChannelEdit"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRMainChannelEdit.xml"
+		skin = "%sskins/SRMainChannelEdit.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -2475,9 +2495,6 @@ class serienRecMainChannelEdit(Screen):
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
-		#self['popup_bg'] = Pixmap()
-		#self['popup_bg'].hide()
-		#self.modus = "list"
 
 		# popup2
 		self.chooseMenuList_popup2 = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
@@ -2485,6 +2502,7 @@ class serienRecMainChannelEdit(Screen):
 		self.chooseMenuList_popup2.l.setItemHeight(25)
 		self['popup_list2'] = self.chooseMenuList_popup2
 		self['popup_list2'].hide()
+		
 		self['popup_bg'] = Pixmap()
 		self['popup_bg'].hide()
 		self.modus = "list"
@@ -2594,9 +2612,9 @@ class serienRecMainChannelEdit(Screen):
 	def buildList(self, entry):
 		(webSender, stbSender, altstbSender, status) = entry
 		if int(status) == 0:		
-			imageStatus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
+			imageStatus = "%simages/minus.png" % serienRecMainPath
 		else:
-			imageStatus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
+			imageStatus = "%simages/plus.png" % serienRecMainPath
 			
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 8, 16, 16, loadPNG(imageStatus)),
@@ -2805,7 +2823,7 @@ class serienRecMarker(Screen):
 		self.skinName = "SerienRecorderMarker"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRMarker.xml"
+		skin = "%sskins/SRMarker.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -3129,9 +3147,9 @@ class serienRecMarker(Screen):
 	def buildList2(self, entry):
 		(staffel, mode, index) = entry
 		if int(mode) == 0:
-			imageMode = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
+			imageMode = "%simages/minus.png" % serienRecMainPath
 		else:
-			imageMode = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
+			imageMode = "%simages/plus.png" % serienRecMainPath
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 4, 30, 17, loadPNG(imageMode)),
@@ -3145,7 +3163,6 @@ class serienRecMarker(Screen):
 				print "[Serien Recorder] Serien Marker leer."
 				return
 
-			#getSender = getWebSender()
 			getSender = getWebSenderAktiv()
 			if len(getSender) != 0:
 				self.modus = "popup_list2"
@@ -3420,7 +3437,7 @@ class serienRecAddSerie(Screen):
 		self.skinName = "SerienRecorderAddSerie"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRAddSerie.xml"
+		skin = "%sskins/SRAddSerie.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -3637,7 +3654,7 @@ class serienRecSendeTermine(Screen):
 		self.skinName = "SerienRecorderSendeTermine"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRSendeTermine.xml"
+		skin = "%sskins/SRSendeTermine.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -3786,13 +3803,12 @@ class serienRecSendeTermine(Screen):
 		check_SeasonEpisode = "S%sE%s" % (staffel, episode)
 		dirname = getDirname(serien_name, staffel)
 		
-		imageMinus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/minus.png"
-		imagePlus = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/plus.png"
-		imageNone = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/black.png"
-		imageHDD = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/hdd.png"
-		imageTimer = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/timerlist.png"
-		imageAdded = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/added.png"
-		#imageAdded = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
+		imageMinus = "%simages/minus.png" % serienRecMainPath
+		imagePlus = "%simages/plus.png" % serienRecMainPath
+		imageNone = "%simages/black.png" % serienRecMainPath
+		imageHDD = "%simages/hdd.png" % serienRecMainPath
+		imageTimer = "%simages/timerlist.png" % serienRecMainPath
+		imageAdded = "%simages/added.png" % serienRecMainPath
 
 		#check 1 (hdd)
 		bereits_vorhanden = False
@@ -4128,7 +4144,7 @@ class serienRecTimer(Screen):
 		self.skinName = "SerienRecorderTimer"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRTimer.xml"
+		skin = "%sskins/SRTimer.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -4241,9 +4257,9 @@ class serienRecTimer(Screen):
 		xtime = time.strftime(WochenTag[time.localtime(int(start_time)).tm_wday]+", %d.%m.%Y - %H:%M", time.localtime(int(start_time)))
 
 		if int(foundIcon) == 1:
-			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
+			imageFound = "%simages/found.png" % serienRecMainPath
 		else:
-			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/black.png"
+			imageFound = "%simages/black.png" % serienRecMainPath
 			
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 8, 8, 32, 32, loadPNG(imageFound)),
@@ -4355,7 +4371,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.skinName = "SerienRecorderSetup"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRSetup.xml"
+		skin = "%sskins/SRSetup.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -4444,7 +4460,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list = []
 		self.list.append(getConfigListEntry("---------  SYSTEM:  -------------------------------------------------------------------------------------------"))
 		self.list.append(getConfigListEntry("Speicherort der Aufnahmen:", config.plugins.serienRec.savetopath))
-		#self.list.append(getConfigListEntry("Nur zum Sender zappen:", config.plugins.serienRec.justplay))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", config.plugins.serienRec.seasonsubdir))
 		if config.plugins.serienRec.seasonsubdir.value:
@@ -4455,6 +4470,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self.list.append(getConfigListEntry("    Uhrzeit für automatischen Suchlauf (nur wenn Intervall = 24):", config.plugins.serienRec.deltime))
 		self.list.append(getConfigListEntry("Anzahl gleichzeitiger Web-Anfragen:", config.plugins.serienRec.maxWebRequests))
 		self.list.append(getConfigListEntry("Automatisches Plugin-Update:", config.plugins.serienRec.Autoupdate))
+		self.list.append(getConfigListEntry("Erstelle Backup vor Suchlauf:", config.plugins.serienRec.AutoBackup))
+		if config.plugins.serienRec.AutoBackup.value:
+			self.list.append(getConfigListEntry("    Speicherort für Backup:", config.plugins.serienRec.BackupPath))
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------"))
@@ -4546,6 +4564,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 		elif self["config"].getCurrent()[1] == config.plugins.serienRec.LogFilePath:
 			start_dir = config.plugins.serienRec.LogFilePath.value
 			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "LogFile-Verzeichnis auswählen")
+		elif self["config"].getCurrent()[1] == config.plugins.serienRec.BackupPath:
+			start_dir = config.plugins.serienRec.BackupPath.value
+			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Backup-Verzeichnis auswählen")
 
 	def selectedMediaFile(self, res):
 		if res is not None:
@@ -4559,6 +4580,12 @@ class serienRecSetup(Screen, ConfigListScreen):
 				print res
 				config.plugins.serienRec.LogFilePath.value = res
 				#config.plugins.serienRec.LogFilePath.save()
+				#configfile.save()
+				self.changedEntry()
+			elif self["config"].getCurrent()[1] == config.plugins.serienRec.BackupPath:
+				print res
+				config.plugins.serienRec.BackupPath.value = res
+				#config.plugins.serienRec.BackupPath.save()
 				#configfile.save()
 				self.changedEntry()
 
@@ -4588,6 +4615,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.update.save()
 		config.plugins.serienRec.updateInterval.save()
 		config.plugins.serienRec.checkfordays.save()
+		config.plugins.serienRec.AutoBackup.save()
+		config.plugins.serienRec.BackupPath.save()
 		config.plugins.serienRec.maxWebRequests.save()
 		config.plugins.serienRec.margin_before.save()
 		config.plugins.serienRec.margin_after.save()
@@ -4659,7 +4688,7 @@ class SerienRecFileList(Screen):
 		self.skinName = "SerienRecorderFileList"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRFileList.xml"
+		skin = "%sskins/SRFileList.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -4668,7 +4697,8 @@ class SerienRecFileList(Screen):
 		self["title"] = Label(title)
 		self["media"] = Label("")
 		self["folderlist"] = FileList(initDir, inhibitMounts = False, inhibitDirs = False, showMountpoints = False, showFiles = False)
-		self["red"] = Label("Abbrechen")
+		self["cancel"] = Label("Abbrechen")
+		self["red"] = Label("Verzeichnis löschen")
 		self["green"] = Label("Speichern")
 		self['blue'] = Label("Verzeichnis anlegen")
 		self['version'] = Label("Serien Recorder v%s" % config.plugins.serienRec.showversion.value)
@@ -4676,13 +4706,14 @@ class SerienRecFileList(Screen):
 		self["actions"] = ActionMap(["WizardActions", "DirectionActions", "ColorActions", "EPGSelectActions"],
 		{
 			"back": self.cancel,
+			"cancel": self.cancel,
 			"left": self.left,
 			"right": self.right,
 			"up": self.up,
 			"down": self.down,
 			"ok": self.ok,
-			"green": self.green,
-			"red": self.cancel,
+			"green": self.keyGreen,
+			"red": self.keyRed,
 			"blue": self.keyBlue
 		}, -1)
 		
@@ -4691,7 +4722,14 @@ class SerienRecFileList(Screen):
 	def cancel(self):
 		self.close(None)
 
-	def green(self):
+	def keyRed(self):
+		try:
+			os.rmdir(self["folderlist"].getSelection()[0])
+		except:
+			pass
+		self.updateFile()
+		
+	def keyGreen(self):
 		directory = self["folderlist"].getSelection()[0]
 		if (directory.endswith("/")):
 			self.fullpath = self["folderlist"].getSelection()[0]
@@ -4745,9 +4783,9 @@ class serienRecReadLog(Screen):
 		skin = None
 		#SRWide = getDesktop(0).size().width()
 		if config.plugins.serienRec.logWrapAround.value:
-			skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRReadLog.xml"
+			skin = "%sskins/SRReadLog.xml" % serienRecMainPath
 		else:
-			skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRReadLog2.xml"
+			skin = "%sskins/SRReadLog2.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -4818,9 +4856,9 @@ class serienRecLogReader(Screen):
 		skin = None
 		#SRWide = getDesktop(0).size().width()
 		if config.plugins.serienRec.logWrapAround.value:
-			skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRLogReader.xml"
+			skin = "%sskins/SRLogReader.xml" % serienRecMainPath
 		else:
-			skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRLogReader2.xml"
+			skin = "%sskins/SRLogReader2.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -4870,29 +4908,25 @@ class serienRecLogReader(Screen):
 		self.readLog()
 
 	def readLog(self):
-		if not fileExists(logFile):
-			open(logFile, 'w').close()
-
-		logFile_leer = os.path.getsize(logFile)
-		if not logFile_leer == 0:
-			readLog2 = open(logFile, "r")
-			logData = readLog2.read()
-			if re.search('AutoCheckTimer Beendet', logData, re.S):
-				self.readLogTimer.stop()
-				print "[Serien Recorder] update log reader stopped."
-				self['title'].setText('Autocheck fertig !')
-				readLog = open(logFile, "r")
-				for zeile in readLog.readlines():
-					if (not config.plugins.serienRec.logWrapAround.value) or (len(zeile.strip()) > 0):
-						self.logliste.append((zeile.replace('[Serien Recorder]','')))
-				self.chooseMenuList.setList(map(self.buildList, self.logliste))
-				if config.plugins.serienRec.logScrollLast.value:
-					count = len(self.logliste)
-					if count != 0:
-						self["list"].moveToIndex(int(count-1))
-			else:
-				self.points += " ."
-				self['title'].setText('Suche nach neuen Timern läuft.%s' % self.points)
+		global autoCheckFinished
+		if autoCheckFinished:
+			self.readLogTimer.stop()
+			print "[Serien Recorder] update log reader stopped."
+			self['title'].setText('Autocheck fertig !')
+			readLog = open(logFile, "r")
+			for zeile in readLog.readlines():
+				if (not config.plugins.serienRec.logWrapAround.value) or (len(zeile.strip()) > 0):
+					self.logliste.append((zeile.replace('[Serien Recorder]','')))
+			readLog.close()
+			self.chooseMenuList.setList(map(self.buildList, self.logliste))
+			if config.plugins.serienRec.logScrollLast.value:
+				count = len(self.logliste)
+				if count != 0:
+					self["list"].moveToIndex(int(count-1))
+			autoCheckFinished = False
+		else:
+			self.points += " ."
+			self['title'].setText('Suche nach neuen Timern läuft.%s' % self.points)
 					
 	def buildList(self, entry):
 		(zeile) = entry
@@ -4954,7 +4988,7 @@ class SerienRecorderUpdateScreen(Screen):
 		self.skinName = "SerienRecorderUpdate"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRUpdate.xml"
+		skin = "%sskins/SRUpdate.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -4992,111 +5026,117 @@ class SerienRecorderUpdateScreen(Screen):
 
 def initDB():
 	if config.plugins.serienRec.dbversion.value != config.plugins.serienRec.showversion.value:
-		#dbSerRec = sqlite3.connect("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SerienRecorder.db")
-		#dbSerRec.text_factory = str
-		cCursor = dbSerRec.cursor()
-		#cCursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
-		#tables = cCursor.fetchall()
-		#for table in tables:
-		#	if table[0] == "AngelegteTimer":
-		#		cCursor.execute("DROP TABLE %s" % table[0])
-		#	if table[0] == "SerienMarker":
-		#		cCursor.execute("DROP TABLE %s" % table[0])
-		#dbSerRec.commit()
+		v_old = str(config.plugins.serienRec.dbversion.value).split('beta')
+		v_old.reverse()
+		v_new = str(config.plugins.serienRec.showversion.value).split('beta')
+		v_new.reverse()
+		if v_old[0] != v_new[0]:
+			#dbSerRec = sqlite3.connect(serienRecDataBase)
+			#dbSerRec.text_factory = str
+			cCursor = dbSerRec.cursor()
+			#cCursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
+			#tables = cCursor.fetchall()
+			#for table in tables:
+			#	if table[0] == "AngelegteTimer":
+			#		cCursor.execute("DROP TABLE %s" % table[0])
+			#	if table[0] == "SerienMarker":
+			#		cCursor.execute("DROP TABLE %s" % table[0])
+			#dbSerRec.commit()
 
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, 
-																		  Staffel INTEGER, 
-																		  Sender TEXT NOT NULL, 
-																		  StaffelStart TEXT NOT NULL, 
-																		  UTCStaffelStart INTEGER, 
-																		  Url TEXT NOT NULL, 
-																		  CreationFlag INTEGER DEFAULT 1)''') 
-																		  
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, 
-																STBChannel TEXT NOT NULL DEFAULT "", 
-																ServiceRef TEXT NOT NULL DEFAULT "", 
-																alternativSTBChannel TEXT NOT NULL DEFAULT "", 
-																alternativServiceRef TEXT NOT NULL DEFAULT "", 
-																Erlaubt INTEGER DEFAULT 0, 
-																Vorlaufzeit INTEGER DEFAULT NULL, 
-																Nachlaufzeit INTEGER DEFAULT NULL)''')
-																
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
-																	Serie TEXT NOT NULL, 
-																	Url TEXT NOT NULL, 
-																	AufnahmeVerzeichnis TEXT, 
-																	AlleStaffelnAb INTEGER DEFAULT 0, 
-																	alleSender INTEGER DEFAULT 1, 
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, 
+																			  Staffel INTEGER, 
+																			  Sender TEXT NOT NULL, 
+																			  StaffelStart TEXT NOT NULL, 
+																			  UTCStaffelStart INTEGER, 
+																			  Url TEXT NOT NULL, 
+																			  CreationFlag INTEGER DEFAULT 1)''') 
+																			  
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, 
+																	STBChannel TEXT NOT NULL DEFAULT "", 
+																	ServiceRef TEXT NOT NULL DEFAULT "", 
+																	alternativSTBChannel TEXT NOT NULL DEFAULT "", 
+																	alternativServiceRef TEXT NOT NULL DEFAULT "", 
+																	Erlaubt INTEGER DEFAULT 0, 
 																	Vorlaufzeit INTEGER DEFAULT NULL, 
-																	Nachlaufzeit INTEGER DEFAULT NULL, 
-																	AufnahmezeitVon INTEGER DEFAULT NULL,  
-																	AufnahmezeitBis INTEGER DEFAULT NULL, 
-																	AnzahlWiederholungen INTEGER DEFAULT NULL,
-																	preferredChannel INTEGER DEFAULT 1,
-																	useAlternativeChannel INTEGER DEFAULT -1,
-																	AbEpisode INTEGER DEFAULT 0,
-																	Staffelverzeichnis INTEGER DEFAULT -1,
-																	TimerForSpecials INTEGER DEFAULT -1)''')
+																	Nachlaufzeit INTEGER DEFAULT NULL)''')
 																	
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
-																	 ErlaubterSender TEXT NOT NULL, 
-																	 FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
-																	 
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, 
-																	  ErlaubteStaffel INTEGER, 
-																	  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+																		Serie TEXT NOT NULL, 
+																		Url TEXT NOT NULL, 
+																		AufnahmeVerzeichnis TEXT, 
+																		AlleStaffelnAb INTEGER DEFAULT 0, 
+																		alleSender INTEGER DEFAULT 1, 
+																		Vorlaufzeit INTEGER DEFAULT NULL, 
+																		Nachlaufzeit INTEGER DEFAULT NULL, 
+																		AufnahmezeitVon INTEGER DEFAULT NULL,  
+																		AufnahmezeitBis INTEGER DEFAULT NULL, 
+																		AnzahlWiederholungen INTEGER DEFAULT NULL,
+																		preferredChannel INTEGER DEFAULT 1,
+																		useAlternativeChannel INTEGER DEFAULT -1,
+																		AbEpisode INTEGER DEFAULT 0,
+																		Staffelverzeichnis INTEGER DEFAULT -1,
+																		TimerForSpecials INTEGER DEFAULT -1)''')
+																		
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
+																		 ErlaubterSender TEXT NOT NULL, 
+																		 FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
+																		 
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, 
+																		  ErlaubteStaffel INTEGER, 
+																		  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
 
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS AngelegteTimer (Serie TEXT NOT NULL, 
-																	  Staffel INTEGER, 
-																	  Episode TEXT, 
-																	  Titel TEXT, 
-																	  StartZeitstempel INTEGER NOT NULL, 
-																	  ServiceRef TEXT NOT NULL, 
-																	  webChannel TEXT NOT NULL, 
-																	  EventID INTEGER DEFAULT 0)''')
-																	  
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
-																	  StartZeitstempel INTEGER NOT NULL, 
-																	  webChannel TEXT NOT NULL)''')
-																	  
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
-																  Staffel INTEGER NOT NULL, 
-																  Episode TEXT NOT NULL,
-																  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS AngelegteTimer (Serie TEXT NOT NULL, 
+																		  Staffel INTEGER, 
+																		  Episode TEXT, 
+																		  Titel TEXT, 
+																		  StartZeitstempel INTEGER NOT NULL, 
+																		  ServiceRef TEXT NOT NULL, 
+																		  webChannel TEXT NOT NULL, 
+																		  EventID INTEGER DEFAULT 0)''')
+																		  
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
+																		  StartZeitstempel INTEGER NOT NULL, 
+																		  webChannel TEXT NOT NULL)''')
+																		  
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
+																	  Staffel INTEGER NOT NULL, 
+																	  Episode TEXT NOT NULL,
+																	  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
 
-		cCursor.execute("UPDATE OR IGNORE SerienMarker SET useAlternativeChannel=-1")
-			
-		dbSerRec.commit()
-		cCursor.close()
-
-		try:
-			cCursor = dbSerRec.cursor()
-			cCursor.execute('ALTER TABLE SerienMarker ADD AbEpisode INTEGER DEFAULT 0')
+			cCursor.execute("UPDATE OR IGNORE SerienMarker SET useAlternativeChannel=-1")
+				
 			dbSerRec.commit()
 			cCursor.close()
-		except:
-			pass
 
-		try:
-			cCursor = dbSerRec.cursor()
-			cCursor.execute('ALTER TABLE SerienMarker ADD Staffelverzeichnis INTEGER DEFAULT -1')
-			Staffelverzeichnis
-			dbSerRec.commit()
-			cCursor.close()
-		except:
-			pass
+			try:
+				cCursor = dbSerRec.cursor()
+				cCursor.execute('ALTER TABLE SerienMarker ADD AbEpisode INTEGER DEFAULT 0')
+				dbSerRec.commit()
+				cCursor.close()
+			except:
+				pass
 
-		try:
-			cCursor = dbSerRec.cursor()
-			cCursor.execute('ALTER TABLE SerienMarker ADD TimerForSpecials INTEGER DEFAULT -1')
-			Staffelverzeichnis
-			dbSerRec.commit()
-			cCursor.close()
-		except:
-			pass
+			try:
+				cCursor = dbSerRec.cursor()
+				cCursor.execute('ALTER TABLE SerienMarker ADD Staffelverzeichnis INTEGER DEFAULT -1')
+				Staffelverzeichnis
+				dbSerRec.commit()
+				cCursor.close()
+			except:
+				pass
 
-		config.plugins.serienRec.dbversion.value = config.plugins.serienRec.showversion.value
-		config.plugins.serienRec.dbversion.save()
+			try:
+				cCursor = dbSerRec.cursor()
+				cCursor.execute('ALTER TABLE SerienMarker ADD TimerForSpecials INTEGER DEFAULT -1')
+				Staffelverzeichnis
+				dbSerRec.commit()
+				cCursor.close()
+			except:
+				pass
+
+			config.plugins.serienRec.dbversion.value = config.plugins.serienRec.showversion.value
+			config.plugins.serienRec.dbversion.save()
+			configfile.save()
 		
 	cTmp = dbTmp.cursor()
 	cTmp.execute('''CREATE TABLE IF NOT EXISTS GefundeneFolgen (CurrentTime INTEGER,
@@ -5127,10 +5167,10 @@ def initDB():
 	cTmp.close()
 
 def ImportFilesToDB():
-	channelFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/channels"
-	addedFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/added"
-	timerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/timer"
-	markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
+	channelFile = "%schannels" % serienRecMainPath
+	addedFile = "%sadded" % serienRecMainPath
+	timerFile = "%stimer" % serienRecMainPath
+	markerFile = "%smarker" % serienRecMainPath
 
 	initDB()
 	if fileExists(channelFile):
@@ -5178,7 +5218,8 @@ def ImportFilesToDB():
 		#os.remove(addedFile)
 
 		# Codierung AngelegteTimer korrigieren
-		dbSerRec.text_factory=str
+		f = dbSerRec.text_factory
+		dbSerRec.text_factory = str
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT Serie, Titel FROM AngelegteTimer")
 		for row in cCursor:
@@ -5203,7 +5244,7 @@ def ImportFilesToDB():
 				
 		cCursor.close()
 		dbSerRec.commit()
-		dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
+		dbSerRec.text_factory = f
 
 	if fileExists(timerFile):
 		cCursor = dbSerRec.cursor()
@@ -5278,8 +5319,10 @@ def ImportFilesToDB():
 		shutil.move(markerFile, "%s_old" % markerFile)
 		#os.remove(markerFile)
 
+	f = dbSerRec.text_factory
+	dbSerRec.text_factory = str
+
 	# Codierung Channels korrigieren
-	dbSerRec.text_factory=str
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT * FROM Channels")
 	for row in cCursor:
@@ -5413,7 +5456,7 @@ def ImportFilesToDB():
 	cCursor.close()
 	
 	dbSerRec.commit()
-	dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
+	dbSerRec.text_factory = f
 	
 	return True
 		
@@ -5426,7 +5469,7 @@ class serienRecModifyAdded(Screen):
 		self.skinName = "SerienRecorderModifyAdded"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRModifyAdded.xml"
+		skin = "%sskins/SRModifyAdded.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -5573,7 +5616,7 @@ class serienRecShowSeasonBegins(Screen):
 		self.skinName = "SerienRecorderShowSeasonBegins"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRShowSeasonBegins.xml"
+		skin = "%sskins/SRShowSeasonBegins.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -5620,7 +5663,6 @@ class serienRecShowSeasonBegins(Screen):
 		else:
 			self['yellow'].setText("Zeige nur neue")
 		self.proposalList = []
-		self.markerFile = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/marker"
 
 		self.onLayoutFinish.append(self.readProposal)
 
@@ -5649,9 +5691,9 @@ class serienRecShowSeasonBegins(Screen):
 		(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = entry
 		
 		if CreationFlag == 0:
-			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/found.png"
+			imageFound = "%simages/found.png" % serienRecMainPath
 		else:
-			imageFound = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/black.png"
+			imageFound = "%simages/black.png" % serienRecMainPath
 		
 		if CreationFlag == 2:
 			setFarbe = self.red
@@ -5664,7 +5706,7 @@ class serienRecShowSeasonBegins(Screen):
 
 		if config.plugins.serienRec.showPicons.value:
 			self.picloader = PicLoader(80, 40)
-			picon = self.picloader.load("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sender/"+Sender+".png")
+			picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 			self.picloader.destroy()
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80, 40, picon),
@@ -5888,7 +5930,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self.skinName = "SerienRecorderMarkerSetup"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRMarkerSetup.xml"
+		skin = "%sskins/SRMarkerSetup.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -6123,7 +6165,7 @@ class serienRecShowConflicts(Screen):
 		self.skinName = "SerienRecorderShowConflicts"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRShowConflicts.xml"
+		skin = "%sskins/SRShowConflicts.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -6218,7 +6260,7 @@ class serienRecWishlist(Screen):
 		self.skinName = "SerienRecorderWishlist"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRWishlist.xml"
+		skin = "%sskins/SRWishlist.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -6446,7 +6488,7 @@ class serienRecShowInfo(Screen):
 		self.skinName = "SerienRecorderShowInfo"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/SRShowInfo.xml"
+		skin = "%sskins/SRShowInfo.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -6518,7 +6560,7 @@ class serienRecShowImdbVideos(Screen):
 		self.skinName = "SerienRecorderShowImdbVideos"
 		skin = None
 		#SRWide = getDesktop(0).size().width()
-		skin = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/SRShowImdbVideos.xml"
+		skin = "%sSRShowImdbVideos.xml" % serienRecMainPath
 		if skin:
 			SRSkin = open(skin)
 			self.skin = SRSkin.read()
@@ -6567,7 +6609,7 @@ class serienRecShowImdbVideos(Screen):
 		(id, image) = entry
 
 		#self.picloader = PicLoader(250, 150)
-		#picon = self.picloader.load("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sender/"+Sender+".png")
+		#picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 		#self.picloader.destroy()
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, id)
