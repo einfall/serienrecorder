@@ -1300,8 +1300,8 @@ class serienRecCheckForRecording():
 			##############################
 			#
 			# erstellt das serien verzeichnis
+			dirname = getDirname(serien_name, staffel)
 			if config.plugins.serienRec.seriensubdir.value:
-				dirname = getDirname(serien_name, staffel)
 				if not fileExists(dirname):
 					print "[Serien Recorder] erstelle Subdir %s" % dirname
 					writeLog("[Serien Recorder] erstelle Subdir: ' %s '" % dirname)
@@ -1892,7 +1892,6 @@ class serienRecMain(Screen):
 		self.onFirstExecBegin.append(self.startScreen)
 
 	def test(self):
-		return
 		check = self['list'].getCurrent()
 		if check == None:
 			return
