@@ -1892,6 +1892,7 @@ class serienRecMain(Screen):
 		self.onFirstExecBegin.append(self.startScreen)
 
 	def test(self):
+		return
 		check = self['list'].getCurrent()
 		if check == None:
 			return
