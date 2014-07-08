@@ -313,16 +313,20 @@ def getMargins(serien_name):
 	
 def getSpecialsAllowed(serien_name):
 	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
+	cCursor.execute("SELECT AlleStaffelnAb, TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
 	data = cCursor.fetchone()
 	if data:
-		(TimerForSpecials,) = data
-		if not str(TimerForSpecials).isdigit():
-			TimerForSpecials = config.plugins.serienRec.TimerForSpecials.value
-		elif TimerForSpecials == -1:
-			TimerForSpecials = config.plugins.serienRec.TimerForSpecials.value
+		(AlleStaffelnAb, TimerForSpecials,) = data
+		if int(AlleStaffelnAb) == 0:
+			TimerForSpecials = True
+		elif not str(TimerForSpecials).isdigit():
+			TimerForSpecials = False
+			#TimerForSpecials = config.plugins.serienRec.TimerForSpecials.value
+		#elif TimerForSpecials == -1:
+		#	TimerForSpecials = config.plugins.serienRec.TimerForSpecials.value
 	else:
-		TimerForSpecials = config.plugins.serienRec.TimerForSpecials.value
+		TimerForSpecials = False
+		#TimerForSpecials = config.plugins.serienRec.TimerForSpecials.value
 	cCursor.close()
 	return bool(TimerForSpecials)
 	
@@ -2997,6 +3001,8 @@ class serienRecMarker(Screen):
 					staffeln.append('ab %s' % AlleStaffelnAb)
 				if AbEpisode > 0:
 					staffeln.insert(0, '0 ab E%s' % AbEpisode)
+				if bool(TimerForSpecials):
+					staffeln.insert(0, 'Specials')
 				cStaffel.close()
 			
 			if useAlternativeChannel == -1:
@@ -3089,7 +3095,7 @@ class serienRecMarker(Screen):
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			
-			staffeln = ['Manuell','Alle','folgende']
+			staffeln = ['Manuell','Alle','Specials','folgende']
 			staffeln.extend(range(config.plugins.serienRec.max_season.value+1))
 			mode_list = [0,]*len(staffeln)
 			index_list = range(len(staffeln))
@@ -3104,6 +3110,8 @@ class serienRecMarker(Screen):
 					if AlleStaffelnAb == 0:		# 'Alle'
 						mode_list[1] = 1
 					else:
+						if TimerForSpecials:
+							mode_list[2] = 1
 						cStaffel = dbSerRec.cursor()
 						cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
 						cStaffelList = cStaffel.fetchall()
@@ -3115,23 +3123,23 @@ class serienRecMarker(Screen):
 							if len(cStaffelList) > 0:
 								cStaffelList = zip(*cStaffelList)[0]
 							for staffel in cStaffelList:
-								mode_list[staffel + 3] = 1
+								mode_list[staffel + 4] = 1
 						elif (AlleStaffelnAb > 0) and (AlleStaffelnAb <= (len(staffeln)-4)):
 							cStaffelList = []
-							mode_list[AlleStaffelnAb + 3] = 1
-							mode_list[2] = 1
+							mode_list[AlleStaffelnAb + 4] = 1
+							mode_list[3] = 1
 							cStaffel = dbSerRec.cursor()
 							cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
 							cStaffelList = cStaffel.fetchall()
 							if len(cStaffelList) > 0:
 								cStaffelList = zip(*cStaffelList)[0]
 							for staffel in cStaffelList:
-								mode_list[staffel + 3] = 1
+								mode_list[staffel + 4] = 1
 								if (staffel + 1) == AlleStaffelnAb:
-									mode_list[AlleStaffelnAb + 3] = 0
+									mode_list[AlleStaffelnAb + 4] = 0
 									AlleStaffelnAb = staffel
 						if self.AbEpisode > 0:
-							mode_list[3] = 1
+							mode_list[4] = 1
 							
 						cStaffel.close()
 					
@@ -3253,6 +3261,7 @@ class serienRecMarker(Screen):
 	def insertStaffelMarker(self):
 		print self.select_serie
 		AlleStaffelnAb = 999999
+		TimerForSpecials = 0
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT ID, AbEpisode FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
 		row = cCursor.fetchone()
@@ -3262,43 +3271,49 @@ class serienRecMarker(Screen):
 			liste = self.staffel_liste[1:]
 			liste = zip(*liste)
 			if 1 in liste[1]:
+				#staffeln = ['Manuell','Alle','Specials','folgende',...]
 				for row in self.staffel_liste:
 					(staffel, mode, index) = row
 					if (index == 0) and (mode == 1):		# 'Manuell'
 						AlleStaffelnAb = -2
 						AbEpisode = 0
+						TimerForSpecials = 0
 						break
 					elif (index == 1) and (mode == 1):		# 'Alle'
 						AlleStaffelnAb = 0
 						AbEpisode = 0
+						TimerForSpecials = 0
 						break
-					elif (index == 2) and (mode == 1):		#'folgende'
-						liste = self.staffel_liste[4:]
-						liste.reverse()
-						liste = zip(*liste)
-						if 1 in liste[1]:
-							idx = liste[1].index(1)
-							AlleStaffelnAb = liste[0][idx]
-							try:
-								idx = liste[1].index(0, idx+1, len(liste[1]))
-								AlleStaffelnAb = liste[0][idx-1]
-							except:
-								AlleStaffelnAb = 0
-								break
-					elif (index > 3) and mode == 1:
-						if str(staffel).isdigit():
-							if staffel >= AlleStaffelnAb:
-								#break
-								continue
-							elif (staffel + 1) == AlleStaffelnAb:
-								AlleStaffelnAb = staffel
-							else:	
-								cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, staffel))
+					else:
+						if (index == 2) and (mode == 1):		#'Specials'
+							TimerForSpecials = 1
+						if (index == 3) and (mode == 1):		#'folgende'
+							liste = self.staffel_liste[5:]
+							liste.reverse()
+							liste = zip(*liste)
+							if 1 in liste[1]:
+								idx = liste[1].index(1)
+								AlleStaffelnAb = liste[0][idx]
+								try:
+									idx = liste[1].index(0, idx+1, len(liste[1]))
+									AlleStaffelnAb = liste[0][idx-1]
+								except:
+									AlleStaffelnAb = 0
+									break
+						elif (index > 3) and mode == 1:
+							if str(staffel).isdigit():
+								if staffel >= AlleStaffelnAb:
+									#break
+									continue
+								elif (staffel + 1) == AlleStaffelnAb:
+									AlleStaffelnAb = staffel
+								else:	
+									cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, staffel))
 			else:
 				AlleStaffelnAb = -2
 				AbEpisode = 0
 			
-		cCursor.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=?, AbEpisode=? WHERE LOWER(Serie)=?", (AlleStaffelnAb, AbEpisode, self.select_serie.lower()))
+		cCursor.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=?, AbEpisode=?, TimerForSpecials=? WHERE LOWER(Serie)=?", (AlleStaffelnAb, AbEpisode, TimerForSpecials, self.select_serie.lower()))
 		dbSerRec.commit()
 		cCursor.close()
 		self.readSerienMarker()
@@ -3410,7 +3425,7 @@ class serienRecMarker(Screen):
 			self.modus = "list"
 			self['popup_list'].hide()
 			self['popup_bg'].hide()
-			if (self.staffel_liste[0][1] == 0) and (self.staffel_liste[1][1] == 0) and (self.staffel_liste[3][1] == 1):		# nicht ('Manuell' oder 'Alle') und '00'
+			if (self.staffel_liste[0][1] == 0) and (self.staffel_liste[1][1] == 0) and (self.staffel_liste[4][1] == 1):		# nicht ('Manuell' oder 'Alle') und '00'
 				self.session.openWithCallback(self.selectEpisode, VirtualKeyBoard, title = (_("Episode eingeben ab der Timer erstellt werden sollen:")), text = str(self.AbEpisode))
 			else:
 				self.insertStaffelMarker()
@@ -4499,7 +4514,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry("Timer-Art:", self.kindOfTimer))
 		self.list.append(getConfigListEntry("Timervorlauf (in Min.):", config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
-		self.list.append(getConfigListEntry("Timer auch für 'Specials' (Staffel 'F', 'S', etc.) erstellen:", config.plugins.serienRec.TimerForSpecials))
+		#self.list.append(getConfigListEntry("Timer auch für 'Specials' (Staffel 'F', 'S', etc.) erstellen:", config.plugins.serienRec.TimerForSpecials))
 		self.list.append(getConfigListEntry("Manuelle Timer immer erstellen:", config.plugins.serienRec.forceManualRecording))
 		tvbouquets = getTVBouquets()
 		if len(tvbouquets) < 2:
@@ -4643,7 +4658,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.ActionOnNew.save()
 		config.plugins.serienRec.deleteOlderThan.save()
 		config.plugins.serienRec.forceRecording.save()
-		config.plugins.serienRec.TimerForSpecials.save()
+		#config.plugins.serienRec.TimerForSpecials.save()
 		config.plugins.serienRec.forceManualRecording.save()
 		if int(config.plugins.serienRec.checkfordays.value) > int(config.plugins.serienRec.TimeSpanForRegularTimer.value):
 			config.plugins.serienRec.TimeSpanForRegularTimer.value = int(config.plugins.serienRec.checkfordays.value)
@@ -5023,119 +5038,123 @@ class SerienRecorderUpdateScreen(Screen):
 		self["mplog"].setText(str)
 
 def initDB():
-	if config.plugins.serienRec.dbversion.value != config.plugins.serienRec.showversion.value:
-		v_old = str(config.plugins.serienRec.dbversion.value).split('beta')
-		v_old.reverse()
-		v_new = str(config.plugins.serienRec.showversion.value).split('beta')
-		v_new.reverse()
-		if v_old[0] != v_new[0]:
-			#dbSerRec = sqlite3.connect(serienRecDataBase)
-			#dbSerRec.text_factory = str
-			cCursor = dbSerRec.cursor()
-			#cCursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
-			#tables = cCursor.fetchall()
-			#for table in tables:
-			#	if table[0] == "AngelegteTimer":
-			#		cCursor.execute("DROP TABLE %s" % table[0])
-			#	if table[0] == "SerienMarker":
-			#		cCursor.execute("DROP TABLE %s" % table[0])
-			#dbSerRec.commit()
+	#if config.plugins.serienRec.dbversion.value != config.plugins.serienRec.showversion.value:
+	#	v_old = str(config.plugins.serienRec.dbversion.value).split('beta')
+	#	v_old.reverse()
+	#	v_new = str(config.plugins.serienRec.showversion.value).split('beta')
+	#	v_new.reverse()
+	#	if v_old[0] != v_new[0]:
+	#		#dbSerRec = sqlite3.connect(serienRecDataBase)
+	#		#dbSerRec.text_factory = str
+	cCursor = dbSerRec.cursor()
+	#		#cCursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
+	#		#tables = cCursor.fetchall()
+	#		#for table in tables:
+	#		#	if table[0] == "AngelegteTimer":
+	#		#		cCursor.execute("DROP TABLE %s" % table[0])
+	#		#	if table[0] == "SerienMarker":
+	#		#		cCursor.execute("DROP TABLE %s" % table[0])
+	#		#dbSerRec.commit()
 
-			cCursor.execute('''CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, 
-																			  Staffel INTEGER, 
-																			  Sender TEXT NOT NULL, 
-																			  StaffelStart TEXT NOT NULL, 
-																			  UTCStaffelStart INTEGER, 
-																			  Url TEXT NOT NULL, 
-																			  CreationFlag INTEGER DEFAULT 1)''') 
-																			  
-			cCursor.execute('''CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, 
-																	STBChannel TEXT NOT NULL DEFAULT "", 
-																	ServiceRef TEXT NOT NULL DEFAULT "", 
-																	alternativSTBChannel TEXT NOT NULL DEFAULT "", 
-																	alternativServiceRef TEXT NOT NULL DEFAULT "", 
-																	Erlaubt INTEGER DEFAULT 0, 
-																	Vorlaufzeit INTEGER DEFAULT NULL, 
-																	Nachlaufzeit INTEGER DEFAULT NULL)''')
-																	
-			cCursor.execute('''CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
-																		Serie TEXT NOT NULL, 
-																		Url TEXT NOT NULL, 
-																		AufnahmeVerzeichnis TEXT, 
-																		AlleStaffelnAb INTEGER DEFAULT 0, 
-																		alleSender INTEGER DEFAULT 1, 
-																		Vorlaufzeit INTEGER DEFAULT NULL, 
-																		Nachlaufzeit INTEGER DEFAULT NULL, 
-																		AufnahmezeitVon INTEGER DEFAULT NULL,  
-																		AufnahmezeitBis INTEGER DEFAULT NULL, 
-																		AnzahlWiederholungen INTEGER DEFAULT NULL,
-																		preferredChannel INTEGER DEFAULT 1,
-																		useAlternativeChannel INTEGER DEFAULT -1,
-																		AbEpisode INTEGER DEFAULT 0,
-																		Staffelverzeichnis INTEGER DEFAULT -1,
-																		TimerForSpecials INTEGER DEFAULT -1)''')
-																		
-			cCursor.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
-																		 ErlaubterSender TEXT NOT NULL, 
-																		 FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
-																		 
-			cCursor.execute('''CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, 
-																		  ErlaubteStaffel INTEGER, 
-																		  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, 
+																	  Staffel INTEGER, 
+																	  Sender TEXT NOT NULL, 
+																	  StaffelStart TEXT NOT NULL, 
+																	  UTCStaffelStart INTEGER, 
+																	  Url TEXT NOT NULL, 
+																	  CreationFlag INTEGER DEFAULT 1)''') 
+																	  
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, 
+															STBChannel TEXT NOT NULL DEFAULT "", 
+															ServiceRef TEXT NOT NULL DEFAULT "", 
+															alternativSTBChannel TEXT NOT NULL DEFAULT "", 
+															alternativServiceRef TEXT NOT NULL DEFAULT "", 
+															Erlaubt INTEGER DEFAULT 0, 
+															Vorlaufzeit INTEGER DEFAULT NULL, 
+															Nachlaufzeit INTEGER DEFAULT NULL)''')
+															
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+																Serie TEXT NOT NULL, 
+																Url TEXT NOT NULL, 
+																AufnahmeVerzeichnis TEXT, 
+																AlleStaffelnAb INTEGER DEFAULT 0, 
+																alleSender INTEGER DEFAULT 1, 
+																Vorlaufzeit INTEGER DEFAULT NULL, 
+																Nachlaufzeit INTEGER DEFAULT NULL, 
+																AufnahmezeitVon INTEGER DEFAULT NULL,  
+																AufnahmezeitBis INTEGER DEFAULT NULL, 
+																AnzahlWiederholungen INTEGER DEFAULT NULL,
+																preferredChannel INTEGER DEFAULT 1,
+																useAlternativeChannel INTEGER DEFAULT -1,
+																AbEpisode INTEGER DEFAULT 0,
+																Staffelverzeichnis INTEGER DEFAULT -1,
+																TimerForSpecials INTEGER DEFAULT 0)''')
+																
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
+																 ErlaubterSender TEXT NOT NULL, 
+																 FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
+																 
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, 
+																  ErlaubteStaffel INTEGER, 
+																  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
 
-			cCursor.execute('''CREATE TABLE IF NOT EXISTS AngelegteTimer (Serie TEXT NOT NULL, 
-																		  Staffel INTEGER, 
-																		  Episode TEXT, 
-																		  Titel TEXT, 
-																		  StartZeitstempel INTEGER NOT NULL, 
-																		  ServiceRef TEXT NOT NULL, 
-																		  webChannel TEXT NOT NULL, 
-																		  EventID INTEGER DEFAULT 0)''')
-																		  
-			cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
-																		  StartZeitstempel INTEGER NOT NULL, 
-																		  webChannel TEXT NOT NULL)''')
-																		  
-			cCursor.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
-																	  Staffel INTEGER NOT NULL, 
-																	  Episode TEXT NOT NULL,
-																	  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS AngelegteTimer (Serie TEXT NOT NULL, 
+																  Staffel INTEGER, 
+																  Episode TEXT, 
+																  Titel TEXT, 
+																  StartZeitstempel INTEGER NOT NULL, 
+																  ServiceRef TEXT NOT NULL, 
+																  webChannel TEXT NOT NULL, 
+																  EventID INTEGER DEFAULT 0)''')
+																  
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
+																  StartZeitstempel INTEGER NOT NULL, 
+																  webChannel TEXT NOT NULL)''')
+																  
+	cCursor.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
+															  Staffel INTEGER NOT NULL, 
+															  Episode TEXT NOT NULL,
+															  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
 
-			cCursor.execute("UPDATE OR IGNORE SerienMarker SET useAlternativeChannel=-1")
-				
-			dbSerRec.commit()
-			cCursor.close()
-
-			try:
-				cCursor = dbSerRec.cursor()
-				cCursor.execute('ALTER TABLE SerienMarker ADD AbEpisode INTEGER DEFAULT 0')
-				dbSerRec.commit()
-				cCursor.close()
-			except:
-				pass
-
-			try:
-				cCursor = dbSerRec.cursor()
-				cCursor.execute('ALTER TABLE SerienMarker ADD Staffelverzeichnis INTEGER DEFAULT -1')
-				Staffelverzeichnis
-				dbSerRec.commit()
-				cCursor.close()
-			except:
-				pass
-
-			try:
-				cCursor = dbSerRec.cursor()
-				cCursor.execute('ALTER TABLE SerienMarker ADD TimerForSpecials INTEGER DEFAULT -1')
-				Staffelverzeichnis
-				dbSerRec.commit()
-				cCursor.close()
-			except:
-				pass
-
-			config.plugins.serienRec.dbversion.value = config.plugins.serienRec.showversion.value
-			config.plugins.serienRec.dbversion.save()
-			configfile.save()
+	cCursor.execute("UPDATE OR IGNORE SerienMarker SET useAlternativeChannel=-1")
 		
+	dbSerRec.commit()
+	cCursor.close()
+
+	try:
+		cCursor = dbSerRec.cursor()
+		cCursor.execute('ALTER TABLE SerienMarker ADD AbEpisode INTEGER DEFAULT 0')
+		dbSerRec.commit()
+		cCursor.close()
+	except:
+		pass
+
+	try:
+		cCursor = dbSerRec.cursor()
+		cCursor.execute('ALTER TABLE SerienMarker ADD Staffelverzeichnis INTEGER DEFAULT -1')
+		dbSerRec.commit()
+		cCursor.close()
+	except:
+		pass
+
+	try:
+		cCursor = dbSerRec.cursor()
+		cCursor.execute('ALTER TABLE SerienMarker ADD TimerForSpecials INTEGER DEFAULT 0')
+		dbSerRec.commit()
+		cCursor.close()
+	except:
+		pass
+
+	#		config.plugins.serienRec.dbversion.value = config.plugins.serienRec.showversion.value
+	#		config.plugins.serienRec.dbversion.save()
+	#		configfile.save()
+
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("UPDATE OR IGNORE SerienMarker SET TimerForSpecials=? WHERE TimerForSpecials=-1", (config.plugins.serienRec.TimerForSpecials.value, ))
+	cCursor.execute("UPDATE OR IGNORE SerienMarker SET TimerForSpecials=0 WHERE AlleStaffelnAb=0")
+	dbSerRec.commit()
+	cCursor.close()
+			
 	cTmp = dbTmp.cursor()
 	cTmp.execute('''CREATE TABLE IF NOT EXISTS GefundeneFolgen (CurrentTime INTEGER,
 																FutureTime INTEGER,
@@ -6001,7 +6020,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			self.toTime = ConfigInteger(config.plugins.serienRec.toTime.value, (0,23))
 			self.enable_toTime = ConfigYesNo(default = False)
 
-		self.TimerForSpecials = ConfigSelection(choices = [("-1", _("gemäß Setup (dzt. %s)" % str(config.plugins.serienRec.TimerForSpecials.value).replace('True', 'ja').replace('False', 'nein'))), ("0", _("nein")), ("1", _("ja"))], default=str(TimerForSpecials))
+		#self.TimerForSpecials = ConfigSelection(choices = [("-1", _("gemäß Setup (dzt. %s)" % str(config.plugins.serienRec.TimerForSpecials.value).replace('True', 'ja').replace('False', 'nein'))), ("0", _("nein")), ("1", _("ja"))], default=str(TimerForSpecials))
 
 		self.preferredChannel = ConfigSelection(choices = [("1", _("Standard")), ("2", _("Alternativ"))], default=str(preferredChannel))
 		self.useAlternativeChannel = ConfigSelection(choices = [("-1", _("gemäß Setup (dzt. %s)" % str(config.plugins.serienRec.useAlternativeChannel.value).replace('True', 'ja').replace('False', 'nein'))), ("0", _("nein")), ("1", _("ja"))], default=str(useAlternativeChannel))
@@ -6049,7 +6068,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		if self.enable_toTime.value:
 			self.list.append(getConfigListEntry("      Späteste Zeit für Timer (hh:59):", self.toTime))
 
-		self.list.append(getConfigListEntry("Timer auch für 'Specials' (Staffel 'F', 'S', etc.) erstellen:", self.TimerForSpecials))
+		#self.list.append(getConfigListEntry("Timer auch für 'Specials' (Staffel 'F', 'S', etc.) erstellen:", self.TimerForSpecials))
 		self.list.append(getConfigListEntry("Bevorzugte Channel-Liste:", self.preferredChannel))
 		self.list.append(getConfigListEntry("Verwende alternative Channels bei Konflikten:", self.useAlternativeChannel))
 
