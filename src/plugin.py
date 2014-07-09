@@ -3110,7 +3110,7 @@ class serienRecMarker(Screen):
 					if AlleStaffelnAb == 0:		# 'Alle'
 						mode_list[1] = 1
 					else:
-						if TimerForSpecials:
+						if bool(TimerForSpecials):
 							mode_list[2] = 1
 						cStaffel = dbSerRec.cursor()
 						cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
@@ -5973,11 +5973,11 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self.white = 0xffffff
 
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
+		cCursor.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
 		row = cCursor.fetchone()
 		if not row:
-			row = (None, -1, None, None, None, None, None, 1, -1, -1)
-		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, TimerForSpecials) = row
+			row = (None, -1, None, None, None, None, None, 1, -1)
+		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel) = row
 		cCursor.close()
 
 		if not AufnahmeVerzeichnis:
@@ -6164,8 +6164,8 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			Staffelverzeichnis = self.seasonsubdir.value
 			
 		cCursor = dbSerRec.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, TimerForSpecials=? WHERE LOWER(Serie)=?"
-		cCursor.execute(sql, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value), int(self.TimerForSpecials.value), self.Serie.lower()))
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=? WHERE LOWER(Serie)=?"
+		cCursor.execute(sql, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value), self.Serie.lower()))
 		dbSerRec.commit()
 		cCursor.close()
 		self.close(True)
