@@ -1,0 +1,5 @@
+<keymap>
+	<map context="SerienRecorderActions">
+		<key id="KEY_HELP"  mapto="about"  flags="l" />
+	</map>
+</keymap>

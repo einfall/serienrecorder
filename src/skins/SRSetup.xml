@@ -8,6 +8,8 @@
 	<eLabel position="912,123" zPosition="3" size="322,183" backgroundColor="transparent" />
 	<widget source="session.VideoPicture" render="Pig" position="915,140" size="284,160" zPosition="-8" />
 	<widget name="config" position="20,120" size="870,500" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel40_1200.png" />
+	<eLabel position="912,320" zPosition="3" size="338,300" backgroundColor="transparent" />
+	<widget name="config_information_text" position="915,323" size="332,294" backgroundColor="#000000" transparent="1" halign="left" zPosition="5" font="Regular;14"/>
 	
 	<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/red_round.png" position="20,651" zPosition="1" size="32,32" alphatest="on" />
 	<widget name="red" position="60,656" size="250,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
