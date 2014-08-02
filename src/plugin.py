@@ -5482,6 +5482,7 @@ def initDB():
 					if dbValue == config.plugins.serienRec.dbversion.value:
 						dbVersionMatch = True
 						break
+
 		cCursor.close()
 
 		if not dbVersionMatch:
@@ -5509,6 +5510,14 @@ def initDB():
 			except:
 				pass
 
+			cCursor = dbSerRec.cursor()
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
+																	  Staffel INTEGER NOT NULL, 
+																	  Episode TEXT NOT NULL,
+																	  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
+			dbSerRec.commit()
+			cCursor.close()
+						
 			updateDB()
 
 	dbSerRec.close()
