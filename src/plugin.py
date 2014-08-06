@@ -5511,6 +5511,10 @@ def initDB():
 				pass
 
 			cCursor = dbSerRec.cursor()
+			cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
+																		  StartZeitstempel INTEGER NOT NULL, 
+																		  webChannel TEXT NOT NULL)''')
+																	  
 			cCursor.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
 																	  Staffel INTEGER NOT NULL, 
 																	  Episode TEXT NOT NULL,
