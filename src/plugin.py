@@ -554,19 +554,19 @@ def checkFileAccess():
 		Notifications.AddPopup(_("[Serien Recorder]\nDatei 'log' kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!") % (config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] checkFileAccess")
 			
 class PicLoader:
-    def __init__(self, width, height, sc=None):
-        self.picload = ePicLoad()
-        if(not sc):
-            sc = AVSwitch().getFramebufferScale()
-        self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
+	def __init__(self, width, height, sc=None):
+		self.picload = ePicLoad()
+		if(not sc):
+			sc = AVSwitch().getFramebufferScale()
+		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
 
-    def load(self, filename):
-        self.picload.startDecode(filename, 0, 0, False)
-        data = self.picload.getData()
-        return data
-    
-    def destroy(self):
-        del self.picload
+	def load(self, filename):
+		self.picload.startDecode(filename, 0, 0, False)
+		data = self.picload.getData()
+		return data
+
+	def destroy(self):
+		del self.picload
 		
 class imdbVideo():
 	def __init__(self):
@@ -5093,7 +5093,7 @@ class SerienRecFileList(Screen):
 			self.fullpath = self["folderlist"].getSelection()[0]
 		else:
 			self.fullpath = "%s/" % self["folderlist"].getSelection()[0]
-	  	self.close(self.fullpath)
+		self.close(self.fullpath)
 
 	def keyBlue(self):
 		self.session.openWithCallback(self.wSearch, VirtualKeyBoard, title = (_("Verzeichnis-Name eingeben:")), text = "")
@@ -5409,7 +5409,7 @@ def initDB():
 																		  UTCStaffelStart INTEGER, 
 																		  Url TEXT NOT NULL, 
 																		  CreationFlag INTEGER DEFAULT 1)''') 
-																		  
+																		
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, 
 																STBChannel TEXT NOT NULL DEFAULT "", 
 																ServiceRef TEXT NOT NULL DEFAULT "", 
@@ -5439,7 +5439,7 @@ def initDB():
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																	 ErlaubterSender TEXT NOT NULL, 
 																	 FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
-																	 
+																	
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, 
 																	  ErlaubteStaffel INTEGER, 
 																	  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
@@ -5452,11 +5452,11 @@ def initDB():
 																	  ServiceRef TEXT NOT NULL, 
 																	  webChannel TEXT NOT NULL, 
 																	  EventID INTEGER DEFAULT 0)''')
-																	  
+																	
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
 																	  StartZeitstempel INTEGER NOT NULL, 
 																	  webChannel TEXT NOT NULL)''')
-																	  
+																	
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
 																  Staffel INTEGER NOT NULL, 
 																  Episode TEXT NOT NULL,
@@ -5514,7 +5514,7 @@ def initDB():
 			cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
 																		  StartZeitstempel INTEGER NOT NULL, 
 																		  webChannel TEXT NOT NULL)''')
-																	  
+
 			cCursor.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
 																	  Staffel INTEGER NOT NULL, 
 																	  Episode TEXT NOT NULL,
@@ -5597,7 +5597,7 @@ def updateDB():
 	cNew.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																 ErlaubterSender TEXT NOT NULL, 
 																 FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
-																 
+																
 	cNew.execute('''CREATE TABLE IF NOT EXISTS StaffelAuswahl (ID INTEGER, 
 																  ErlaubteStaffel INTEGER, 
 																  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
@@ -5610,7 +5610,7 @@ def updateDB():
 																  ServiceRef TEXT NOT NULL, 
 																  webChannel TEXT NOT NULL, 
 																  EventID INTEGER DEFAULT 0)''')
-																  
+																
 	cNew.execute('''CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, 
 																	  Staffel INTEGER, 
 																	  Sender TEXT NOT NULL, 
@@ -5618,11 +5618,11 @@ def updateDB():
 																	  UTCStaffelStart INTEGER, 
 																	  Url TEXT NOT NULL, 
 																	  CreationFlag INTEGER DEFAULT 1)''') 
-																	  
+																	
 	cNew.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
 																  StartZeitstempel INTEGER NOT NULL, 
 																  webChannel TEXT NOT NULL)''')
-																  
+																
 	cNew.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
 															  Staffel INTEGER NOT NULL, 
 															  Episode TEXT NOT NULL,
@@ -7426,7 +7426,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 		}, -1)
 
 		#self.info =("SerienRecorder for Enigma2 (v%s) (c) 2014 by einfall\n"
-        #            "(in cooperation with w22754)\n"
+		#            "(in cooperation with w22754)\n"
 		#			"\n"
 		#			"For more info:\nhttp://www.vuplus-support.org/wbb3/index.php?page=Thread&threadID=60724\n"
 		#			"(if you like this plugin, we would be pleased about a small donation!)\n") % config.plugins.serienRec.showversion.value
@@ -7437,7 +7437,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 
 	def exit(self):
 		self.close()
-        
+
 def getNextWakeup():
 	color_print = "\033[93m"
 	color_end = "\33[0m"
