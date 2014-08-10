@@ -366,7 +366,7 @@ def getVPS(webSender):
 	cCursor.execute("SELECT vps FROM Channels WHERE LOWER(WebChannel)=?", (webSender.lower(), ))
 	result = cCursor.fetchone()
 	cCursor.close()
-	return result	
+	return result[0]
 
 def getSpecialsAllowed(serien_name):
 	cCursor = dbSerRec.cursor()
@@ -1578,7 +1578,10 @@ class serienRecCheckForRecording():
 			show_current = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(current_time)))
 			writeLogFilter("timeLimit", _("[Serien Recorder] ' %s ' - Der Sendetermin liegt in der Vergangenheit: %s - Aktuelles Datum: %s") % (label_serie, show_start, show_current))
 			return False
-			
+
+		# get VPS settings for channel
+		vpsSettings = getVPS(webChannel)
+
 		# versuche timer anzulegen
 		# setze strings für addtimer
 		if checkTuner(start_unixtime, end_unixtime):
@@ -1836,12 +1839,15 @@ class serienRecAddTimer():
 			timer.repeated = 0
 
 			if VPSPluginAvailable:
-				timer.vpsplugin_enabled = False
-				timer.vpsplugin_overwrite = False
-				if vpsSettings >= 1:
+				if vpsSettings == 0:
+					timer.vpsplugin_enabled = False
+					timer.vpsplugin_overwrite = False
+				elif vpsSettings == 1:
 					timer.vpsplugin_enabled = True
-				if vpsSettings == 2:
 					timer.vpsplugin_overwrite = True
+				elif vpsSettings == 2:
+					timer.vpsplugin_enabled = True
+					timer.vpsplugin_overwrite = False
 
 			if logentries:
 				timer.log_entries = logentries
@@ -5042,6 +5048,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.TimeSpanForRegularTimer.save()
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.showPicons.save()
+		config.plugins.serienRec.intensiveTimersuche.save()
+		config.plugins.serienRec.sucheAufnahme.save()
 		config.plugins.serienRec.selectNoOfTuners.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
@@ -6866,13 +6874,13 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 			
 		if vpsSettings == 2:
 			self.enable_vps = ConfigYesNo(default = True)
-			self.enable_vps_overwrite = ConfigYesNo(default = True)
+			self.enable_vps_savemode = ConfigYesNo(default = True)
 		elif vpsSettings == 1:
 			self.enable_vps = ConfigYesNo(default = True)
-			self.enable_vps_overwrite = ConfigYesNo(default = False)
+			self.enable_vps_savemode = ConfigYesNo(default = False)
 		else:
 			self.enable_vps = ConfigYesNo(default = False)
-			self.enable_vps_overwrite = ConfigYesNo(default = False)
+			self.enable_vps_savemode = ConfigYesNo(default = False)
 			
 		self.createConfigList()
 		ConfigListScreen.__init__(self, self.list)
@@ -6892,7 +6900,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		if VPSPluginAvailable:
 			self.list.append(getConfigListEntry(_("VPS für diesen Sender aktivieren:"), self.enable_vps))
 			if self.enable_vps.value:
-				self.list.append(getConfigListEntry(_("      Sicherheitsmodus aktivieren:"), self.enable_vps_overwrite))
+				self.list.append(getConfigListEntry(_("      Sicherheitsmodus aktivieren:"), self.enable_vps_savemode))
 
 	def UpdateMenuValues(self):
 		if self["config"].instance.getCurrentIndex() == 0:
@@ -6952,7 +6960,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 				                         "Ist auch bei der aufzunehmenden Serie eine Nachlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.")) % self.webSender,
 			self.enable_vps :           (_("Bei 'ja' wird VPS für '%s' aktiviert, dann startet die Aufnahme erst, wenn der Sender angibt, dass die Sendung begonnen hat.\n"
 				                         "Die Aufnahme endet, wenn angegeben wird, dass die Sendung vorbei ist.")) % self.webSender,
-			self.enable_vps_overwrite : (_("Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet, dann wird die programmierte Start- und Endzeit eingehalten.\n"
+			self.enable_vps_savemode : (_("Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet, dann wird die programmierte Start- und Endzeit eingehalten.\n"
 				                         "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.")) % self.webSender
 		}
 		
@@ -6977,7 +6985,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		vpsSettings = 0
 		if self.enable_vps.value:
 			vpsSettings += 1
-		if self.enable_vps_overwrite.value:
+		if self.enable_vps_savemode.value:
 			vpsSettings += 1
 
 		cCursor = dbSerRec.cursor()
