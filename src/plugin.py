@@ -5762,7 +5762,7 @@ def ImportFilesToDB():
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT * FROM Channels")
 		for row in cCursor:
-			(WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit) = row
+			(WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps) = row
 			try:
 				WebChannelNew = WebChannel.decode('utf-8')
 			except:
@@ -5770,8 +5770,8 @@ def ImportFilesToDB():
 				WebChannelNew = WebChannelNew.encode('utf-8')
 				cTmp = dbSerRec.cursor()
 				cTmp.execute ("DELETE FROM Channels WHERE WebChannel=?", (WebChannel,))
-				sql = "INSERT OR IGNORE INTO Channels (WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit) VALUES (?,?,?,?,?,?,?,?)"
-				cTmp.execute(sql, (WebChannelNew,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit))
+				sql = "INSERT OR IGNORE INTO Channels (WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps) VALUES (?,?,?,?,?,?,?,?,?)"
+				cTmp.execute(sql, (WebChannelNew,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps))
 				cTmp.close()
 
 			try:
