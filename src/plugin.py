@@ -5071,6 +5071,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.justplay.save()
 		config.plugins.serienRec.zapbeforerecord.save()
 		config.plugins.serienRec.justremind.save()
+		# Save obsolete dbversion config setting here to remove it from file
+		config.plugins.serienRec.dbversion.save();
 		
 		configfile.save()
 		self.close(True)
