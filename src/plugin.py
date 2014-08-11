@@ -94,6 +94,14 @@ if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/EPGTranslator/plugin.p
 else:
 	epgTranslatorInstalled = False
 
+# check VPS availability
+try:
+	from Plugins.SystemPlugins.vps import Vps
+except ImportError as ie:
+	VPSPluginAvailable = False
+else:
+	VPSPluginAvailable = True
+
 config.plugins.serienRec = ConfigSubsection()
 config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
 config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
@@ -146,6 +154,8 @@ config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
 config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
+config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default = True)
+config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
 config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default = True)
 config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
 config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
@@ -168,12 +178,12 @@ config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default = False)
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta10"))
+config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta11"))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
 config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
-config.plugins.serienRec.dbversion = NoSave(ConfigText(default="2.4beta10"))
+config.plugins.serienRec.dbversion = NoSave(ConfigText(default="2.4beta11"))
 
 
 logFile = "%slog" % serienRecMainPath
@@ -349,7 +359,15 @@ def getMargins(serien_name, webSender):
 		
 	cCursor.close()
 	return (margin_before, margin_after)	
-	
+
+def getVPS(webSender):
+	result = 0
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT vps FROM Channels WHERE LOWER(WebChannel)=?", (webSender.lower(), ))
+	result = cCursor.fetchone()
+	cCursor.close()
+	return result[0]
+
 def getSpecialsAllowed(serien_name):
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT AlleStaffelnAb, TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
@@ -1254,7 +1272,7 @@ class serienRecCheckForRecording():
 			alt_eit = 0
 			alt_start_unixtime = start_unixtime
 			alt_end_unixtime = end_unixtime
-			if config.plugins.serienRec.eventid.value:
+			if config.plugins.serienRec.eventid.value and stbRef != altstbRef:
 				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 				event_matches = getEPGevent(['RITBDSE',(altstbRef, 0, int(start_unixtime)+(int(margin_before) * 60), -1)], altstbRef, serien_name, int(start_unixtime)+(int(margin_before) * 60))
 				#print "event matches %s" % len(event_matches)
@@ -1560,11 +1578,14 @@ class serienRecCheckForRecording():
 			show_current = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(current_time)))
 			writeLogFilter("timeLimit", _("[Serien Recorder] ' %s ' - Der Sendetermin liegt in der Vergangenheit: %s - Aktuelles Datum: %s") % (label_serie, show_start, show_current))
 			return False
-			
+
+		# get VPS settings for channel
+		vpsSettings = getVPS(webChannel)
+
 		# versuche timer anzulegen
 		# setze strings für addtimer
 		if checkTuner(start_unixtime, end_unixtime):
-			result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, False, dirname, None, recordfile=".ts")
+			result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
 			if result["result"]:
 				self.countTimer += 1
 				# Eintrag in das timer file
@@ -1591,7 +1612,7 @@ class serienRecCheckForRecording():
 				writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, result["message"]), True)
 				dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
 				
-				result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, True, dirname, None, recordfile=".ts")
+				result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
 				if result["result"]:
 					self.countNotActiveTimer += 1
 					# Eintrag in das timer file
@@ -1776,7 +1797,7 @@ class serienRecAddTimer():
 		return removed
 
 	@staticmethod	
-	def addTimer(session, serviceref, begin, end, name, description, eit, disabled, dirname, logentries=None, recordfile=None, forceWrite=True):
+	def addTimer(session, serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, logentries=None, recordfile=None, forceWrite=True):
 
 		recordHandler = NavigationInstance.instance.RecordTimer
 		#config.plugins.serienRec.seriensubdir
@@ -1816,6 +1837,17 @@ class serienRecAddTimer():
 					tags = None)
 
 			timer.repeated = 0
+
+			if VPSPluginAvailable:
+				if vpsSettings == 0:
+					timer.vpsplugin_enabled = False
+					timer.vpsplugin_overwrite = False
+				elif vpsSettings == 1:
+					timer.vpsplugin_enabled = True
+					timer.vpsplugin_overwrite = True
+				elif vpsSettings == 2:
+					timer.vpsplugin_enabled = True
+					timer.vpsplugin_overwrite = False
 
 			if logentries:
 				timer.log_entries = logentries
@@ -2192,7 +2224,7 @@ class serienRecMain(Screen):
 					#
 					# try to get eventID (eit) from epgCache
 					#
-					if config.plugins.serienRec.eventid.value:
+					if config.plugins.serienRec.intensiveTimersuche.value:
 						if len(cSender_list) != 0:
 							(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
 
@@ -2207,9 +2239,9 @@ class serienRecMain(Screen):
 									start_time_eit = int(event_entry[3])
 									if self.checkTimer(serien_name, staffel, episode, title, start_time_eit, sender):
 										aufnahme = True
-									break
+										break
 
-							if not aufnahme:
+							if not aufnahme and (stbRef != altstbRef):
 								event_matches = getEPGevent(['RITBDSE',(altstbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], altstbRef, serien_name, int(start_time)+(int(margin_before) * 60))
 								#print "event matches %s" % len(event_matches)
 								if event_matches and len(event_matches) > 0:
@@ -2218,7 +2250,7 @@ class serienRecMain(Screen):
 										start_time_eit = int(event_entry[3])
 										if self.checkTimer(serien_name, staffel, episode, title, start_time_eit, sender):
 											aufnahme = True
-										break
+											break
 
 				if self.checkMarker(serien_name):
 					serieAdded = True
@@ -2232,18 +2264,17 @@ class serienRecMain(Screen):
 				#
 				# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 				#
-				dirname = getDirname(serien_name, staffel)
-
-				check_SeasonEpisode = "S%sE%s" % (staffel, episode)
-
-				# check hdd
 				bereits_vorhanden = False
-				if fileExists(dirname):
-					dirs = os.listdir(dirname)
-					for dir in dirs:
-						if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, check_SeasonEpisode), dir):
-							bereits_vorhanden = True
-							break
+				if config.plugins.serienRec.sucheAufnahme.value:
+					dirname = getDirname(serien_name, staffel)
+					check_SeasonEpisode = "S%sE%s" % (staffel, episode)
+					# check hdd
+					if fileExists(dirname):
+						dirs = os.listdir(dirname)
+						for dir in dirs:
+							if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, check_SeasonEpisode), dir):
+								bereits_vorhanden = True
+								break
 
 				title = "S%sE%s - %s" % (staffel, episode, title)
 				if self.pNeu == 0:
@@ -4082,6 +4113,9 @@ class serienRecSendeTermine(Screen):
 					start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
 					end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
+					# get VPS settings for channel
+					vpsSettings = getVPS(sender)
+
 					# erstellt das serien verzeichnis
 					dirname = getDirname(serien_name, staffel)
 					if not fileExists(dirname):
@@ -4116,7 +4150,7 @@ class serienRecSendeTermine(Screen):
 							NoOfRecords = config.plugins.serienRec.NoOfRecords.value
 					cCursor.close()
 
-					params = (serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, bool(useAlternativeChannel))
+					params = (serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, bool(useAlternativeChannel), vpsSettings)
 					if bereits_vorhanden < NoOfRecords:
 						self.doTimer(params)
 					else:
@@ -4135,7 +4169,7 @@ class serienRecSendeTermine(Screen):
 
 	def doTimer(self, params, answer=True):
 		if answer:
-			(serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, useAlternativeChannel) = params
+			(serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings) = params
 			# check sender
 			cSener_list = self.checkSender(sender)
 			if len(cSener_list) == 0:
@@ -4183,7 +4217,7 @@ class serienRecSendeTermine(Screen):
 
 				# versuche timer anzulegen
 				if checkTuner(start_unixtime_eit, end_unixtime_eit):
-					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), eit, False, dirname, None, recordfile=".ts")
+					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
 					if result["result"]:
 						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit):
 							self.countTimer += 1
@@ -4213,14 +4247,14 @@ class serienRecSendeTermine(Screen):
 				
 					# versuche timer anzulegen
 					if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit):
-						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), alt_eit, False, dirname, None, recordfile=".ts")
+						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
 						if result["result"]:
 							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit):
 								self.countTimer += 1
 								TimerOK = True
 						else:
 							writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, konflikt), True)
-							result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), eit, True, dirname, None, recordfile=".ts")
+							result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
 							if result["result"]:
 								if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit):
 									self.countTimer += 1
@@ -4724,6 +4758,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
 		self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
+		self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
+		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahem auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
 		self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
 		self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
 		self.list.append(getConfigListEntry(_("Zeige Nachricht wenn Suchlauf startet:"), config.plugins.serienRec.showNotification))
@@ -4880,6 +4916,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.useAlternativeChannel :   (_("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu erstellen, "
 										                        "falls der Timer auf dem bevorzugten Channel nicht angelegt werden kann.")),
 			config.plugins.serienRec.showPicons :              (_("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.")),
+			config.plugins.serienRec.intensiveTimersuche :     (_("Bei 'ja' wir in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.")),
+			config.plugins.serienRec.sucheAufnahme :           (_("Bei 'ja' wir in der Hauptansicht ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv.")),
 			config.plugins.serienRec.max_season :              (_("Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann.")),
 			config.plugins.serienRec.confirmOnDelete :         (_("Bei 'ja' erfolt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem entgültigen Löschen von Serienmarkern oder Timern.")),
 			config.plugins.serienRec.showNotification :        (_("Bei 'ja' wird für 3 Sekunden eine Nachricht auf dem Bildschirm eingeblendet, sobald der automatische Timer-Suchlauf startet.")),
@@ -5010,6 +5048,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.TimeSpanForRegularTimer.save()
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.showPicons.save()
+		config.plugins.serienRec.intensiveTimersuche.save()
+		config.plugins.serienRec.sucheAufnahme.save()
 		config.plugins.serienRec.selectNoOfTuners.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
@@ -5417,7 +5457,8 @@ def initDB():
 																alternativServiceRef TEXT NOT NULL DEFAULT "", 
 																Erlaubt INTEGER DEFAULT 0, 
 																Vorlaufzeit INTEGER DEFAULT NULL, 
-																Nachlaufzeit INTEGER DEFAULT NULL)''')
+																Nachlaufzeit INTEGER DEFAULT NULL,
+																vps INTEGER DEFAULT 0)''')
 																
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
 																	Serie TEXT NOT NULL, 
@@ -5510,6 +5551,14 @@ def initDB():
 			except:
 				pass
 
+			try:
+				cCursor = dbSerRec.cursor()
+				cCursor.execute('ALTER TABLE Channels ADD vps INTEGER DEFAULT 0')
+				dbSerRec.commit()
+				cCursor.close()
+			except:
+				pass
+
 			cCursor = dbSerRec.cursor()
 			cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
 																		  StartZeitstempel INTEGER NOT NULL, 
@@ -5575,7 +5624,8 @@ def updateDB():
 															alternativServiceRef TEXT NOT NULL DEFAULT "", 
 															Erlaubt INTEGER DEFAULT 0, 
 															Vorlaufzeit INTEGER DEFAULT NULL, 
-															Nachlaufzeit INTEGER DEFAULT NULL)''')
+															Nachlaufzeit INTEGER DEFAULT NULL,
+															vps INTEGER DEFAULT 0)''')
 															
 	cNew.execute('''CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
 																Serie TEXT NOT NULL, 
@@ -6801,11 +6851,11 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		self.white = 0xffffff
 
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT Vorlaufzeit, Nachlaufzeit FROM Channels WHERE LOWER(WebChannel)=?", (self.webSender.lower(),))
+		cCursor.execute("SELECT Vorlaufzeit, Nachlaufzeit, vps FROM Channels WHERE LOWER(WebChannel)=?", (self.webSender.lower(),))
 		row = cCursor.fetchone()
 		if not row:
 			row = (None, None)
-		(Vorlaufzeit, Nachlaufzeit) = row
+		(Vorlaufzeit, Nachlaufzeit, vpsSettings) = row
 		cCursor.close()
 
 		if str(Vorlaufzeit).isdigit():
@@ -6822,6 +6872,16 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 			self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0,99))
 			self.enable_margin_after = ConfigYesNo(default = False)
 			
+		if vpsSettings == 2:
+			self.enable_vps = ConfigYesNo(default = True)
+			self.enable_vps_savemode = ConfigYesNo(default = True)
+		elif vpsSettings == 1:
+			self.enable_vps = ConfigYesNo(default = True)
+			self.enable_vps_savemode = ConfigYesNo(default = False)
+		else:
+			self.enable_vps = ConfigYesNo(default = False)
+			self.enable_vps_savemode = ConfigYesNo(default = False)
+			
 		self.createConfigList()
 		ConfigListScreen.__init__(self, self.list)
 		
@@ -6836,6 +6896,11 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("vom globalen Setup abweichenden Timernachlauf aktivieren:"), self.enable_margin_after))
 		if self.enable_margin_after.value:
 			self.list.append(getConfigListEntry(_("      Timernachlauf (in Min.):"), self.margin_after))
+
+		if VPSPluginAvailable:
+			self.list.append(getConfigListEntry(_("VPS für diesen Sender aktivieren:"), self.enable_vps))
+			if self.enable_vps.value:
+				self.list.append(getConfigListEntry(_("      Sicherheitsmodus aktivieren:"), self.enable_vps_savemode))
 
 	def UpdateMenuValues(self):
 		if self["config"].instance.getCurrentIndex() == 0:
@@ -6880,7 +6945,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 	def setInfoText(self):
 		self.HilfeTexte = {
 			self.enable_margin_before : (_("Bei 'ja' kann die Vorlaufzeit für Aufnahmen von '%s' eingestellt werden.\n" 
-		                                 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Vorlaufzeit.\n" 
+					                     "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Vorlaufzeit.\n"
 					                     "Ist auch bei der aufzunehmenden Serie eine Vorlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.\n"
 					                     "Bei 'nein' gilt die Einstellung im globalen Setup.")) % self.webSender,
 			self.margin_before :        (_("Die Vorlaufzeit für Aufnahmen von '%s' in Minuten.\n"
@@ -6892,7 +6957,11 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 					                     "Bei 'nein' gilt die Einstellung im globalen Setup.")) % self.webSender,
 			self.margin_after :         (_("Die Nachlaufzeit für Aufnahmen von '%s' in Minuten.\n"
 				                         "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Nachlaufzeit.\n"
-				                         "Ist auch bei der aufzunehmenden Serie eine Nachlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.")) % self.webSender
+				                         "Ist auch bei der aufzunehmenden Serie eine Nachlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.")) % self.webSender,
+			self.enable_vps :           (_("Bei 'ja' wird VPS für '%s' aktiviert, dann startet die Aufnahme erst, wenn der Sender angibt, dass die Sendung begonnen hat.\n"
+				                         "Die Aufnahme endet, wenn angegeben wird, dass die Sendung vorbei ist.")) % self.webSender,
+			self.enable_vps_savemode : (_("Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet, dann wird die programmierte Start- und Endzeit eingehalten.\n"
+				                         "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.")) % self.webSender
 		}
 		
 		try:
@@ -6912,9 +6981,15 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 			Nachlaufzeit = None
 		else:
 			Nachlaufzeit = self.margin_after.value
-			
+
+		vpsSettings = 0
+		if self.enable_vps.value:
+			vpsSettings += 1
+		if self.enable_vps_savemode.value:
+			vpsSettings += 1
+
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("UPDATE OR IGNORE Channels SET Vorlaufzeit=?, Nachlaufzeit=? WHERE LOWER(WebChannel)=?", (Vorlaufzeit, Nachlaufzeit, self.webSender.lower()))
+		cCursor.execute("UPDATE OR IGNORE Channels SET Vorlaufzeit=?, Nachlaufzeit=?, vps=? WHERE LOWER(WebChannel)=?", (Vorlaufzeit, Nachlaufzeit, vpsSettings, self.webSender.lower()))
 		dbSerRec.commit()
 		cCursor.close()
 		self.close()
@@ -7426,7 +7501,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 		}, -1)
 
 		#self.info =("SerienRecorder for Enigma2 (v%s) (c) 2014 by einfall\n"
-		#            "(in cooperation with w22754)\n"
+        #            "(in cooperation with w22754)\n"
 		#			"\n"
 		#			"For more info:\nhttp://www.vuplus-support.org/wbb3/index.php?page=Thread&threadID=60724\n"
 		#			"(if you like this plugin, we would be pleased about a small donation!)\n") % config.plugins.serienRec.showversion.value
@@ -7437,7 +7512,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 
 	def exit(self):
 		self.close()
-
+        
 def getNextWakeup():
 	color_print = "\033[93m"
 	color_end = "\33[0m"
