@@ -364,9 +364,11 @@ def getVPS(webSender):
 	result = 0
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT vps FROM Channels WHERE LOWER(WebChannel)=?", (webSender.lower(), ))
-	result = cCursor.fetchone()
+	raw = cCursor.fetchone()
+	if raw:
+		(result,) = raw
 	cCursor.close()
-	return result[0]
+	return (bool(result & 0x1), bool(result & 0x2))
 
 def getSpecialsAllowed(serien_name):
 	cCursor = dbSerRec.cursor()
@@ -1839,15 +1841,8 @@ class serienRecAddTimer():
 			timer.repeated = 0
 
 			if VPSPluginAvailable:
-				if vpsSettings == 0:
-					timer.vpsplugin_enabled = False
-					timer.vpsplugin_overwrite = False
-				elif vpsSettings == 1:
-					timer.vpsplugin_enabled = True
-					timer.vpsplugin_overwrite = True
-				elif vpsSettings == 2:
-					timer.vpsplugin_enabled = True
-					timer.vpsplugin_overwrite = False
+				timer.vpsplugin_enabled = vpsSettings[0]
+				timer.vpsplugin_overwrite = vpsSettings[1]
 
 			if logentries:
 				timer.log_entries = logentries
@@ -5072,7 +5067,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.zapbeforerecord.save()
 		config.plugins.serienRec.justremind.save()
 		# Save obsolete dbversion config setting here to remove it from file
-		config.plugins.serienRec.dbversion.save();
+		config.plugins.serienRec.dbversion.save()
 		
 		configfile.save()
 		self.close(True)
@@ -5764,7 +5759,7 @@ def ImportFilesToDB():
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT * FROM Channels")
 		for row in cCursor:
-			(WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit) = row
+			(WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps) = row
 			try:
 				WebChannelNew = WebChannel.decode('utf-8')
 			except:
@@ -5772,8 +5767,8 @@ def ImportFilesToDB():
 				WebChannelNew = WebChannelNew.encode('utf-8')
 				cTmp = dbSerRec.cursor()
 				cTmp.execute ("DELETE FROM Channels WHERE WebChannel=?", (WebChannel,))
-				sql = "INSERT OR IGNORE INTO Channels (WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit) VALUES (?,?,?,?,?,?,?,?)"
-				cTmp.execute(sql, (WebChannelNew,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit))
+				sql = "INSERT OR IGNORE INTO Channels (WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps) VALUES (?,?,?,?,?,?,?,?,?)"
+				cTmp.execute(sql, (WebChannelNew,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps))
 				cTmp.close()
 
 			try:
@@ -6856,7 +6851,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		cCursor.execute("SELECT Vorlaufzeit, Nachlaufzeit, vps FROM Channels WHERE LOWER(WebChannel)=?", (self.webSender.lower(),))
 		row = cCursor.fetchone()
 		if not row:
-			row = (None, None)
+			row = (None, None, None)
 		(Vorlaufzeit, Nachlaufzeit, vpsSettings) = row
 		cCursor.close()
 
@@ -6874,12 +6869,9 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 			self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0,99))
 			self.enable_margin_after = ConfigYesNo(default = False)
 			
-		if vpsSettings == 2:
-			self.enable_vps = ConfigYesNo(default = True)
-			self.enable_vps_savemode = ConfigYesNo(default = True)
-		elif vpsSettings == 1:
-			self.enable_vps = ConfigYesNo(default = True)
-			self.enable_vps_savemode = ConfigYesNo(default = False)
+		if str(vpsSettings).isdigit():
+			self.enable_vps = ConfigYesNo(default = bool(vpsSettings & 0x1))
+			self.enable_vps_savemode = ConfigYesNo(default = bool(vpsSettings & 0x2))
 		else:
 			self.enable_vps = ConfigYesNo(default = False)
 			self.enable_vps_savemode = ConfigYesNo(default = False)
@@ -6984,11 +6976,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		else:
 			Nachlaufzeit = self.margin_after.value
 
-		vpsSettings = 0
-		if self.enable_vps.value:
-			vpsSettings += 1
-		if self.enable_vps_savemode.value:
-			vpsSettings += 1
+		vpsSettings = (int(self.enable_vps_savemode.value) << 1) + int(self.enable_vps.value)
 
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("UPDATE OR IGNORE Channels SET Vorlaufzeit=?, Nachlaufzeit=?, vps=? WHERE LOWER(WebChannel)=?", (Vorlaufzeit, Nachlaufzeit, vpsSettings, self.webSender.lower()))
