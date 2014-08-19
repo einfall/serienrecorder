@@ -1842,7 +1842,7 @@ class serienRecAddTimer():
 
 			if VPSPluginAvailable:
 				timer.vpsplugin_enabled = vpsSettings[0]
-				timer.vpsplugin_overwrite = vpsSettings[1]
+				timer.vpsplugin_overwrite = not vpsSettings[1]
 
 			if logentries:
 				timer.log_entries = logentries
@@ -4754,7 +4754,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
 		self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
 		self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
-		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahem auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
+		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahme auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
 		self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
 		self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
 		self.list.append(getConfigListEntry(_("Zeige Nachricht wenn Suchlauf startet:"), config.plugins.serienRec.showNotification))
