@@ -5474,7 +5474,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 
 	def bouquetPlus(self):
 		self['config'].instance.moveSelection(self['config'].instance.pageUp)
-		self.setInfoText()
+
+		#self.setInfoText()
+		try:
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+		except:
+			text = _("Keine Information verfügbar.")
+		self["config_information_text"].setText(text)
+		
 		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
@@ -5484,7 +5491,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 
 	def bouquetMinus(self):
 		self['config'].instance.moveSelection(self['config'].instance.pageDown)
-		self.setInfoText()
+
+		#self.setInfoText()
+		try:
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+		except:
+			text = _("Keine Information verfügbar.")
+		self["config_information_text"].setText(text)
+		
 		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
@@ -5498,7 +5512,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self['config'].instance.moveSelectionTo(0)
 		else:
 			self['config'].instance.moveSelection(self['config'].instance.moveDown)
-		self.setInfoText()
+
+		#self.setInfoText()
+		try:
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+		except:
+			text = _("Keine Information verfügbar.")
+		self["config_information_text"].setText(text)
+		
 		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
@@ -5512,7 +5533,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self['config'].instance.moveSelectionTo(len(self.list) - 1)
 		else:
 			self['config'].instance.moveSelection(self['config'].instance.moveUp)
-		self.setInfoText()
+
+		#self.setInfoText()
+		try:
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+		except:
+			text = _("Keine Information verfügbar.")
+		self["config_information_text"].setText(text)
+		
 		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
@@ -6124,7 +6152,13 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			self["config"].instance.moveSelectionTo(0)
 		else:
 			self["config"].instance.moveSelection(self["config"].instance.moveDown)
-		self.setInfoText()
+
+		#self.setInfoText()
+		try:
+			text = self.HilfeTexte[self["config"].getCurrent()[1]]
+		except:
+			text = _("Keine Information verfügbar.")
+		self["config_information_text"].setText(text)
 
 	def keyUp(self):
 		self.changedEntry()
@@ -6132,7 +6166,13 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			self["config"].instance.moveSelectionTo(len(self.list) - 1)
 		else:
 			self["config"].instance.moveSelection(self["config"].instance.moveUp)
-		self.setInfoText()
+
+		#self.setInfoText()
+		try:
+			text = self.HilfeTexte[self["config"].getCurrent()[1]]
+		except:
+			text = _("Keine Information verfügbar.")
+		self["config_information_text"].setText(text)
 
 	def ok(self):
 		ConfigListScreen.keyOK(self)
@@ -6371,7 +6411,13 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 			self["config"].instance.moveSelectionTo(0)
 		else:
 			self["config"].instance.moveSelection(self["config"].instance.moveDown)
-		self.setInfoText()
+
+		#self.setInfoText()
+		try:
+			text = self.HilfeTexte[self["config"].getCurrent()[1]]
+		except:
+			text = _("Keine Information verfügbar.")
+		self["config_information_text"].setText(text)
 
 	def keyUp(self):
 		self.changedEntry()
@@ -6379,7 +6425,13 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 			self["config"].instance.moveSelectionTo(len(self.list) - 1)
 		else:
 			self["config"].instance.moveSelection(self["config"].instance.moveUp)
-		self.setInfoText()
+
+		#self.setInfoText()
+		try:
+			text = self.HilfeTexte[self["config"].getCurrent()[1]]
+		except:
+			text = _("Keine Information verfügbar.")
+		self["config_information_text"].setText(text)
 
 	def ok(self):
 		ConfigListScreen.keyOK(self)
