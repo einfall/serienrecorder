@@ -2092,6 +2092,7 @@ class serienRecCheckForRecording():
 				serien_name = iso8859_Decode(serien_name)
 				sender = iso8859_Decode(sender)
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
+				staffel = iso8859_Decode(staffel)
 
 				if str(episode).isdigit():
 					if int(episode) == 1:
@@ -2443,6 +2444,7 @@ class serienRecCheckForRecording():
 			sender = iso8859_Decode(sender)
 			sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 			title = iso8859_Decode(title)
+			staffel = iso8859_Decode(staffel)
 
 			(margin_before, margin_after) = getMargins(serien_name, sender)
 			
@@ -4590,6 +4592,7 @@ class serienRecSendeTermine(Screen):
 				sender = iso8859_Decode(sender)
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 				title = iso8859_Decode(title)
+				staffel = iso8859_Decode(staffel)
 
 				if self.FilterEnabled:
 					# filter sender
@@ -8473,6 +8476,7 @@ class serienRecMain(Screen):
 				sender = iso8859_Decode(sender)
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 				title = iso8859_Decode(title)
+				staffel = iso8859_Decode(staffel)
 				self.ErrorMsg = "%s - S%sE%s - %s (%s)" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title, sender)
 				
 				cSender_list = self.checkSender(sender)
