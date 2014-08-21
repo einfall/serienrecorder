@@ -1560,7 +1560,16 @@ def ImportFilesToDB():
 
 def getImageVersionString():
 	from Tools.Directories import resolveFilename, SCOPE_SYSETC
+
+	creator = "n/a"
+	version = "n/a"
+	isDreambox = False
+
 	try:
+		if fileExists(resolveFilename(SCOPE_SYSETC, 'enigma2/Dream')):
+			# it's a Dreambox
+			isDreambox = True
+
 		file = open(resolveFilename(SCOPE_SYSETC, 'image-version'), 'r')
 		lines = file.readlines()
 		for x in lines:
@@ -1569,7 +1578,29 @@ def getImageVersionString():
 				creator = splitted[1].split('<')
 				creator = creator[0].strip(' ')
 			if splitted[0] == "version":
-				version = splitted[1]
+				if isDreambox:
+					if splitted[0] == "version":
+						#     YYYY MM DD hh mm
+						#0120 2005 11 29 01 16
+						#0123 4567 89 01 23 45
+						version = splitted[1]
+						image_type = version[0] # 0 = release, 1 = experimental
+						major = version[1]
+						minor = version[2]
+						revision = version[3]
+						year = version[4:8]
+						month = version[8:10]
+						day = version[10:12]
+						date = '-'.join((year, month, day))
+						if image_type == '0':
+							image_type = "Release"
+							version = '.'.join((major, minor, revision))
+							version = ' '.join((image_type, version, date))
+						else:
+							image_type = "Experimental"
+							version = ' '.join((image_type, date))
+				else:
+					version = splitted[1]
 		file.close()
 	except:
 		return "unavailable"
@@ -1577,6 +1608,11 @@ def getImageVersionString():
 	if creator.lower() == "vti":
 		from enigma import getVTiVersionString
 		version = getVTiVersionString()
+
+	if isDreambox:
+		from enigma import getEnigmaVersionString
+		creator = getEnigmaVersionString()
+
 	return ' '.join((creator, version))
 	
 def getSTBType():
