@@ -1571,13 +1571,13 @@ def getImageVersionString():
 			if splitted[0] == "version":
 				version = splitted[1]
 		file.close()
+		if creator.lower() == "vti":
+			from enigma import getVTiVersionString
+			version = getVTiVersionString()
+		return ' '.join((creator, version))
 	except:
 		return "unavailable"
 
-	if creator.lower() == "vti":
-		from enigma import getVTiVersionString
-		version = getVTiVersionString()
-	return ' '.join((creator, version))
 	
 def getSTBType():
 	try:
