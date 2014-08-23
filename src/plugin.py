@@ -1569,11 +1569,7 @@ def getImageVersionString():
 	version = _("n/a")
 	isDreambox = False
 
-	try:
-		if fileExists(resolveFilename(SCOPE_SYSETC, 'enigma2/Dream')):
-			# it's a Dreambox
-			isDreambox = True
-
+try:
 		file = open(resolveFilename(SCOPE_SYSETC, 'image-version'), 'r')
 		lines = file.readlines()
 		for x in lines:
