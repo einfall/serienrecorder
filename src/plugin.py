@@ -1334,6 +1334,8 @@ def ImportFilesToDB():
 				except:
 					continue
 				(staffel, episode) = data[0]
+				if str(staffel).isdigit():
+					staffel = int(staffel)
 				cCursor.execute('INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, "", 0, "", "")', (serie, staffel, episode))
 			readAdded.close()
 		dbSerRec.commit()
@@ -1379,6 +1381,8 @@ def ImportFilesToDB():
 			(serie, xtitle, start_time, stbRef, webChannel) = data[0]
 			data = re.findall('"S(.*?)E(.*?) - (.*?)"', '"%s"' % xtitle, re.S)
 			(staffel, episode, title) = data[0]
+			if str(staffel).isdigit():
+				staffel = int(staffel)
 			cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serie.lower(), str(staffel).lower(), episode.lower()))
 			if not cCursor.fetchone():
 				sql = "INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, ?, ?, ?, ?)"
@@ -2421,6 +2425,16 @@ class serienRecCheckForRecording():
 		self.cTmp = dbTmp.cursor()
 		self.cTmp.execute("DELETE FROM GefundeneFolgen")
 		
+		# read channels
+		self.senderListe = {}
+		for s in self.readSenderListe():
+			self.senderListe[s[0].lower()] = s[:]
+			
+		# get reference times
+		current_time = int(time.time())
+		future_time = int(config.plugins.serienRec.checkfordays.value) * 86400
+		future_time += int(current_time)
+		
 		## hier werden die wunschliste urls eingelesen vom serien marker
 		self.urls = getMarker()
 		self.count_url = 0
@@ -2438,38 +2452,24 @@ class serienRecCheckForRecording():
 		##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
 		c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)x(.*?)\).<span class="titel">(.*?)</span></td></tr>')
 		c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(.*?x))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
-		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,c1,c2,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen in self.urls]
+		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,c1,c2,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen in self.urls]
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
 		return getPage(url, timeout=20, headers={'Content-Type':'application/x-www-form-urlencoded'})
 
-	def parseWebpage(self, data, c1, c2, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen):
+	def parseWebpage(self, data, c1, c2, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time):
 		self.count_url += 1
-		parsingOK = True
 
 		raw = c1.findall(data)
 		raw2 = c2.findall(data)
 		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
-		if raw:
-			parsingOK = True
-		
 		# check for parsing error
-		if not parsingOK:
+		if not raw:
 			# parsing error -> nothing to do
 			return
 			
-		# read channels
-		self.senderListe = {}
-		for s in self.readSenderListe():
-			self.senderListe[s[0].lower()] = s[:]
-			
-		# get reference times
-		current_time = int(time.time())
-		future_time = int(config.plugins.serienRec.checkfordays.value) * 86400
-		future_time += int(current_time)
-		
 		(fromTime, toTime) = getTimeSpan(serien_name)
 		if self.NoOfRecords < AnzahlAufnahmen:
 			self.NoOfRecords = AnzahlAufnahmen
@@ -2582,20 +2582,21 @@ class serienRecCheckForRecording():
 				cCursorTmp.close()
 				
 			if not serieAllowed:
-				liste = staffeln[:]
-				liste.sort()
-				liste.reverse()
-				if -1 in staffeln:
-					liste.remove(-1)
-					liste[0] = _("ab %s") % liste[0]
-				liste.reverse()
-				if str(episode).isdigit():
-					if int(episode) < int(AbEpisode):
-						liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
-				if -2 in staffeln:
-					liste.remove(-2)
-					liste.insert(0, _("Manuell"))
-				writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' S%sE%s ' -> ' %s '") % (label_serie, str(staffel).zfill(2), str(episode).zfill(2), str(liste).replace("'", "").replace('"', "")))
+				if config.plugins.serienRec.writeLogAllowedSender.value:
+					liste = staffeln[:]
+					liste.sort()
+					liste.reverse()
+					if -1 in staffeln:
+						liste.remove(-1)
+						liste[0] = _("ab %s") % liste[0]
+					liste.reverse()
+					if str(episode).isdigit():
+						if int(episode) < int(AbEpisode):
+							liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
+					if -2 in staffeln:
+						liste.remove(-2)
+						liste.insert(0, _("Manuell"))
+					writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' S%sE%s ' -> ' %s '") % (label_serie, str(staffel).zfill(2), str(episode).zfill(2), str(liste).replace("'", "").replace('"', "")))
 				continue
 
 			##############################
@@ -3638,7 +3639,7 @@ class serienRecMarker(Screen):
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 23))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
@@ -3951,8 +3952,8 @@ class serienRecMarker(Screen):
 			imageMode = "%simages/plus.png" % serienRecMainPath
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 20, 4, 30, 17, loadPNG(imageMode)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 65, 0, 500, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(staffel).zfill(2))
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 4, 30, 17, loadPNG(imageMode)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 0, 500, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(staffel).zfill(2))
 			]
 
 	def keyGreen(self):
@@ -4648,7 +4649,7 @@ class serienRecSendeTermine(Screen):
 						print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel)
 						continue
 					
-				self.sendetermine_list.append([serien_name, sender, datum, startzeit, endzeit, str(staffel).zfill(2), str(episode).zfill(2), title, "0"])
+				self.sendetermine_list.append([serien_name, sender, datum, startzeit, endzeit, staffel, str(episode).zfill(2), title, "0"])
 
 			self['text_green'].setText(_("Timer erstellen"))
 			
@@ -4660,7 +4661,7 @@ class serienRecSendeTermine(Screen):
 		#(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
 		(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
 
-		check_SeasonEpisode = "S%sE%s" % (staffel, episode)
+		check_SeasonEpisode = "S%sE%s" % (str(staffel).zfill(2), episode)
 		(dirname, dirname_serie) = getDirname(serien_name, staffel)
 		
 		imageMinus = "%simages/minus.png" % serienRecMainPath
@@ -4710,7 +4711,7 @@ class serienRecSendeTermine(Screen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), self.yellow),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S%sE%s - %s" % (staffel, episode, title), self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S%sE%s - %s" % (str(staffel).zfill(2), episode, title), self.yellow),
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, loadPNG(rightImage))
 			]
 
@@ -5061,14 +5062,14 @@ class serienRecMainChannelEdit(Screen):
 		
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 23))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
 		# popup2
 		self.chooseMenuList_popup2 = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup2.l.setFont(0, gFont('Regular', 23))
+		self.chooseMenuList_popup2.l.setFont(0, gFont('Regular', 20))
 		self.chooseMenuList_popup2.l.setItemHeight(25)
 		self['popup_list2'] = self.chooseMenuList_popup2
 		self['popup_list2'].hide()
@@ -5219,7 +5220,7 @@ class serienRecMainChannelEdit(Screen):
 	def buildList_popup(self, entry):
 		(servicename,serviceref) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 100, 0, 250, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, servicename)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 250, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, servicename)
 			]
 
 	def keyOK(self):
@@ -6959,7 +6960,7 @@ class serienRecModifyAdded(Screen):
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 23))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
@@ -7072,7 +7073,7 @@ class serienRecModifyAdded(Screen):
 	def buildList_popup(self, entry):
 		(Serie,) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 10, 0, 560, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
 			]
 
 	def answerStaffel(self, aStaffel):
@@ -7620,7 +7621,7 @@ class serienRecWishlist(Screen):
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 23))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
@@ -7735,7 +7736,7 @@ class serienRecWishlist(Screen):
 	def buildList_popup(self, entry):
 		(Serie,) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 10, 0, 560, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
 			]
 
 	def answerStaffel(self, aStaffel):
