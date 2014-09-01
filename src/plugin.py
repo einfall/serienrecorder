@@ -137,6 +137,7 @@ config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
 config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
 config.plugins.serienRec.logWrapAround = ConfigYesNo(default = False)
 config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1,60))
+config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", _("<Serienname> - SnnEmm - <Episodentitel>")), ("1", _("<Serienname>"))], default="0")
 
 config.plugins.serienRec.selectBouquets = ConfigYesNo(default = False)
 #config.plugins.serienRec.MainBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites (TV)")
@@ -2400,6 +2401,10 @@ class serienRecCheckForRecording():
 							if int(begin) == (int(serien_time) + (int(margin_before) * 60)):
 								(dirname, dirname_serie) = getDirname(serien_name, staffel)
 								label_serie = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+								if config.plugins.serienRec.TimerName.value == "0":
+									timer_name = label_serie
+								else:
+									timer_name = serien_name
 								writeLog(_("[Serien Recorder] Versuche deaktivierten Timer aktiv zu erstellen: ' %s - %s '") % (serien_title, dirname))
 								end_unixtime = int(begin) + int(duration)
 								end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
@@ -2941,7 +2946,11 @@ class serienRecCheckForRecording():
 		# versuche timer anzulegen
 		# setze strings für addtimer
 		if checkTuner(start_unixtime, end_unixtime):
-			result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
+			if config.plugins.serienRec.TimerName.value == "0":
+				timer_name = label_serie
+			else:
+				timer_name = serien_name
+			result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
 			if result["result"]:
 				self.countTimer += 1
 				# Eintrag in das timer file
@@ -2969,7 +2978,7 @@ class serienRecCheckForRecording():
 				writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, result["message"]), True)
 				dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
 				
-				result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
+				result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
 				if result["result"]:
 					self.countNotActiveTimer += 1
 					# Eintrag in das timer file
@@ -4821,6 +4830,11 @@ class serienRecSendeTermine(Screen):
 			elif int(status) == 0:
 				writeLog(_("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (serien_name, webChannel))
 			else:
+				if config.plugins.serienRec.TimerName.value == "0":
+					timer_name = label_serie
+				else:
+					timer_name = serien_name
+
 				if preferredChannel == 1:
 					timer_stbChannel = stbChannel
 					timer_stbRef = stbRef
@@ -4849,7 +4863,7 @@ class serienRecSendeTermine(Screen):
 
 				# versuche timer anzulegen
 				if checkTuner(start_unixtime_eit, end_unixtime_eit):
-					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
+					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "S%sE%s - %s" % (staffel, episode, title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
 					if result["result"]:
 						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit):
 							self.countTimer += 1
@@ -4878,7 +4892,7 @@ class serienRecSendeTermine(Screen):
 				
 					# versuche timer anzulegen
 					if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit):
-						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
+						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "S%sE%s - %s" % (staffel, episode, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
 						if result["result"]:
 							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit):
 								self.countTimer += 1
@@ -4886,7 +4900,7 @@ class serienRecSendeTermine(Screen):
 						else:
 							konflikt = result["message"]
 							writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, konflikt), True)
-							result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), label_serie, "S%sE%s - %s" % (staffel, episode, title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
+							result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "S%sE%s - %s" % (staffel, episode, title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
 							if result["result"]:
 								if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, False):
 									self.countTimer += 1
@@ -5640,6 +5654,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("Timer-Art:"), self.kindOfTimer))
 		self.list.append(getConfigListEntry(_("Timervorlauf (in Min.):"), config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry(_("Timernachlauf (in Min.):"), config.plugins.serienRec.margin_after))
+		self.list.append(getConfigListEntry(_("Timername:"), config.plugins.serienRec.TimerName))
 		self.list.append(getConfigListEntry(_("Manuelle Timer immer erstellen:"), config.plugins.serienRec.forceManualRecording))
 		tvbouquets = getTVBouquets()
 		if len(tvbouquets) < 2:
@@ -5802,6 +5817,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 			                                                    "In diesem Fall wird der Timer NICHT angelegt, und es erfolgt ein entsprechender Eintrag im log.\n"
 			                                                    "Bei 'ja' wird beim manuellen Anlegen von Timern in 'Sendetermine' die Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen vorhanden sind, "
 			                                                    "ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, soferne nicht ein Konflikt mit anderen Timern besteht.")),
+			config.plugins.serienRec.TimerName :               (_("Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
+																"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden.")),
 			config.plugins.serienRec.selectBouquets :          (_("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Channel-Zuordnung verwendet werden.\n"
 			                                                    "Bei 'nein' wird das erste Bouquet für die Channel-Zuordnung benutzt.")),
 			config.plugins.serienRec.MainBouquet :             (_("Auswahl, welches Bouquet bei der Channel-Zuordnung als Standard verwendet werden sollen.")),
@@ -5958,7 +5975,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.zapbeforerecord.save()
 		config.plugins.serienRec.justremind.save()
 		# Save obsolete dbversion config setting here to remove it from file
-		config.plugins.serienRec.dbversion.save()		
+		config.plugins.serienRec.dbversion.save()
+		config.plugins.serienRec.TimerName.save()
 
 		config.plugins.serienRec.databasePath.save()
 		configfile.save()
@@ -8955,7 +8973,6 @@ class serienRecMain(Screen):
 				pass
 
 			self.hide()
-			self.showAbout()
 			self.close()
 		elif self.modus == "popup":
 			self['popup_list'].hide()
