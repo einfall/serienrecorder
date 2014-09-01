@@ -2408,7 +2408,7 @@ class serienRecCheckForRecording():
 								writeLog(_("[Serien Recorder] Versuche deaktivierten Timer aktiv zu erstellen: ' %s - %s '") % (serien_title, dirname))
 								end_unixtime = int(begin) + int(duration)
 								end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
-								result = serienRecAddTimer.addTimer(self.session, stbRef, str(serien_time), str(end_unixtime), label_serie, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
+								result = serienRecAddTimer.addTimer(self.session, stbRef, str(serien_time), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
 								if result["result"]:
 									self.countTimer += 1
 									# Eintrag in das timer file
@@ -2417,7 +2417,7 @@ class serienRecCheckForRecording():
 									dbSerRec.commit()
 									cTimer.close()
 									show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-									writeLog(_("[Serien Recorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s") % (label_serie, show_start, label_serie, webChannel), True)
+									writeLog(_("[Serien Recorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s") % (label_serie, show_start, timer_name, webChannel), True)
 								break
 
 				except:				
@@ -2957,7 +2957,7 @@ class serienRecCheckForRecording():
 				self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit)
 				if vomMerkzettel:
 					self.countTimerFromWishlist += 1
-					writeLog(_("[Serien Recorder] ' %s ' - Timer (vom Merkzettel) wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, label_serie, stbChannel), True)
+					writeLog(_("[Serien Recorder] ' %s ' - Timer (vom Merkzettel) wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 					cCursor = dbSerRec.cursor()
 					cCursor.execute("UPDATE OR IGNORE Merkzettel SET AnzahlWiederholungen=AnzahlWiederholungen-1 WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serien_name.lower(), str(staffel).lower(), episode.lower()))
 					dbSerRec.commit()	
@@ -2965,13 +2965,13 @@ class serienRecCheckForRecording():
 					dbSerRec.commit()	
 					cCursor.close()
 				else:
-					writeLog(_("[Serien Recorder] ' %s ' - Timer wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, label_serie, stbChannel), True)
+					writeLog(_("[Serien Recorder] ' %s ' - Timer wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 				self.enableDirectoryCreation = True
 				return True
 			elif not tryDisabled:
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
 				print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
-				writeLog(_("[Serien Recorder] ' %s ' - Timer konnte nicht angelegt werden%s -> %s %s @ %s") % (label_serie, optionalText, show_start, label_serie, stbChannel), True)
+				writeLog(_("[Serien Recorder] ' %s ' - Timer konnte nicht angelegt werden%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 			else:
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
 				print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
@@ -2987,13 +2987,13 @@ class serienRecCheckForRecording():
 					cCursor.execute("INSERT OR IGNORE INTO TimerKonflikte (Message, StartZeitstempel, webChannel) VALUES (?, ?, ?)", (dbMessage, int(start_unixtime), webChannel))
 					if vomMerkzettel:
 						self.countTimerFromWishlist += 1
-						writeLog(_("[Serien Recorder] ' %s ' - Timer (vom Merkzettel) wurde deaktiviert angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, label_serie, stbChannel), True)
+						writeLog(_("[Serien Recorder] ' %s ' - Timer (vom Merkzettel) wurde deaktiviert angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 						#cCursor.execute("UPDATE OR IGNORE Merkzettel SET AnzahlWiederholungen=AnzahlWiederholungen-1 WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serien_name.lower(), str(staffel).lower(), episode.lower()))
 						#dbSerRec.commit()	
 						#cCursor.execute("DELETE FROM Merkzettel WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND AnzahlWiederholungen<=0", (serien_name.lower(), str(staffel).lower(), episode.lower()))
 						#dbSerRec.commit()
 					else:
-						writeLog(_("[Serien Recorder] ' %s ' - Timer wurde deaktiviert angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, label_serie, stbChannel), True)
+						writeLog(_("[Serien Recorder] ' %s ' - Timer wurde deaktiviert angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 					cCursor.close()
 					self.enableDirectoryCreation = True
 					return True
@@ -8972,7 +8972,8 @@ class serienRecMain(Screen):
 			except:
 				pass
 
-			self.hide()
+			#self.hide()
+			#self.showAbout()
 			self.close()
 		elif self.modus == "popup":
 			self['popup_list'].hide()
