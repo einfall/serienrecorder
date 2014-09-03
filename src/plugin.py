@@ -155,13 +155,13 @@ else:
 config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default = False)
 
 # interne
-config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta12"))
+config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
+config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0"))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
 config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
-config.plugins.serienRec.dbversion = NoSave(ConfigText(default="2.4beta12"))
+config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.0"))
 
 
 logFile = "%slog" % serienRecMainPath
