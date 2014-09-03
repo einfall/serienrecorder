@@ -1608,7 +1608,7 @@ def getImageVersionString():
 					version = splitted[1]
  		file.close()
  	except:
- 		return _("unavailable")
+ 		return _("nicht verfügbar")
 
  	if creator.lower() == "vti":
  		from enigma import getVTiVersionString
