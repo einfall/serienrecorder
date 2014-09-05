@@ -155,13 +155,13 @@ else:
 config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default = False)
 
 # interne
-config.plugins.serienRec.version = NoSave(ConfigText(default="023"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="2.4beta12"))
+config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
+config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0"))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
 config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
-config.plugins.serienRec.dbversion = NoSave(ConfigText(default="2.4beta12"))
+config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.0"))
 
 
 logFile = "%slog" % serienRecMainPath
@@ -1608,7 +1608,7 @@ def getImageVersionString():
 					version = splitted[1]
  		file.close()
  	except:
- 		return _("unavailable")
+ 		return _("nicht verfügbar")
 
  	if creator.lower() == "vti":
  		from enigma import getVTiVersionString
@@ -3694,14 +3694,16 @@ class serienRecMarker(Screen):
 		self.session.openWithCallback(self.SetupFinished, serienRecMarkerSetup, serien_name)
 
 	def SetupFinished(self, result):
-		self.readSerienMarker()
+		if result:
+			self.changesMade = True
+			self.readSerienMarker()
 		return
 		
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
 	def showProposalDB(self):
-		self.session.open(serienRecShowSeasonBegins)
+		self.session.openWithCallback(self.SetupFinished, serienRecShowSeasonBegins)
 
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
@@ -7287,6 +7289,7 @@ class serienRecShowSeasonBegins(Screen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 		
+		self.changesMade = False
 		self.proposalList = []
 		self.onLayoutFinish.append(self.readProposal)
 		self.onClose.append(self.__onClose)
@@ -7343,7 +7346,7 @@ class serienRecShowSeasonBegins(Screen):
 			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel", (self.filter, ))
 		for row in cCursor:
 			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = row
-			self.proposalList.append((Serie, str(Staffel).zfill(2), Sender, Datum, UTCTime, Url, CreationFlag))
+			self.proposalList.append((Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag))
 		cCursor.close()
 		
 		self['title'].setText(_("Neue Serie(n) / Staffel(n):"))
@@ -7365,7 +7368,7 @@ class serienRecShowSeasonBegins(Screen):
 		else:
 			setFarbe = self.white
 			
-		Staffel = "S%sE01" % Staffel
+		Staffel = "S%sE01" % str(Staffel).zfill(2)
 		WochenTag=[_("Mo"), _("Di"), _("Mi"), _("Do"), _("Fr"), _("Sa"), _("So")]
 		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+", %d.%m.%Y", time.localtime(int(UTCTime)))
 
@@ -7508,6 +7511,7 @@ class serienRecShowSeasonBegins(Screen):
 				cCursor.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET CreationFlag=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?", data)
 				dbSerRec.commit()
 				cCursor.close()
+				self.changesMade = True
 			self.readProposal()
 		
 	def keyYellow(self):
@@ -7577,7 +7581,7 @@ class serienRecShowSeasonBegins(Screen):
 			self.displayTimer = None
 
 	def keyCancel(self):
-		self.close()
+		self.close(self.changesMade)
 
 	def dataError(self, error):
 		print error
@@ -8418,7 +8422,7 @@ class serienRecMain(Screen):
 		self.session.open(serienRecModifyAdded)
 
 	def showProposalDB(self):
-		self.session.open(serienRecShowSeasonBegins)
+		self.session.openWithCallback(self.readWebpage, serienRecShowSeasonBegins)
 
 	def serieInfo(self):
 		if self.loading:
