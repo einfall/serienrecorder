@@ -138,6 +138,7 @@ config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
 config.plugins.serienRec.logWrapAround = ConfigYesNo(default = False)
 config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1,60))
 config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", _("<Serienname> - SnnEmm - <Episodentitel>")), ("1", _("<Serienname>"))], default="0")
+config.plugins.serienRec.refreshViews = ConfigYesNo(default = True)
 
 config.plugins.serienRec.selectBouquets = ConfigYesNo(default = False)
 #config.plugins.serienRec.MainBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites (TV)")
@@ -158,7 +159,8 @@ config.plugins.serienRec.firstscreen = ConfigSelection(choices = [("0","SerienPl
 
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0"))
+config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.1"))
+config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
 config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -743,36 +745,51 @@ def getMarker():
 	cMarkerList = cCursor.fetchall()
 	for row in cMarkerList:
 		(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode) = row
-		if alleSender:
-			sender = ['Alle',]
-		else:
-			sender = []
-			cSender = dbSerRec.cursor()
-			cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY ErlaubterSender", (ID,))
-			cSenderList = cSender.fetchall()
-			if len(cSenderList) > 0:
-				sender = list(zip(*cSenderList)[0])
-			cSender.close()
 		
-		if AlleStaffelnAb == -2:			# 'Manuell'
-			staffeln = [AlleStaffelnAb,]
+		SerieEnabled = True
+		cTmp = dbSerRec.cursor()
+		cTmp.execute("SELECT ErlaubteSTB FROM STBAuswahl WHERE ID=?", (ID,))
+		row2 = cTmp.fetchone()
+		if row2:
+			(ErlaubteSTB,) = row2
+			if not (ErlaubteSTB & config.plugins.serienRec.BoxID.value):
+				SerieEnabled = False
 		else:
-			staffeln = []
-			cStaffel = dbSerRec.cursor()
-			cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
-			cStaffelList = cStaffel.fetchall()
-			if len(cStaffelList) > 0:
-				staffeln = list(zip(*cStaffelList)[0])
-			if AlleStaffelnAb < 999999:
-				staffeln.insert(0, -1)
-				staffeln.append(AlleStaffelnAb)
-			cStaffel.close()
+			cTmp.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
+			dbSerRec.commit()
+		cTmp.close()
 		
-		AnzahlAufnahmen = int(config.plugins.serienRec.NoOfRecords.value)
-		if str(AnzahlWiederholungen).isdigit():
-			AnzahlAufnahmen = int(AnzahlWiederholungen)
-				
-		return_list.append((serie, url, staffeln, sender, AbEpisode, AnzahlAufnahmen))
+		if SerieEnabled:
+			if alleSender:
+				sender = ['Alle',]
+			else:
+				sender = []
+				cSender = dbSerRec.cursor()
+				cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY LOWER(ErlaubterSender)", (ID,))
+				cSenderList = cSender.fetchall()
+				if len(cSenderList) > 0:
+					sender = list(zip(*cSenderList)[0])
+				cSender.close()
+			
+			if AlleStaffelnAb == -2:			# 'Manuell'
+				staffeln = [AlleStaffelnAb,]
+			else:
+				staffeln = []
+				cStaffel = dbSerRec.cursor()
+				cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
+				cStaffelList = cStaffel.fetchall()
+				if len(cStaffelList) > 0:
+					staffeln = list(zip(*cStaffelList)[0])
+				if AlleStaffelnAb < 999999:
+					staffeln.insert(0, -1)
+					staffeln.append(AlleStaffelnAb)
+				cStaffel.close()
+			
+			AnzahlAufnahmen = int(config.plugins.serienRec.NoOfRecords.value)
+			if str(AnzahlWiederholungen).isdigit():
+				AnzahlAufnahmen = int(AnzahlWiederholungen)
+					
+			return_list.append((serie, url, staffeln, sender, AbEpisode, AnzahlAufnahmen))
 	cCursor.close()
 	return return_list
 
@@ -789,7 +806,7 @@ def getWebSender():
 def getWebSenderAktiv():
 	fSender = []
 	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef FROM Channels WHERE Erlaubt=1")
+	cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef FROM Channels WHERE Erlaubt=1 ORDER BY LOWER(WebChannel)")
 	for row in cCursor:
 		(webChannel, stbChannel, stbRef) = row
 		fSender.append((webChannel))
@@ -1095,7 +1112,13 @@ def updateDB():
 		for raw2 in cCursor:
 			(ErlaubteStaffel,) = raw2
 			cNew.execute("INSERT INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?,?)", (newID,ErlaubteStaffel))
-		cNew.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (newID,0xFFFF))
+		cCursor.execute("SELECT ErlaubteSTB FROM STBAuswahl WHERE ID=?", (ID,))
+		raw2 = cCursor.fetchone()
+		if raw2:
+			(ErlaubteSTB,) = raw2
+			cNew.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (newID,ErlaubteSTB))
+		else:
+			cNew.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (newID,0xFFFF))
 		
 	cCursor.close()
 	cNew.execute("DETACH DATABASE 'dbOLD'")
@@ -1482,6 +1505,7 @@ def ImportFilesToDB():
 					IDs = [ID,]*len(sender)					
 					sender_list = zip(IDs, sender)
 					cCursor.executemany("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", sender_list)
+				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
 			readMarker.close()
 		dbSerRec.commit()
 		cCursor.close()
@@ -2215,7 +2239,9 @@ class serienRecCheckForRecording():
 				(Serie, Staffel, Sender, Url) = row
 				if str(Staffel).isdigit():
 					cTmp.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, ?, 0, -1)", (Serie, Url, Staffel))
-					cTmp.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (cTmp.lastrowid, Sender))
+					ID = cTmp.lastrowid
+					cTmp.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
+					cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
 					writeLog(_("[Serien Recorder] Neuer Marker für '%s' wurde angelegt") % Serie, True)
 				
 			cCursor.execute("SELECT Serie, MAX(Staffel), Sender, Url FROM NeuerStaffelbeginn WHERE CreationFlag=1 GROUP BY Serie")
@@ -2226,7 +2252,9 @@ class serienRecCheckForRecording():
 					row = cTmp.fetchone()
 					if not row:
 						cTmp.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, 999999, -1, 1)", (Serie, Url, Staffel))
-						cTmp.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (cTmp.lastrowid, Sender))
+						ID = cTmp.lastrowid
+						cTmp.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
+						cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
 					else:
 						cTmp.execute("UPDATE OR IGNORE SerienMarker SET TimerForSpecials=1 WHERE LOWER(Serie)=?", (Serie.lower(),))
 					writeLog(_("[Serien Recorder] Neuer Marker für '%s' wurde angelegt") % Serie, True)
@@ -2457,6 +2485,7 @@ class serienRecCheckForRecording():
 			ds = defer.DeferredSemaphore(tokens=1)
 
 		##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
+		#c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)x(.*?)\).<span class="titel">(.*?)</span></td></tr>')
 		c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
 		c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(.*?x))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
 		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,c1,c2,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen in self.urls]
@@ -3440,7 +3469,10 @@ class serienRecTimer(Screen):
 			self.displayTimer = None
 
 	def keyCancel(self):
-		self.close(self.changesMade)
+		if config.plugins.serienRec.refreshViews.value:
+			self.close(self.changesMade)
+		else:
+			self.close(False)
 
 	def dataError(self, error):
 		print error
@@ -3600,26 +3632,27 @@ class serienRecMarker(Screen):
 		self.picload = ePicLoad()
 		
 		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			"red"	: self.keyRed,
-			"green" : self.keyGreen,
-			"yellow": self.keyYellow,
-			"blue"	: self.keyBlue,
-			"info"	: self.keyCheck,
-			"left"  : self.keyLeft,
-			"right" : self.keyRight,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"menu" : self.markerSetup,
+			"ok"       : self.keyOK,
+			"cancel"   : self.keyCancel,
+			"red"	   : self.keyRed,
+			"red_long" : self.keyRedLong,
+			"green"    : self.keyGreen,
+			"yellow"   : self.keyYellow,
+			"blue"	   : self.keyBlue,
+			"info"	   : self.keyCheck,
+			"left"     : self.keyLeft,
+			"right"    : self.keyRight,
+			"up"       : self.keyUp,
+			"down"     : self.keyDown,
+			"menu"     : self.markerSetup,
 			"displayHelp" : self.youtubeSearch,
-			"about" : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+			"about"    : self.showAbout,
+			"0"		   : self.readLogFile,
+			"1"		   : self.modifyAddedFile,
+			"3"		   : self.showProposalDB,
+			"4"		   : self.serieInfo,
+			"6"		   : self.showConflicts,
+			"7"		   : self.showWishlist
 		}, -1)
 
 		self.setupSkin()
@@ -3781,7 +3814,7 @@ class serienRecMarker(Screen):
 			else:
 				sender = []
 				cSender = dbSerRec.cursor()
-				cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY ErlaubterSender", (ID,))
+				cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY LOWER(ErlaubterSender)", (ID,))
 				cSenderList = cSender.fetchall()
 				if len(cSenderList) > 0:
 					sender = list(zip(*cSenderList)[0])
@@ -3809,7 +3842,20 @@ class serienRecMarker(Screen):
 			
 			if useAlternativeChannel == -1:
 				useAlternativeChannel = config.plugins.serienRec.useAlternativeChannel.value
-			markerList.append((Serie, Url, str(staffeln).replace("[","").replace("]","").replace("'","").replace('"',""), str(sender).replace("[","").replace("]","").replace("'","").replace('"',""), AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel)))
+			
+			SerieAktiviert = True
+			cSerie = dbSerRec.cursor()
+			cSerie.execute("SELECT ErlaubteSTB FROM STBAuswahl WHERE ID=?", (ID,))
+			row2 = cSerie.fetchone()
+			if row2:
+				(ErlaubteSTB,) = row2
+				if not (ErlaubteSTB & config.plugins.serienRec.BoxID.value):
+					SerieAktiviert = False
+			cSerie.close()
+			
+			staffeln = str(staffeln).replace("[","").replace("]","").replace("'","").replace('"',"")
+			sender = str(sender).replace("[","").replace("]","").replace("'","").replace('"',"")
+			markerList.append((Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert))
 				
 		cCursor.close()
 		self['title'].setText(_("Serien Marker - %s Serien vorgemerkt.") % len(markerList))
@@ -3820,7 +3866,7 @@ class serienRecMarker(Screen):
 			self.getCover()
 
 	def buildList(self, entry):
-		(serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel) = entry
+		(serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert) = entry
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = config.plugins.serienRec.savetopath.value
 
@@ -3847,9 +3893,14 @@ class serienRecMarker(Screen):
 			SenderText = _("Alt.")
 			if useAlternativeChannel:
 				SenderText = _("%s, Std.") % SenderText
-				
+
+		if SerieAktiviert:
+			SerieColor = self.yellow
+		else:
+			SerieColor = self.red
+
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, self.yellow, self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Staffel: %s") % staffeln),
 			(eListboxPythonMultiContent.TYPE_TEXT, 400, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Sender (%s): %s") % (SenderText, sendern)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Wdh./Vorl./Nachl.: %s / %s / %s") % (int(AnzahlAufnahmen) - 1, int(Vorlaufzeit), int(Nachlaufzeit))),
@@ -4048,6 +4099,7 @@ class serienRecMarker(Screen):
 		if answer:
 			print "[Serien Recorder] lösche %s aus der added liste" % serien_name
 			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=?", (serien_name.lower(),))
+		cCursor.execute("DELETE FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
 		cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
 		cCursor.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
 		cCursor.execute("DELETE FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
@@ -4067,6 +4119,25 @@ class serienRecMarker(Screen):
 			else:
 				self.selected_serien_name = self['config'].getCurrent()[0][0]
 				cCursor = dbSerRec.cursor()
+				cCursor.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (self.selected_serien_name.lower(),))
+				row = cCursor.fetchone()
+				if row:
+					(ID, ErlaubteSTB) = row
+					ErlaubteSTB ^= config.plugins.serienRec.BoxID.value 
+					cCursor.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=? WHERE ID=?", (ErlaubteSTB, ID))
+					dbSerRec.commit()
+					self.readSerienMarker()
+				cCursor.close()
+					
+	def keyRedLong(self):
+		if self.modus == "config":
+			check = self['config'].getCurrent()
+			if check == None:
+				print "[Serien Recorder] Serien Marker leer."
+				return
+			else:
+				self.selected_serien_name = self['config'].getCurrent()[0][0]
+				cCursor = dbSerRec.cursor()
 				cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (self.selected_serien_name.lower(),))
 				row = cCursor.fetchone()
 				if row:
@@ -4075,6 +4146,7 @@ class serienRecMarker(Screen):
 						self.session.openWithCallback(self.callSaveMsg, MessageBox, _("Soll '%s' wirklich entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 					else:
 						self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Added Liste entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
+				cCursor.close()
 
 	def insertStaffelMarker(self):
 		print self.select_serie
@@ -4235,7 +4307,10 @@ class serienRecMarker(Screen):
 			self['popup_bg'].hide()
 			self.insertSenderMarker()
 		else:
-			self.close(self.changesMade)
+			if config.plugins.serienRec.refreshViews.value:
+				self.close(self.changesMade)
+			else:
+				self.close(False)
 
 	def dataError(self, error):
 		print error
@@ -4424,6 +4499,7 @@ class serienRecAddSerie(Screen):
 		if not row:
 			Url = 'http://www.wunschliste.de/epg_print.pl?s='+str(Id)
 			cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, -2, 1, 1, -1, 0, -1, 0)", (Serie, Url))
+			cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, 0xFFFF))
 			self['title'].setText(_("Serie '- %s -' zum Serien Marker hinzugefügt.") % Serie)
 			self['title'].instance.setForegroundColor(parseColor("green"))
 		else:
@@ -4972,7 +5048,10 @@ class serienRecSendeTermine(Screen):
 		return result	
 		
 	def keyRed(self):
-		self.close(self.changesMade)
+		if config.plugins.serienRec.refreshViews.value:
+			self.close(self.changesMade)
+		else:
+			self.close(False)
 
 	def keyGreen(self):
 		if self.getTimes():
@@ -5008,7 +5087,10 @@ class serienRecSendeTermine(Screen):
 			self.displayTimer = None
 
 	def keyCancel(self):
-		self.close(self.changesMade)
+		if config.plugins.serienRec.refreshViews.value:
+			self.close(self.changesMade)
+		else:
+			self.close(False)
 
 	def dataError(self, error):
 		print error
@@ -5435,7 +5517,10 @@ class serienRecMainChannelEdit(Screen):
 			self['popup_list2'].hide()
 			self['popup_bg'].hide()
 		else:
-			self.close(self.changesMade)
+			if config.plugins.serienRec.refreshViews.value:
+				self.close(self.changesMade)
+			else:
+				self.close(False)
 			
 	def dataError(self, error):
 		print error
@@ -5688,6 +5773,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("Zeige Nachricht wenn Suchlauf startet:"), config.plugins.serienRec.showNotification))
 		self.list.append(getConfigListEntry(_("Zeige Nachricht bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
 		self.list.append(getConfigListEntry(_("Wechselzeit der Tastenanzeige (Sek.):"), config.plugins.serienRec.DisplayRefreshRate))
+		self.list.append(getConfigListEntry(_("Anzeige bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  LOG:  ----------------------------------------------------------------------------------------------")))
@@ -5845,6 +5931,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.showMessageOnConflicts :  (_("Bei 'ja' wird für jeden Timer, der beim automatische Timer-Suchlauf wegen eines Konflikts nicht angelegt werden konnte, eine Nachricht auf dem Bildschirm eingeblendet.\n"
 			                                                    "Diese Nachrichten bleiben solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden.")),
 			config.plugins.serienRec.DisplayRefreshRate :      (_("Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt.")),
+			config.plugins.serienRec.refreshViews :            (_("Bei 'ja' werden die Anzeigen nach Änderungen von Markern, Channels, etc. sofort aktualisiert, was aber je nach STB-Typ und Internet-Verbindung zeitintensiv sein kann.\n"
+			                                                    "Bei 'nein' wird erfolgt die Aktualisierung erst wenn die Anzeige erneut geöffnet wird.")),
 			config.plugins.serienRec.LogFilePath :             (_("Das Verzeichnis auswählen und/oder erstellen, in dem die log-Dateien gespeichert werden.")),
 			config.plugins.serienRec.longLogFileName :         (_("Bei 'nein' wird bei jedem Timer-Suchlauf die log-Datei neu erzeugt.\n"
 			                                                    "Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet "
@@ -5867,7 +5955,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.logScrollLast :           (_("Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang.")),
 			config.plugins.serienRec.logWrapAround :           (_("Bei 'ja' erfolgt die Anzeige der log-Datei mit Zeilenumbruch, d.h. es werden 3 Zeilen pro Eintrag angezeigt.\n"
 			                                                    "Bei 'nein' erfolgt die Anzeige der log-Datei mit 1 Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)")),
-			config.plugins.serienRec.firstscreen :				 (_("Beim start des SerienRecorder startet das plugin mit dem ausgewählten Screen.")),
+			config.plugins.serienRec.firstscreen :			   (_("Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen.")),
 		}			
 				
 		if config.plugins.serienRec.updateInterval.value == 0:
@@ -5962,6 +6050,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.TimeSpanForRegularTimer.save()
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.DisplayRefreshRate.save()
+		config.plugins.serienRec.refreshViews.save()
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
@@ -7513,6 +7602,7 @@ class serienRecShowSeasonBegins(Screen):
 						cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, ?, -1, 1)", (Serie, Url, AbStaffel, AlleSender))
 						ID = cCursor.lastrowid
 					cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
+					cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
 					dbSerRec.commit()
 					cCursor.close()
 
@@ -7591,7 +7681,10 @@ class serienRecShowSeasonBegins(Screen):
 			self.displayTimer = None
 
 	def keyCancel(self):
-		self.close(self.changesMade)
+		if config.plugins.serienRec.refreshViews.value:
+			self.close(self.changesMade)
+		else:
+			self.close(False)
 
 	def dataError(self, error):
 		print error
@@ -8342,9 +8435,11 @@ class serienRecMain(Screen):
 		self.ErrorMsg = _("unbekannt")
 		self.modus = "list"
 		self.loading = True
+		self.forceRefresh = False
 		
 		#self.onLayoutFinish.append(self.startScreen)
 		self.onFirstExecBegin.append(self.startScreen)
+		self.onClose.append(self.__onClose)
 
 	def setupSkin(self):
 		self.skin = None
@@ -8537,12 +8632,14 @@ class serienRecMain(Screen):
 			self.session.openWithCallback(self.readWebpage, serienRecMainChannelEdit)
 		else:
 			if self.firstscreen == "1":
+				self.forceRefresh = True
 				self.session.openWithCallback(self.readWebpage, serienRecMarker)
 			else:
 				self.readWebpage()
 
 	def readWebpage(self, answer=True):
-		if answer:
+		if answer or self.forceRefresh:
+			self.forceRefresh = False
 			self['title'].instance.setForegroundColor(parseColor("white"))
 			self['title'].setText(_("Lade Infos vom Web..."))
 			self.loading = True
@@ -8767,6 +8864,7 @@ class serienRecMain(Screen):
 			row = cCursor.fetchone()
 			if not row:
 				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (serien_name, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id))
+				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, 0xFFFF))
 				self['title'].setText(_("Serie '- %s -' zum Serien Marker hinzugefügt.") % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("green"))
 			else:
@@ -8991,6 +9089,8 @@ class serienRecMain(Screen):
 
 			#self.hide()
 			#self.showAbout()
+			#serienRecCheckForRecording(self.session, False)
+			
 			self.close()
 		elif self.modus == "popup":
 			self['popup_list'].hide()

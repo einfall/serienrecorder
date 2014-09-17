@@ -7,7 +7,7 @@
 		<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 	</widget>
 	<eLabel position="912,123" zPosition="3" size="322,183" backgroundColor="transparent" />
-	<widget source="session.VideoPicture" render="Pig" position="915,140" size="284,160" zPosition="-8" />
+	<widget source="session.VideoPicture" render="Pig" position="920,132" size="308,170" zPosition="-8" />
 	<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/no_cover.png" position="915,320" size="320,300" zPosition="1" transparent="1" alphatest="blend" />
 
 	<widget name="config"  position="20,120" size="870,500" foregroundColorSelected="#ffffff" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel70_1200.png" />
