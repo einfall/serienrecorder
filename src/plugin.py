@@ -154,6 +154,8 @@ else:
 	config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = choices)
 config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default = False)
 
+config.plugins.serienRec.firstscreen = ConfigSelection(choices = [("0","SerienPlaner"), ("1", "SerienMarker")], default="0")
+
 # interne
 config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
 config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0"))
@@ -5677,6 +5679,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
+		self.list.append(getConfigListEntry(_("Starte Plugin mit:"), config.plugins.serienRec.firstscreen))
 		self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
 		self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
 		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahme auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
@@ -5864,6 +5867,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.logScrollLast :           (_("Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang.")),
 			config.plugins.serienRec.logWrapAround :           (_("Bei 'ja' erfolgt die Anzeige der log-Datei mit Zeilenumbruch, d.h. es werden 3 Zeilen pro Eintrag angezeigt.\n"
 			                                                    "Bei 'nein' erfolgt die Anzeige der log-Datei mit 1 Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)")),
+			config.plugins.serienRec.firstscreen :				 (_("Beim start des SerienRecorder startet das plugin mit dem ausgewählten Screen.")),
 		}			
 				
 		if config.plugins.serienRec.updateInterval.value == 0:
@@ -5985,7 +5989,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		# Save obsolete dbversion config setting here to remove it from file
 		config.plugins.serienRec.dbversion.save()
 		config.plugins.serienRec.TimerName.save()
-
+		config.plugins.serienRec.firstscreen.save()
 		config.plugins.serienRec.databasePath.save()
 		configfile.save()
 
@@ -8268,9 +8272,10 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 #---------------------------------- Main Functions ------------------------------------------
 
 class serienRecMain(Screen):
-	def __init__(self, session):
+	def __init__(self, session, firstscreen):
 		Screen.__init__(self, session)
 		self.session = session
+		self.firstscreen = firstscreen
 		self.picload = ePicLoad()
 		
 		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
@@ -8340,7 +8345,6 @@ class serienRecMain(Screen):
 		
 		#self.onLayoutFinish.append(self.startScreen)
 		self.onFirstExecBegin.append(self.startScreen)
-		self.onClose.append(self.__onClose)
 
 	def setupSkin(self):
 		self.skin = None
@@ -8532,7 +8536,10 @@ class serienRecMain(Screen):
 			print "[Serien Recorder] Channellist is empty !"
 			self.session.openWithCallback(self.readWebpage, serienRecMainChannelEdit)
 		else:
-			self.readWebpage()
+			if self.firstscreen == "1":
+				self.session.openWithCallback(self.readWebpage, serienRecMarker)
+			else:
+				self.readWebpage()
 
 	def readWebpage(self, answer=True):
 		if answer:
@@ -9115,7 +9122,9 @@ def autostart(reason, **kwargs):
 				print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
 			
 def main(session, **kwargs):
-	session.open(serienRecMain)
+	session.open(serienRecMain, config.plugins.serienRec.firstscreen.value)
+	#print "open screen %s", config.plugins.serienRec.firstscreen.value
+	#exec("session.open("+config.plugins.serienRec.firstscreen.value+")")
 
 def Plugins(path, **kwargs):
 	global plugin_path
