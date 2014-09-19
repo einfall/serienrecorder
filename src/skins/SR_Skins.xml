@@ -37,6 +37,7 @@
 
 	<widget name="bt_1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_1.png" position="310,685" zPosition="3" size="32,32" alphatest="on" />
 	<widget name="bt_6" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_6.png" position="310,685" zPosition="2" size="32,32" alphatest="on" />
+	<widget name="bt_text" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_text.png" position="310,685" zPosition="1" size="32,32" alphatest="on" />
 	<widget name="text_1" position="350,688" size="210,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 
 	<widget name="bt_2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_2.png" position="560,685" zPosition="3" size="32,32" alphatest="on" />

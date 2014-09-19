@@ -1,6 +1,6 @@
 <keymap>
 	<map context="SerienRecorderActions">
-		<key id="KEY_HELP" mapto="about" flags="l"/>
+		<key id="KEY_HELP" mapto="displayHelp_long" flags="l"/>
 		<key id="KEY_RED" mapto="red_long" flags="l"/>
 	</map>
 </keymap>
