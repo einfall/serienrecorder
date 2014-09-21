@@ -5785,23 +5785,27 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.session.open(serienRecAboutScreen)
 
 	def keyRed(self):
-		writeSettings = open("/etc/enigma2/settings_new", "w")
-		readSettings = open("/etc/enigma2/settings", "r")
-		for rawData in readSettings.readlines():
-			data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
-			if not data:
-				writeSettings.write(rawData)
-		writeSettings.close()
-		readSettings.close()
-		
-		if fileExists("/etc/enigma2/settings_new"):
-			shutil.move("/etc/enigma2/settings_new", "/etc/enigma2/settings")
-		
-		configfile.load()
-		ReadConfigFile()
-		self.changedEntry()
-		self.setupModified = True
-		#self.save()
+		self.session.openWithCallback(self.resetSettings, MessageBox, _("Wollen Sie die Einstellungen wirklich zurücksetzen?"), MessageBox.TYPE_YESNO, default = False)
+
+	def resetSettings(self, answer=False):
+		if answer:
+			writeSettings = open("/etc/enigma2/settings_new", "w")
+			readSettings = open("/etc/enigma2/settings", "r")
+			for rawData in readSettings.readlines():
+				data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
+				if not data:
+					writeSettings.write(rawData)
+			writeSettings.close()
+			readSettings.close()
+			
+			if fileExists("/etc/enigma2/settings_new"):
+				shutil.move("/etc/enigma2/settings_new", "/etc/enigma2/settings")
+			
+			configfile.load()
+			ReadConfigFile()
+			self.changedEntry()
+			self.setupModified = True
+			#self.save()
 		
 	def keyYellow(self):
 		config.plugins.serienRec.save()
@@ -5816,29 +5820,33 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.session.open(MessageBox, _("Die aktuelle Konfiguration wurde in der Datei 'Config.backup' \nim Verzeichnis '%s' gespeichert.") % serienRecMainPath, MessageBox.TYPE_INFO, timeout = 10)
 		
 	def keyBlue(self):
-		writeSettings = open("/etc/enigma2/settings_new", "w")
+		self.session.openWithCallback(self.importSettings, MessageBox, _("Die Konfiguration aus der Datei 'Config.backup' \nim Verzeichnis '%s' wird geladen.") % serienRecMainPath, MessageBox.TYPE_YESNO, default = False)
 		
-		readSettings = open("/etc/enigma2/settings", "r")
-		for rawData in readSettings.readlines():
-			data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
-			if not data:
+	def importSettings(self, answer=False):
+		if answer:
+			writeSettings = open("/etc/enigma2/settings_new", "w")
+			
+			readSettings = open("/etc/enigma2/settings", "r")
+			for rawData in readSettings.readlines():
+				data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
+				if not data:
+					writeSettings.write(rawData)
+
+			readConfFile = open("%sConfig.backup" % serienRecMainPath, "r")
+			for rawData in readConfFile.readlines():
 				writeSettings.write(rawData)
 
-		readConfFile = open("%sConfig.backup" % serienRecMainPath, "r")
-		for rawData in readConfFile.readlines():
-			writeSettings.write(rawData)
-
-		writeSettings.close()
-		readSettings.close()
-		
-		if fileExists("/etc/enigma2/settings_new"):
-			shutil.move("/etc/enigma2/settings_new", "/etc/enigma2/settings")
-		
-		configfile.load()
-		ReadConfigFile()
-		self.changedEntry()
-		self.setupModified = True
-		#self.save()
+			writeSettings.close()
+			readSettings.close()
+			
+			if fileExists("/etc/enigma2/settings_new"):
+				shutil.move("/etc/enigma2/settings_new", "/etc/enigma2/settings")
+			
+			configfile.load()
+			ReadConfigFile()
+			self.changedEntry()
+			self.setupModified = True
+			#self.save()
 		
 	def keyDelForward(self):
 		self.changedEntry()
