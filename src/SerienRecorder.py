@@ -77,96 +77,104 @@ except Exception:
 	default_before = 0
 	default_after = 0
 
-config.plugins.serienRec = ConfigSubsection()
-config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
-config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
-#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
-config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
-config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
-config.plugins.serienRec.seasonsubdirnumerlength = ConfigInteger(1, (1,4))
-config.plugins.serienRec.seasonsubdirfillchar = ConfigSelection(choices = [("0","'0'"), ("<SPACE>", "<SPACE>")], default="0")
-config.plugins.serienRec.justplay = ConfigYesNo(default = False)
-config.plugins.serienRec.justremind = ConfigYesNo(default = False)
-config.plugins.serienRec.zapbeforerecord = ConfigYesNo(default = False)
-config.plugins.serienRec.AutoBackup = ConfigYesNo(default = False)
-config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
-config.plugins.serienRec.eventid = ConfigYesNo(default = True)
-config.plugins.serienRec.update = ConfigYesNo(default = False)
-config.plugins.serienRec.updateInterval = ConfigInteger(0, (0,24))
-config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
-config.plugins.serienRec.deltime = ConfigClock(default = 6*3600+time.timezone)
-config.plugins.serienRec.maxWebRequests = ConfigInteger(1, (1,99))
-config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
-config.plugins.serienRec.globalFromTime = ConfigClock(default = 0+time.timezone)
-config.plugins.serienRec.globalToTime = ConfigClock(default = (((23*60)+59)*60)+time.timezone)
-config.plugins.serienRec.forceRecording = ConfigYesNo(default = False)
-config.plugins.serienRec.TimerForSpecials = ConfigYesNo(default = False)
-config.plugins.serienRec.TimeSpanForRegularTimer = ConfigInteger(7, (int(config.plugins.serienRec.checkfordays.value),999))
-config.plugins.serienRec.forceManualRecording = ConfigYesNo(default = False)
-config.plugins.serienRec.margin_before = ConfigInteger(default_before, (0,99))
-config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0,99))
-config.plugins.serienRec.max_season = ConfigInteger(30, (1,999))
-config.plugins.serienRec.Autoupdate = ConfigYesNo(default = True)
-config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
-config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
-config.plugins.serienRec.DSBTimeout = ConfigInteger(20, (0,999))
-config.plugins.serienRec.showNotification = ConfigYesNo(default = True)
-config.plugins.serienRec.LogFilePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
-config.plugins.serienRec.longLogFileName = ConfigYesNo(default = False)
-config.plugins.serienRec.deleteLogFilesOlderThan = ConfigInteger(14, (0,999))
-config.plugins.serienRec.writeLog = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogChannels = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogAllowedSender = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogAllowedEpisodes = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogAdded = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogDisk = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogTimeRange = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogTimeLimit = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
-config.plugins.serienRec.writeLogVersion = ConfigYesNo(default = True)
-config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
-config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
-config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
-config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
-config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
-config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
-config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default = True)
-config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
-config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default = True)
-config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
-config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
-config.plugins.serienRec.logWrapAround = ConfigYesNo(default = False)
-config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1,60))
-config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", _("<Serienname> - SnnEmm - <Episodentitel>")), ("1", _("<Serienname>"))], default="0")
-config.plugins.serienRec.refreshViews = ConfigYesNo(default = True)
+def ReadConfigFile():
+	config.plugins.serienRec = ConfigSubsection()
+	config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
+	#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
+	config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
+	config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
+	config.plugins.serienRec.seasonsubdirnumerlength = ConfigInteger(1, (1,4))
+	config.plugins.serienRec.seasonsubdirfillchar = ConfigSelection(choices = [("0","'0'"), ("<SPACE>", "<SPACE>")], default="0")
+	config.plugins.serienRec.justplay = ConfigYesNo(default = False)
+	config.plugins.serienRec.justremind = ConfigYesNo(default = False)
+	config.plugins.serienRec.zapbeforerecord = ConfigYesNo(default = False)
+	config.plugins.serienRec.AutoBackup = ConfigYesNo(default = False)
+	config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.eventid = ConfigYesNo(default = True)
+	config.plugins.serienRec.update = ConfigYesNo(default = False)
+	config.plugins.serienRec.updateInterval = ConfigInteger(0, (0,24))
+	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
+	config.plugins.serienRec.deltime = ConfigClock(default = 6*3600+time.timezone)
+	config.plugins.serienRec.maxWebRequests = ConfigInteger(1, (1,99))
+	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
+	config.plugins.serienRec.globalFromTime = ConfigClock(default = 0+time.timezone)
+	config.plugins.serienRec.globalToTime = ConfigClock(default = (((23*60)+59)*60)+time.timezone)
+	config.plugins.serienRec.forceRecording = ConfigYesNo(default = False)
+	config.plugins.serienRec.TimerForSpecials = ConfigYesNo(default = False)
+	config.plugins.serienRec.TimeSpanForRegularTimer = ConfigInteger(7, (int(config.plugins.serienRec.checkfordays.value),999))
+	config.plugins.serienRec.forceManualRecording = ConfigYesNo(default = False)
+	config.plugins.serienRec.margin_before = ConfigInteger(default_before, (0,99))
+	config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0,99))
+	config.plugins.serienRec.max_season = ConfigInteger(30, (1,999))
+	config.plugins.serienRec.Autoupdate = ConfigYesNo(default = True)
+	config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
+	config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
+	config.plugins.serienRec.DSBTimeout = ConfigInteger(20, (0,999))
+	config.plugins.serienRec.showNotification = ConfigYesNo(default = True)
+	config.plugins.serienRec.LogFilePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
+	config.plugins.serienRec.longLogFileName = ConfigYesNo(default = False)
+	config.plugins.serienRec.deleteLogFilesOlderThan = ConfigInteger(14, (0,999))
+	config.plugins.serienRec.writeLog = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogChannels = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogAllowedSender = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogAllowedEpisodes = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogAdded = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogDisk = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogTimeRange = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogTimeLimit = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
+	config.plugins.serienRec.writeLogVersion = ConfigYesNo(default = True)
+	config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
+	config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
+	config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
+	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
+	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
+	config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
+	config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default = True)
+	config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
+	config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default = True)
+	config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
+	config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
+	config.plugins.serienRec.logWrapAround = ConfigYesNo(default = False)
+	config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1,60))
+	config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", _("<Serienname> - SnnEmm - <Episodentitel>")), ("1", _("<Serienname>"))], default="0")
+	config.plugins.serienRec.refreshViews = ConfigYesNo(default = True)
+	config.plugins.serienRec.defaultStaffel = ConfigSelection(choices = [("0","'Alle'"), ("1", "'Manuell'")], default="0")
+	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default = True)
 
-config.plugins.serienRec.selectBouquets = ConfigYesNo(default = False)
-#config.plugins.serienRec.MainBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites (TV)")
-#config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites-SD (TV)")
-config.plugins.serienRec.bouquetList = ConfigText(default = "")
-choices = [(x.strip(),x.strip()) for x in config.plugins.serienRec.bouquetList.value.replace('"','').replace("'",'').replace('[','').replace(']','').split(',')]
-if len(choices) > 0:
-	config.plugins.serienRec.MainBouquet = ConfigSelection(choices = choices, default = choices[0][0])
+	config.plugins.serienRec.selectBouquets = ConfigYesNo(default = False)
+	#config.plugins.serienRec.MainBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites (TV)")
+	#config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites-SD (TV)")
+	config.plugins.serienRec.bouquetList = ConfigText(default = "")
+	choices = [(x.strip(),x.strip()) for x in config.plugins.serienRec.bouquetList.value.replace('"','').replace("'",'').replace('[','').replace(']','').split(',')]
+	if len(choices) > 0:
+		config.plugins.serienRec.MainBouquet = ConfigSelection(choices = choices, default = choices[0][0])
+	else:
+		config.plugins.serienRec.MainBouquet = ConfigSelection(choices = choices)
+	if len(choices) > 1:
+		config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = choices, default = choices[1][0])
+	else:
+		config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = choices)
+	config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default = False)
+
+	config.plugins.serienRec.firstscreen = ConfigSelection(choices = [("0","SerienPlaner"), ("1", "SerienMarker")], default="0")
+	
+	# interne
+	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.3"))
+	config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
+	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
+	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
+	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
+	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
+	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.0"))
+	
+ReadConfigFile()
+if config.plugins.serienRec.firstscreen.value == "0":
+	showMainScreen = True
 else:
-	config.plugins.serienRec.MainBouquet = ConfigSelection(choices = choices)
-if len(choices) > 1:
-	config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = choices, default = choices[1][0])
-else:
-	config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = choices)
-config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default = False)
-
-config.plugins.serienRec.firstscreen = ConfigSelection(choices = [("0","SerienPlaner"), ("1", "SerienMarker")], default="0")
-
-# interne
-config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.2"))
-config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
-config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
-config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
-config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
-config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
-config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.0"))
-
+	showMainScreen = False
 
 #logFile = "%slog" % serienRecMainPath
 logFile = "%slog" % (config.plugins.serienRec.LogFilePath.value)
@@ -182,6 +190,7 @@ autoCheckFinished = False
 refreshTimer = None
 EPGTimeSpan = 10
 coverToShow = None
+runAutocheckAtExit = False
 
 # init EPGTranslator
 if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/EPGTranslator/plugin.pyo"):
@@ -208,6 +217,18 @@ else:
 	WikipediaInstalled = False
 
 
+import keymapparser
+try:
+	keymapparser.removeKeymap("%skeymap.xml" % serienRecMainPath)
+except:
+	pass
+try:
+	keymapparser.readKeymap("%skeymap.xml" % serienRecMainPath)
+except:
+	pass
+	
+	
+	
 #---------------------------------- Common Functions ------------------------------------------
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
@@ -486,12 +507,6 @@ def InitSkin(self):
 						[_("-----"), _("Merkzettel"), ""],
 						[_("Neue Serienstarts"), _("-----"), _("YouTube/Wikipedia")],
 						[_("Serien Beschreibung"), _("-----"), ""])
-	#if epgTranslatorInstalled and WikipediaInstalled:
-	#	self.num_bt_text[3][2] = _("YouTube/Wikipedia")
-	#elif WikipediaInstalled:
-	#	self.num_bt_text[3][2] = _("Wikipedia-Suche")
-	#elif epgTranslatorInstalled:
-	#	self.num_bt_text[3][2] = _("YouTube-Suche")
 
 def updateMenuKeys(self):	
 	if self.displayMode == 0:
@@ -1988,13 +2003,15 @@ class serienRecCheckForRecording():
 				deltatime = abs(1440 - acttime + deltime)
 			refreshTimer = eTimer()
 			refreshTimer.callback.append(self.startCheck)
-			refreshTimer.start(deltatime * 60 * 1000, False)
+			refreshTimer.start(deltatime * 60 * 1000)
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
 			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
 			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Minuten") % str(deltatime), True)
 		else:
 			print "[Serien Recorder] checkRecTimer manuell."
+			global runAutocheckAtExit
+			runAutocheckAtExit = False
 			self.startCheck(True)
 
 	def startCheck(self, amanuell=False):
@@ -2037,7 +2054,7 @@ class serienRecCheckForRecording():
 				deltatime = abs(1440 - acttime + deltime)
 			refreshTimer = eTimer()
 			refreshTimer.callback.append(self.startCheck)
-			refreshTimer.start(deltatime * 60 * 1000, False)
+			refreshTimer.start(deltatime * 60 * 1000)
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
 			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
@@ -2062,6 +2079,8 @@ class serienRecCheckForRecording():
 					shutil.copy(logFile, BackupPath)
 				if fileExists("/etc/enigma2/timers.xml"):
 					shutil.copy("/etc/enigma2/timers.xml", BackupPath)
+				if fileExists("%sConfig.backup" % serienRecMainPath):
+					shutil.copy("%sConfig.backup" % serienRecMainPath, BackupPath)
 				for filename in os.listdir(BackupPath):
 					os.chmod(os.path.join(BackupPath, filename), 0777)
 				
@@ -2266,7 +2285,7 @@ class serienRecCheckForRecording():
 					cTmp.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
 					row = cTmp.fetchone()
 					if not row:
-						cTmp.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, 999999, -1, 1)", (Serie, Url, Staffel))
+						cTmp.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, 0, -1, 1)", (Serie, Url, Staffel))
 						ID = cTmp.lastrowid
 						cTmp.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
 						cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
@@ -3161,7 +3180,7 @@ class serienRecTimer(Screen):
 		self.session = session
 		self.picload = ePicLoad()
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"left"  : self.keyLeft,
@@ -3512,7 +3531,7 @@ class serienRecRunAutoCheck(Screen):
 		self.session = session
 		self.startAuto = startAuto
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"cancel": self.keyCancel,
 			"startTeletext" : self.showAbout,
 			"1"		: self.modifyAddedFile,
@@ -3654,14 +3673,16 @@ class serienRecRunAutoCheck(Screen):
 #---------------------------------- Marker Functions ------------------------------------------
 
 class serienRecMarker(Screen):
-	def __init__(self, session):
+	def __init__(self, session, SelectSerie=None):
 		Screen.__init__(self, session)
 		self.session = session
 		self.picload = ePicLoad()
+		self.SelectSerie = SelectSerie
 		
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		#self["actions"] = ActionMap(["SerienRecorderActions", "ColorActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"       : self.keyOK,
-			"cancel"   : self.keyCancel,
+			"exit"     : self.keyCancel,
 			"red"	   : self.keyRed,
 			"red_long" : self.keyRedLong,
 			"green"    : self.keyGreen,
@@ -3676,6 +3697,7 @@ class serienRecMarker(Screen):
 			"displayHelp"      : self.youtubeSearch,
 			"displayHelp_long" : self.WikipediaSearch,
 			"startTeletext"    : self.showAbout,
+			"exit_long": self.keyExit,
 			"0"		   : self.readLogFile,
 			"1"		   : self.modifyAddedFile,
 			"3"		   : self.showProposalDB,
@@ -3741,6 +3763,8 @@ class serienRecMarker(Screen):
 		self['text_ok'].setText(_("Staffel(n) auswählen."))
 		self['text_yellow'].setText(_("Sendetermine"))
 		self['text_blue'].setText(_("Serie Suchen"))
+		if not showMainScreen:
+			self.num_bt_text[0][2] = _("Exit/Serienplaner")
 		self.num_bt_text[2][2] = _("Timer suchen")
 		self.num_bt_text[4][2] = _("Serien Einstellungen")
 
@@ -3767,6 +3791,8 @@ class serienRecMarker(Screen):
 	def SetupFinished(self, result):
 		if result:
 			self.changesMade = True
+			global runAutocheckAtExit
+			runAutocheckAtExit = True
 			self.readSerienMarker()
 		return
 		
@@ -3907,6 +3933,12 @@ class serienRecMarker(Screen):
 		if len(markerList) != 0:
 			#markerList.sort()
 			self.chooseMenuList.setList(map(self.buildList, markerList))
+			if self.SelectSerie:
+				try:
+					idx = zip(*markerList)[0].index(self.SelectSerie)
+					self['config'].moveToIndex(idx)
+				except:
+					pass
 			self.loading = False
 			self.getCover()
 
@@ -4251,6 +4283,8 @@ class serienRecMarker(Screen):
 				AbEpisode = 0
 			
 		self.changesMade = True
+		global runAutocheckAtExit
+		runAutocheckAtExit = True
 		cCursor.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=?, AbEpisode=?, TimerForSpecials=? WHERE LOWER(Serie)=?", (AlleStaffelnAb, AbEpisode, TimerForSpecials, self.select_serie.lower()))
 		dbSerRec.commit()
 		cCursor.close()
@@ -4280,6 +4314,8 @@ class serienRecMarker(Screen):
 				alleSender = 1
 			
 		self.changesMade = True
+		global runAutocheckAtExit
+		runAutocheckAtExit = True
 		cCursor.execute("UPDATE OR IGNORE SerienMarker SET alleSender=? WHERE LOWER(Serie)=?", (alleSender, self.select_serie.lower()))
 		dbSerRec.commit()
 		cCursor.close()
@@ -4293,6 +4329,8 @@ class serienRecMarker(Screen):
 		if serien_name:
 			print serien_name
 			self.changesMade = True
+			global runAutocheckAtExit
+			runAutocheckAtExit = True
 			self.session.openWithCallback(self.readSerienMarker, serienRecAddSerie, serien_name)
 
 	def keyLeft(self):
@@ -4337,7 +4375,22 @@ class serienRecMarker(Screen):
 			self.displayTimer.stop()
 			self.displayTimer = None
 
+	def keyExit(self):
+		writeTestLog("1")
+		if self.modus == "popup_list" or self.modus == "popup_list2":
+			writeTestLog("2")
+			self.keyCancel()
+		else:
+			writeTestLog("3")
+			global showMainScreen
+			showMainScreen = True
+			if config.plugins.serienRec.refreshViews.value:
+				self.close(self.changesMade)
+			else:
+				self.close(False)
+	
 	def keyCancel(self):
+		writeTestLog("4")
 		if self.modus == "popup_list":
 			self.modus = "config"
 			self['popup_list'].hide()
@@ -4367,7 +4420,7 @@ class serienRecAddSerie(Screen):
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"left"  : self.keyLeft,
@@ -4560,15 +4613,21 @@ class serienRecAddSerie(Screen):
 		row = cCursor.fetchone()	
 		if not row:
 			Url = 'http://www.wunschliste.de/epg_print.pl?s='+str(Id)
-			cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, -2, 1, 1, -1, 0, -1, 0)", (Serie, Url))
+			if config.plugins.serienRec.defaultStaffel.value == "0":
+				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (Serie, Url))
+			else:
+				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, -2, 1, 1, -1, 0, -1, 0)", (Serie, Url))
 			cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, 0xFFFF))
+			dbSerRec.commit()
+			cCursor.close()
 			self['title'].setText(_("Serie '- %s -' zum Serien Marker hinzugefügt.") % Serie)
 			self['title'].instance.setForegroundColor(parseColor("green"))
+			if config.plugins.serienRec.openMarkerScreen.value:
+				self.session.open(serienRecMarker, Serie)
 		else:
 			self['title'].setText(_("Serie '- %s -' existiert bereits im Serien Marker.") % Serie)
 			self['title'].instance.setForegroundColor(parseColor("red"))
-		dbSerRec.commit()
-		cCursor.close()
+			cCursor.close()
 
 	def keyRed(self):
 		self.close()
@@ -4634,7 +4693,7 @@ class serienRecSendeTermine(Screen):
 		self.serie_url = serie_url
 		self.serien_cover = serien_cover
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"red"	: self.keyRed,
@@ -5177,7 +5236,7 @@ class serienRecMainChannelEdit(Screen):
 		Screen.__init__(self, session)
 		self.session = session
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"left"  : self.keyLeft,
@@ -5391,6 +5450,8 @@ class serienRecMainChannelEdit(Screen):
 							cCursor.execute(sql, (webSender, "", "", 0))
 							self.serienRecChlist.append((webSender, "", "", "0"))
 						self.changesMade = True
+						global runAutocheckAtExit
+						runAutocheckAtExit = True
 				dbSerRec.commit()
 				cCursor.close()
 			else:
@@ -5503,6 +5564,8 @@ class serienRecMainChannelEdit(Screen):
 				else:
 					cCursor.execute(sql, (stbSender, stbRef, altstbSender, altstbRef, 0, chlistSender.lower()))
 				self.changesMade = True
+				global runAutocheckAtExit
+				runAutocheckAtExit = True
 				dbSerRec.commit()
 				cCursor.close()
 				self['title'].setText(_("Channel-Zuordnung"))
@@ -5532,6 +5595,8 @@ class serienRecMainChannelEdit(Screen):
 			else:
 				cCursor.execute(sql, (stbSender, stbRef, 0, chlistSender.lower()))
 			self.changesMade = True
+			global runAutocheckAtExit
+			runAutocheckAtExit = True
 			dbSerRec.commit()
 			cCursor.close()
 			self['title'].setText(_("Channel-Zuordnung"))
@@ -5566,6 +5631,8 @@ class serienRecMainChannelEdit(Screen):
 					self['title'].setText("")
 					self['title'].setText(_("Sender '- %s -' wurde deaktiviert.") % webSender)
 				self.changesMade = True
+				global runAutocheckAtExit
+				runAutocheckAtExit = True
 				dbSerRec.commit()
 				
 			cCursor.close()	
@@ -5631,12 +5698,13 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.session = session
 
 		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "KeyboardInputActions", "SerienRecorderActions"], {
-			"red"	: self.cancel,
+			"ok"	: self.keyOK,
+			"cancel": self.keyCancel,
+			"red"	: self.keyRed,
 			"green"	: self.save,
-			"cancel": self.cancel,
-			"ok"	: self.ok,
-			"displayHelp" : self.showAbout,
-			"about" : self.showAbout,
+			"yellow": self.keyYellow,
+			"blue"  : self.keyBlue,
+			"startTeletext" : self.showAbout,
 			"up"    : self.keyUp,
 			"down"  : self.keyDown,
 			"deleteForward" : self.keyDelForward,
@@ -5652,6 +5720,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.blue = 0x0064c7
 		self.yellow = 0xbab329
 		self.white = 0xffffff
+		self.setupModified = False
 
 		self.__C_JUSTPLAY__ = 0
 		self.__C_ZAPBEFORERECORD__ = 1
@@ -5687,27 +5756,89 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self['bt_red'].show()
 		self['bt_green'].show()
 		self['bt_ok'].show()
+		self['bt_yellow'].show()
+		self['bt_blue'].show()
 		self['bt_exit'].show()
-		self['bt_info'].show()
+		self['bt_text'].show()
 
 		self['title'].setText(_("Serien Recorder - Einstellungen:"))
-		self['text_red'].setText(_("Abbrechen"))
+		self['text_red'].setText(_("Defaultwerte"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Verzeichnis auswählen"))
+		self['text_yellow'].setText(_("in Datei speichern"))
+		self['text_blue'].setText(_("aus Datei laden"))
 		self['text_0'].setText(_("Abbrechen"))
-		self['text_3'].setText(_("About"))
+		self['text_1'].setText(_("About"))
 
 		self['text_red'].show()
 		self['text_green'].show()
 		self['text_ok'].show()
+		self['text_yellow'].show()
+		self['text_blue'].show()
 		self['text_0'].show()
-		self['text_3'].show()
+		self['text_1'].show()
 
 		self['config_information'].show()
 		self['config_information_text'].show()
 
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
+
+	def keyRed(self):
+		writeSettings = open("/etc/enigma2/settings_new", "w")
+		readSettings = open("/etc/enigma2/settings", "r")
+		for rawData in readSettings.readlines():
+			data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
+			if not data:
+				writeSettings.write(rawData)
+		writeSettings.close()
+		readSettings.close()
+		
+		if fileExists("/etc/enigma2/settings_new"):
+			shutil.move("/etc/enigma2/settings_new", "/etc/enigma2/settings")
+		
+		configfile.load()
+		ReadConfigFile()
+		self.changedEntry()
+		self.setupModified = True
+		#self.save()
+		
+	def keyYellow(self):
+		config.plugins.serienRec.save()
+		writeConfFile = open("%sConfig.backup" % serienRecMainPath, "w")
+		readSettings = open("/etc/enigma2/settings", "r")
+		for rawData in readSettings.readlines():
+			data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
+			if data:
+				writeConfFile.write(rawData)
+		writeConfFile.close()
+		readSettings.close()
+		self.session.open(MessageBox, _("Die aktuelle Konfiguration wurde in der Datei 'Config.backup' \nim Verzeichnis '%s' gespeichert.") % serienRecMainPath, MessageBox.TYPE_INFO, timeout = 10)
+		
+	def keyBlue(self):
+		writeSettings = open("/etc/enigma2/settings_new", "w")
+		
+		readSettings = open("/etc/enigma2/settings", "r")
+		for rawData in readSettings.readlines():
+			data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
+			if not data:
+				writeSettings.write(rawData)
+
+		readConfFile = open("%sConfig.backup" % serienRecMainPath, "r")
+		for rawData in readConfFile.readlines():
+			writeSettings.write(rawData)
+
+		writeSettings.close()
+		readSettings.close()
+		
+		if fileExists("/etc/enigma2/settings_new"):
+			shutil.move("/etc/enigma2/settings_new", "/etc/enigma2/settings")
+		
+		configfile.load()
+		ReadConfigFile()
+		self.changedEntry()
+		self.setupModified = True
+		#self.save()
 		
 	def keyDelForward(self):
 		self.changedEntry()
@@ -5870,7 +6001,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("Zeige Nachricht wenn Suchlauf startet:"), config.plugins.serienRec.showNotification))
 		self.list.append(getConfigListEntry(_("Zeige Nachricht bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
 		self.list.append(getConfigListEntry(_("Wechselzeit der Tastenanzeige (Sek.):"), config.plugins.serienRec.DisplayRefreshRate))
-		self.list.append(getConfigListEntry(_("Anzeige bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
+		self.list.append(getConfigListEntry(_("Screens bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
+		self.list.append(getConfigListEntry(_("Staffelauswahl bei neuen Markern:"), config.plugins.serienRec.defaultStaffel))
+		self.list.append(getConfigListEntry(_("Öffne Marker-Ansicht nach Hinzufügen neuer Marker:"), config.plugins.serienRec.openMarkerScreen))
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  LOG:  ----------------------------------------------------------------------------------------------")))
@@ -5906,7 +6039,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.createConfigList()
 		self['config'].setList(self.list)
 
-	def ok(self):
+	def keyOK(self):
 		ConfigListScreen.keyOK(self)
 		if self['config'].getCurrent()[1] == config.plugins.serienRec.savetopath:
 			#start_dir = "/media/hdd/movie/"
@@ -6030,6 +6163,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.DisplayRefreshRate :      (_("Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt.")),
 			config.plugins.serienRec.refreshViews :            (_("Bei 'ja' werden die Anzeigen nach Änderungen von Markern, Channels, etc. sofort aktualisiert, was aber je nach STB-Typ und Internet-Verbindung zeitintensiv sein kann.\n"
 			                                                    "Bei 'nein' wird erfolgt die Aktualisierung erst wenn die Anzeige erneut geöffnet wird.")),
+			config.plugins.serienRec.defaultStaffel :          (_("Auswahl, ob bei neuen Markern die Staffeln manuell eingegeben werden, oder 'Alle' ausgewählt wird.")),
+			config.plugins.serienRec.openMarkerScreen :        (_("Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können.")),
 			config.plugins.serienRec.LogFilePath :             (_("Das Verzeichnis auswählen und/oder erstellen, in dem die log-Dateien gespeichert werden.")),
 			config.plugins.serienRec.longLogFileName :         (_("Bei 'nein' wird bei jedem Timer-Suchlauf die log-Datei neu erzeugt.\n"
 			                                                    "Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet "
@@ -6148,6 +6283,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.DisplayRefreshRate.save()
 		config.plugins.serienRec.refreshViews.save()
+		config.plugins.serienRec.defaultStaffel.save()
+		config.plugins.serienRec.openMarkerScreen.save()
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
@@ -6181,7 +6318,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 
 		global serienRecDataBase
 		if serienRecDataBase == "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value:
-			self.close((True, False, True))
+			self.close((True, self.setupModified, True))
 		else:		
 			global dbSerRec
 			f = dbSerRec.text_factory
@@ -6209,8 +6346,11 @@ class serienRecSetup(Screen, ConfigListScreen):
 		success = initDB()
 		self.close((True, True, success))
 
-	def cancel(self):
-		self.close((False, False, True))
+	def keyCancel(self):
+		if self.setupModified:
+			self.save()
+		else:
+			self.close((False, False, True))
 		
 class serienRecMarkerSetup(Screen, ConfigListScreen):
 	def __init__(self, session, Serie):
@@ -6223,8 +6363,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			"green"	: self.save,
 			"cancel": self.cancel,
 			"ok"	: self.ok,
-			"displayHelp" : self.showAbout,
-			"about" : self.showAbout,
+			"startTeletext" : self.showAbout,
 			"up"    : self.keyUp,
 			"down"  : self.keyDown
 		}, -1)
@@ -6304,20 +6443,20 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self['bt_green'].show()
 		self['bt_ok'].show()
 		self['bt_exit'].show()
-		self['bt_info'].show()
+		self['bt_text'].show()
 
 		self['title'].setText(_("Serien Recorder - Einstellungen für '%s':") % self.Serie)
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Verzeichnis auswählen"))
 		self['text_0'].setText(_("Abbrechen"))
-		self['text_3'].setText(_("About"))
+		self['text_1'].setText(_("About"))
 
 		self['text_red'].show()
 		self['text_green'].show()
 		self['text_ok'].show()
 		self['text_0'].show()
-		self['text_3'].show()
+		self['text_1'].show()
 
 		self['config_information'].show()
 		self['config_information_text'].show()
@@ -6543,8 +6682,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 			"green"	: self.save,
 			"cancel": self.cancel,
 			"ok"	: self.ok,
-			"displayHelp" : self.showAbout,
-			"about" : self.showAbout,
+			"startTeletext" : self.showAbout,
 			"up"    : self.keyUp,
 			"down"  : self.keyDown
 		}, -1)
@@ -6601,18 +6739,18 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		self['bt_red'].show()
 		self['bt_green'].show()
 		self['bt_exit'].show()
-		self['bt_info'].show()
+		self['bt_text'].show()
 
 		self['title'].setText(_("Serien Recorder - Einstellungen für '%s':") % self.webSender)
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_0'].setText(_("Abbrechen"))
-		self['text_3'].setText(_("About"))
+		self['text_1'].setText(_("About"))
 
 		self['text_red'].show()
 		self['text_green'].show()
 		self['text_0'].show()
-		self['text_3'].show()
+		self['text_1'].show()
 
 		self['config_information'].show()
 		self['config_information_text'].show()
@@ -6758,8 +6896,7 @@ class SerienRecFileList(Screen):
 			"green": self.keyGreen,
 			"red": self.keyRed,
 			"blue": self.keyBlue,
-			"displayHelp" : self.showAbout,
-			"about" : self.showAbout
+			"startTeletext" : self.showAbout
 		}, -1)
 
 		self.setupSkin()
@@ -6779,21 +6916,21 @@ class SerienRecFileList(Screen):
 		self['bt_ok'].show()
 		self['bt_blue'].show()
 		self['bt_exit'].show()
-		self['bt_info'].show()
+		self['bt_text'].show()
 		
 		self['text_red'].setText(_("Verzeichnis löschen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Auswahl"))
 		self['text_blue'].setText(_("Verzeichnis anlegen"))
 		self['text_0'].setText(_("Abbrechen"))
-		self['text_3'].setText(_("About"))
+		self['text_1'].setText(_("About"))
 
 		self['text_red'].show()
 		self['text_green'].show()
 		self['text_ok'].show()
 		self['text_blue'].show()
 		self['text_0'].show()
-		self['text_3'].show()
+		self['text_1'].show()
 
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
@@ -6863,7 +7000,7 @@ class serienRecReadLog(Screen):
 		Screen.__init__(self, session)
 		self.session = session
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"cancel": self.keyCancel,
 			"startTeletext" : self.showAbout,
 			"1"		: self.modifyAddedFile,
@@ -6980,7 +7117,7 @@ class serienRecShowConflicts(Screen):
 		Screen.__init__(self, session)
 		self.session = session
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"cancel": self.keyCancel,
 			"red"	: self.keyCancel,
 			"blue"	: self.keyBlue,
@@ -7124,7 +7261,7 @@ class serienRecModifyAdded(Screen):
 		self.session = session
 		self.picload = ePicLoad()
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"left"  : self.keyLeft,
@@ -7469,7 +7606,7 @@ class serienRecShowSeasonBegins(Screen):
 		self.session = session
 		self.picload = ePicLoad()
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"red"	: self.keyRed,
@@ -7723,14 +7860,18 @@ class serienRecShowSeasonBegins(Screen):
 					cCursor.close()
 				else:
 					cCursor = dbSerRec.cursor()
-					if str(Staffel).isdigit():
-						cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, ?, ?, -1)", (Serie, Url, AbStaffel, AlleSender))
+					if config.plugins.serienRec.defaultStaffel.value == "0":
+						cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, 0, 1, -1)", (Serie, Url))
 						ID = cCursor.lastrowid
-						cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, Staffel))
 					else:
-						cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, ?, -1, 1)", (Serie, Url, AbStaffel, AlleSender))
-						ID = cCursor.lastrowid
-					cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
+						if str(Staffel).isdigit():
+							cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, ?, ?, -1)", (Serie, Url, AbStaffel, AlleSender))
+							ID = cCursor.lastrowid
+							cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, Staffel))
+						else:
+							cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, ?, -1, 1)", (Serie, Url, AbStaffel, AlleSender))
+							ID = cCursor.lastrowid
+						cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
 					cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
 					dbSerRec.commit()
 					cCursor.close()
@@ -7741,6 +7882,11 @@ class serienRecShowSeasonBegins(Screen):
 				dbSerRec.commit()
 				cCursor.close()
 				self.changesMade = True
+				global runAutocheckAtExit
+				runAutocheckAtExit = True
+				if config.plugins.serienRec.openMarkerScreen.value:
+					self.session.open(serienRecMarker, Serie)
+				
 			self.readProposal()
 		
 	def keyYellow(self):
@@ -7824,7 +7970,7 @@ class serienRecWishlist(Screen):
 		self.session = session
 		self.picload = ePicLoad()
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"left"  : self.keyLeft,
@@ -8207,7 +8353,7 @@ class serienRecShowInfo(Screen):
 		self.serieName = serieName
 		self.serieUrl = serieUrl
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"up"	: self.pageUp,
 			"down"	: self.pageDown,
 			"cancel": self.keyCancel,
@@ -8342,7 +8488,7 @@ class serienRecShowImdbVideos(Screen):
 		self.serien_name = serien_name
 		self.serien_id = serien_id
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			#"red"	: self.keyRed,
@@ -8555,13 +8701,12 @@ class serienRecPluginNotInstalledScreen(Screen, ConfigListScreen):
 #---------------------------------- Main Functions ------------------------------------------
 
 class serienRecMain(Screen):
-	def __init__(self, session, firstscreen=config.plugins.serienRec.firstscreen.value):
+	def __init__(self, session):
 		Screen.__init__(self, session)
 		self.session = session
-		self.firstscreen = firstscreen
 		self.picload = ePicLoad()
 		
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "InfobarTeletextActions", "SerienRecorderActions"], {
+		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
 			"left"  : self.keyLeft,
@@ -8838,13 +8983,17 @@ class serienRecMain(Screen):
 			print "[Serien Recorder] Channellist is empty !"
 			self.session.openWithCallback(self.readWebpage, serienRecMainChannelEdit)
 		else:
-			if self.firstscreen == "1":
+			if config.plugins.serienRec.firstscreen.value == "1":
 				self.forceRefresh = True
 				self.session.openWithCallback(self.readWebpage, serienRecMarker)
 			else:
 				self.readWebpage()
 
 	def readWebpage(self, answer=True):
+		if not showMainScreen:
+			self.keyCancel()
+			self.close()
+			
 		if answer or self.forceRefresh:
 			self.forceRefresh = False
 			self['title'].instance.setForegroundColor(parseColor("white"))
@@ -9064,21 +9213,35 @@ class serienRecMain(Screen):
 			serien_neu = self['config'].getCurrent()[0][2]
 			serien_url = self['config'].getCurrent()[0][5]
 			serien_name = self['config'].getCurrent()[0][6]
+			sender = self['config'].getCurrent()[0][7]
+			staffel = self['config'].getCurrent()[0][8]
 			serien_id = self['config'].getCurrent()[0][14]
 
 			cCursor = dbSerRec.cursor()
 			cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
 			row = cCursor.fetchone()
 			if not row:
-				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (serien_name, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id))
-				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, 0xFFFF))
+				if config.plugins.serienRec.defaultStaffel.value == "0":
+					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (serien_name, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id))
+					ID = cCursor.lastrowid
+				else:
+					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 999999, 0, 1, -1, 0, -1, 0)", (serien_name, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id))
+					ID = cCursor.lastrowid
+					cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?,?)", (ID, staffel))
+					cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?,?)", (ID, sender))
+				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
+				dbSerRec.commit()
+				cCursor.close()
 				self['title'].setText(_("Serie '- %s -' zum Serien Marker hinzugefügt.") % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("green"))
+				global runAutocheckAtExit
+				runAutocheckAtExit = True
+				if config.plugins.serienRec.openMarkerScreen.value:
+					self.session.open(serienRecMarker, serien_name)
 			else:
 				self['title'].setText(_("Serie '- %s -' existiert bereits im Serien Marker.") % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("red"))
-			dbSerRec.commit()
-			cCursor.close()
+				cCursor.close()
 
 		elif self.modus == "popup":
 			status = self['popup_list'].getCurrent()[0][0]
@@ -9294,10 +9457,13 @@ class serienRecMain(Screen):
 			except:
 				pass
 
+			if runAutocheckAtExit:
+				singleTimer = eTimer()
+				singleTimer.callback.append(serienRecCheckForRecording(self.session, True))
+				singleTimer.start(10000, True)
+			
 			#self.hide()
 			#self.showAbout()
-			#serienRecCheckForRecording(self.session, False)
-			
 			self.close()
 		elif self.modus == "popup":
 			self['popup_list'].hide()
@@ -9429,7 +9595,7 @@ def autostart(reason, **kwargs):
 				print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
 			
 def main(session, **kwargs):
-	session.open(serienRecMain, config.plugins.serienRec.firstscreen.value)
+	session.open(serienRecMain)
 	#print "open screen %s", config.plugins.serienRec.firstscreen.value
 	#exec("session.open("+config.plugins.serienRec.firstscreen.value+")")
 
