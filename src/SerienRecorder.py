@@ -143,6 +143,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.refreshViews = ConfigYesNo(default = True)
 	config.plugins.serienRec.defaultStaffel = ConfigSelection(choices = [("0","'Alle'"), ("1", "'Manuell'")], default="0")
 	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default = True)
+	config.plugins.serienRec.runAutocheckAtExit = ConfigYesNo(default = False)
 
 	config.plugins.serienRec.selectBouquets = ConfigYesNo(default = False)
 	#config.plugins.serienRec.MainBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites (TV)")
@@ -163,7 +164,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.3"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.4"))
 	config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
@@ -3226,10 +3227,9 @@ class serienRecTimer(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -3564,10 +3564,9 @@ class serienRecRunAutoCheck(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		if config.plugins.serienRec.logWrapAround.value:
 			self.chooseMenuList.l.setItemHeight(70)
 		else:
@@ -3733,11 +3732,10 @@ class serienRecMarker(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		#normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(70)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -4380,12 +4378,9 @@ class serienRecMarker(Screen):
 			self.displayTimer = None
 
 	def keyExit(self):
-		writeTestLog("1")
 		if self.modus == "popup_list" or self.modus == "popup_list2":
-			writeTestLog("2")
 			self.keyCancel()
 		else:
-			writeTestLog("3")
 			global showMainScreen
 			showMainScreen = True
 			if config.plugins.serienRec.refreshViews.value:
@@ -4394,7 +4389,6 @@ class serienRecMarker(Screen):
 				self.close(False)
 	
 	def keyCancel(self):
-		writeTestLog("4")
 		if self.modus == "popup_list":
 			self.modus = "config"
 			self['popup_list'].hide()
@@ -4739,10 +4733,9 @@ class serienRecSendeTermine(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -5978,6 +5971,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("Aktion bei neuer Serie/Staffel:"), config.plugins.serienRec.ActionOnNew))
 		if config.plugins.serienRec.ActionOnNew.value != "0":
 			self.list.append(getConfigListEntry(_("    Einträge löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteOlderThan))
+		self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		if config.plugins.serienRec.updateInterval.value == 24:
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
 			self.list.append(getConfigListEntry(_("Nach dem automatischen Suchlauf in Deep-StandBy gehen:"), config.plugins.serienRec.afterAutocheck))
@@ -6007,7 +6001,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
 		self.list.append(getConfigListEntry(_("Starte Plugin mit:"), config.plugins.serienRec.firstscreen))
 		self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
-		self.list.append(getConfigListEntry(_("Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
+		self.list.append(getConfigListEntry(_("Korrektur der Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
 		self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
 		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahme auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
 		self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
@@ -6140,6 +6134,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.")),
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
 																"und auch nicht mehr angezeigt.")) % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))),
+			config.plugins.serienRec.runAutocheckAtExit :      (_("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Channels und/oder Markern Änderungen vorgenommen wurden, "
+			                                                    "die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Channel zugewiesen, etc.)")),
 			config.plugins.serienRec.wakeUpDSB :               (_("Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
 			                                                    "Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die STB im Deep-Standby befindet.")),
 			config.plugins.serienRec.afterAutocheck :          (_("Bei 'ja' wird die STB nach dem automatischen Timer-Suchlauf wieder in den Deep-Standby gefahren.")),
@@ -6290,6 +6286,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.ActionOnNew.save()
 		config.plugins.serienRec.deleteOlderThan.save()
+		config.plugins.serienRec.runAutocheckAtExit.save()
 		config.plugins.serienRec.forceRecording.save()
 		config.plugins.serienRec.forceManualRecording.save()
 		if int(config.plugins.serienRec.checkfordays.value) > int(config.plugins.serienRec.TimeSpanForRegularTimer.value):
@@ -7046,10 +7043,9 @@ class serienRecReadLog(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		if config.plugins.serienRec.logWrapAround.value:
 			self.chooseMenuList.l.setItemHeight(70)
 		else:
@@ -7666,10 +7662,9 @@ class serienRecShowSeasonBegins(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -8545,10 +8540,9 @@ class serienRecShowImdbVideos(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -8799,11 +8793,10 @@ class serienRecMain(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 
 		# normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -9477,7 +9470,7 @@ class serienRecMain(Screen):
 			except:
 				pass
 
-			if runAutocheckAtExit:
+			if runAutocheckAtExit and config.plugins.serienRec.runAutocheckAtExit.value:
 				singleTimer = eTimer()
 				singleTimer.callback.append(serienRecCheckForRecording(self.session, True))
 				singleTimer.start(10000, True)
