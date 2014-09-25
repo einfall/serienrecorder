@@ -22,7 +22,7 @@ from Tools.NumericalTextInput import NumericalTextInput
 from Components.ConfigList import *
 from Components.config import *
 from Components.ConfigList import ConfigList, ConfigListScreen
-from Components.config import config, ConfigInteger, ConfigSelection, getConfigListEntry, ConfigText, ConfigDirectory, ConfigYesNo, configfile, ConfigSelection, ConfigSubsection, ConfigPIN, NoSave, ConfigNothing, ConfigClock
+from Components.config import config, ConfigInteger, ConfigSelection, getConfigListEntry, ConfigText, ConfigDirectory, ConfigYesNo, configfile, ConfigSelection, ConfigSubsection, ConfigPIN, NoSave, ConfigNothing, ConfigClock, ConfigSelectionNumber
 
 from Components.ScrollLabel import ScrollLabel
 from Components.FileList import FileList
@@ -131,6 +131,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 	config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
+	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 5, 1, default = 0)
 	config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default = True)
 	config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
 	config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default = True)
@@ -3225,9 +3226,10 @@ class serienRecTimer(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
+		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -3562,9 +3564,10 @@ class serienRecRunAutoCheck(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
+		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
 		if config.plugins.serienRec.logWrapAround.value:
 			self.chooseMenuList.l.setItemHeight(70)
 		else:
@@ -3730,10 +3733,11 @@ class serienRecMarker(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
+		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		#normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
 		self.chooseMenuList.l.setItemHeight(70)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -4735,9 +4739,10 @@ class serienRecSendeTermine(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
+		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -6002,6 +6007,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
 		self.list.append(getConfigListEntry(_("Starte Plugin mit:"), config.plugins.serienRec.firstscreen))
 		self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
+		self.list.append(getConfigListEntry(_("Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
 		self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
 		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahme auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
 		self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
@@ -6161,6 +6167,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.useAlternativeChannel :   (_("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu erstellen, "
 										                        "falls der Timer auf dem bevorzugten Channel nicht angelegt werden kann.")),
 			config.plugins.serienRec.showPicons :              (_("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.")),
+			config.plugins.serienRec.listFontsize :            (_("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. Serien Recorder muß neu gestartet werden damit die Änderung wirksam wird.")),
 			config.plugins.serienRec.intensiveTimersuche :     (_("Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.")),
 			config.plugins.serienRec.sucheAufnahme :           (_("Bei 'ja' wird in der Hauptansicht ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv.")),
 			config.plugins.serienRec.max_season :              (_("Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann.")),
@@ -6294,6 +6301,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.defaultStaffel.save()
 		config.plugins.serienRec.openMarkerScreen.save()
 		config.plugins.serienRec.showPicons.save()
+		config.plugins.serienRec.listFontsize.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
 		config.plugins.serienRec.selectNoOfTuners.save()
@@ -7038,9 +7046,10 @@ class serienRecReadLog(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
+		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
 		if config.plugins.serienRec.logWrapAround.value:
 			self.chooseMenuList.l.setItemHeight(70)
 		else:
@@ -7657,9 +7666,10 @@ class serienRecShowSeasonBegins(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
+		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -8535,9 +8545,10 @@ class serienRecShowImdbVideos(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
+		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -8788,10 +8799,11 @@ class serienRecMain(Screen):
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		
+		fsize = 20 + int(config.plugins.serienRec.listFontsize.value)
+
 		# normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', fsize))
 		self.chooseMenuList.l.setItemHeight(50)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
