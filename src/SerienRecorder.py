@@ -8989,6 +8989,12 @@ class serienRecMain(Screen):
 				
 	def startScreen(self):
 		print "[Serien Recorder] version %s is running..." % config.plugins.serienRec.showversion.value
+		
+		global refreshTimer
+		if not refreshTimer:
+			if config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
+				serienRecCheckForRecording(self.session, False)
+		
 		if config.plugins.serienRec.Autoupdate.value:
 			checkUpdate(self.session).checkforupdate()
 		self.dayChache = {}

@@ -1,9 +1,18 @@
 # -*- coding: utf-8 -*-
 from Plugins.Plugin import PluginDescriptor
+from Tools.Directories import fileExists
+import os
 import SerienRecorder
 
+serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
+
 def SRstart(session, **kwargs):
-	reload(SerienRecorder)
+	if fileExists(os.path.join(serienRecMainPath, "SerienRecorder.pyo")):
+		if (int(os.path.getmtime(os.path.join(serienRecMainPath, "SerienRecorder.pyo"))) < int(os.path.getmtime(os.path.join(serienRecMainPath, "SerienRecorder.py")))):
+			reload(SerienRecorder)
+	else:	
+		reload(SerienRecorder)
+		
 	try:
 		session.open(SerienRecorder.serienRecMain)
 	except:
