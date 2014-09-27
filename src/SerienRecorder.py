@@ -332,6 +332,21 @@ def getEPGevent(query, channelref, title, starttime):
 				epgmatches.append((serviceref, eit, name, begin, duration, shortdesc, extdesc))
 	return epgmatches
 
+def getStartEndTimeFromEPG(start_unixtime_eit, end_unixtime_eit, margin_before, margin_after, serien_name, STBRef):
+		eit = 0
+		if config.plugins.serienRec.eventid.value:
+			# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
+			event_matches = getEPGevent(['RITBDSE', (STBRef, 0, int(start_unixtime_eit) + (int(margin_before) * 60), -1)], STBRef, serien_name, int(start_unixtime_eit) + (int(margin_before) * 60))
+			if event_matches and len(event_matches) > 0:
+				for event_entry in event_matches:
+					print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+					eit = int(event_entry[1])
+					start_unixtime_eit = int(event_entry[3]) - (int(margin_before) * 60)
+					end_unixtime_eit = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
+					break
+
+		return eit, end_unixtime_eit, start_unixtime_eit
+
 def getUrl(url):
 	req = urllib2.Request(url)
 	res = urllib2.urlopen(req)
@@ -664,7 +679,19 @@ def getDirname(serien_name, staffel):
 					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		
 	cCursor.close()	
-	return (dirname, dirname_serie)	
+	return (dirname, dirname_serie)
+
+def countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, stopAfterFirstHit = False):
+		count = 0
+		if fileExists(dirname):
+			dirs = os.listdir(dirname)
+			for dir in dirs:
+				if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, seasonEpisodeString), dir):
+					count += 1
+					if stopAfterFirstHit:
+						break
+
+		return count
 
 def CreateDirectory(serien_name, staffel):
 	(dirname, dirname_serie) = getDirname(serien_name, staffel)
@@ -2321,13 +2348,13 @@ class serienRecCheckForRecording():
 				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
 						
 				(margin_before, margin_after) = getMargins(serien_name, webChannel)
+				title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+				(dirname, dirname_serie) = getDirname(serien_name, staffel)
 		
 				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(serien_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(serien_time)+(int(margin_before) * 60))
 				if event_matches and len(event_matches) > 0:
 					for event_entry in event_matches:
-						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-						(dirname, dirname_serie) = getDirname(serien_name, staffel)
 						writeLog(_("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '") % (title, dirname))
 						eit = int(event_entry[1])
 						start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
@@ -2560,27 +2587,12 @@ class serienRecCheckForRecording():
 			if not staffel and not episode:
 				staffel = "S"
 
-			(margin_before, margin_after) = getMargins(serien_name, sender)
-			
-			# setze label string
-			label_serie = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
-			sTitle = "%s - S%sE%s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2))
+			# initialize strings
+			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
+			sTitle = "%s - %s" % (serien_name, seasonEpisodeString)
 
-			# formatiere start/end-zeit
-			(day, month) = datum.split('.')
-			(start_hour, start_min) = startzeit.split('.')
-			(end_hour, end_min) = endzeit.split('.')
-
-			start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
-
-			if int(start_hour) > int(end_hour):
-				end_unixtime = getNextDayUnixtime(end_min, end_hour, day, month)
-			else:
-				end_unixtime = getUnixTimeAll(end_min, end_hour, day, month)
-
-			# setze die vorlauf/nachlauf-zeit
-			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
-			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
+			# Process channel relevant data
 
 			##############################
 			#
@@ -2628,15 +2640,16 @@ class serienRecCheckForRecording():
 				if int(staffel) == 0:
 					if str(episode).isdigit():
 						if int(episode) < int(AbEpisode):
-							liste = staffeln[:]
-							liste.sort()
-							liste.reverse()
-							if -1 in staffeln:
-								liste.remove(-1)
-								liste[0] = _("ab %s") % liste[0]
-							liste.reverse()
-							liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
-							writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Episode nicht erlaubt -> ' S%sE%s ' -> ' %s '") % (label_serie, str(staffel).zfill(2), str(episode).zfill(2), str(liste).replace("'", "").replace('"', "")))
+							if config.plugins.serienRec.writeLogAllowedSender.value:
+								liste = staffeln[:]
+								liste.sort()
+								liste.reverse()
+								if -1 in staffeln:
+									liste.remove(-1)
+									liste[0] = _("ab %s") % liste[0]
+								liste.reverse()
+								liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
+								writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Episode nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
 							continue
 						else:
 							serieAllowed = True
@@ -2674,47 +2687,41 @@ class serienRecCheckForRecording():
 					if -2 in staffeln:
 						liste.remove(-2)
 						liste.insert(0, _("Manuell"))
-					writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' S%sE%s ' -> ' %s '") % (label_serie, str(staffel).zfill(2), str(episode).zfill(2), str(liste).replace("'", "").replace('"', "")))
+					writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
 				continue
+
+			# Process time and date relevant data
+
+			(margin_before, margin_after) = getMargins(serien_name, sender)
+
+			# formatiere start/end-zeit
+			(day, month) = datum.split('.')
+			(start_hour, start_min) = startzeit.split('.')
+			(end_hour, end_min) = endzeit.split('.')
+
+			start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
+
+			if int(start_hour) > int(end_hour):
+				end_unixtime = getNextDayUnixtime(end_min, end_hour, day, month)
+			else:
+				end_unixtime = getUnixTimeAll(end_min, end_hour, day, month)
+
+			# setze die vorlauf/nachlauf-zeit
+			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
 			##############################
 			#
 			# try to get eventID (eit) from epgCache
 			#
-			eit = 0
-			new_start_unixtime = start_unixtime
-			new_end_unixtime = end_unixtime
-			if config.plugins.serienRec.eventid.value:
-				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(start_unixtime)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_unixtime)+(int(margin_before) * 60))
-				if event_matches and len(event_matches) > 0:
-					for event_entry in event_matches:
-						print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
-						eit = int(event_entry[1])
-						new_start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
-						new_end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
-						break
-			alt_eit = 0
-			alt_start_unixtime = start_unixtime
-			alt_end_unixtime = end_unixtime
-			if config.plugins.serienRec.eventid.value and stbRef != altstbRef:
-				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-				event_matches = getEPGevent(['RITBDSE',(altstbRef, 0, int(start_unixtime)+(int(margin_before) * 60), -1)], altstbRef, serien_name, int(start_unixtime)+(int(margin_before) * 60))
-				if event_matches and len(event_matches) > 0:
-					for event_entry in event_matches:
-						print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
-						alt_eit = int(event_entry[1])
-						alt_start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
-						alt_end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
-						break
-						
+			eit, new_end_unixtime, new_start_unixtime = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
+			alt_eit, alt_end_unixtime, alt_start_unixtime = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
+
 			(dirname, dirname_serie) = getDirname(serien_name, staffel)
-				
-			check_SeasonEpisode = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
 			cCursorTmp = dbTmp.cursor()
 			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, check_SeasonEpisode, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel)))
+			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel)))
 			cCursorTmp.close()
 			
 	def createTimer(self, result=True):
@@ -2917,12 +2924,7 @@ class serienRecCheckForRecording():
 				break
 
 			# check anzahl auf hdd
-			bereits_vorhanden = 0
-			if fileExists(dirname):
-				dirs = os.listdir(dirname)
-				for dir in dirs:
-					if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, check_SeasonEpisode), dir):
-						bereits_vorhanden += 1
+			bereits_vorhanden = countEpisodeOnHDD(dirname, check_SeasonEpisode, serien_name, False)
 
 			if bereits_vorhanden >= AnzahlAufnahmen:
 				writeLogFilter("disk", _("[Serien Recorder] ' %s ' - Staffel/Episode%s bereits auf hdd vorhanden -> ' %s '") % (label_serie, optionalText, check_SeasonEpisode))
@@ -4887,7 +4889,7 @@ class serienRecSendeTermine(Screen):
 		#(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
 		(serien_name, sender, datum, start, end, staffel, episode, title, status) = entry
 
-		check_SeasonEpisode = "S%sE%s" % (str(staffel).zfill(2), episode)
+		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 		(dirname, dirname_serie) = getDirname(serien_name, staffel)
 		
 		imageMinus = "%simages/minus.png" % serienRecMainPath
@@ -4897,18 +4899,13 @@ class serienRecSendeTermine(Screen):
 		imageTimer = "%simages/timerlist.png" % serienRecMainPath
 		imageAdded = "%simages/added.png" % serienRecMainPath
 
-		#check 1 (hdd)
-		bereits_vorhanden = False
 		rightImage = imageNone
-		if fileExists(dirname):
-			dirs = os.listdir(dirname)
-			for dir in dirs:
-				if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, check_SeasonEpisode), dir):
-					bereits_vorhanden = True
-					rightImage = imageHDD
-					break
 
-		if not bereits_vorhanden:
+		#check 1 (hdd)
+		bereits_vorhanden = countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True) and True or False
+		if bereits_vorhanden:
+			rightImage = imageHDD
+		else:
 			(margin_before, margin_after) = getMargins(serien_name, sender)
 
 			# formatiere start/end-zeit
@@ -4937,7 +4934,7 @@ class serienRecSendeTermine(Screen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), self.yellow),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "S%sE%s - %s" % (str(staffel).zfill(2), episode, title), self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), self.yellow),
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, loadPNG(rightImage))
 			]
 
@@ -4951,8 +4948,9 @@ class serienRecSendeTermine(Screen):
 			writeLog(_("\n---------' Starte AutoCheckTimer um %s - (manuell) '-------------------------------------------------------------------------------") % self.uhrzeit, True)
 			for serien_name, sender, datum, startzeit, endzeit, staffel, episode, title, status in self.sendetermine_list:
 				if int(status) == 1:
-					# setze label string
-					label_serie = "%s - S%sE%s - %s" % (serien_name, staffel, episode, title)
+					# initialize strings
+					seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+					label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
 					
 					# formatiere start/end-zeit
 					(day, month) = datum.split('.')
@@ -4975,17 +4973,10 @@ class serienRecSendeTermine(Screen):
 					vpsSettings = getVPS(sender)
 
 					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
-					check_SeasonEpisode = "S%sE%s" % (staffel, episode)
 
 					#check 1 (hdd)
 					(dirname, dirname_serie) = getDirname(serien_name, staffel)
-					bereits_vorhanden = 0
-					if fileExists(dirname):
-						dirs = os.listdir(dirname)
-						for dir in dirs:
-							if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, check_SeasonEpisode), dir):
-								bereits_vorhanden += 1
-					
+					bereits_vorhanden = countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False)
 					bereits_vorhanden += checkAlreadyAdded(serien_name, staffel, episode)
 					
 					NoOfRecords = config.plugins.serienRec.NoOfRecords.value
@@ -5006,7 +4997,7 @@ class serienRecSendeTermine(Screen):
 					if bereits_vorhanden < NoOfRecords:
 						TimerDone = self.doTimer(params)
 					else:
-						writeLog(_("[Serien Recorder] Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '") % (serien_name, check_SeasonEpisode))
+						writeLog(_("[Serien Recorder] Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '") % (serien_name, seasonEpisodeString))
 						TimerDone = self.doTimer(params, config.plugins.serienRec.forceManualRecording.value)
 					if TimerDone:
 						# erstellt das serien verzeichnis
@@ -5064,23 +5055,12 @@ class serienRecSendeTermine(Screen):
 					timer_altstbRef = stbRef
 			
 				# try to get eventID (eit) from epgCache
-				eit = 0
-				start_unixtime_eit = start_unixtime
-				end_unixtime_eit = end_unixtime
-				if config.plugins.serienRec.eventid.value:
-					# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-					event_matches = getEPGevent(['RITBDSE',(timer_stbRef, 0, int(start_unixtime_eit)+(int(margin_before) * 60), -1)], timer_stbRef, serien_name, int(start_unixtime_eit)+(int(margin_before) * 60))
-					if event_matches and len(event_matches) > 0:
-						for event_entry in event_matches:
-							print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
-							eit = int(event_entry[1])
-							start_unixtime_eit = int(event_entry[3]) - (int(margin_before) * 60)
-							end_unixtime_eit = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
-							break
+				eit, end_unixtime_eit, start_unixtime_eit = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_stbRef)
+				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
 				# versuche timer anzulegen
 				if checkTuner(start_unixtime_eit, end_unixtime_eit):
-					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "S%sE%s - %s" % (staffel, episode, title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
+					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
 					if result["result"]:
 						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit):
 							self.countTimer += 1
@@ -5093,23 +5073,10 @@ class serienRecSendeTermine(Screen):
 
 				if (not TimerOK) and (useAlternativeChannel):
 					# try to get eventID (eit) from epgCache
-					alt_eit = 0
-					alt_start_unixtime_eit = start_unixtime
-					alt_end_unixtime_eit = end_unixtime
-					if config.plugins.serienRec.eventid.value:
-						# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-						event_matches = getEPGevent(['RITBDSE',(timer_altstbRef, 0, int(alt_start_unixtime_eit)+(int(margin_before) * 60), -1)], timer_altstbRef, serien_name, int(alt_start_unixtime_eit)+(int(margin_before) * 60))
-						if event_matches and len(event_matches) > 0:
-							for event_entry in event_matches:
-								print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
-								alt_eit = int(event_entry[1])
-								alt_start_unixtime_eit = int(event_entry[3]) - (int(margin_before) * 60)
-								alt_end_unixtime_eit = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
-								break
-				
+					alt_eit, alt_end_unixtime_eit, alt_start_unixtime_eit = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_altstbRef)
 					# versuche timer anzulegen
 					if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit):
-						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "S%sE%s - %s" % (staffel, episode, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
+						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
 						if result["result"]:
 							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit):
 								self.countTimer += 1
@@ -5117,7 +5084,7 @@ class serienRecSendeTermine(Screen):
 						else:
 							konflikt = result["message"]
 							writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, konflikt), True)
-							result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "S%sE%s - %s" % (staffel, episode, title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
+							result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
 							if result["result"]:
 								if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, False):
 									self.countTimer += 1
@@ -5162,18 +5129,19 @@ class serienRecSendeTermine(Screen):
 
 	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, TimerAktiviert=True):
 		result = False
+		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=?", (serien_name.lower(), start_time))
 		row = cCursor.fetchone()
 		if row:
-			print "[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
-			writeLog(_("[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			print "[Serien Recorder] Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+			writeLog(_("[Serien Recorder] Timer bereits vorhanden: %s %s - %s") % (serien_name, seasonEpisodeString, title))
 			result = True
 		else:
 			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, TimerAktiviert))
 			dbSerRec.commit()
-			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
-			writeLog(_("[Serien Recorder] Timer angelegt: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			print "[Serien Recorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+			writeLog(_("[Serien Recorder] Timer angelegt: %s %s - %s") % (serien_name, seasonEpisodeString, title))
 			result = True
 		cCursor.close()
 		return result	
@@ -9128,19 +9096,14 @@ class serienRecMain(Screen):
 				#
 				# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 				#
+				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+
 				bereits_vorhanden = False
 				if config.plugins.serienRec.sucheAufnahme.value:
 					(dirname, dirname_serie) = getDirname(serien_name, staffel)
-					check_SeasonEpisode = "S%sE%s" % (staffel, episode)
-					# check hdd
-					if fileExists(dirname):
-						dirs = os.listdir(dirname)
-						for dir in dirs:
-							if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, check_SeasonEpisode), dir):
-								bereits_vorhanden = True
-								break
+					bereits_vorhanden = countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True) > 0 and True or False
 						
-				title = "S%sE%s - %s" % (staffel, episode, title)
+				title = "%s - %s" % (seasonEpisodeString, title)
 				if self.pNeu == 0:
 					self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 				elif self.pNeu == 1:
