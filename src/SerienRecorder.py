@@ -3742,7 +3742,7 @@ class serienRecMarker(Screen):
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
@@ -4456,7 +4456,7 @@ class serienRecAddSerie(Screen):
 		InitSkin(self)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 23))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(25)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -5293,21 +5293,21 @@ class serienRecMainChannelEdit(Screen):
 
 		# normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(25)
 		self['list'] = self.chooseMenuList
 		self['list'].show()
 		
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
 		# popup2
 		self.chooseMenuList_popup2 = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup2.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList_popup2.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList_popup2.l.setItemHeight(25)
 		self['popup_list2'] = self.chooseMenuList_popup2
 		self['popup_list2'].hide()
@@ -7163,7 +7163,7 @@ class serienRecShowConflicts(Screen):
 		InitSkin(self)
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(25)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
@@ -7318,14 +7318,14 @@ class serienRecModifyAdded(Screen):
 		
 		#normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(25)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
@@ -8028,14 +8028,14 @@ class serienRecWishlist(Screen):
 		
 		# normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(25)
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList_popup.l.setItemHeight(25)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
@@ -8770,6 +8770,12 @@ class serienRecMain(Screen):
 
 		self.pNeu = int(config.plugins.serienRec.screenmode.value)
 
+		global showMainScreen
+		if config.plugins.serienRec.firstscreen.value == "0":
+			showMainScreen = True
+		else:
+			showMainScreen = False
+
 		self.pRegional = 0
 		self.pPaytv = 1		
 		self.pPrime = 1
@@ -8803,7 +8809,7 @@ class serienRecMain(Screen):
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20))
+		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList_popup.l.setItemHeight(30)
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
