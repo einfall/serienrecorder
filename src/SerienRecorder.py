@@ -2710,6 +2710,21 @@ class serienRecCheckForRecording():
 			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
 			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
+
+			# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
+			if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
+				start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
+				end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
+				if not allowedTimeRange(fromTime, toTime, start_time, end_time):
+					if not config.plugins.serienRec.forceRecording.value:
+						break
+
+			if config.plugins.serienRec.forceRecording.value:
+				TimeSpan_time = int(future_time) + (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
+				if int(start_unixtime) > int(TimeSpan_time):
+					# We reached the maximal time range to look for transmissions, so we can break here
+					break
+
 			##############################
 			#
 			# try to get eventID (eit) from epgCache
