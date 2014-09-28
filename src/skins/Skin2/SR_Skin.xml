@@ -1,4 +1,4 @@
-<screen name="SerienRecorder" position="center,center" size="1280,720" title="Serien Recorder">
+<screen name="SerienRecorder3.0" position="center,center" size="1280,720" title="Serien Recorder">
 	<ePixmap position="0,0" size="1280,720" zPosition="-11" transparent="0" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/bg.png" />
 
 	<widget name="title" font="Regular;24" position="55,10" size="860,30" valign="center" halign="center" transparent="1" />

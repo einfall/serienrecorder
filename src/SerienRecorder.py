@@ -81,7 +81,7 @@ def ReadConfigFile():
 	config.plugins.serienRec = ConfigSubsection()
 	config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
-	config.plugins.serienRec.SkinType = ConfigSelection(choices = [("0", _("SerienRecorder 1")), ("1", _("SerienRecorder 2")), ("2", _("AtileHD"))], default="0")
+	config.plugins.serienRec.SkinType = ConfigSelection(choices = [("-1", _("Skinpart")), ("0", _("SerienRecorder 1")), ("1", _("SerienRecorder 2")), ("2", _("AtileHD"))], default="0")
 	#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 	config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
 	config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
@@ -415,14 +415,30 @@ def showCover(data, self, serien_nameCover, force_show=True):
 		print("Coverfile not found: %s" % serien_nameCover)
 
 def InitSkin(self):
-	self.skinName = "SerienRecorder"
 	skin = None
-	if config.plugins.serienRec.SkinType.value == "2":
-		skin = "%sskins/AtileHD/SR_Skin.xml" % serienRecMainPath
-	elif config.plugins.serienRec.SkinType.value == "1":
-		skin = "%sskins/Skin2/SR_Skin.xml" % serienRecMainPath
+	if config.plugins.serienRec.SkinType.value == "-1":
+		self.skinName = "SerienRecorder"
+		skinpartAvailable = False
+		try:
+			from skin import lookupScreen
+			x, path = lookupScreen("SerienRecorder", 0)
+			if x:
+				skinpartAvailable = True
+		except:
+			pass
+
+		if not skinpartAvailable:
+			self.skinName = "SerienRecorder3.0"
+			skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+		
 	else:
-		skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+		self.skinName = "SerienRecorder3.0"
+		if config.plugins.serienRec.SkinType.value == "2":
+			skin = "%sskins/AtileHD/SR_Skin.xml" % serienRecMainPath
+		elif config.plugins.serienRec.SkinType.value == "1":
+			skin = "%sskins/Skin2/SR_Skin.xml" % serienRecMainPath
+		else:
+			skin = "%sskins/SR_Skin.xml" % serienRecMainPath
 	
 	if skin:
 		SRSkin = open(skin)
