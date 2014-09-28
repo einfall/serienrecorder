@@ -128,6 +128,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.writeLogVersion = ConfigYesNo(default = True)
 	config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
 	config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
+	config.plugins.serienRec.ActionOnNewManuell = ConfigYesNo(default = True)
 	config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
@@ -434,7 +435,10 @@ def InitSkin(self):
 	else:
 		self.skinName = "SerienRecorder3.0"
 		if config.plugins.serienRec.SkinType.value == "2":
-			skin = "%sskins/AtileHD/SR_Skin.xml" % serienRecMainPath
+			if os.path.exists('/usr/share/enigma2/AtileHD/skin_default/buttons/'): 
+				skin = "%sskins/AtileHD/SR_Skin.xml" % serienRecMainPath
+			else:
+				skin = "%sskins/SR_Skin.xml" % serienRecMainPath
 		elif config.plugins.serienRec.SkinType.value == "1":
 			skin = "%sskins/Skin2/SR_Skin.xml" % serienRecMainPath
 		else:
@@ -2236,10 +2240,10 @@ class serienRecCheckForRecording():
 		self.speedStartTime = time.clock()
 
 		# suche nach neuen Serien
-		if config.plugins.serienRec.ActionOnNew.value != "0":
-			self.startCheck2(amanuell)
-		else:
+		if (config.plugins.serienRec.ActionOnNew.value == "0") or (amanuell and (not config.plugins.serienRec.ActionOnNewManuell.value)):
 			self.startCheck3()
+		else:
+			self.startCheck2(amanuell)
 
 	def startCheck2(self, amanuell):
 		if str(config.plugins.serienRec.maxWebRequests.value).isdigit():
@@ -6111,6 +6115,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self.list.append(getConfigListEntry(_("    Anzahl der Tuner für Aufnahmen:"), config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry(_("Aktion bei neuer Serie/Staffel:"), config.plugins.serienRec.ActionOnNew))
 		if config.plugins.serienRec.ActionOnNew.value != "0":
+			self.list.append(getConfigListEntry(_("    auch bei manuellem Suchlauf:"), config.plugins.serienRec.ActionOnNewManuell))
 			self.list.append(getConfigListEntry(_("    Einträge löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteOlderThan))
 		self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		if config.plugins.serienRec.updateInterval.value == 24:
@@ -6277,6 +6282,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 																"  - 'nur Marker anlegen': Es wird automatisch ein neuer Serienmarker für die gefundene Serie angelegt.\n"
 																"  - 'Benachrichtigung und Marker anlegen': Es wird sowohl ein neuer Serienmarker angelegt, als auch eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
 																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.")),
+			config.plugins.serienRec.ActionOnNewManuell :      (_("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht.")),
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
 																"und auch nicht mehr angezeigt.")) % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))),
 			config.plugins.serienRec.runAutocheckAtExit :      (_("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Channels und/oder Markern Änderungen vorgenommen wurden, "
@@ -6440,6 +6446,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.writeLogVersion.save()
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.ActionOnNew.save()
+		config.plugins.serienRec.ActionOnNewManuell.save()
 		config.plugins.serienRec.deleteOlderThan.save()
 		config.plugins.serienRec.runAutocheckAtExit.save()
 		config.plugins.serienRec.forceRecording.save()
