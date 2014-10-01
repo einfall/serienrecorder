@@ -81,6 +81,7 @@ def ReadConfigFile():
 	config.plugins.serienRec = ConfigSubsection()
 	config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
+	config.plugins.serienRec.SkinType = ConfigSelection(choices = [("-1", _("Skinpart")), ("0", _("SerienRecorder 1")), ("1", _("SerienRecorder 2")), ("2", _("AtileHD"))], default="0")
 	#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 	config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
 	config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
@@ -127,12 +128,14 @@ def ReadConfigFile():
 	config.plugins.serienRec.writeLogVersion = ConfigYesNo(default = True)
 	config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
 	config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
+	config.plugins.serienRec.ActionOnNewManuell = ConfigYesNo(default = True)
 	config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 	config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
 	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 5, 1, default = 0)
 	config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default = True)
+	config.plugins.serienRec.breakTimersuche = ConfigYesNo(default = False)
 	config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
 	config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default = True)
 	config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
@@ -164,7 +167,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.4"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.5"))
 	config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
@@ -333,19 +336,19 @@ def getEPGevent(query, channelref, title, starttime):
 	return epgmatches
 
 def getStartEndTimeFromEPG(start_unixtime_eit, end_unixtime_eit, margin_before, margin_after, serien_name, STBRef):
-		eit = 0
-		if config.plugins.serienRec.eventid.value:
-			# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-			event_matches = getEPGevent(['RITBDSE', (STBRef, 0, int(start_unixtime_eit) + (int(margin_before) * 60), -1)], STBRef, serien_name, int(start_unixtime_eit) + (int(margin_before) * 60))
-			if event_matches and len(event_matches) > 0:
-				for event_entry in event_matches:
-					print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
-					eit = int(event_entry[1])
-					start_unixtime_eit = int(event_entry[3]) - (int(margin_before) * 60)
-					end_unixtime_eit = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
-					break
+	eit = 0
+	if config.plugins.serienRec.eventid.value:
+		# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
+		event_matches = getEPGevent(['RITBDSE', (STBRef, 0, int(start_unixtime_eit) + (int(margin_before) * 60), -1)], STBRef, serien_name, int(start_unixtime_eit) + (int(margin_before) * 60))
+		if event_matches and len(event_matches) > 0:
+			for event_entry in event_matches:
+				print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+				eit = int(event_entry[1])
+				start_unixtime_eit = int(event_entry[3]) - (int(margin_before) * 60)
+				end_unixtime_eit = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
+				break
 
-		return eit, end_unixtime_eit, start_unixtime_eit
+	return eit, end_unixtime_eit, start_unixtime_eit
 
 def getUrl(url):
 	req = urllib2.Request(url)
@@ -403,7 +406,7 @@ def showCover(data, self, serien_nameCover, force_show=True):
 		self['cover'].instance.setPixmap(gPixmapPtr())
 		scale = AVSwitch().getFramebufferScale()
 		size = self['cover'].instance.size()
-		self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#FF000000"))
+		self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#00000000"))
 		if self.picload.startDecode(serien_nameCover, 0, 0, False) == 0:
 			ptr = self.picload.getData()
 			if ptr != None:
@@ -413,78 +416,83 @@ def showCover(data, self, serien_nameCover, force_show=True):
 		print("Coverfile not found: %s" % serien_nameCover)
 
 def InitSkin(self):
-	## Skin
-	self.skinName = "SerienRecorder"
 	skin = None
-	skin = "%sskins/SR_Skins.xml" % serienRecMainPath
+	if config.plugins.serienRec.SkinType.value == "-1":
+		self.skinName = "SerienRecorder"
+		skinpartAvailable = False
+		try:
+			from skin import lookupScreen
+			x, path = lookupScreen("SerienRecorder", 0)
+			if x:
+				skinpartAvailable = True
+		except:
+			pass
+
+		if not skinpartAvailable:
+			self.skinName = "SerienRecorder3.0"
+			skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+		
+	else:
+		self.skinName = "SerienRecorder3.0"
+		if config.plugins.serienRec.SkinType.value == "2":
+			if os.path.exists('/usr/share/enigma2/AtileHD/skin_default/buttons/'): 
+				skin = "%sskins/AtileHD/SR_Skin.xml" % serienRecMainPath
+			else:
+				skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+		elif config.plugins.serienRec.SkinType.value == "1":
+			skin = "%sskins/Skin2/SR_Skin.xml" % serienRecMainPath
+		else:
+			skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+	
 	if skin:
 		SRSkin = open(skin)
 		self.skin = SRSkin.read()
 		SRSkin.close()
-	
+
 	self['bt_red'] = Pixmap()
-	self['bt_red'].hide()
 	self['bt_green'] = Pixmap()
-	self['bt_green'].hide()
-	self['bt_ok'] = Pixmap()
-	self['bt_ok'].hide()
 	self['bt_yellow'] = Pixmap()
-	self['bt_yellow'].hide()
 	self['bt_blue'] = Pixmap()
-	self['bt_blue'].hide()
+
+	self['bt_ok'] = Pixmap()
+	self['bt_exit'] = Pixmap()
+	self['bt_text'] = Pixmap()
+	self['bt_epg'] = Pixmap()
+	self['bt_info'] = Pixmap()
+	self['bt_menu'] = Pixmap()
+	self['bt_0'] = Pixmap()
+	self['bt_1'] = Pixmap()
+	self['bt_2'] = Pixmap()
+	self['bt_3'] = Pixmap()
+	self['bt_4'] = Pixmap()
+	self['bt_5'] = Pixmap()
+	self['bt_6'] = Pixmap()
+	self['bt_7'] = Pixmap()
+	self['bt_8'] = Pixmap()
+	self['bt_9'] = Pixmap()
 
 	self['text_red'] = Label("")
-	self['text_red'].hide()
 	self['text_green'] = Label("")
-	self['text_green'].hide()
-	self['text_ok'] = Label("")
-	self['text_ok'].hide()
 	self['text_yellow'] = Label("")
-	self['text_yellow'].hide()
 	self['text_blue'] = Label(_(""))
-	self['text_blue'].hide()
 
-	self['bt_exit'] = Pixmap()
-	self['bt_exit'].hide()
-	self['bt_text'] = Pixmap()
-	self['bt_text'].hide()
-	self['bt_epg'] = Pixmap()
-	self['bt_epg'].hide()
-	self['bt_info'] = Pixmap()
-	self['bt_info'].hide()
-	self['bt_menu'] = Pixmap()
-	self['bt_menu'].hide()
-	self['bt_0'] = Pixmap()
-	self['bt_0'].hide()
-	self['bt_1'] = Pixmap()
-	self['bt_1'].hide()
-	self['bt_2'] = Pixmap()
-	self['bt_2'].hide()
-	self['bt_3'] = Pixmap()
-	self['bt_3'].hide()
-	self['bt_4'] = Pixmap()
-	self['bt_4'].hide()
-	self['bt_5'] = Pixmap()
-	self['bt_5'].hide()
-	self['bt_6'] = Pixmap()
-	self['bt_6'].hide()
-	self['bt_7'] = Pixmap()
-	self['bt_7'].hide()
-	self['bt_8'] = Pixmap()
-	self['bt_8'].hide()
-	self['bt_9'] = Pixmap()
-	self['bt_9'].hide()
+	self['text_ok'] = Label("")
+	self['text_exit'] = Label("")
+	self['text_text'] = Label("")
+	self['text_epg'] = Label("")
+	self['text_info'] = Label("")
+	self['text_menu'] = Label("")
 
 	self['text_0'] = Label("")
-	self['text_0'].hide()
 	self['text_1'] = Label("")
-	self['text_1'].hide()
 	self['text_2'] = Label("")
-	self['text_2'].hide()
 	self['text_3'] = Label("")
-	self['text_3'].hide()
 	self['text_4'] = Label("")
-	self['text_4'].hide()
+	self['text_5'] = Label("")
+	self['text_6'] = Label("")
+	self['text_7'] = Label("")
+	self['text_8'] = Label("")
+	self['text_9'] = Label("")
 
 	self['Web_Channel'] = Label("")
 	self['Web_Channel'].hide()
@@ -519,12 +527,75 @@ def InitSkin(self):
 	self['version'] = Label(_("Serien Recorder v%s") % config.plugins.serienRec.showversion.value)
 	self['headline'] = Label("")
 
-	self.num_bt_text = ([_("Zeige Log"), _("-----"), _("Abbrechen")],
-						[_("Added Liste"), _("Konflikt-Liste"), _("About")],
-						[_("-----"), _("Merkzettel"), ""],
-						[_("Neue Serienstarts"), _("-----"), _("YouTube/Wikipedia")],
-						[_("Serien Beschreibung"), _("-----"), ""])
+	if config.plugins.serienRec.SkinType.value == "1":
+		self.num_bt_text = ([_("Zeige Log"), "", _("Abbrechen")],
+							[_("Added Liste"), _("Konflikt-Liste"), _("About")],
+							["", _("Merkzettel"), ""],
+							[_("Neue Serienstarts"), "", _("YouTube (lang: Wikipedia)")],
+							[_("Serien Beschreibung"), "", ""])
+	else:
+		self['bt_red'].hide()
+		self['bt_green'].hide()
+		self['bt_yellow'].hide()
+		self['bt_blue'].hide()
 
+		self['bt_ok'].hide()
+		self['bt_exit'].hide()
+		self['bt_text'].hide()
+		self['bt_epg'].hide()
+		self['bt_info'].hide()
+		self['bt_menu'].hide()
+		self['bt_0'].hide()
+		self['bt_1'].hide()
+		self['bt_2'].hide()
+		self['bt_3'].hide()
+		self['bt_4'].hide()
+		self['bt_5'].hide()
+		self['bt_6'].hide()
+		self['bt_7'].hide()
+		self['bt_8'].hide()
+		self['bt_9'].hide()
+
+		self['text_red'].hide()
+		self['text_green'].hide()
+		self['text_yellow'].hide()
+		self['text_blue'].hide()
+
+		self['text_ok'].hide()
+		self['text_0'].hide()
+		self['text_1'].hide()
+		self['text_2'].hide()
+		self['text_3'].hide()
+		self['text_4'].hide()
+		self['text_5'].hide()
+		self['text_6'].hide()
+		self['text_7'].hide()
+		self['text_8'].hide()
+		self['text_9'].hide()
+		
+		self.num_bt_text = ([_("Zeige Log"), _("-----"), _("Abbrechen")],
+							[_("Added Liste"), _("Konflikt-Liste"), _("About")],
+							[_("-----"), _("Merkzettel"), ""],
+							[_("Neue Serienstarts"), _("-----"), _("YouTube/Wikipedia")],
+							[_("Serien Beschreibung"), _("-----"), ""])
+		
+def Skin1_Settings(self):			
+	self['text_0'].setText(self.num_bt_text[0][0])
+	self['text_1'].setText(self.num_bt_text[1][0])
+	self['text_2'].setText(self.num_bt_text[2][0])
+	self['text_3'].setText(self.num_bt_text[3][0])
+	self['text_4'].setText(self.num_bt_text[4][0])
+	self['text_5'].setText(self.num_bt_text[0][1])
+	self['text_6'].setText(self.num_bt_text[1][1])
+	self['text_7'].setText(self.num_bt_text[2][1])
+	self['text_8'].setText(self.num_bt_text[3][1])
+	self['text_9'].setText(self.num_bt_text[4][1])
+	self['text_exit'].setText(self.num_bt_text[0][2])
+	self['text_text'].setText(self.num_bt_text[1][2])
+	self['text_epg'].setText(self.num_bt_text[2][2])
+	self['text_info'].setText(self.num_bt_text[3][2])
+	self['text_menu'].setText(self.num_bt_text[4][2])
+		
 def updateMenuKeys(self):	
 	if self.displayMode == 0:
 		self.displayMode = 1
@@ -682,16 +753,16 @@ def getDirname(serien_name, staffel):
 	return (dirname, dirname_serie)
 
 def countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, stopAfterFirstHit = False):
-		count = 0
-		if fileExists(dirname):
-			dirs = os.listdir(dirname)
-			for dir in dirs:
-				if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, seasonEpisodeString), dir):
-					count += 1
-					if stopAfterFirstHit:
-						break
+	count = 0
+	if fileExists(dirname):
+		dirs = os.listdir(dirname)
+		for dir in dirs:
+			if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, seasonEpisodeString), dir):
+				count += 1
+				if stopAfterFirstHit:
+					break
 
-		return count
+	return count
 
 def CreateDirectory(serien_name, staffel):
 	(dirname, dirname_serie) = getDirname(serien_name, staffel)
@@ -2019,7 +2090,7 @@ class serienRecCheckForRecording():
 			refreshTimer = eTimer()
 			refreshTimer.callback.append(self.startCheck)
 			updateZeit = int(config.plugins.serienRec.updateInterval.value) * 3600000
-			refreshTimer.start(updateZeit)
+			refreshTimer.start(updateZeit, True)
 			print "%sSerien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
 		elif not self.manuell and config.plugins.serienRec.timeUpdate.value:
@@ -2032,7 +2103,7 @@ class serienRecCheckForRecording():
 				deltatime = abs(1440 - acttime + deltime)
 			refreshTimer = eTimer()
 			refreshTimer.callback.append(self.startCheck)
-			refreshTimer.start(deltatime * 60 * 1000)
+			refreshTimer.start(deltatime * 60 * 1000, True)
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
 			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
@@ -2070,7 +2141,7 @@ class serienRecCheckForRecording():
 			refreshTimer = eTimer()
 			refreshTimer.callback.append(self.startCheck)
 			updateZeit = int(config.plugins.serienRec.updateInterval.value) * 3600000
-			refreshTimer.start(updateZeit)
+			refreshTimer.start(updateZeit, True)
 			print "%s[Serien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
 		elif config.plugins.serienRec.timeUpdate.value:
@@ -2083,7 +2154,7 @@ class serienRecCheckForRecording():
 				deltatime = abs(1440 - acttime + deltime)
 			refreshTimer = eTimer()
 			refreshTimer.callback.append(self.startCheck)
-			refreshTimer.start(deltatime * 60 * 1000)
+			refreshTimer.start(deltatime * 60 * 1000, True)
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
 			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
@@ -2169,10 +2240,10 @@ class serienRecCheckForRecording():
 		self.speedStartTime = time.clock()
 
 		# suche nach neuen Serien
-		if config.plugins.serienRec.ActionOnNew.value != "0":
-			self.startCheck2(amanuell)
-		else:
+		if (config.plugins.serienRec.ActionOnNew.value == "0") or (amanuell and (not config.plugins.serienRec.ActionOnNewManuell.value)):
 			self.startCheck3()
+		else:
+			self.startCheck2(amanuell)
 
 	def startCheck2(self, amanuell):
 		if str(config.plugins.serienRec.maxWebRequests.value).isdigit():
@@ -2348,12 +2419,12 @@ class serienRecCheckForRecording():
 				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
 						
 				(margin_before, margin_after) = getMargins(serien_name, webChannel)
-				title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-				(dirname, dirname_serie) = getDirname(serien_name, staffel)
 		
 				# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 				event_matches = getEPGevent(['RITBDSE',(stbRef, 0, int(serien_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(serien_time)+(int(margin_before) * 60))
 				if event_matches and len(event_matches) > 0:
+					title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+					(dirname, dirname_serie) = getDirname(serien_name, staffel)
 					for event_entry in event_matches:
 						writeLog(_("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '") % (title, dirname))
 						eit = int(event_entry[1])
@@ -2712,15 +2783,17 @@ class serienRecCheckForRecording():
 
 
 			# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
-			if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
-				start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
-				end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
-				if not allowedTimeRange(fromTime, toTime, start_time, end_time):
-					if not config.plugins.serienRec.forceRecording.value:
-						break
+			if config.plugins.serienRec.breakTimersuche.value:
+				if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
+					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
+					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
+					if not allowedTimeRange(fromTime, toTime, start_time, end_time):
+						if not config.plugins.serienRec.forceRecording.value:
+							break
 
-			if config.plugins.serienRec.forceRecording.value:
-				TimeSpan_time = int(future_time) + (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
+				TimeSpan_time = int(future_time)
+				if config.plugins.serienRec.forceRecording.value:
+					TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
 				if int(start_unixtime) > int(TimeSpan_time):
 					# We reached the maximal time range to look for transmissions, so we can break here
 					break
@@ -3222,12 +3295,16 @@ class serienRecTimer(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
-		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
+			
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.changesMade = False
 
@@ -3251,14 +3328,6 @@ class serienRecTimer(Screen):
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_yellow'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_info'].show()
-		
 		self['cover'].show()
 
 		self['text_red'].setText(_("Entferne Timer"))
@@ -3269,15 +3338,24 @@ class serienRecTimer(Screen):
 		self['text_yellow'].setText(_("Zeige auch alte Timer"))
 		self['text_blue'].setText(_("Entferne alle alten"))
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_yellow'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_yellow'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_yellow'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -3560,12 +3638,16 @@ class serienRecRunAutoCheck(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
-		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
+			
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -3593,22 +3675,26 @@ class serienRecRunAutoCheck(Screen):
 
 		self['title'].setText(_("Suche nach neuen Timern läuft."))
 
-		self['bt_red'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		
 		self['text_red'].setText(_("Abbrechen"))
-		self.num_bt_text[0][0] = _("-----")
 		self.num_bt_text[3][2] = ""
-		self.num_bt_text[4][0] = _("-----")
 
-		self['text_red'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.num_bt_text[0][0] = _("-----")
+			self.num_bt_text[4][0] = _("-----")
+			self['bt_red'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
 		
+			self['text_red'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self.num_bt_text[0][0] = ""
+			self.num_bt_text[4][0] = ""
+
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 		
@@ -3698,7 +3784,6 @@ class serienRecMarker(Screen):
 		self.picload = ePicLoad()
 		self.SelectSerie = SelectSerie
 		
-		#self["actions"] = ActionMap(["SerienRecorderActions", "ColorActions"], {
 		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"       : self.keyOK,
 			"exit"     : self.keyCancel,
@@ -3726,12 +3811,16 @@ class serienRecMarker(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 		
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -3764,39 +3853,46 @@ class serienRecMarker(Screen):
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_yellow'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_epg'].show()
-		self['bt_info'].show()
-		self['bt_menu'].show()
-		
 		self['cover'].show()
 
-		self['text_red'].setText(_("Entferne Serie(n) Marker"))
 		self['text_green'].setText(_("Sender auswählen."))
 		self['text_ok'].setText(_("Staffel(n) auswählen."))
 		self['text_yellow'].setText(_("Sendetermine"))
-		self['text_blue'].setText(_("Serie Suchen"))
+		self['text_blue'].setText(_("Serie suchen"))
 		if not showMainScreen:
 			self.num_bt_text[0][2] = _("Exit/Serienplaner")
 		self.num_bt_text[2][2] = _("Timer suchen")
-		self.num_bt_text[4][2] = _("Serien Einstellungen")
+		self.num_bt_text[4][2] = _("Serien-Einstellungen")
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_yellow'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			#self['text_red'].setText(_("Entferne Serie(n) Marker"))
+			self['text_red'].setText(_("(De)aktivieren/Löschen"))
+			
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_yellow'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_epg'].show()
+			self['bt_info'].show()
+			self['bt_menu'].show()
+			
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_yellow'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
+			if not showMainScreen:
+				self.num_bt_text[0][2] = _("Exit (lang: Serienplaner)")
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -4456,12 +4552,16 @@ class serienRecAddSerie(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 		
 		self.loading = True
 
@@ -4478,27 +4578,28 @@ class serienRecAddSerie(Screen):
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
-		self['bt_red'].show()
-		self['bt_ok'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_info'].show()
-		
 		self['cover'].show()
 
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_ok'].setText(_("Hinzufügen"))
 		self['text_blue'].setText(_("Serie Suchen"))
 
-		self['text_red'].show()
-		self['text_ok'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['bt_red'].show()
+			self['bt_ok'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			
+			self['text_red'].show()
+			self['text_ok'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -4729,12 +4830,16 @@ class serienRecSendeTermine(Screen):
 		self.changesMade = False
 		
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 		
 		self.sendetermine_list = []
 		self.red = 0xf23d21
@@ -4759,14 +4864,6 @@ class serienRecSendeTermine(Screen):
 
 		self['title'].setText(_("Lade Web-Channel / STB-Channels..."))
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_yellow'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_info'].show()
-		
 		self['cover'].show()
 
 		self['text_red'].setText(_("Abbrechen"))
@@ -4778,15 +4875,24 @@ class serienRecSendeTermine(Screen):
 			self['text_yellow'] = Label(_("Filter einschalten"))
 			self.title_txt = _("alle")
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_yellow'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_yellow'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_yellow'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -5219,14 +5325,15 @@ class serienRecMainChannelEdit(Screen):
 
 		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
 			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
+			"exit"  : self.keyCancel,
+			"red"	: self.keyRed,
+			"red_long" : self.keyRedLong,
+			"green" : self.keyGreen,
+			"menu"  : self.channelSetup,
 			"left"  : self.keyLeft,
 			"right" : self.keyRight,
 			"up"    : self.keyUp,
 			"down"  : self.keyDown,
-			"red"	: self.keyRed,
-			"green" : self.keyGreen,
-			"menu"  : self.channelSetup,
 			"displayHelp"      : self.youtubeSearch,
 			"displayHelp_long" : self.WikipediaSearch,
 			"startTeletext" : self.showAbout,
@@ -5238,12 +5345,16 @@ class serienRecMainChannelEdit(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -5306,28 +5417,34 @@ class serienRecMainChannelEdit(Screen):
 		self['alt_STB_Channel'].show()
 		self['separator'].show()
 		
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_info'].show()
-		self['bt_menu'].show()
-
-		self['text_red'].setText(_("Sender An/Aus-Schalten"))
+		#self['text_red'].setText(_("Sender An/Aus-Schalten"))
 		self['text_green'].setText(_("Reset Senderliste"))
-		self['text_ok'].setText(_("Sender Auswählen"))
-		self.num_bt_text[4][0] = _("-----")
-		self.num_bt_text[4][2] = _("Sender Einstellungen")
+		self['text_ok'].setText(_("Sender auswählen"))
+		self.num_bt_text[4][2] = _("Sender-Einstellungen")
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['text_red'].setText(_("(De)aktivieren/Löschen"))
+			self.num_bt_text[4][0] = _("-----")
+
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			self['bt_menu'].show()
+
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
+			self.num_bt_text[4][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -5622,7 +5739,7 @@ class serienRecMainChannelEdit(Screen):
 
 	def keyGreen(self):
 		self.session.openWithCallback(self.channelReset, MessageBox, _("Sender-Liste zurücksetzen ?"), MessageBox.TYPE_YESNO)
-		
+
 	def channelReset(self, answer):
 		if answer:
 			print "[Serien Recorder] channel-list reset..."
@@ -5635,6 +5752,38 @@ class serienRecMainChannelEdit(Screen):
 		else:
 			print "[Serien Recorder] channel-list ok."
 
+	def keyRedLong(self):
+		check = self['list'].getCurrent()
+		if check == None:
+			print "[Serien Recorder] Serien Marker leer."
+			return
+		else:
+			self.selected_sender = self['list'].getCurrent()[0][0]
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("SELECT * FROM Channels WHERE LOWER(WebChannel)=?", (self.selected_sender.lower(),))
+			row = cCursor.fetchone()
+			if row:
+				print "gefunden."
+				if config.plugins.serienRec.confirmOnDelete.value:
+					self.session.openWithCallback(self.channelDelete, MessageBox, _("Soll '%s' wirklich entfernt werden?") % self.selected_sender, MessageBox.TYPE_YESNO, default = False)
+				else:
+					self.channelDelete(True)
+			cCursor.close()
+
+	def channelDelete(self, answer):
+		if not answer:
+			return
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("DELETE FROM NeuerStaffelbeginn WHERE LOWER(Sender)=?", (self.selected_sender.lower(),))
+		cCursor.execute("DELETE FROM SenderAuswahl WHERE LOWER(ErlaubterSender)=?", (self.selected_sender.lower(),))
+		cCursor.execute("DELETE FROM Channels WHERE LOWER(WebChannel)=?", (self.selected_sender.lower(),))
+		dbSerRec.commit()
+		cCursor.close()
+		self.changesMade = True
+		self['title'].instance.setForegroundColor(parseColor("red"))
+		self['title'].setText(_("Sender '- %s -' entfernt.") % self.selected_sender)
+		self.showChannels()	
+			
 	def keyLeft(self):
 		self[self.modus].pageUp()
 
@@ -5695,6 +5844,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		}, -1)
 
 		self.setupSkin()
+		if config.plugins.serienRec.SkinType.value == "1":
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -5702,7 +5853,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.yellow = 0xbab329
 		self.white = 0xffffff
 		self.setupModified = False
-
+		self.skinChanged = False
+		self.SkinType = config.plugins.serienRec.SkinType.value
+		
 		self.__C_JUSTPLAY__ = 0
 		self.__C_ZAPBEFORERECORD__ = 1
 		self.__C_JUSTREMIND__ = 2
@@ -5734,33 +5887,41 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self['config'] = ConfigList([])
 		self['config'].show()
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_yellow'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-
 		self['title'].setText(_("Serien Recorder - Einstellungen:"))
 		self['text_red'].setText(_("Defaultwerte"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Verzeichnis auswählen"))
 		self['text_yellow'].setText(_("in Datei speichern"))
 		self['text_blue'].setText(_("aus Datei laden"))
-		self['text_0'].setText(_("Abbrechen"))
-		self['text_1'].setText(_("About"))
-
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_yellow'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
 
 		self['config_information'].show()
 		self['config_information_text'].show()
+
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['text_0'].setText(_("Abbrechen"))
+			self['text_1'].setText(_("About"))
+
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_yellow'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_yellow'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+		else:
+			self.num_bt_text = (["", "", _("Abbrechen")],
+								["", "", _("About")],
+								["", "", ""],
+								["", "", ""],
+								["", "", ""])
 
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
@@ -5937,7 +6098,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------")))
-		self.list.append(getConfigListEntry(_("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):"), config.plugins.serienRec.updateInterval)) #3600000
+		#self.list.append(getConfigListEntry(_("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):"), config.plugins.serienRec.updateInterval)) #3600000
+		self.list.append(getConfigListEntry(_("Intervall für autom. Suchlauf (Std.) (00 = keiner, 24 = nach Uhrzeit):"), config.plugins.serienRec.updateInterval)) #3600000
 		if config.plugins.serienRec.updateInterval.value == 24:
 			self.list.append(getConfigListEntry(_("    Uhrzeit für automatischen Suchlauf (nur wenn Intervall = 24):"), config.plugins.serienRec.deltime))
 		self.list.append(getConfigListEntry(_("Timer für X Tage erstellen:"), config.plugins.serienRec.checkfordays))
@@ -5953,6 +6115,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self.list.append(getConfigListEntry(_("    Anzahl der Tuner für Aufnahmen:"), config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry(_("Aktion bei neuer Serie/Staffel:"), config.plugins.serienRec.ActionOnNew))
 		if config.plugins.serienRec.ActionOnNew.value != "0":
+			self.list.append(getConfigListEntry(_("    auch bei manuellem Suchlauf:"), config.plugins.serienRec.ActionOnNewManuell))
 			self.list.append(getConfigListEntry(_("    Einträge löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteOlderThan))
 		self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		if config.plugins.serienRec.updateInterval.value == 24:
@@ -5963,7 +6126,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 			
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  TIMER:  --------------------------------------------------------------------------------------------")))
-		
 		self.list.append(getConfigListEntry(_("Timer-Art:"), self.kindOfTimer))
 		self.list.append(getConfigListEntry(_("Timervorlauf (in Min.):"), config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry(_("Timernachlauf (in Min.):"), config.plugins.serienRec.margin_after))
@@ -5981,12 +6143,17 @@ class serienRecSetup(Screen, ConfigListScreen):
 				self.list.append(getConfigListEntry(_("    Verwende alternative Channels bei Konflikten:"), config.plugins.serienRec.useAlternativeChannel))
 
 		self.list.append(getConfigListEntry(""))
+		self.list.append(getConfigListEntry(_("---------  OPTIMIERUNGEN:  ------------------------------------------------------------------------------------")))
+		self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
+		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahme auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
+		self.list.append(getConfigListEntry(_("Zeitspanne für Timersuche einschränken:"), config.plugins.serienRec.breakTimersuche))
+
+		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
+		self.list.append(getConfigListEntry(_("Skin:"), config.plugins.serienRec.SkinType))
 		self.list.append(getConfigListEntry(_("Starte Plugin mit:"), config.plugins.serienRec.firstscreen))
 		self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
 		self.list.append(getConfigListEntry(_("Korrektur der Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
-		self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
-		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahme auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
 		self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
 		self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
 		self.list.append(getConfigListEntry(_("Zeige Nachricht wenn Suchlauf startet:"), config.plugins.serienRec.showNotification))
@@ -6115,6 +6282,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 																"  - 'nur Marker anlegen': Es wird automatisch ein neuer Serienmarker für die gefundene Serie angelegt.\n"
 																"  - 'Benachrichtigung und Marker anlegen': Es wird sowohl ein neuer Serienmarker angelegt, als auch eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
 																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.")),
+			config.plugins.serienRec.ActionOnNewManuell :      (_("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht.")),
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
 																"und auch nicht mehr angezeigt.")) % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))),
 			config.plugins.serienRec.runAutocheckAtExit :      (_("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Channels und/oder Markern Änderungen vorgenommen wurden, "
@@ -6181,7 +6349,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.logScrollLast :           (_("Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang.")),
 			config.plugins.serienRec.logWrapAround :           (_("Bei 'ja' erfolgt die Anzeige der log-Datei mit Zeilenumbruch, d.h. es werden 3 Zeilen pro Eintrag angezeigt.\n"
 			                                                    "Bei 'nein' erfolgt die Anzeige der log-Datei mit 1 Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)")),
-			config.plugins.serienRec.firstscreen :			   (_("Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen.")),
+			config.plugins.serienRec.firstscreen :             (_("Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen.")),
+			config.plugins.serienRec.SkinType :                (_("Hier kann das Erscheinungsbild des SR ausgewählt werden.")),
 		}			
 				
 		if config.plugins.serienRec.updateInterval.value == 0:
@@ -6206,6 +6375,15 @@ class serienRecSetup(Screen, ConfigListScreen):
 															"Bei jeder anderen Einstellung in den eingestellten Intervallen (alle %s Stunden).")) % str(config.plugins.serienRec.updateInterval.value)
 			})
 			
+		if config.plugins.serienRec.forceRecording.value:
+			self.HilfeTexte.update({
+				config.plugins.serienRec.breakTimersuche : (_("Bei 'ja' wird die Timersuche nach Ablauf der Wartezeit für Wiederholungen (dzt. %s Tage) abgebrochen.")) % int(config.plugins.serienRec.TimeSpanForRegularTimer.value)
+			})
+		else:
+			self.HilfeTexte.update({
+				config.plugins.serienRec.breakTimersuche : (_("Bei 'ja' wird die Timersuche abgebrochen, wenn der Ausstrahlungstermin zu weit in der Zukunft liegt (also nach %s).")) % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400)))
+			})
+
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
@@ -6268,6 +6446,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.writeLogVersion.save()
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.ActionOnNew.save()
+		config.plugins.serienRec.ActionOnNewManuell.save()
 		config.plugins.serienRec.deleteOlderThan.save()
 		config.plugins.serienRec.runAutocheckAtExit.save()
 		config.plugins.serienRec.forceRecording.save()
@@ -6284,6 +6463,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.listFontsize.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
+		config.plugins.serienRec.breakTimersuche.save()
 		config.plugins.serienRec.selectNoOfTuners.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
@@ -6309,12 +6489,15 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.dbversion.save()
 		config.plugins.serienRec.TimerName.save()
 		config.plugins.serienRec.firstscreen.save()
+		config.plugins.serienRec.SkinType.save()
 		config.plugins.serienRec.databasePath.save()
 		configfile.save()
 
+		if self.SkinType != config.plugins.serienRec.SkinType.value:
+			self.skinChanged = True
 		global serienRecDataBase
 		if serienRecDataBase == "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value:
-			self.close((True, self.setupModified, True))
+			self.close((True, self.skinChanged, self.setupModified, True))
 		else:		
 			global dbSerRec
 			f = dbSerRec.text_factory
@@ -6326,7 +6509,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 				dbSerRec = sqlite3.connect(serienRecDataBase)
 				dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 				success = initDB()
-				self.close((True, True, success))
+				self.close((True, self.skinChanged, True, success))
 
 	def callDbChangedMsg(self, answer):
 		global serienRecDataBase
@@ -6340,13 +6523,13 @@ class serienRecSetup(Screen, ConfigListScreen):
 			serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
 		
 		success = initDB()
-		self.close((True, True, success))
+		self.close((True, self.skinChanged, True, success))
 
 	def keyCancel(self):
 		if self.setupModified:
 			self.save()
 		else:
-			self.close((False, False, True))
+			self.close((False, self.skinChanged, False, True))
 		
 class serienRecMarkerSetup(Screen, ConfigListScreen):
 	def __init__(self, session, Serie):
@@ -6365,6 +6548,8 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		}, -1)
 
 		self.setupSkin()
+		if config.plugins.serienRec.SkinType.value == "1":
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -6435,27 +6620,35 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self['config'] = ConfigList([])
 		self['config'].show()
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
+		self['config_information'].show()
+		self['config_information_text'].show()
 
 		self['title'].setText(_("Serien Recorder - Einstellungen für '%s':") % self.Serie)
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Verzeichnis auswählen"))
-		self['text_0'].setText(_("Abbrechen"))
-		self['text_1'].setText(_("About"))
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_0'].show()
-		self['text_1'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['text_0'].setText(_("Abbrechen"))
+			self['text_1'].setText(_("About"))
 
-		self['config_information'].show()
-		self['config_information_text'].show()
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+		else:
+			self.num_bt_text = (["", "", _("Abbrechen")],
+								["", "", _("About")],
+								["", "", ""],
+								["", "", ""],
+								["", "", ""])
 
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
@@ -6684,6 +6877,8 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		}, -1)
 
 		self.setupSkin()
+		if config.plugins.serienRec.SkinType.value == "1":
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -6732,24 +6927,32 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		self['config'] = ConfigList([])
 		self['config'].show()
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
+		self['config_information'].show()
+		self['config_information_text'].show()
 
 		self['title'].setText(_("Serien Recorder - Einstellungen für '%s':") % self.webSender)
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_green'].setText(_("Speichern"))
-		self['text_0'].setText(_("Abbrechen"))
-		self['text_1'].setText(_("About"))
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_0'].show()
-		self['text_1'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['text_0'].setText(_("Abbrechen"))
+			self['text_1'].setText(_("About"))
 
-		self['config_information'].show()
-		self['config_information_text'].show()
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+		else:
+			self.num_bt_text = (["", "", _("Abbrechen")],
+								["", "", _("About")],
+								["", "", ""],
+								["", "", ""],
+								["", "", ""])
 
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
@@ -6896,6 +7099,8 @@ class SerienRecFileList(Screen):
 		}, -1)
 
 		self.setupSkin()
+		if config.plugins.serienRec.SkinType.value == "1":
+			Skin1_Settings(self)
 		self.updateFile()
 
 	def setupSkin(self):
@@ -6907,26 +7112,34 @@ class SerienRecFileList(Screen):
 		self['title'].hide()
 		self['path'].show()
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		
 		self['text_red'].setText(_("Verzeichnis löschen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Auswahl"))
 		self['text_blue'].setText(_("Verzeichnis anlegen"))
-		self['text_0'].setText(_("Abbrechen"))
-		self['text_1'].setText(_("About"))
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['text_0'].setText(_("Abbrechen"))
+			self['text_1'].setText(_("About"))
+
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+		else:
+			self.num_bt_text = (["", "", _("Abbrechen")],
+								["", "", _("About")],
+								["", "", ""],
+								["", "", ""],
+								["", "", ""])
 
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
@@ -7006,12 +7219,16 @@ class serienRecReadLog(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -7038,21 +7255,27 @@ class serienRecReadLog(Screen):
 
 		self['title'].setText(_("Lese LogFile: (%s)") % logFile)
 
-		self['bt_red'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		
 		self['text_red'].setText(_("Abbrechen"))
-		self.num_bt_text[0][0] = _("-----")
 		self.num_bt_text[3][2] = ""
-		self.num_bt_text[4][0] = _("-----")
 
-		self['text_red'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.num_bt_text[0][0] = _("-----")
+			self.num_bt_text[4][0] = _("-----")
+
+			self['bt_red'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			
+			self['text_red'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self.num_bt_text[0][0] = ""
+			self.num_bt_text[4][0] = ""
+
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -7125,12 +7348,16 @@ class serienRecShowConflicts(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -7153,24 +7380,29 @@ class serienRecShowConflicts(Screen):
 
 		self['title'].setText(_("Timer-Konflikte"))
 
-		self['bt_red'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_blue'].setText(_("Liste leeren"))
-		self.num_bt_text[1][1] = _("-----")
 		self.num_bt_text[3][2] = ""
-		self.num_bt_text[4][0] = _("-----")
 
-		self['text_red'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.num_bt_text[1][1] = _("-----")
+			self.num_bt_text[4][0] = _("-----")
+
+			self['bt_red'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			
+			self['text_red'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self.num_bt_text[1][1] = ""
+			self.num_bt_text[4][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -7278,12 +7510,16 @@ class serienRecModifyAdded(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.delAdded = False
 		self.sortedList = False
@@ -7313,31 +7549,35 @@ class serienRecModifyAdded(Screen):
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_yellow'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_info'].show()
-		
 		self['cover'].show()
 
 		self['text_red'].setText(_("Eintrag löschen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Neuer Eintrag"))
 		self['text_yellow'].setText(_("Sortieren"))
-		self.num_bt_text[1][0] = _("-----")
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_yellow'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.num_bt_text[1][0] = _("-----")
+
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_yellow'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_yellow'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self.num_bt_text[1][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -7624,12 +7864,16 @@ class serienRecShowSeasonBegins(Screen):
 		self.filter = config.plugins.serienRec.serienRecShowSeasonBegins_filter.value
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -7652,14 +7896,6 @@ class serienRecShowSeasonBegins(Screen):
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
-		self['bt_red'].show()
-		self['bt_ok'].show()
-		self['bt_yellow'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_info'].show()
-		
 		self['cover'].show()
 
 		self['text_red'].setText(_("Eintrag löschen"))
@@ -7669,17 +7905,29 @@ class serienRecShowSeasonBegins(Screen):
 		else:
 			self['text_yellow'].setText(_("Zeige nur neue"))
 		self['text_blue'].setText(_("Liste leeren"))
-		self.num_bt_text[3][0] = _("-----")
 
-		self['text_red'].show()
-		self['text_ok'].show()
-		self['text_yellow'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.num_bt_text[3][0] = _("-----")
+			
+			self['bt_red'].show()
+			self['bt_ok'].show()
+			self['bt_yellow'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			
+			self['text_red'].show()
+			self['text_ok'].show()
+			self['text_yellow'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self.num_bt_text[3][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -7988,12 +8236,16 @@ class serienRecWishlist(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 		
 		self.delAdded = False
 		self.sortedList = False
@@ -8025,15 +8277,6 @@ class serienRecWishlist(Screen):
 
 		self['title'].setText(_("Diese Episoden sind zur Aufnahme vorgemerkt"))
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_yellow'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_info'].show()
-		
 		self['cover'].show()
 
 		self['text_red'].setText(_("Eintrag löschen"))
@@ -8041,18 +8284,31 @@ class serienRecWishlist(Screen):
 		self['text_ok'].setText(_("Eintrag anlegen"))
 		self['text_yellow'].setText(_("Sortieren"))
 		self['text_blue'].setText(_("Liste leeren"))
-		self.num_bt_text[2][1] = _("-----")
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_yellow'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.num_bt_text[2][1] = _("-----")
+
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_yellow'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_yellow'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self.num_bt_text[2][1] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -8364,12 +8620,16 @@ class serienRecShowInfo(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.onLayoutFinish.append(self.getData)
 		self.onClose.append(self.__onClose)
@@ -8382,22 +8642,26 @@ class serienRecShowInfo(Screen):
 
 		self['title'].setText(_("Serien Beschreibung: %s") % self.serieName)
 
-		self['bt_red'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_info'].show()
-		
 		self['cover'].show()
 
 		self['text_red'].setText(_("Zurück"))
-		self.num_bt_text[4][0] = _("-----")
 
-		self['text_red'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.num_bt_text[4][0] = _("-----")
+
+			self['bt_red'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			
+			self['text_red'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self.num_bt_text[4][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -8504,12 +8768,16 @@ class serienRecShowImdbVideos(Screen):
 		}, -1)
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
 
 		self.red = 0xf23d21
 		self.green = 0x389416
@@ -8532,21 +8800,22 @@ class serienRecShowImdbVideos(Screen):
 
 		self['title'].setText(_("Lade imdbVideos..."))
 
-		self['bt_ok'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		
 		self['cover'].show()
 
 		self['text_ok'].setText(_("Video zeigen"))
 		self.num_bt_text[3][2] = ""
 
-		self['text_ok'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['bt_ok'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			
+			self['text_ok'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -8734,13 +9003,17 @@ class serienRecMain(Screen):
 			self.close()
 
 		self.setupSkin()
-		self.displayMode = 2
-		self.updateMenuKeys()
+		self.displayTimer = None
+		if config.plugins.serienRec.SkinType.value != "1":
+			self.displayMode = 2
+			self.updateMenuKeys()
 		
-		self.displayTimer = eTimer()
-		self.displayTimer.callback.append(self.updateMenuKeys)
-		self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		
+			self.displayTimer = eTimer()
+			self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		else:
+			Skin1_Settings(self)
+			
 		if config.plugins.serienRec.updateInterval.value == 24:
 			config.plugins.serienRec.timeUpdate.value = True
 			config.plugins.serienRec.update.value = False
@@ -8797,19 +9070,8 @@ class serienRecMain(Screen):
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
-		self['title'].setText(_("Llllade infos from Web..."))
+		self['title'].setText(_("Lade infos from Web..."))
 
-		self['bt_red'].show()
-		self['bt_green'].show()
-		self['bt_ok'].show()
-		self['bt_yellow'].show()
-		self['bt_blue'].show()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_epg'].show()
-		self['bt_info'].show()
-		self['bt_menu'].show()
-		
 		self['cover'].show()
 
 		self['text_red'].setText(_("Anzeige-Modus"))
@@ -8820,17 +9082,29 @@ class serienRecMain(Screen):
 		self.num_bt_text[2][2] = _("Timer suchen")
 		self.num_bt_text[4][2] = _("globale Einstellungen")
 
-		self['text_red'].show()
-		self['text_green'].show()
-		self['text_ok'].show()
-		self['text_yellow'].show()
-		self['text_blue'].show()
-		self['text_0'].show()
-		self['text_1'].show()
-		self['text_2'].show()
-		self['text_3'].show()
-		self['text_4'].show()
-
+		if config.plugins.serienRec.SkinType.value != "1":
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_yellow'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_epg'].show()
+			self['bt_info'].show()
+			self['bt_menu'].show()
+		
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_yellow'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+		
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 		
@@ -8958,7 +9232,7 @@ class serienRecMain(Screen):
 		self.session.openWithCallback(self.setupClose, serienRecSetup)
 
 	def setupClose(self, result):
-		if not result[2]:
+		if not result[3]:
 			self.close()
 		else:	
 			if result[0]:
@@ -8974,6 +9248,10 @@ class serienRecMain(Screen):
 				#	print "%s[Serien Recorder] AutoCheck Clock-Timer: %s%s" % (self.color_print, config.plugins.serienRec.timeUpdate.value, self.color_end)
 
 			if result[1]:
+				# hier screen mit neuem skin aktualisieren
+				pass
+				
+			if result[2]:
 				self.readWebpage()
 				
 	def startScreen(self):
