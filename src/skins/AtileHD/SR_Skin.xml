@@ -1,0 +1,66 @@
+<screen name="SerienRecorder3.0" position="center,center" size="1280,720" title="Serien Recorder">
+	<eLabel position="0,0" size="1280,720" zPosition="-15" backgroundColor="#20000000" />
+	<eLabel position=" 55,100" size="860,60" zPosition="-10" backgroundColor="#20606060" />
+	<eLabel position="55,165" size="860,450" zPosition="-10" backgroundColor="#20606060" />
+	<eLabel position="920,100" size="310,320" zPosition="-10" backgroundColor="#20606060" />
+	<eLabel position="920,425" size="310,190" zPosition="-10" backgroundColor="#20606060" />
+	<eLabel position=" 55,620" size="290,55" zPosition="-10" backgroundColor="#20b81c46" />
+	<eLabel position="350,620" size="290,55" zPosition="-10" backgroundColor="#20009f3c" />
+	<eLabel position="645,620" size="290,55" zPosition="-10" backgroundColor="#209ca81b" />
+	<eLabel position="940,620" size="290,55" zPosition="-10" backgroundColor="#202673ec" />
+	<eLabel position=" 55,675" size="290, 5" zPosition="-10" backgroundColor="#20b81c46" />
+	<eLabel position="350,675" size="290, 5" zPosition="-10" backgroundColor="#20009f3c" />
+	<eLabel position="645,675" size="290, 5" zPosition="-10" backgroundColor="#209ca81b" />
+	<eLabel position="940,675" size="290, 5" zPosition="-10" backgroundColor="#202673ec" />
+	<widget source="global.CurrentTime" render="Label" position="1020,40" size="200,50" font="Regular;50" halign="right" foregroundColor="#00ffffff" backgroundColor="#004e4e4e" transparent="1">
+		<convert type="ClockToText">Default</convert>
+	</widget>
+	<widget name="title" font="Regular;24" position="55,100" size="860,30" foregroundColor="#00eaff00" backgroundColor="#20606060" valign="center" halign="center" transparent="1" />
+	<widget name="headline" font="Regular;24" position="55,130" size="860,30" foregroundColor="#00eaff00" backgroundColor="#20606060" valign="center" halign="center" transparent="1" />
+	<widget name="version" font="Regular; 35" position="70,47" size="950,43" foregroundColor="#00ffffff" backgroundColor="#004e4e4e" transparent="1" />
+	<widget name="config" position="60,170" size="850,440" scrollbarMode="showOnDemand" enableWrapAround="1" backgroundColor="#20606060" transparent="1" />
+	<widget name="popup_bg" position="920,100" size="310,320" backgroundColor="#20606060" transparent="0" zPosition="5" />
+	<widget name="popup_list" position="920,100" size="310,320" backgroundColor="#20606060" zPosition="10" scrollbarMode="showOnDemand" transparent="0" />
+	<widget name="cover" position="920,100" size="310,320" backgroundColor="#20606060" transparent="1" alphatest="blend" />
+
+	<widget name="Web_Channel" position="100,130" size="180,30" zPosition="10" font="Regular; 20" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+	<widget name="STB_Channel" position="410,130" size="180,30" zPosition="10" font="Regular; 20" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+	<widget name="alt_STB_Channel" position="720,130" size="180,30" zPosition="10" font="Regular; 20" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+
+	<widget name="list" position="60,170" size="850,440" backgroundColor="#20606060" scrollbarMode="showOnDemand" transparent="0" zPosition="5" />
+	<widget name="popup_list2" position="920,100" size="310,320" backgroundColor="#20606060" zPosition="11" scrollbarMode="showOnDemand" transparent="0" />
+
+	<widget name="config_information" position="920,100" size="310,320" zPosition="3" backgroundColor="#ffffffff" />
+	<widget name="config_information_text" position="920,100" size="310,320" zPosition="5" font="Regular;18" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="0" />
+
+	<widget name="info" position="60,170" size="850,440" font="Regular;24" backgroundColor="#20606060" transparent="1" zPosition="1" />
+	<widget name="path" position="70,47" size="950,43" font="Regular;20" foregroundColor="#00ffffff" backgroundColor="#20606060" valign="center" halign="left" transparent="1" />
+
+	<widget name="bt_ok" position="930,435" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_ok.png" alphatest="on" />
+	<widget name="text_ok" position="965,435" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+	
+	<widget name="bt_0" position="930,465" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_0.png" alphatest="on" />
+	<widget name="bt_5" position="930,465" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_5.png" alphatest="on" />
+	<widget name="bt_exit" position="930,465" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_exit.png" alphatest="on" />
+	<widget name="text_0" position="965,465" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+	<widget name="bt_1" position="930,495" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_1.png" alphatest="on" />
+	<widget name="bt_6" position="930,495" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_6.png" alphatest="on" />
+	<widget name="bt_text" position="930,495" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_text.png" alphatest="on" />
+	<widget name="text_1" position="965,495" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+	<widget name="bt_2" position="930,525" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_2.png" alphatest="on" />
+	<widget name="bt_7" position="930,525" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_7.png" alphatest="on" />
+	<widget name="bt_epg" position="930,525" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_epg.png" alphatest="on" />
+	<widget name="text_2" position="965,525" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+	<widget name="bt_3" position="930,555" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_3.png" alphatest="on" />
+	<widget name="bt_8" position="930,555" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_8.png" alphatest="on" />
+	<widget name="bt_info" position="930,555" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_help.png" alphatest="on" />
+	<widget name="text_3" position="965,555" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+	<widget name="bt_4" position="930,585" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_4.png" alphatest="on" />
+	<widget name="bt_9" position="930,585" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_9.png" alphatest="on" />
+	<widget name="bt_menu" position="930,585" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_menu.png" alphatest="on" />
+	<widget name="text_4" position="965,585" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
+	<widget name="text_red" position="70,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#20b81c46" transparent="1" />
+	<widget name="text_green" position="365,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#20009f3c" transparent="1" />
+	<widget name="text_yellow" position="660,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#209ca81b" transparent="1" />
+	<widget name="text_blue" position="955,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#202673ec" transparent="1" />
+</screen>
