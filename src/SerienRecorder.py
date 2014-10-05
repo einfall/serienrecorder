@@ -112,7 +112,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
 	config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
 	config.plugins.serienRec.DSBTimeout = ConfigInteger(20, (0,999))
-	config.plugins.serienRec.showNotification = ConfigYesNo(default = True)
+	config.plugins.serienRec.showNotification = ConfigSelection(choices = [("0", _("keine")), ("1", _("bei Suchlauf-Start")), ("2", _("bei Suchlauf-Ende")), ("3", _("bei Suchlauf-Start und Ende"))], default = "1")
 	config.plugins.serienRec.LogFilePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
 	config.plugins.serienRec.longLogFileName = ConfigYesNo(default = False)
 	config.plugins.serienRec.deleteLogFilesOlderThan = ConfigInteger(14, (0,999))
@@ -167,7 +167,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.5"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.6"))
 	config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
@@ -193,6 +193,7 @@ dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 
 autoCheckFinished = False
 refreshTimer = None
+refreshTimerConnection = None
 EPGTimeSpan = 10
 coverToShow = None
 runAutocheckAtExit = False
@@ -213,6 +214,15 @@ except ImportError as ie:
 else:
 	VPSPluginAvailable = True
 
+# the new API for the Dreambox DM7080HD changes the behavior
+# of eTimer append - here are the changes
+
+try:
+	from enigma import eMediaDatabase
+except ImportError as ie:
+	mediaDatabaseAvailable = False
+else:
+	mediaDatabaseAvailable = True
 
 # init Wikipedia
 if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/Wikipedia/plugin.pyo"):
@@ -2057,6 +2067,11 @@ class serienRecCheckForRecording():
 		if refreshTimer:
 			refreshTimer.stop()
 			refreshTimer = None
+
+		global mediaDatabaseAvailable
+		global refreshTimerConnection
+		if refreshTimerConnection:
+			refreshTimerConnection = None
 			
 		cTmp = dbTmp.cursor()
 		cTmp.execute('''CREATE TABLE IF NOT EXISTS GefundeneFolgen (CurrentTime INTEGER,
@@ -2088,7 +2103,10 @@ class serienRecCheckForRecording():
 
 		if not self.manuell and config.plugins.serienRec.update.value:
 			refreshTimer = eTimer()
-			refreshTimer.callback.append(self.startCheck)
+			if mediaDatabaseAvailable:
+				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
+			else:
+				refreshTimer.callback.append(self.startCheck)
 			updateZeit = int(config.plugins.serienRec.updateInterval.value) * 3600000
 			refreshTimer.start(updateZeit, True)
 			print "%sSerien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
@@ -2102,7 +2120,10 @@ class serienRecCheckForRecording():
 			else:
 				deltatime = abs(1440 - acttime + deltime)
 			refreshTimer = eTimer()
-			refreshTimer.callback.append(self.startCheck)
+			if mediaDatabaseAvailable:
+				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
+			else:
+				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(deltatime * 60 * 1000, True)
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
 			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime), self.color_end)
@@ -2131,15 +2152,24 @@ class serienRecCheckForRecording():
 			logFileSave = "%slog_%s%s%s%s%s" % (config.plugins.serienRec.LogFilePath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
 		
 		global refreshTimer
+		global refreshTimerConnection
+		global mediaDatabaseAvailable
 		if refreshTimer:
 			refreshTimer.stop()
 			refreshTimer = None
+
+			if refreshTimerConnection:
+				refreshTimerConnection = None
+
 			print "%s[Serien Recorder] AutoCheck Timer stop.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Timer stop."), True)
 
 		if config.plugins.serienRec.update.value:
 			refreshTimer = eTimer()
-			refreshTimer.callback.append(self.startCheck)
+			if mediaDatabaseAvailable:
+				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
+			else:
+				refreshTimer.callback.append(self.startCheck)
 			updateZeit = int(config.plugins.serienRec.updateInterval.value) * 3600000
 			refreshTimer.start(updateZeit, True)
 			print "%s[Serien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
@@ -2153,7 +2183,10 @@ class serienRecCheckForRecording():
 			else:
 				deltatime = abs(1440 - acttime + deltime)
 			refreshTimer = eTimer()
-			refreshTimer.callback.append(self.startCheck)
+			if mediaDatabaseAvailable:
+				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
+			else:
+				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(deltatime * 60 * 1000, True)
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
 			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime), self.color_end)
@@ -2208,7 +2241,7 @@ class serienRecCheckForRecording():
 		else:
 			print "\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------" % (self.uhrzeit, str(self.page))
 			writeLog(_("\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------\n") % (self.uhrzeit, str(self.page)), True)
-			if config.plugins.serienRec.showNotification.value:
+			if (config.plugins.serienRec.showNotification.value == "1") or (config.plugins.serienRec.showNotification.value == "3"):
 				Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde gestartet."), MessageBox.TYPE_INFO, timeout=3, id="[Serien Recorder] Suchlauf wurde gestartet")
 
 		if config.plugins.serienRec.writeLogVersion.value:
@@ -2851,7 +2884,10 @@ class serienRecCheckForRecording():
 			print "[Serien Recorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist)
 		writeLog(_("---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------") % str(speedTime), True)
 		print "---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime)
-		
+		if config.plugins.serienRec.showNotification.value >= "2" and not self.manuell:
+			statisticMessage = _("Serien vorgemerkt: %s\nTimer erstellt: %s\nTimer aktualisiert: %s\nTimer mit Konflikten: %s\nTimer vom Merkzettel: %s") % (str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate), str(self.countNotActiveTimer), str(self.countTimerFromWishlist))
+			Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde beendet.\n\n%s") % statisticMessage, MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] Suchlauf wurde beendet")
+
 		if config.plugins.serienRec.longLogFileName.value:
 			shutil.copy(logFile, logFileSave)
 		
@@ -6156,8 +6192,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("Korrektur der Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
 		self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
 		self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
-		self.list.append(getConfigListEntry(_("Zeige Nachricht wenn Suchlauf startet:"), config.plugins.serienRec.showNotification))
-		self.list.append(getConfigListEntry(_("Zeige Nachricht bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
+		self.list.append(getConfigListEntry(_("Banachrichtigung beim Suchlauf:"), config.plugins.serienRec.showNotification))
+		self.list.append(getConfigListEntry(_("Benachrichtigung bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
 		self.list.append(getConfigListEntry(_("Wechselzeit der Tastenanzeige (Sek.):"), config.plugins.serienRec.DisplayRefreshRate))
 		self.list.append(getConfigListEntry(_("Screens bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
 		self.list.append(getConfigListEntry(_("Staffelauswahl bei neuen Markern:"), config.plugins.serienRec.defaultStaffel))
@@ -6319,7 +6355,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.sucheAufnahme :           (_("Bei 'ja' wird in der Hauptansicht ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv.")),
 			config.plugins.serienRec.max_season :              (_("Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann.")),
 			config.plugins.serienRec.confirmOnDelete :         (_("Bei 'ja' erfolt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem entgültigen Löschen von Serienmarkern oder Timern.")),
-			config.plugins.serienRec.showNotification :        (_("Bei 'ja' wird für 3 Sekunden eine Nachricht auf dem Bildschirm eingeblendet, sobald der automatische Timer-Suchlauf startet.")),
+			config.plugins.serienRec.showNotification :        (_("Je nach Einstellung wird eine Nachricht auf dem Bildschirm eingeblendet, sobald der automatische Timer-Suchlauf startet bzw. endet.")),
 			config.plugins.serienRec.showMessageOnConflicts :  (_("Bei 'ja' wird für jeden Timer, der beim automatische Timer-Suchlauf wegen eines Konflikts nicht angelegt werden konnte, eine Nachricht auf dem Bildschirm eingeblendet.\n"
 			                                                    "Diese Nachrichten bleiben solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden.")),
 			config.plugins.serienRec.DisplayRefreshRate :      (_("Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt.")),
