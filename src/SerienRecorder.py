@@ -6192,7 +6192,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("Korrektur der Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
 		self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
 		self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
-		self.list.append(getConfigListEntry(_("Banachrichtigung beim Suchlauf:"), config.plugins.serienRec.showNotification))
+		self.list.append(getConfigListEntry(_("Benachrichtigung beim Suchlauf:"), config.plugins.serienRec.showNotification))
 		self.list.append(getConfigListEntry(_("Benachrichtigung bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
 		self.list.append(getConfigListEntry(_("Wechselzeit der Tastenanzeige (Sek.):"), config.plugins.serienRec.DisplayRefreshRate))
 		self.list.append(getConfigListEntry(_("Screens bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
