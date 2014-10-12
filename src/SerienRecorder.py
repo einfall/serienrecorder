@@ -220,9 +220,9 @@ else:
 try:
 	from enigma import eMediaDatabase
 except ImportError as ie:
-	mediaDatabaseAvailable = False
+	isDreamboxOS = False
 else:
-	mediaDatabaseAvailable = True
+	isDreamboxOS = True
 
 # init Wikipedia
 if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/Wikipedia/plugin.pyo"):
@@ -2068,7 +2068,6 @@ class serienRecCheckForRecording():
 			refreshTimer.stop()
 			refreshTimer = None
 
-		global mediaDatabaseAvailable
 		global refreshTimerConnection
 		if refreshTimerConnection:
 			refreshTimerConnection = None
@@ -2103,7 +2102,7 @@ class serienRecCheckForRecording():
 
 		if not self.manuell and config.plugins.serienRec.update.value:
 			refreshTimer = eTimer()
-			if mediaDatabaseAvailable:
+			if isDreamboxOS:
 				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
 			else:
 				refreshTimer.callback.append(self.startCheck)
@@ -2120,7 +2119,7 @@ class serienRecCheckForRecording():
 			else:
 				deltatime = abs(1440 - acttime + deltime)
 			refreshTimer = eTimer()
-			if mediaDatabaseAvailable:
+			if isDreamboxOS:
 				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
 			else:
 				refreshTimer.callback.append(self.startCheck)
@@ -2153,7 +2152,7 @@ class serienRecCheckForRecording():
 		
 		global refreshTimer
 		global refreshTimerConnection
-		global mediaDatabaseAvailable
+		global isDreamboxOS
 		if refreshTimer:
 			refreshTimer.stop()
 			refreshTimer = None
@@ -2166,7 +2165,7 @@ class serienRecCheckForRecording():
 
 		if config.plugins.serienRec.update.value:
 			refreshTimer = eTimer()
-			if mediaDatabaseAvailable:
+			if isDreamboxOS:
 				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
 			else:
 				refreshTimer.callback.append(self.startCheck)
@@ -2183,7 +2182,7 @@ class serienRecCheckForRecording():
 			else:
 				deltatime = abs(1440 - acttime + deltime)
 			refreshTimer = eTimer()
-			if mediaDatabaseAvailable:
+			if isDreamboxOS:
 				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
 			else:
 				refreshTimer.callback.append(self.startCheck)
@@ -3337,7 +3336,10 @@ class serienRecTimer(Screen):
 			self.updateMenuKeys()
 			
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -3680,7 +3682,10 @@ class serienRecRunAutoCheck(Screen):
 			self.updateMenuKeys()
 			
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -3757,7 +3762,10 @@ class serienRecRunAutoCheck(Screen):
 
 		# Log Reload Timer
 		self.readLogTimer = eTimer()
-		self.readLogTimer.callback.append(self.readLog)
+		if isDreamboxOS:
+			self.readLogTimer_conn = self.readLogTimer.timeout.connect(self.readLog)
+		else:
+			self.readLogTimer.callback.append(self.readLog)
 		self.readLogTimer.start(2500)
 		self.readLog()
 
@@ -3853,7 +3861,10 @@ class serienRecMarker(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -4594,7 +4605,10 @@ class serienRecAddSerie(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -4872,7 +4886,10 @@ class serienRecSendeTermine(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -5387,7 +5404,10 @@ class serienRecMainChannelEdit(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -7261,7 +7281,10 @@ class serienRecReadLog(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -7390,7 +7413,10 @@ class serienRecShowConflicts(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -7552,7 +7578,10 @@ class serienRecModifyAdded(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -7906,7 +7935,10 @@ class serienRecShowSeasonBegins(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -8278,7 +8310,10 @@ class serienRecWishlist(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -8662,7 +8697,10 @@ class serienRecShowInfo(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -8810,7 +8848,10 @@ class serienRecShowImdbVideos(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -9045,7 +9086,10 @@ class serienRecMain(Screen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			self.displayTimer.callback.append(self.updateMenuKeys)
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		else:
 			Skin1_Settings(self)
@@ -9776,7 +9820,10 @@ class serienRecMain(Screen):
 
 			if runAutocheckAtExit and config.plugins.serienRec.runAutocheckAtExit.value:
 				singleTimer = eTimer()
-				singleTimer.callback.append(serienRecCheckForRecording(self.session, True))
+				if isDreamboxOS:
+					self.singleTimer_conn = self.singleTimer.timeout.connect(serienRecCheckForRecording(self.session, True))
+				else:
+					singleTimer.callback.append(serienRecCheckForRecording(self.session, True))
 				singleTimer.start(10000, True)
 			
 			#self.hide()
