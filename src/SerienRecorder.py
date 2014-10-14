@@ -2414,7 +2414,7 @@ class serienRecCheckForRecording():
 			for row in cCursor:
 				(Serie, Staffel, Sender, Url) = row
 				if not str(Staffel).isdigit():
-					cTmp.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+					cTmp.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (Serie.lower(),))
 					row = cTmp.fetchone()
 					if not row:
 						cTmp.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, 0, -1, 1)", (Serie, Url, Staffel))
