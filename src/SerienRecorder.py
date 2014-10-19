@@ -167,7 +167,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.6"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.7"))
 	config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
@@ -388,7 +388,7 @@ def getCoverDataError(error, self):
 	print error
 
 def getImdblink(data, self, serien_nameCover):
-	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
+	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 	if ilink:
 		getPage(ilink[0], headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self)
 	else:
@@ -765,9 +765,10 @@ def getDirname(serien_name, staffel):
 def countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, stopAfterFirstHit = False):
 	count = 0
 	if fileExists(dirname):
+		searchString = re.escape('%s.*?%s.*?\.ts\Z' % (serien_name, seasonEpisodeString))
 		dirs = os.listdir(dirname)
 		for dir in dirs:
-			if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, seasonEpisodeString), dir):
+			if re.search(searchString, dir):
 				count += 1
 				if stopAfterFirstHit:
 					break
@@ -2414,7 +2415,7 @@ class serienRecCheckForRecording():
 			for row in cCursor:
 				(Serie, Staffel, Sender, Url) = row
 				if not str(Staffel).isdigit():
-					cTmp.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+					cTmp.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (Serie.lower(),))
 					row = cTmp.fetchone()
 					if not row:
 						cTmp.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, 0, -1, 1)", (Serie, Url, Staffel))
@@ -4737,7 +4738,7 @@ class serienRecAddSerie(Screen):
 					(name_Serie, year_Serie, id_Serie) = infos
 					# encode utf-8
 					name_Serie = iso8859_Decode(name_Serie)
-					raw = re.findall('(.*?)(\[%s\])?\Z' % self.serien_name, name_Serie, re.I | re.S)
+					raw = re.findall('(.*?)(\[%s\])?\Z' % re.escape(self.serien_name), re.escape(name_Serie), re.I | re.S)
 					if raw:
 						(name_Serie, x) = raw
 						self.serienlist.append((name_Serie[0], year_Serie, id_Serie))
