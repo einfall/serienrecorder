@@ -417,7 +417,13 @@ def showCover(data, self, serien_nameCover, force_show=True):
 		scale = AVSwitch().getFramebufferScale()
 		size = self['cover'].instance.size()
 		self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#00000000"))
-		if self.picload.startDecode(serien_nameCover, 0, 0, False) == 0:
+		self.picLoaderResult = 1
+		if isDreamboxOS:
+			self.picLoaderResult = self.picload.startDecode(serien_nameCover, False)
+		else:
+			self.picLoaderResult = self.picload.startDecode(serien_nameCover, 0, 0, False)
+
+		if self.picLoaderResult == 0:
 			ptr = self.picload.getData()
 			if ptr != None:
 				self['cover'].instance.setPixmap(ptr)
@@ -1808,7 +1814,10 @@ class PicLoader:
 		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
 
 	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
+		if isDreamboxOS:
+			self.picload.startDecode(filename, False)
+		else:
+			self.picload.startDecode(filename, 0, 0, False)
 		data = self.picload.getData()
 		return data
 
