@@ -765,7 +765,7 @@ def getDirname(serien_name, staffel):
 def countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, stopAfterFirstHit = False):
 	count = 0
 	if fileExists(dirname):
-		searchString = re.escape('%s.*?%s.*?\.ts\Z' % (serien_name, seasonEpisodeString))
+		searchString = '%s.*?%s.*?\.ts\Z' % (re.escape(serien_name), re.escape(seasonEpisodeString))
 		dirs = os.listdir(dirname)
 		for dir in dirs:
 			if re.search(searchString, dir):
