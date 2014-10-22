@@ -4747,7 +4747,7 @@ class serienRecAddSerie(Screen):
 					(name_Serie, year_Serie, id_Serie) = infos
 					# encode utf-8
 					name_Serie = iso8859_Decode(name_Serie)
-					raw = re.findall('(.*?)(\[%s\])?\Z' % re.escape(self.serien_name), re.escape(name_Serie), re.I | re.S)
+					raw = re.findall('(.*?)(\[%s\])?\Z' % self.serien_name, name_Serie, re.I | re.S)
 					if raw:
 						(name_Serie, x) = raw
 						self.serienlist.append((name_Serie[0], year_Serie, id_Serie))
