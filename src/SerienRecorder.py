@@ -167,7 +167,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.6"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.7"))
 	config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
@@ -388,7 +388,7 @@ def getCoverDataError(error, self):
 	print error
 
 def getImdblink(data, self, serien_nameCover):
-	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
+	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 	if ilink:
 		getPage(ilink[0], headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self)
 	else:
@@ -417,7 +417,13 @@ def showCover(data, self, serien_nameCover, force_show=True):
 		scale = AVSwitch().getFramebufferScale()
 		size = self['cover'].instance.size()
 		self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#00000000"))
-		if self.picload.startDecode(serien_nameCover, 0, 0, False) == 0:
+		self.picLoaderResult = 1
+		if isDreamboxOS:
+			self.picLoaderResult = self.picload.startDecode(serien_nameCover, False)
+		else:
+			self.picLoaderResult = self.picload.startDecode(serien_nameCover, 0, 0, False)
+
+		if self.picLoaderResult == 0:
 			ptr = self.picload.getData()
 			if ptr != None:
 				self['cover'].instance.setPixmap(ptr)
@@ -765,9 +771,10 @@ def getDirname(serien_name, staffel):
 def countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, stopAfterFirstHit = False):
 	count = 0
 	if fileExists(dirname):
+		searchString = '%s.*?%s.*?\.ts\Z' % (re.escape(serien_name), re.escape(seasonEpisodeString))
 		dirs = os.listdir(dirname)
 		for dir in dirs:
-			if re.search('%s.*?%s.*?\.ts\Z' % (serien_name, seasonEpisodeString), dir):
+			if re.search(searchString, dir):
 				count += 1
 				if stopAfterFirstHit:
 					break
@@ -1807,7 +1814,10 @@ class PicLoader:
 		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
 
 	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
+		if isDreamboxOS:
+			self.picload.startDecode(filename, False)
+		else:
+			self.picload.startDecode(filename, 0, 0, False)
 		data = self.picload.getData()
 		return data
 
