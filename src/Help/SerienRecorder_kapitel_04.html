@@ -1,0 +1,852 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>="SerienRecorder</title>
+
+
+  <meta name="title" content="SerienRecorder">
+
+  <meta name="author" content="w22754">
+
+  <meta name="publisher" content="w22754">
+
+  <meta name="copyright" content="einfall &amp; w22754">
+
+  <meta name="Description" content="SerienRecorder &ndash; 4 Die Serien-Marker">
+
+  <meta name="audience" content="Alle">
+
+  <meta name="robots" content="INDEX,FOLLOW">
+
+  <meta http-equiv="content-language" content="de">
+
+  <link rel="stylesheet" type="text/css" href="images/SerienRecorder_open.css">
+
+  <link rel="prev" href="SerienRecorder_kapitel_03.html">
+
+  <link rel="next" href="SerienRecorder_kapitel_05.html">
+
+  <script type="text/javascript"><!--
+function OpenWin(url,name,height,width)
+{
+var InfoWin = window.open(url,name,"directories=0,height="+height+",width=" + width + ",hotkeys=0,location=0,menubar=0,resizable=1,screenX=150,screenY=10,left=150,top=10,scrollbars=1,status=1,titlebar=0,toolbar=0");
+InfoWin.focus();
+}
+//--></script>
+  <link href="images/prettify.css" type="text/css" rel="stylesheet">
+
+  <script type="text/javascript" src="images/prettify.js"></script>
+</head>
+
+
+<body onload="prettyPrint()" alink="#000099" link="#000099" vlink="#000099">
+
+<table bgcolor="#000066" border="0" cellpadding="0" cellspacing="0" width="100%">
+
+  <tbody>
+
+    <tr>
+
+      <td colspan="2" height="74" valign="bottom"><br>
+
+      </td>
+
+      <td height="74" width="80"><img alt="" style="border: 0px solid ; width: 100px; height: 40px;" src="images/plugin.png"></td>
+
+    </tr>
+
+  </tbody>
+</table>
+
+<br>
+
+<table class="tbl" border="0" cellpadding="0" cellspacing="0" width="100%">
+
+  <tbody>
+
+    <tr>
+
+      <td valign="top" width="190">
+      <table style="width: 190px;" class="tbl1" border="3" cellpadding="3" cellspacing="0">
+
+        <tbody>
+
+          <tr style="color: rgb(255, 255, 255); background-color: rgb(0, 0, 102);">
+
+            <td style="background-color: rgb(255, 255, 255);" class="tbl2"><a class="navnav" href="SerienRecorder.html#_top">Inhaltsverzeichnis</a></td>
+
+          </tr>
+
+          <tr>
+ <td><a class="navnav" href="SerienRecorder_kapitel_01.html#top">1
+Einleitung</a></td>
+
+          </tr>
+
+          <tr>
+ <td><a class="navnav" href="SerienRecorder_kapitel_02.html#top">2
+Der SerienPlaner</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_03.html#top">3
+Die Sender-Zuordnung</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td style="background-color: rgb(0, 0, 102);"><a class="navh2" href="#top">4
+Die Serien-Marker</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_05.html#top">5
+Die Timer-Liste</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_06.html#top">6
+Die Anzeige zus&auml;tzlicher Informationen</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_A.html#top">A
+Anhang</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td></td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+            <table style="text-align: left; background-color: rgb(0, 0, 102); height: 148px; width: 178px;" border="1" cellpadding="2" cellspacing="2">
+
+              <tbody>
+
+                <tr>
+
+                  <td style="background-color: rgb(255, 255, 255);"></td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>Version:<br>
+
+3.0.8</td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>Autor: <br>
+
+@w22754</td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>letzte Aktualisierung:<br>
+
+26.10.2014</td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+      </table>
+
+      </td>
+
+      <td width="10"><img style="width: 10px; height: 10px;" src="images/spacer10.gif" alt="Spacer"></td>
+
+      <td align="center" valign="top" width="85%">
+      <div align="center">
+      <table bgcolor="#ffffff" border="0" cellpadding="0" cellspacing="0" width="98%">
+
+        <tbody>
+
+          <tr>
+
+            <td class="start" colspan="1" align="center" height="22" width="100%">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td width="25%"><a class="navnav" href="SerienRecorder_kapitel_03.html">&nbsp;&lt;&lt;
+&nbsp; zur&uuml;ck</a></td>
+
+                  <td width="49%">
+                  <div align="center"><br>
+
+                  </div>
+
+                  </td>
+
+                  <td align="right" width="25%">
+                  <div align="right"><a href="SerienRecorder_kapitel_05.html" class="navnav">vor&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;</a></div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td valign="top" width="100%">
+            <table style="width: 100%;" class="box" border="0" cellpadding="10" cellspacing="0">
+
+              <tbody>
+
+                <tr>
+
+                  <th style="text-align: center; background-color: rgb(204, 204, 204);" colspan="2"><span class="autor"><big><big><big><big><span style="font-weight: bold;">SerienRecorder</span></big></big></big></big>
+                  <br>
+
+                  <big>ein PlugIn von @einfall und @w22754</big></span><span class="untertitel"></span></th>
+
+                </tr>
+
+                <tr>
+
+                  <td>
+                  <table border="0">
+
+                    <tbody>
+
+                      <tr>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_u.gif" alt="Pfeil"></td>
+
+                        <td colspan="2" class="kap" valign="baseline"><strong><a href="#4_Die_Serien_Marker" class="navh">4&nbsp;Die
+Serien-Marker</a></strong></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td valign="baseline" width="10"><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td style="color: rgb(0, 0, 102);" colspan="1" valign="baseline"><strong><a href="#4.1_Die_Serien_Einstellungen">4.1
+Die Serien-Einstellungen</a></strong></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td><a style="font-weight: bold;" href="#4.2_Die_Suche_nach_einer_Serie">4.2 Die Suche nach
+einer Serie</a></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td><a style="font-weight: bold;" href="#4.3_Die_Sendetermine">4.3 Die Sendetermine</a></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td style="font-weight: bold;"><a href="#4.3.1_Der_Filter">4.3.1 Das Filter</a></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td><a rel="met" href="#4.3.2_Die_manuelle_Erstellung_eines_Timers" style="font-weight: bold;">4.3.2 Die manuelle Erstellung von
+Timern</a></td>
+
+                      </tr>
+
+                    </tbody>
+                  </table>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            <table bgcolor="#eeeeee" border="0" cellpadding="20" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td>
+                  <div style="text-align: center;"> </div>
+
+                  <br>
+
+                  <h1 class="cfett"><a name="4_Die_Serien_Marker"></a><small>4 Die
+Serien-Marker</small></h1>
+
+                  <p style="margin-bottom: 0cm;">In diesem
+Kapitel wird
+eine der wichtigsten Funktion des SerienRecorders behandelt, die Serien
+Marker. Alle Serien, die in den Suchlauf
+(Auto-Check) einbezogen werden, sind hier aufgelistet.</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <div style="text-align: center;"><span style="font-style: italic;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_SerienMarker.gif"><br>
+
+                  <br>
+
+Fig.4.1: Die Serien-Marker</span></div>
+
+                  <br>
+
+                  <p style="margin-bottom: 0cm;">Oben in
+der Kopfzeile kann man ablesen
+wie viele Serien vorgemerkt sind (im Beispiel sind es 21).<br>
+
+Die
+Liste zeigt jeweils in gelber Schrift den Namen der Serien und deren
+Einstellungen, f&uuml;r die Serie &bdquo;Arrow&ldquo; sind
+im obigen Beispiel
+alle Folgen ab Staffel 2 und evtl. Specials vorgemerkt. Es sind alle
+Sender erlaubt (im Gegensatz zur Serie &bdquo;Bones &ndash; Die
+Knochenj&auml;gerin&ldquo; &ndash; dort wird die Suche auf
+den Sender &bdquo;RTL&ldquo;
+beschr&auml;nkt). Die Informationen &bdquo;Wdh./Vorl./Nachl.: 0
+/ 5 / 5&ldquo;
+sagt aus, dass jede Folge jeweils nur einmal aufgenommen werden soll
+(also keine Wiederholung) und die Vor- und Nachlaufzeit ist auf 5
+Minuten konfiguriert. Das Verzeichnis in das aufgenommen wird, kann
+hier auch noch abgelesen werden.</p>
+
+                  <p style="margin-bottom: 0cm;">Mit der <span style="color: rgb(204, 0, 0); font-weight: bold;">roten</span>
+Taste kann ein Marker deaktiviert werden, d.h. es werden f&uuml;r
+diese
+Serie keine Timer mehr angelegt. Alle Einstellungen f&uuml;r diesen
+Marker bleiben aber erhalten. Deaktivierte Marker werden in der
+Serien-Marker-Ansicht in roter Farbe angezeigt. Der Marker kann
+jederzeit&nbsp;durch erneutes Dr&uuml;cken der <span style="color: rgb(204, 0, 0); font-weight: bold;">roten</span>Taste
+wieder aktiviert werden. Falls mehrere Boxen auf die selbe Datenbank
+(z.B. auf einem Netzlaufwerk) zugreifen, gilt die Deaktivierung nur
+f&uuml;r die aktuelle Box. Dabei ist darauf zu achten, dass f&uuml;r
+jede Box in den <a href="SerienRecorder_kapitel_01.html#1.3_Die_globalen_Einstellungen">globalen Einstellungen</a> eine andere ID eingestellt ist.</p>
+
+                  <p style="margin-bottom: 0cm;">Beim
+langen Dr&uuml;cken der <span style="color: rgb(204, 0, 0); font-weight: bold;">roten</span>
+Taste wird der Marker endg&uuml;ltig gel&ouml;scht. Es erfolgt
+eine
+Abfrage, ob auch ALLE Eintr&auml;ge zu dieser Serie aus der
+Timer-Liste
+gel&ouml;scht werden sollen. Wird diese Frage
+mit&nbsp;&bdquo;Ja&ldquo; beantwortet, wird also auch die
+Information gel&ouml;scht, welche Folgen bereits aufgenommen
+wurden. </p>
+
+                  <br>
+
+                  <br>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+
+                  </div>
+
+                  <br>
+
+                  <h3><a name="4.1_Die_Serien_Einstellungen"></a>4.1
+Die Serien-Einstellungen &nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/key_ok.png" hspace="1" vspace="1">&nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyGreen.gif" hspace="1" vspace="1">&nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/key_menu.png" hspace="1" vspace="1"></h3>
+
+                  <p style="margin-bottom: 0cm;">Mit
+der&nbsp;<span style="font-weight: bold;">OK</span>
+Taste k&ouml;nnen die Staffeln ausgew&auml;hlt werden.
+Mehrfachauswahl
+ist m&ouml;glich, allerdings schlie&szlig;en einige der
+Auswahlm&ouml;glichkeiten alle anderen aus,
+z.B.&nbsp;&bdquo;Manuell&ldquo; (schlie&szlig;t alle
+anderen Einstellungen aus), oder&nbsp;&bdquo;Alle&ldquo;
+(beinhaltet alle anderen Einstellungen).</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <p style="margin-bottom: 0cm; text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Marker_Staffelauswahl.gif"></p>
+
+                  <div style="text-align: center;"><span style="font-style: italic;"><br>
+
+Fig.4.2: Die Staffelauswahl</span></div>
+
+                  <p style="margin-bottom: 0cm;">Die
+Einstellung der Reihe nach:</p>
+
+                  <ul>
+
+                    <li>
+                      <p>&bdquo;Manuell&ldquo; bedeutet,
+dass diese Serie vom Auto-Check ausgenommen ist, Timer k&ouml;nnen
+ausschlie&szlig;lich manuell erstellt werden. Wird
+&bdquo;Manuell&ldquo; ausgew&auml;hlt, sind alle anderen
+Einstellungen,
+die hier gemacht werden, hinf&auml;llig, da diese Serie beim
+Suchlauf
+(Auto-Check) nicht ber&uuml;cksichtigt wird.<br>
+
+                      <span style="font-weight: bold;">Hinweis</span>:
+Soll ein Marker nur vor&uuml;bergehend deaktiviert,
+s&auml;mtliche
+Einstellungen aber beibehalten werden, dann ist dieser mit der roten
+Taste zu deaktivieren (s. <a href="#4_Die_Serien_Marker">Kapitel
+4</a>)</p>
+
+                    </li>
+
+                  </ul>
+
+                  <ul>
+
+                    <li>
+                      <p style="margin-bottom: 0cm;">&bdquo;Alle&ldquo;
+nimmt alle Folgen der Serien auf. Auch hier&nbsp;sind alle anderen
+Einstellungen hinf&auml;llig.</p>
+
+                    </li>
+
+                    <li>
+                      <p style="margin-bottom: 0cm;">&bdquo;Specials&ldquo;
+nimmt spezielle Folgen auf, die nicht in das Schema SnnEmm passen. Das
+kann z. B. &bdquo;F&ldquo; wie Folge sein (&ouml;fter bei
+ORF), oder auch S oder T&Uuml; usw.</p>
+
+                    </li>
+
+                    <li>
+                      <p style="margin-bottom: 0cm;">&bdquo;folgende&ldquo;
+gilt immer nur in Verbindung mit einer Staffel-Auswahl darunter. Im
+obigen Beispiel werden die Folgen der Staffel 02, sowie alle Folgen ab
+Staffel 06 aufgenommen. Damit sind auch dann auch die Folgen der
+Staffel 07 usw. inbegriffen. W&uuml;rde die Option
+&bdquo;folgende&ldquo; ausgeschaltet, w&uuml;rden nur
+Folgen der Staffeln 02 und 07 aufgenommen.</p>
+
+                    </li>
+
+                  </ul>
+
+                  <ul>
+
+                    <li>&bdquo;00&ldquo; wird
+f&uuml;r Serien
+verwendet, bei denen keine Staffelbezeichnug vorhanden ist, sondern die
+Folgen einfach fortlaufend nummeriert sind (z.B. Der Alte, Tatort,
+etc.).
+Wird&nbsp;&bdquo;00&ldquo;&nbsp;ausgew&auml;hlt,
+&ouml;ffnet
+sich im Anschluss die virtuelle Tastatur, wo man eingeben kann, ab
+welcher Folge Timer erstellt werden sollen (z.B. Tatort, ab Folge 920).</li>
+
+                  </ul>
+
+                  <p style="margin-bottom: 0cm;">In den <a href="SerienRecorder_kapitel_01.html#1.3_Die_globalen_Einstellungen">globalen
+Einstellungen</a> kann
+&uuml;brigens auch konfiguriert werden, wie viele Staffeln in
+diesem
+Dialog angezeigt werden sollen (die Standardeinstellung ist 30).</p>
+
+                  <br>
+
+                  <p style="margin-bottom: 0cm;">Mit
+der <span style="color: rgb(51, 204, 0); font-weight: bold;">gr&uuml;nen</span>
+Taste k&ouml;nnen die Sender ausgew&auml;hlt werden. Auch hier
+ist eine Mehrfachauswahl m&ouml;glich.</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <p style="margin-bottom: 0cm; text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Marker_Senderauswahl.gif"></p>
+
+                  <p style="margin-bottom: 0cm; text-align: center;"><span style="font-style: italic;">Fig.4.3: Die Senderauswahl</span></p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <p style="margin-bottom: 0cm;">&Uuml;ber
+die&nbsp;<span style="font-weight: bold;">MENU</span>
+Taste lassen sich
+wie - bei den Sendern auch -, einige der globalen Einstellungen
+&uuml;berschreiben.&nbsp;Das
+kann dann z. B. der Speicherort
+sein. Hierbei ist zu beachten, dass wenn hier ein Speicherort
+eingestellt ist, wird die Serie genau in diesen Ordner aufgenommen. Es
+wird dort
+dann kein &bdquo;Serienordner&ldquo; angelegt, auch wenn dies
+in den <a href="SerienRecorder_kapitel_01.html#1.3_Die_globalen_Einstellungen">globalen
+Einstellungen</a> aktiviert ist. Es werden lediglich
+&bdquo;Staffelordner&ldquo;
+angelegt, vorausgesetzt diese Option in den globalen Einstellungen
+aktiv.</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <br>
+
+                  <div style="text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Marker_Einstellungen.gif"><br>
+
+                  <br>
+
+                  <span style="font-style: italic;">Fig.4.4:
+Die SerienMarker-Einstellungen</span><br>
+
+                  <br>
+
+                  <br>
+
+                  <div style="text-align: left;">Eine
+Option wollen wir hier noch n&auml;her betrachten:<br>
+
+                  <ul>
+
+                    <li>
+                      <p style="margin-bottom: 0cm;"><b>Bevorzugte
+Channel-Liste<br>
+
+                      </b>Zur Auswahl stehen
+hier&nbsp;&bdquo;Standard&ldquo; und
+&bdquo;Alternativ&ldquo;.
+&Uuml;ber diese Einstellung kann festgelegt werden, welcher Sender
+(standard oder alternativ) f&uuml;r die Timer-Erstellung benutzt
+werden
+soll. Im Fall eines&nbsp;Timer-Konflikts wird dann auf den jeweils
+anderen ausgewichen. Selbstredend ist diese Option nur dann wirksam,
+wenn auch alternative Sender eingestellt sind. </p>
+
+                    </li>
+
+                  </ul>
+
+                  </div>
+
+                  </div>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+
+                  <br>
+
+                  </div>
+
+                  <h3><a name="4.2_Die_Suche_nach_einer_Serie"></a>4.2
+Die&nbsp;Suche nach einer Serie &nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyBlue.gif" hspace="1" vspace="1"></h3>
+
+                  <p>&Uuml;ber die <span style="font-weight: bold; color: rgb(51, 51, 255);">blaue</span>
+Taste gelangt man zur Seriensuche. Damit kann man&nbsp;auch Serien
+hinzuf&uuml;gen, die
+noch gar nicht gestartet sind, z.B. eine Serie, die ihren Start erst in
+2 Monaten auf Sender XY hat). Voraussetzung hierf&uuml;r ist aber
+auch
+wieder,&nbsp;dass diese Serie bereits auf Wunschliste.de gelistet
+ist.</p>
+
+                  <br>
+
+                  <div style="text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Marker_Suche_1.gif"><br>
+
+                  <br>
+
+                  <span style="font-style: italic;">Fig.4.5:
+Die Serien-Suche<br>
+
+                  <br>
+
+                  </span>
+                  <div style="text-align: left;"><span style="font-style: italic;"></span><br>
+
+Mittels der virtuellen Tastatur (oder die Zifferntasten der
+Fernbedienung) wird der Suchbegriff (der Name der Serie) eingegeben,
+und die Suche mit der <span style="color: rgb(0, 153, 0); font-weight: bold;">gr&uuml;nen</span>
+Taste (oder <span style="font-weight: bold;">OK</span>
+auf der virtuellen Tastatur) gestartet. Dabei ist es nocht zwingend
+n&ouml;tig, den kompletten Namen einzugeben. Aber aufgepasst: Je
+weniger Zeichen eingegeben werden, desto gr&ouml;&szlig;er wird
+die
+Trefferliste, aus der dann die gesuchte Serie ausgew&auml;hlt wird.<br>
+
+                  <br>
+
+                  <br>
+
+                  <br>
+
+                  <div style="text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Marker_Suche_2.gif"><br>
+
+                  <br>
+
+                  <span style="font-style: italic;">Fig.4.6:
+Die Serien-Suche</span><br>
+
+                  </div>
+
+                  <br>
+
+                  <br>
+
+Wurde die gesuchte Serie gefunden, wird sie einfach durch
+Dr&uuml;cken&nbsp;der <span style="font-weight: bold;">OK</span>
+Taste zu den Serien-Markern hizugef&uuml;gt, und die
+Serien-Marker-Ansicht wird ge&ouml;ffnet, um alle Einstellungen
+f&uuml;r den neuen Marker vornehmen zu k&ouml;nnen. Beim
+Verlassen der
+Serien-Marker-Ansicht kommt man wieder zur Serien-Suche (virtuelle
+Tastatur), um nach der n&auml;chsten Serie suchen zu
+k&ouml;nnen. Das
+wiederholt sich solange, bis man die Suche (virtuelle Tastatur) mit der
+                  <span style="font-weight: bold;">EXIT</span>
+Taste (oder EXIT auf der virtuellen Tastatur) beendet.<br>
+
+                  <br>
+
+                  <br>
+
+&nbsp;<span style="font-style: italic;"></span></div>
+
+                  </div>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+
+                  </div>
+
+                  <h3><a name="4.3_Die_Sendetermine"></a>4.3
+Die Sendetermine &nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyYellow.gif" hspace="1" vspace="1"></h3>
+
+                  <p>Mit der <span style="color: rgb(255, 255, 0); background-color: rgb(153, 153, 153); font-weight: bold;">gelben</span>
+Taste in der Serien-Marker-Ansicht werden die Sendetermine der
+ausgew&auml;hlten Serie angezeigt.</p>
+
+                  <br>
+
+                  <div style="text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Sendetermine.gif"><br>
+
+                  <br>
+
+                  <span style="font-style: italic;">Fig.4.7:
+Die Sendetermine</span><br>
+
+                  <br>
+
+                  <br>
+
+                  <div style="text-align: left;">Der
+SerienRecorder liefert uns auch hier wieder zus&auml;tzliche
+Informationen zu jedem einzelnen Termin:
+                  <ul>
+
+                    <li>Bereits aufgenommene Folgen werden mit
+dem Festplattensymbol <img style="width: 20px; height: 20px;" alt="" src="images/hdd_24x24.png">&nbsp;angezeigt.</li>
+
+                    <li>Folgen f&uuml;r die bereits ein Timer
+erstellt wurde, werden mit dem Uhr-Symbol <img style="border: 1px solid ; width: 20px; height: 20px;" alt="" src="images/timerlist.png" hspace="1" vspace="1">&nbsp;gekennzeichnet.<br>
+
+                    </li>
+
+                    <li>Das Plus-Symbol <img style="border: 1px solid ; width: 20px; height: 20px;" alt="" src="images/plus.png" hspace="1" vspace="1">&nbsp;kennzeichnet
+Folgen, f&uuml;r die bereits zu einem anderen Sendetermin ein Timer
+erstellt wurde.</li>
+
+                  </ul>
+
+                  <br>
+
+                  </div>
+
+                  </div>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+
+                  </div>
+
+                  <h4><a name="4.3.1_Der_Filter"></a>4.3.1
+Das Filter &nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyYellow.gif" hspace="1" vspace="1"></h4>
+
+                  <p>Mit der <span style="color: rgb(255, 255, 0); background-color: rgb(153, 153, 153); font-weight: bold;">gelben</span>
+Taste wird in der Sendetermine-Ansicht das Filter ein- bzw.
+ausgeschaltet. Bei ausgeschaltetem Filter werden die Sendetermine auf
+ALLEN Sendern angezeigt, bei eingeschaltetem Filter (default) nur die
+Sendetermine auf den aktivierten Sendern.</p>
+
+                  <p></p>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+
+                  </div>
+
+                  <h4><a name="4.3.2_Die_manuelle_Erstellung_eines_Timers"></a>4.3.2
+Die manuelle Erstellung von Timern &nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/key_ok.png" hspace="1" vspace="1">&nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyGreen.gif" hspace="1" vspace="1"></h4>
+
+                  <p>In der Sendetermine-Ansicht k&ouml;nnen
+Timer auch
+manuell erstellt werden. Dazu werden zuerst alle gew&uuml;nschten
+Termine mit der OK Taste ausgew&auml;hlt. Die ausgew&auml;hlten
+Termine
+werden auf der linken Seite durch ein Plus-Symbol markiert. </p>
+
+                  <br>
+
+                  <div style="text-align: center;"><span style="font-style: italic;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Timer_erstellen.gif"><br>
+
+                  <br>
+
+Fig.4.8: Timer manuell erstellen<br>
+
+                  </span>
+                  <div style="text-align: left;"><span style="font-style: italic;"></span><br>
+
+                  <br>
+
+Durch Dr&uuml;cken der OK Taste wird f&uuml;r alle markierten
+Sendetermine ein Timer erstellt. Dabei werden alle Einstellungen
+(global, Serie, Sender) ber&uuml;cksichtigt. Allerdings kann man
+die
+Erstellung von Timern erzwingen (z.B. wenn der Sendetermin ausserhalb
+der erlaubten Zeitspanne liegt), indem man in den <a href="SerienRecorder_kapitel_01.html#1.3_Die_globalen_Einstellungen">globalen
+Einstellungen</a> die Option &bdquo;<span style="font-weight: bold;">Manuelle Timer immer erstellen</span>&ldquo;
+auf &bdquo;Ja&ldquo; stellt.<br>
+
+                  <br>
+
+                  <span style="font-style: italic;"></span></div>
+
+                  <span style="font-style: italic;"> <br>
+
+                  </span></div>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a></div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td class="start" colspan="1" align="center" height="22" width="100%">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td width="25%">
+                  <div align="left"><a class="navnav" href="SerienRecorder_kapitel_03.html">&nbsp;&lt;&lt;
+&nbsp; zur&uuml;ck</a></div>
+
+                  </td>
+
+                  <td width="49%">
+                  <div align="center"><a class="navnav" href="#top">&lt;top&gt;</a></div>
+
+                  </td>
+
+                  <td align="right" width="25%">
+                  <div align="right"><a href="SerienRecorder_kapitel_05.html" class="navnav">vor&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;</a></div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+      </table>
+
+      </div>
+
+      </td>
+
+    </tr>
+
+  </tbody>
+</table>
+
+<br>
+
+<br>
+
+<hr align="center" width="70%"><br>
+
+<div align="center">
+<p class="standard"><b>Copyright 2014
+&copy;&nbsp;einfall und&nbsp;w22754</b><br>
+
+</p>
+
+Support: <a href="http://www.vuplus-support.org/wbb3/index.php?page=Thread&amp;threadID=60724">http://www.vuplus-support.org/wbb3/index.php?page=Thread&amp;threadID=60724</a><br>
+
+<br>
+
+Falls Ihr Euch bedanken wollt:<br>
+
+@einfall: schickt eine PN, um die Amazon-Wunschliste zu erhalten<br>
+
+@w22754: via PayPal "Geld senden" an w22754@yahoo.de<br>
+
+<br>
+
+</div>
+
+<br>
+
+<br>
+
+</body>
+</html>

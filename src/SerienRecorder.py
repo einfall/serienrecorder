@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 from __init__ import _
 
-from Components.ActionMap import *
+from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Label import Label
 from Components.MenuList import MenuList
 from Components.MultiContent import MultiContentEntryText, MultiContentEntryPixmap, MultiContentEntryPixmapAlphaTest
-from Components.config import config
 from Tools.LoadPixmap import LoadPixmap
 from Components.Pixmap import Pixmap
 from Components.AVSwitch import AVSwitch
@@ -19,8 +18,6 @@ from twisted.web.client import downloadPage
 
 from Components.ServicePosition import ServicePositionGauge
 from Tools.NumericalTextInput import NumericalTextInput
-from Components.ConfigList import *
-from Components.config import *
 from Components.ConfigList import ConfigList, ConfigListScreen
 from Components.config import config, ConfigInteger, ConfigSelection, getConfigListEntry, ConfigText, ConfigDirectory, ConfigYesNo, configfile, ConfigSelection, ConfigSubsection, ConfigPIN, NoSave, ConfigNothing, ConfigClock, ConfigSelectionNumber
 
@@ -31,41 +28,42 @@ from Components.Sources.StaticText import StaticText
 from Screens.HelpMenu import HelpableScreen
 from Screens.InputBox import InputBox
 from Screens.ChoiceBox import ChoiceBox
-from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
 from Screens.Standby import TryQuitMainloop
 from Screens.VirtualKeyBoard import VirtualKeyBoard
 
-from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer
+from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter, eConsoleAppContainer
 from Tools.Directories import pathExists, fileExists, SCOPE_SKIN_IMAGE, resolveFilename
 import sys, os, base64, re, time, shutil, datetime, codecs, urllib2
 from twisted.web import client, error as weberror
-from twisted.internet import reactor
-from twisted.internet import defer
+from twisted.internet import reactor, defer
 from urllib import urlencode
-from skin import parseColor
+from skin import parseColor, loadSkin
 
 from Screens.ChannelSelection import service_types_tv
-from enigma import eServiceCenter, eServiceReference, eConsoleAppContainer
 from ServiceReference import ServiceReference
 
 from Components.UsageConfig import preferredTimerPath, preferredInstantRecordPath
-from Components.config import config
 
 # Navigation (RecordTimer)
 import NavigationInstance
 
 # Timer
-from ServiceReference import ServiceReference
-from RecordTimer import RecordTimerEntry
-from RecordTimer import RecordTimer, parseEvent, AFTEREVENT
+from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from Components.TimerSanityCheck import TimerSanityCheck
 
 # EPGCache & Event
-from enigma import eEPGCache, eServiceReference, eServiceCenter, iServiceInformation
+from enigma import eEPGCache, iServiceInformation
 
 from Tools import Notifications
+#from Components.Renderer.RunningText import RunningText
 import sqlite3
+
+colorRed    = 0xf23d21
+colorGreen  = 0x389416
+colorBlue   = 0x0064c7
+colorYellow = 0xbab329
+colorWhite  = 0xffffff
 
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
@@ -77,12 +75,64 @@ except Exception:
 	default_before = 0
 	default_after = 0
 
+showAllButtons = False
+longButtonText = False
+buttonText_na = _("-----")
+skinName = "SerienRecorder3.0"
+skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+
+def SelectSkin():
+	global showAllButtons
+	showAllButtons = False
+	global longButtonText
+	longButtonText = False
+	global buttonText_na
+	buttonText_na = _("-----")
+	
+	global skinName
+	skinName = "SerienRecorder3.0"
+	global skin
+	skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+	
+	if config.plugins.serienRec.SkinType.value == "Skinpart":
+		try:
+			from skin import lookupScreen
+			x, path = lookupScreen("SerienRecorder", 0)
+			if x:
+				skinName = "SerienRecorder"
+				showAllButtons = config.plugins.serienRec.showAllButtons.value
+		except:
+			pass
+
+	elif config.plugins.serienRec.SkinType.value in ("", "Skin2", "AtileHD"):
+		skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
+		skin = skin.replace("//", "/")
+		if config.plugins.serienRec.SkinType.value in ("Skin2", ):
+			showAllButtons = True
+		if config.plugins.serienRec.SkinType.value in ("Skin2", "AtileHD"):
+			buttonText_na = ""
+	else:
+		if fileExists("%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)):
+			skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
+			showAllButtons = config.plugins.serienRec.showAllButtons.value
+			buttonText_na = ""
+		
 def ReadConfigFile():
 	config.plugins.serienRec = ConfigSubsection()
 	config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
-	config.plugins.serienRec.SkinType = ConfigSelection(choices = [("-1", _("Skinpart")), ("0", _("SerienRecorder 1")), ("1", _("SerienRecorder 2")), ("2", _("AtileHD"))], default="0")
+	
+	choices = [("Skinpart", _("Skinpart")), ("", _("SerienRecorder 1")), ("Skin2", _("SerienRecorder 2")), ("AtileHD", _("AtileHD"))]
+	t = list(os.walk("%sskins" % serienRecMainPath))
+	for x in t[0][1]:
+		if x not in ("Skin2", "AtileHD"):
+			choices.append((x, x))
+	config.plugins.serienRec.SkinType = ConfigSelection(choices = choices, default="") 
+	config.plugins.serienRec.showAllButtons = ConfigYesNo(default = False)
+	config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1,60))
+	
 	#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
+	config.plugins.serienRec.BoxID = ConfigSelectionNumber(1, 16, 1, default = 1)
 	config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
 	config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
 	config.plugins.serienRec.seasonsubdirnumerlength = ConfigInteger(1, (1,4))
@@ -141,7 +191,6 @@ def ReadConfigFile():
 	config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
 	config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
 	config.plugins.serienRec.logWrapAround = ConfigYesNo(default = False)
-	config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1,60))
 	config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", _("<Serienname> - SnnEmm - <Episodentitel>")), ("1", _("<Serienname>"))], default="0")
 	config.plugins.serienRec.refreshViews = ConfigYesNo(default = True)
 	config.plugins.serienRec.defaultStaffel = ConfigSelection(choices = [("0","'Alle'"), ("1", "'Manuell'")], default="0")
@@ -167,15 +216,16 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.7"))
-	config.plugins.serienRec.BoxID = NoSave(ConfigInteger(1, (0,0xFFFF)))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.8"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,3))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
 	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
 	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.0"))
 	
+	SelectSkin()
 ReadConfigFile()
+
 if config.plugins.serienRec.firstscreen.value == "0":
 	showMainScreen = True
 else:
@@ -213,6 +263,16 @@ except ImportError as ie:
 	VPSPluginAvailable = False
 else:
 	VPSPluginAvailable = True
+
+
+# init Opera Webbrowser
+if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/HbbTV/browser.pyo"):
+	from Plugins.Extensions.HbbTV.browser import Browser
+	BrowserInstalled = True
+else:
+	BrowserInstalled = False
+
+	
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -340,7 +400,9 @@ def getEPGevent(query, channelref, title, starttime):
 	allevents = epgcache.lookupEvent(query) or []
 
 	for serviceref, eit, name, begin, duration, shortdesc, extdesc in allevents:
-		if channelref == serviceref: # and name.lower() == title.lower()
+		_name = name.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").lower()
+		_title = title.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").lower()
+		if (channelref == serviceref) and (_name.count(_title) or _title.count(_name)):
 			if int(int(begin)-(int(EPGTimeSpan)*60)) <= int(starttime) <= int(int(begin)+(int(EPGTimeSpan)*60)):
 				epgmatches.append((serviceref, eit, name, begin, duration, shortdesc, extdesc))
 	return epgmatches
@@ -381,8 +443,8 @@ def getCover(self, serien_name, id):
 		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self)
 
 def getCoverDataError(error, self):
-	self['title'].setText(_("Cover-Suche auf 'Wunschliste.de' erfolglos"))
-	self['title'].instance.setForegroundColor(parseColor("white"))
+	#self['title'].setText(_("Cover-Suche auf 'Wunschliste.de' erfolglos"))
+	#self['title'].instance.setForegroundColor(parseColor("white"))
 	writeLog(_("[Serien Recorder] Fehler bei: %s") % self.ErrorMsg, True)
 	print "[Serien Recorder] Fehler bei: %s" % self.ErrorMsg
 	print error
@@ -431,35 +493,42 @@ def showCover(data, self, serien_nameCover, force_show=True):
 	else:
 		print("Coverfile not found: %s" % serien_nameCover)
 
-def InitSkin(self):
-	skin = None
-	if config.plugins.serienRec.SkinType.value == "-1":
-		self.skinName = "SerienRecorder"
-		skinpartAvailable = False
+def setSkinProperties(self, isLayoutFinshed=True):
+	global longButtonText
+	if isLayoutFinshed:
 		try:
-			from skin import lookupScreen
-			x, path = lookupScreen("SerienRecorder", 0)
-			if x:
-				skinpartAvailable = True
-		except:
-			pass
-
-		if not skinpartAvailable:
-			self.skinName = "SerienRecorder3.0"
-			skin = "%sskins/SR_Skin.xml" % serienRecMainPath
-		
-	else:
-		self.skinName = "SerienRecorder3.0"
-		if config.plugins.serienRec.SkinType.value == "2":
-			if os.path.exists('/usr/share/enigma2/AtileHD/skin_default/buttons/'): 
-				skin = "%sskins/AtileHD/SR_Skin.xml" % serienRecMainPath
+			x = self['text_3'].instance.size()
+			if x.width() > 250:
+				longButtonText = True
 			else:
-				skin = "%sskins/SR_Skin.xml" % serienRecMainPath
-		elif config.plugins.serienRec.SkinType.value == "1":
-			skin = "%sskins/Skin2/SR_Skin.xml" % serienRecMainPath
-		else:
-			skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+				longButtonText = False
+		except: 
+			longButtonText = False
 	
+	if longButtonText:
+		self.num_bt_text = ([_("Zeige Log"), buttonText_na, _("Abbrechen")],
+							[_("Timer-Übersicht"), _("Konflikt-Liste"), _("YouTube (lang: Wikipedia)")],
+							[buttonText_na, _("Merkzettel"), ""],
+							[_("Neue Serienstarts"), buttonText_na, _("Hilfe")],
+							[_("Serien Beschreibung"), buttonText_na, _("globale Einstellungen")])
+	else:
+		self.num_bt_text = ([_("Zeige Log"), buttonText_na, _("Abbrechen")],
+							[_("Timer-Übersicht"), _("Konflikt-Liste"), _("YouTube/Wikipedia")],
+							[buttonText_na, _("Merkzettel"), ""],
+							[_("Neue Serienstarts"), buttonText_na, _("Hilfe")],
+							[_("Serien Beschreibung"), buttonText_na, _("globale Einstellungen")])
+
+	if showAllButtons:
+		Skin1_Settings(self)
+							
+def InitSkin(self):
+	global showAllButtons
+	global longButtonText
+	global buttonText_na
+	global skin
+	global skinName
+	
+	self.skinName = skinName
 	if skin:
 		SRSkin = open(skin)
 		self.skin = SRSkin.read()
@@ -542,14 +611,10 @@ def InitSkin(self):
 	self['title'] = Label("")
 	self['version'] = Label(_("Serien Recorder v%s") % config.plugins.serienRec.showversion.value)
 	self['headline'] = Label("")
-
-	if config.plugins.serienRec.SkinType.value == "1":
-		self.num_bt_text = ([_("Zeige Log"), "", _("Abbrechen")],
-							[_("Added Liste"), _("Konflikt-Liste"), _("About")],
-							["", _("Merkzettel"), ""],
-							[_("Neue Serienstarts"), "", _("YouTube (lang: Wikipedia)")],
-							[_("Serien Beschreibung"), "", ""])
-	else:
+	
+	setSkinProperties(self, False)
+							
+	if not showAllButtons:
 		self['bt_red'].hide()
 		self['bt_green'].hide()
 		self['bt_yellow'].hide()
@@ -588,13 +653,7 @@ def InitSkin(self):
 		self['text_7'].hide()
 		self['text_8'].hide()
 		self['text_9'].hide()
-		
-		self.num_bt_text = ([_("Zeige Log"), _("-----"), _("Abbrechen")],
-							[_("Added Liste"), _("Konflikt-Liste"), _("About")],
-							[_("-----"), _("Merkzettel"), ""],
-							[_("Neue Serienstarts"), _("-----"), _("YouTube/Wikipedia")],
-							[_("Serien Beschreibung"), _("-----"), ""])
-		
+
 def Skin1_Settings(self):			
 	self['text_0'].setText(self.num_bt_text[0][0])
 	self['text_1'].setText(self.num_bt_text[1][0])
@@ -899,7 +958,7 @@ def getMarker():
 		row2 = cTmp.fetchone()
 		if row2:
 			(ErlaubteSTB,) = row2
-			if not (ErlaubteSTB & config.plugins.serienRec.BoxID.value):
+			if not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
 				SerieEnabled = False
 		else:
 			cTmp.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
@@ -2250,7 +2309,7 @@ class serienRecCheckForRecording():
 		else:
 			print "\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------" % (self.uhrzeit, str(self.page))
 			writeLog(_("\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------\n") % (self.uhrzeit, str(self.page)), True)
-			if (config.plugins.serienRec.showNotification.value == "1") or (config.plugins.serienRec.showNotification.value == "3"):
+			if config.plugins.serienRec.showNotification.value in ("1", "3"):
 				Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde gestartet."), MessageBox.TYPE_INFO, timeout=3, id="[Serien Recorder] Suchlauf wurde gestartet")
 
 		if config.plugins.serienRec.writeLogVersion.value:
@@ -2351,7 +2410,7 @@ class serienRecCheckForRecording():
 									dbSerRec.commit()
 
 									if not amanuell:
-										if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
+										if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
 											Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
 								cCursor.close()
 								
@@ -2377,7 +2436,7 @@ class serienRecCheckForRecording():
 												dbSerRec.commit()
 
 												if not amanuell:
-													if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
+													if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
 														Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
 								else:
 									cCursor.execute("SELECT TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=? AND TimerForSpecials=0", (serien_name.lower(),))				
@@ -2392,7 +2451,7 @@ class serienRecCheckForRecording():
 											dbSerRec.commit()
 
 											if not amanuell:
-												if config.plugins.serienRec.ActionOnNew.value == "1" or config.plugins.serienRec.ActionOnNew.value == "3":
+												if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
 													Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
 								
 								cCursor.close()
@@ -2408,7 +2467,7 @@ class serienRecCheckForRecording():
 			else:
 				writeLog(_("[Serien Recorder] Staffel %s von '%s' beginnt am %s") % (Staffel, Serie, StaffelStart), True) 
 
-		if config.plugins.serienRec.ActionOnNew.value == "2" or config.plugins.serienRec.ActionOnNew.value == "3":
+		if config.plugins.serienRec.ActionOnNew.value in ("2", "3"):
 			cTmp = dbSerRec.cursor()
 			cCursor.execute("SELECT Serie, MIN(Staffel), Sender, Url FROM NeuerStaffelbeginn WHERE CreationFlag=1 GROUP BY Serie")
 			for row in cCursor:
@@ -2893,7 +2952,7 @@ class serienRecCheckForRecording():
 			print "[Serien Recorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist)
 		writeLog(_("---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------") % str(speedTime), True)
 		print "---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime)
-		if config.plugins.serienRec.showNotification.value >= "2" and not self.manuell:
+		if (config.plugins.serienRec.showNotification.value in ("2", "3")) and (not self.manuell):
 			statisticMessage = _("Serien vorgemerkt: %s\nTimer erstellt: %s\nTimer aktualisiert: %s\nTimer mit Konflikten: %s\nTimer vom Merkzettel: %s") % (str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate), str(self.countNotActiveTimer), str(self.countTimerFromWishlist))
 			Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde beendet.\n\n%s") % statisticMessage, MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] Suchlauf wurde beendet")
 
@@ -3311,37 +3370,69 @@ class serienRecCheckForRecording():
 				self.gotoDeepStandby(True)
 		self.close()
 
-class serienRecTimer(Screen):
+class serienRecTimer(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			"left"  : self.keyLeft,
-			"right" : self.keyRight,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"red"	: self.keyRed,
-			"green" : self.viewChange,
-			"yellow": self.keyYellow,
-			"blue"  : self.keyBlue,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			#"ok"    : self.keyOK,
+			"cancel": (self.keyCancel, _("zurück zur Serienplaner-Ansicht")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"red"	: (self.keyRed, _("ausgewählten Timer löschen")),
+			"green" : (self.viewChange, _("Sortierung ändern")),
+			"yellow": (self.keyYellow, _("umschalten alle/nur aktive Timer anzeigen")),
+			"blue"  : (self.keyBlue, _("alle vergangenen Timer aus der Datenbank löschen")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"ok"    : self.keyOK,
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
+
+		self.changesMade = False
+		self.filter = True
+		
+		self.onLayoutFinish.append(self.readTimer)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Entferne Timer"))
+		if config.plugins.serienRec.recordListView.value == 0:
+			self['text_green'].setText(_("Zeige früheste Timer zuerst"))
+		elif config.plugins.serienRec.recordListView.value == 1:
+			self['text_green'].setText(_("Zeige neuste Timer zuerst"))
+		self['text_yellow'].setText(_("Zeige auch alte Timer"))
+		self['text_blue'].setText(_("Entferne alle alten"))
+
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
 			
@@ -3351,21 +3442,7 @@ class serienRecTimer(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-
-		self.changesMade = False
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
-		self.filter = True
 		
-		self.onLayoutFinish.append(self.readTimer)
-		self.onClose.append(self.__onClose)
-
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -3378,15 +3455,7 @@ class serienRecTimer(Screen):
 
 		self['cover'].show()
 
-		self['text_red'].setText(_("Entferne Timer"))
-		if config.plugins.serienRec.recordListView.value == 0:
-			self['text_green'].setText(_("Zeige früheste Timer zuerst"))
-		elif config.plugins.serienRec.recordListView.value == 1:
-			self['text_green'].setText(_("Zeige neuste Timer zuerst"))
-		self['text_yellow'].setText(_("Zeige auch alte Timer"))
-		self['text_blue'].setText(_("Entferne alle alten"))
-
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_yellow'].show()
@@ -3394,6 +3463,7 @@ class serienRecTimer(Screen):
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_green'].show()
@@ -3463,9 +3533,31 @@ class serienRecTimer(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 	
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.readTimer()
+				
 	def viewChange(self):
 		if config.plugins.serienRec.recordListView.value == 1:
 			config.plugins.serienRec.recordListView.value = 0
@@ -3529,9 +3621,9 @@ class serienRecTimer(Screen):
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8, 32, 32, loadPNG(imageFound)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 250, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 250, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow)
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow)
 			]
 
 	def keyOK(self):
@@ -3670,24 +3762,54 @@ class serienRecTimer(Screen):
 	def dataError(self, error):
 		print error
 
-class serienRecRunAutoCheck(Screen):
-	def __init__(self, session, startAuto):
+class serienRecRunAutoCheck(Screen, HelpableScreen):
+	def __init__(self, session, manuell=True):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
-		self.startAuto = startAuto
+		self.manuell = manuell
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"cancel": self.keyCancel,
-			"startTeletext" : self.showAbout,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
+
+		self.logliste = []
+		self.points = ""
+
+		self.onLayoutFinish.append(self.startCheck)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+		
+		self['text_red'].setText(_("Abbrechen"))
+		self.num_bt_text[0][0] = buttonText_na
+		self.num_bt_text[4][0] = buttonText_na
+			
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			self.num_bt_text[1][2] = buttonText_na
+			Skin1_Settings(self)
+		else:
+			self.num_bt_text[1][2] = ""
+
 			self.displayMode = 2
 			self.updateMenuKeys()
 			
@@ -3697,20 +3819,7 @@ class serienRecRunAutoCheck(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
-		self.logliste = []
-		self.points = ""
-
-		self.onLayoutFinish.append(self.startCheck)
-		self.onClose.append(self.__onClose)
-
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -3726,15 +3835,11 @@ class serienRecRunAutoCheck(Screen):
 
 		self['title'].setText(_("Suche nach neuen Timern läuft."))
 
-		self['text_red'].setText(_("Abbrechen"))
-		self.num_bt_text[3][2] = ""
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.num_bt_text[0][0] = _("-----")
-			self.num_bt_text[4][0] = _("-----")
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
+			self['bt_menu'].show()
 		
 			self['text_red'].show()
 			self['text_0'].show()
@@ -3742,13 +3847,16 @@ class serienRecRunAutoCheck(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self.num_bt_text[0][0] = ""
-			self.num_bt_text[4][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 		
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def modifyAddedFile(self):
 		self.session.open(serienRecModifyAdded)
 
@@ -3764,8 +3872,24 @@ class serienRecRunAutoCheck(Screen):
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 		
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.startCheck()
+				
 	def startCheck(self):
-		if self.startAuto:
+		if self.manuell:
 			global autoCheckFinished
 			autoCheckFinished = False
 			serienRecCheckForRecording(self.session, True)
@@ -3781,7 +3905,7 @@ class serienRecRunAutoCheck(Screen):
 
 	def readLog(self):
 		global autoCheckFinished
-		if autoCheckFinished or not self.startAuto:
+		if autoCheckFinished or not self.manuell:
 			if self.readLogTimer:
 				self.readLogTimer.stop()
 				self.readLogTimer = None
@@ -3826,47 +3950,116 @@ class serienRecRunAutoCheck(Screen):
 			self.displayTimer = None
 
 	def keyCancel(self):
-		self.close(self.startAuto)
+		self.close(self.manuell)
 
 		
 #---------------------------------- Marker Functions ------------------------------------------
 
-class serienRecMarker(Screen):
+class serienRecMarker(Screen, HelpableScreen):
 	def __init__(self, session, SelectSerie=None):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 		self.SelectSerie = SelectSerie
 		
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"       : self.keyOK,
-			"exit"     : self.keyCancel,
-			"red"	   : self.keyRed,
-			"red_long" : self.keyRedLong,
-			"green"    : self.keyGreen,
-			"yellow"   : self.keyYellow,
-			"blue"	   : self.keyBlue,
-			"info"	   : self.keyCheck,
-			"left"     : self.keyLeft,
-			"right"    : self.keyRight,
-			"up"       : self.keyUp,
-			"down"     : self.keyDown,
-			"menu"     : self.markerSetup,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"exit_long": self.keyExit,
-			"0"		   : self.readLogFile,
-			"1"		   : self.modifyAddedFile,
-			"3"		   : self.showProposalDB,
-			"4"		   : self.serieInfo,
-			"6"		   : self.showConflicts,
-			"7"		   : self.showWishlist
-		}, -1)
+		if not showMainScreen:
+			self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+				"ok"       : (self.keyOK, _("zur Staffelauswahl")),
+				"cancel"   : (self.keyCancel, _("SerienRecorder beenden")),
+				"red"	   : (self.keyRed, _("umschalten ausgewählter Serien-Marker aktiviert/deaktiviert")),
+				"red_long" : (self.keyRedLong, _("ausgewählten Serien-Marker löschen")),
+				"green"    : (self.keyGreen, _("zur Senderauswahl")),
+				"yellow"   : (self.keyYellow, _("Sendetermine für ausgewählte Serien anzeigen")),
+				"blue"	   : (self.keyBlue, _("Serie manuell suchen")),
+				"info"	   : (self.keyCheck, _("Suchlauf für Timer starten")),
+				"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
+				"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
+				"up"       : (self.keyUp, _("eine Zeile nach oben")),
+				"down"     : (self.keyDown, _("eine Zeile nach unten")),
+				"menu"     : (self.markerSetup, _("Menü für Serien-Einstellungen öffnen")),
+				"menu_long": (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+				"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+				"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+				"cancel_long" : (self.keyExit, _("zurück zur Serienplaner-Ansicht")),
+				"0"		   : (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+				"1"		   : (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+				"3"		   : (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+				"4"		   : (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+				"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+				"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			}, -1)
+		else:
+			self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+				"ok"       : (self.keyOK, _("zur Staffelauswahl")),
+				"cancel"   : (self.keyCancel, _("zurück zur Serienplaner-Ansicht")),
+				"red"	   : (self.keyRed, _("umschalten ausgewählter Serien-Marker aktiviert/deaktiviert")),
+				"red_long" : (self.keyRedLong, _("ausgewählten Serien-Marker löschen")),
+				"green"    : (self.keyGreen, _("zur Senderauswahl")),
+				"yellow"   : (self.keyYellow, _("Sendetermine für ausgewählte Serien anzeigen")),
+				"blue"	   : (self.keyBlue, _("Serie manuell suchen")),
+				"info"	   : (self.keyCheck, _("Suchlauf für Timer starten")),
+				"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
+				"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
+				"up"       : (self.keyUp, _("eine Zeile nach oben")),
+				"down"     : (self.keyDown, _("eine Zeile nach unten")),
+				"menu"     : (self.markerSetup, _("Menü für Serien-Einstellungen öffnen")),
+				"menu_long": (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+				"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+				"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+				"cancel_long" : (self.keyExit, _("zurück zur Serienplaner-Ansicht")),
+				"0"		   : (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+				"1"		   : (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+				"3"		   : (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+				"4"		   : (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+				"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+				"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			}, -1)
+		self.helpList[0][2].sort()
+		
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
+		
+		self.modus = "config"
+		self.changesMade = False
+		self.serien_nameCover = "nix"
+		self.loading = True
+		
+		self.onLayoutFinish.append(self.readSerienMarker)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+		
+		self['text_green'].setText(_("Sender auswählen."))
+		self['text_ok'].setText(_("Staffel(n) auswählen."))
+		self['text_yellow'].setText(_("Sendetermine"))
+		self['text_blue'].setText(_("Serie suchen"))
+		self.num_bt_text[2][2] = _("Timer suchen")
+
+		if longButtonText:
+			self.num_bt_text[4][2] = _("Setup Serie (lang: global)")
+			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
+			if not showMainScreen:
+				self.num_bt_text[0][2] = _("Exit (lang: Serienplaner)")
+		else:
+			self.num_bt_text[4][2] = _("Setup Serie/global")
+			self['text_red'].setText(_("(De)aktivieren/Löschen"))
+			if not showMainScreen:
+				self.num_bt_text[0][2] = _("Exit/Serienplaner")
+
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
 		
@@ -3876,22 +4069,7 @@ class serienRecMarker(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
 		
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
-
-		self.modus = "config"
-		self.changesMade = False
-		self.serien_nameCover = "nix"
-		self.loading = True
-		self.onLayoutFinish.append(self.readSerienMarker)
-		self.onClose.append(self.__onClose)
-
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -3912,19 +4090,7 @@ class serienRecMarker(Screen):
 
 		self['cover'].show()
 
-		self['text_green'].setText(_("Sender auswählen."))
-		self['text_ok'].setText(_("Staffel(n) auswählen."))
-		self['text_yellow'].setText(_("Sendetermine"))
-		self['text_blue'].setText(_("Serie suchen"))
-		if not showMainScreen:
-			self.num_bt_text[0][2] = _("Exit/Serienplaner")
-		self.num_bt_text[2][2] = _("Timer suchen")
-		self.num_bt_text[4][2] = _("Serien-Einstellungen")
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			#self['text_red'].setText(_("Entferne Serie(n) Marker"))
-			self['text_red'].setText(_("(De)aktivieren/Löschen"))
-			
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -3946,11 +4112,7 @@ class serienRecMarker(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
-			if not showMainScreen:
-				self.num_bt_text[0][2] = _("Exit (lang: Serienplaner)")
-
+			
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 		
@@ -4027,9 +4189,34 @@ class serienRecMarker(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			if self.loading:
+				return
+				
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 	
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.readSerienMarker()
+				
 	def getCover(self):
 		if self.loading:
 			return
@@ -4092,7 +4279,7 @@ class serienRecMarker(Screen):
 			row2 = cSerie.fetchone()
 			if row2:
 				(ErlaubteSTB,) = row2
-				if not (ErlaubteSTB & config.plugins.serienRec.BoxID.value):
+				if not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
 					SerieAktiviert = False
 			cSerie.close()
 			
@@ -4144,9 +4331,9 @@ class serienRecMarker(Screen):
 				SenderText = _("%s, Std.") % SenderText
 
 		if SerieAktiviert:
-			SerieColor = self.yellow
+			SerieColor = colorYellow
 		else:
-			SerieColor = self.red
+			SerieColor = colorRed
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
@@ -4335,7 +4522,7 @@ class serienRecMarker(Screen):
 
 	def callSaveMsg(self, answer):
 		if answer:
-			self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Added Liste entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
+			self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 		else:
 			return
 
@@ -4372,7 +4559,7 @@ class serienRecMarker(Screen):
 				row = cCursor.fetchone()
 				if row:
 					(ID, ErlaubteSTB) = row
-					ErlaubteSTB ^= config.plugins.serienRec.BoxID.value 
+					ErlaubteSTB ^= (1 << (int(config.plugins.serienRec.BoxID.value) - 1)) 
 					cCursor.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=? WHERE ID=?", (ErlaubteSTB, ID))
 					dbSerRec.commit()
 					self.readSerienMarker()
@@ -4394,7 +4581,7 @@ class serienRecMarker(Screen):
 					if config.plugins.serienRec.confirmOnDelete.value:
 						self.session.openWithCallback(self.callSaveMsg, MessageBox, _("Soll '%s' wirklich entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 					else:
-						self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Added Liste entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
+						self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 				cCursor.close()
 
 	def insertStaffelMarker(self):
@@ -4581,36 +4768,62 @@ class serienRecMarker(Screen):
 	def dataError(self, error):
 		print error
 
-class serienRecAddSerie(Screen):
+class serienRecAddSerie(Screen, HelpableScreen):
 	def __init__(self, session, serien_name):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			"left"  : self.keyLeft,
-			"right" : self.keyRight,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"red"	: self.keyRed,
-			"blue"  : self.keyBlue,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"    : (self.keyOK, _("Marker für ausgewählte Serie hinzufügen")),
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"red"	: (self.keyRed, _("zurück zur vorherigen Ansicht")),
+			"blue"  : (self.keyBlue, _("Serie manuell suchen")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
+		
+		self.loading = True
+
+		self.onLayoutFinish.append(self.searchSerie)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Abbrechen"))
+		self['text_ok'].setText(_("Hinzufügen"))
+		self['text_blue'].setText(_("Serie Suchen"))
+
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
 		
@@ -4620,14 +4833,7 @@ class serienRecAddSerie(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-		
-		self.loading = True
-
-		self.onLayoutFinish.append(self.searchSerie)
-		self.onClose.append(self.__onClose)
-
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -4640,17 +4846,14 @@ class serienRecAddSerie(Screen):
 
 		self['cover'].show()
 
-		self['text_red'].setText(_("Abbrechen"))
-		self['text_ok'].setText(_("Hinzufügen"))
-		self['text_blue'].setText(_("Serie Suchen"))
-
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_ok'].show()
 			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_ok'].show()
@@ -4722,9 +4925,34 @@ class serienRecAddSerie(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			if self.loading:
+				return
+				
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 	
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.searchSerie()
+				
 	def searchSerie(self):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche nach ' %s '") % self.serien_name)
@@ -4860,38 +5088,74 @@ class serienRecAddSerie(Screen):
 	def dataError(self, error):
 		print error
 
-class serienRecSendeTermine(Screen):
+class serienRecSendeTermine(Screen, HelpableScreen):
 	def __init__(self, session, serien_name, serie_url, serien_cover):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 		self.serie_url = serie_url
 		self.serien_cover = serien_cover
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			"red"	: self.keyRed,
-			"green" : self.keyGreen,
-			"yellow": self.keyYellow,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"    : (self.keyOK, _("umschalten ausgewählter Sendetermin aktiviert/deaktiviert")),
+			"cancel": (self.keyCancel, _("zurück zur Serien-Marker-Ansicht")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"red"	: (self.keyRed, _("zurück zur Serien-Marker-Ansicht")),
+			"green" : (self.keyGreen, _("Timer für aktivierte Sendetermine erstellen")),
+			"yellow": (self.keyYellow, _("umschalten Filter (aktive Sender) aktiviert/deaktiviert")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
-		
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
+
 		self.FilterEnabled = True
 		self.changesMade = False
 		
 		self.setupSkin()
+		
+		self.sendetermine_list = []
+		self.loading = True
+		
+		self.onLayoutFinish.append(self.searchSerie)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Abbrechen"))
+		self['text_ok'].setText(_("Auswahl"))
+		if self.FilterEnabled:
+			self['text_yellow'].setText(_("Filter ausschalten"))
+			self.title_txt = _("gefiltert")
+		else:
+			self['text_yellow'].setText(_("Filter einschalten"))
+			self.title_txt = _("alle")
+
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
 		
@@ -4901,20 +5165,7 @@ class serienRecSendeTermine(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-		
-		self.sendetermine_list = []
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
-		self.loading = True
-		
-		self.onLayoutFinish.append(self.searchSerie)
-		self.onClose.append(self.__onClose)
-
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -4929,16 +5180,7 @@ class serienRecSendeTermine(Screen):
 
 		self['cover'].show()
 
-		self['text_red'].setText(_("Abbrechen"))
-		self['text_ok'].setText(_("Auswahl"))
-		if self.FilterEnabled:
-			self['text_yellow'] = Label(_("Filter ausschalten"))
-			self.title_txt = _("gefiltert")
-		else:
-			self['text_yellow'] = Label(_("Filter einschalten"))
-			self.title_txt = _("alle")
-
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -4946,6 +5188,7 @@ class serienRecSendeTermine(Screen):
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_green'].show()
@@ -5003,9 +5246,34 @@ class serienRecSendeTermine(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			if self.loading:
+				return
+				
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 	
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.searchSerie()
+				
 	def searchSerie(self):
 		if not self.serien_cover == "nix":
 			showCover(self.serien_cover, self, self.serien_cover)
@@ -5116,9 +5384,9 @@ class serienRecSendeTermine(Screen):
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15, 16, 16, loadPNG(leftImage)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), colorYellow),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), self.yellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), colorYellow),
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, loadPNG(rightImage))
 			]
 
@@ -5294,6 +5562,18 @@ class serienRecSendeTermine(Screen):
 				self.sendetermine_list[sindex][8] = "0"
 			self.chooseMenuList.setList(map(self.buildList_termine, self.sendetermine_list))
 
+	def keyLeft(self):
+		self['config'].pageUp()
+
+	def keyRight(self):
+		self['config'].pageDown()
+
+	def keyDown(self):
+		self['config'].down()
+
+	def keyUp(self):
+		self['config'].up()
+
 	def checkSender(self, mSender):
 		fSender = []
 		cCursor = dbSerRec.cursor()
@@ -5352,12 +5632,12 @@ class serienRecSendeTermine(Screen):
 
 		if self.FilterEnabled:
 			self.FilterEnabled = False
-			self['text_yellow'].setText(_("Filter ausschalten"))
-			self.title_txt = _("gefiltert")
-		else:
-			self.FilterEnabled = True
 			self['text_yellow'].setText(_("Filter einschalten"))
 			self.title_txt = _("alle")
+		else:
+			self.FilterEnabled = True
+			self['text_yellow'].setText(_("Filter ausschalten"))
+			self.title_txt = _("gefiltert")
 			
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche ' %s '") % self.serien_name)
@@ -5381,52 +5661,40 @@ class serienRecSendeTermine(Screen):
 
 #---------------------------------- Channel Functions ------------------------------------------
 
-class serienRecMainChannelEdit(Screen):
+class serienRecMainChannelEdit(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"exit"  : self.keyCancel,
-			"red"	: self.keyRed,
-			"red_long" : self.keyRedLong,
-			"green" : self.keyGreen,
-			"menu"  : self.channelSetup,
-			"left"  : self.keyLeft,
-			"right" : self.keyRight,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext" : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"       : (self.keyOK, _("Popup-Fenster zur Auswahl des STB-Channels öffnen")),
+			"cancel"   : (self.keyCancel, _("zurück zur Serienplaner-Ansicht")),
+			"red"	   : (self.keyRed, _("umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert")),
+			"red_long" : (self.keyRedLong, _("ausgewählten Sender aus der Channelliste endgültig löschen")),
+			"green"    : (self.keyGreen, _("Channel-Zuordnung zurücksetzen")),
+			"menu"     : (self.channelSetup, _("Menü für Sender-Einstellungen öffnen")),
+			"menu_long": (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"       : (self.keyUp, _("eine Zeile nach oben")),
+			"down"     : (self.keyDown, _("eine Zeile nach unten")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zum ausgewählten Sender auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zum ausgewählten Sender auf Wikipedia suchen")),
+			"0"		   : (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		   : (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		   : (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
-		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.displayMode = 2
-			self.updateMenuKeys()
-		
-			self.displayTimer = eTimer()
-			if isDreamboxOS:
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
 
 		self.modus = "list"
 		self.changesMade = False
@@ -5446,7 +5714,39 @@ class serienRecMainChannelEdit(Screen):
 			self.onLayoutFinish.append(self.readWebChannels)
 
 		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
 
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_green'].setText(_("Reset Senderliste"))
+		self['text_ok'].setText(_("Sender auswählen"))
+
+		self.num_bt_text[4][0] = buttonText_na
+		if longButtonText:
+			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
+			self.num_bt_text[4][2] = _("Setup Sender (lang: global)")
+		else:
+			self['text_red'].setText(_("(De)aktivieren/Löschen"))
+			self.num_bt_text[4][2] = _("Setup Sender/global")
+
+		self.displayTimer = None
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
+			self.displayMode = 2
+			self.updateMenuKeys()
+		
+			self.displayTimer = eTimer()
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -5483,15 +5783,7 @@ class serienRecMainChannelEdit(Screen):
 		self['alt_STB_Channel'].show()
 		self['separator'].show()
 		
-		#self['text_red'].setText(_("Sender An/Aus-Schalten"))
-		self['text_green'].setText(_("Reset Senderliste"))
-		self['text_ok'].setText(_("Sender auswählen"))
-		self.num_bt_text[4][2] = _("Sender-Einstellungen")
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			self['text_red'].setText(_("(De)aktivieren/Löschen"))
-			self.num_bt_text[4][0] = _("-----")
-
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -5508,10 +5800,7 @@ class serienRecMainChannelEdit(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
-			self.num_bt_text[4][0] = ""
-
+			
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 		
@@ -5556,9 +5845,31 @@ class serienRecMainChannelEdit(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 	
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.showChannels()
+				
 	def showChannels(self):
 		self.serienRecChlist = []
 		cCursor = dbSerRec.cursor()
@@ -5642,7 +5953,7 @@ class serienRecMainChannelEdit(Screen):
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 8, 16, 16, loadPNG(imageStatus)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 35, 3, 300, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
 			(eListboxPythonMultiContent.TYPE_TEXT, 350, 3, 250, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, stbSender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 600, 3, 250, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, altstbSender, self.yellow)
+			(eListboxPythonMultiContent.TYPE_TEXT, 600, 3, 250, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, altstbSender, colorYellow)
 			]
 
 	def buildList_popup(self, entry):
@@ -5888,38 +6199,41 @@ class serienRecMainChannelEdit(Screen):
 		
 #---------------------------------- Setup Functions ------------------------------------------
 
-class serienRecSetup(Screen, ConfigListScreen):
-	def __init__(self, session):
+class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
+	def __init__(self, session, readConfig=False):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "KeyboardInputActions", "SerienRecorderActions"], {
-			"ok"	: self.keyOK,
-			"cancel": self.keyCancel,
-			"red"	: self.keyRed,
-			"green"	: self.save,
-			"yellow": self.keyYellow,
-			"blue"  : self.keyBlue,
-			"startTeletext" : self.showAbout,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"deleteForward" : self.keyDelForward,
-			"deleteBackward": self.keyDelBackward,
-			"nextBouquet":	self.bouquetPlus,
-			"prevBouquet":	self.bouquetMinus
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"	: (self.keyOK, _("Fenster für Verzeichnisauswahl öffnen")),
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"red"	: (self.keyRed, _("alle Einstellungen auf die Standardwerte zurücksetzen")),
+			"green"	: (self.save, _("Einstellungen speichern und zurück zur vorherigen Ansicht")),
+			"yellow": (self.keyYellow, _("Einstellungen in Datei speichern")),
+			"blue"  : (self.keyBlue, _("Einstellungen aus Datei laden")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			#"deleteForward" : (self.keyDelForward, _("---")),
+			#"deleteBackward": (self.keyDelBackward, _("---")),
+			"nextBouquet":	(self.bouquetPlus, _("zur vorherigen Seite blättern")),
+			"prevBouquet":	(self.bouquetMinus, _("zur nächsten Seite blättern")),
 		}, -1)
+		self.helpList[0][2].sort()
 
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
+
+		if readConfig:
+			ReadConfigFile()
+			
 		self.setupSkin()
-		if config.plugins.serienRec.SkinType.value == "1":
+		if showAllButtons:
 			Skin1_Settings(self)
 
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
 		self.setupModified = False
-		self.skinChanged = False
 		self.SkinType = config.plugins.serienRec.SkinType.value
 		
 		self.__C_JUSTPLAY__ = 0
@@ -5944,7 +6258,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
 		self.setInfoText()
-		self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.savetopath])
+		self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.BoxID])
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
 			
 	def setupSkin(self):
 		self.skin = None
@@ -5963,13 +6284,13 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self['config_information'].show()
 		self['config_information_text'].show()
 
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['text_0'].setText(_("Abbrechen"))
 			self['text_1'].setText(_("About"))
 
 			self['bt_red'].show()
 			self['bt_green'].show()
-			self['bt_ok'].show()
+			#self['bt_ok'].show()
 			self['bt_yellow'].show()
 			self['bt_blue'].show()
 			self['bt_exit'].show()
@@ -5977,18 +6298,24 @@ class serienRecSetup(Screen, ConfigListScreen):
 
 			self['text_red'].show()
 			self['text_green'].show()
-			self['text_ok'].show()
+			#self['text_ok'].show()
 			self['text_yellow'].show()
 			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
 		else:
-			self.num_bt_text = (["", "", _("Abbrechen")],
-								["", "", _("About")],
-								["", "", ""],
-								["", "", ""],
-								["", "", ""])
+			self.num_bt_text = ([buttonText_na, buttonText_na, _("Abbrechen")],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, _("Hilfe")],
+								[buttonText_na, buttonText_na, buttonText_na])
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 
@@ -6056,16 +6383,15 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self.setupModified = True
 			#self.save()
 		
-	def keyDelForward(self):
-		self.changedEntry()
+	#def keyDelForward(self):
+	#	self.changedEntry()
 
-	def keyDelBackward(self):
-		self.changedEntry()
+	#def keyDelBackward(self):
+	#	self.changedEntry()
 
 	def bouquetPlus(self):
 		self['config'].instance.moveSelection(self['config'].instance.pageUp)
 
-		#self.setInfoText()
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
@@ -6082,7 +6408,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 	def bouquetMinus(self):
 		self['config'].instance.moveSelection(self['config'].instance.pageDown)
 
-		#self.setInfoText()
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
@@ -6097,13 +6422,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self['text_ok'].hide()
 
 	def keyDown(self):
-		self.changedEntry()
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.updateInterval:
+			self.changedEntry()
+			
 		if self['config'].instance.getCurrentIndex() >= (len(self.list) - 1):
 			self['config'].instance.moveSelectionTo(0)
 		else:
 			self['config'].instance.moveSelection(self['config'].instance.moveDown)
 
-		#self.setInfoText()
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
@@ -6118,13 +6444,14 @@ class serienRecSetup(Screen, ConfigListScreen):
 			self['text_ok'].hide()
 
 	def keyUp(self):
-		self.changedEntry()
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.updateInterval:
+			self.changedEntry()
+			
 		if self['config'].instance.getCurrentIndex() <= 1:
 			self['config'].instance.moveSelectionTo(len(self.list) - 1)
 		else:
 			self['config'].instance.moveSelection(self['config'].instance.moveUp)
 
-		#self.setInfoText()
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
@@ -6149,6 +6476,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 	def createConfigList(self):
 		self.list = []
 		self.list.append(getConfigListEntry(_("---------  SYSTEM:  -------------------------------------------------------------------------------------------")))
+		self.list.append(getConfigListEntry(_("ID der Box:"), config.plugins.serienRec.BoxID))
 		self.list.append(getConfigListEntry(_("Speicherort der Aufnahmen:"), config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry(_("Serien-Verzeichnis anlegen:"), config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry(_("Staffel-Verzeichnis anlegen:"), config.plugins.serienRec.seasonsubdir))
@@ -6176,9 +6504,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 		if config.plugins.serienRec.forceRecording.value:
 			self.list.append(getConfigListEntry(_("    maximal X Tage auf Wiederholung warten:"), config.plugins.serienRec.TimeSpanForRegularTimer))
 		self.list.append(getConfigListEntry(_("Anzahl der Aufnahmen pro Episode:"), config.plugins.serienRec.NoOfRecords))
-		self.list.append(getConfigListEntry(_("Anzahl der Tuner für Timer einschränken:"), config.plugins.serienRec.selectNoOfTuners))
+		self.list.append(getConfigListEntry(_("Anzahl der gleichzeitigen Aufnahmen einschränken:"), config.plugins.serienRec.selectNoOfTuners))
 		if config.plugins.serienRec.selectNoOfTuners.value:
-			self.list.append(getConfigListEntry(_("    Anzahl der Tuner für Aufnahmen:"), config.plugins.serienRec.tuner))
+			self.list.append(getConfigListEntry(_("    maximale Anzahl gleichzeitigen Aufnahmen:"), config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry(_("Aktion bei neuer Serie/Staffel:"), config.plugins.serienRec.ActionOnNew))
 		if config.plugins.serienRec.ActionOnNew.value != "0":
 			self.list.append(getConfigListEntry(_("    auch bei manuellem Suchlauf:"), config.plugins.serienRec.ActionOnNewManuell))
@@ -6217,6 +6545,16 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
 		self.list.append(getConfigListEntry(_("Skin:"), config.plugins.serienRec.SkinType))
+		global showAllButtons
+		if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD"):
+			self.list.append(getConfigListEntry(_("    werden bei diesem Skin immer ALLE Tasten angezeigt:"), config.plugins.serienRec.showAllButtons))
+			showAllButtons = config.plugins.serienRec.showAllButtons.value
+		elif config.plugins.serienRec.SkinType.value in ("", "AtileHD"):
+			showAllButtons = False
+		else:
+			showAllButtons = True
+		if not showAllButtons:
+			self.list.append(getConfigListEntry(_("    Wechselzeit der Tastenanzeige (Sek.):"), config.plugins.serienRec.DisplayRefreshRate))
 		self.list.append(getConfigListEntry(_("Starte Plugin mit:"), config.plugins.serienRec.firstscreen))
 		self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
 		self.list.append(getConfigListEntry(_("Korrektur der Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
@@ -6224,7 +6562,6 @@ class serienRecSetup(Screen, ConfigListScreen):
 		self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
 		self.list.append(getConfigListEntry(_("Benachrichtigung beim Suchlauf:"), config.plugins.serienRec.showNotification))
 		self.list.append(getConfigListEntry(_("Benachrichtigung bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
-		self.list.append(getConfigListEntry(_("Wechselzeit der Tastenanzeige (Sek.):"), config.plugins.serienRec.DisplayRefreshRate))
 		self.list.append(getConfigListEntry(_("Screens bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
 		self.list.append(getConfigListEntry(_("Staffelauswahl bei neuen Markern:"), config.plugins.serienRec.defaultStaffel))
 		self.list.append(getConfigListEntry(_("Öffne Marker-Ansicht nach Hinzufügen neuer Marker:"), config.plugins.serienRec.openMarkerScreen))
@@ -6309,6 +6646,9 @@ class serienRecSetup(Screen, ConfigListScreen):
 	def setInfoText(self):
 		lt = time.localtime()
 		self.HilfeTexte = {
+			config.plugins.serienRec.BoxID :                   (_("Die ID (Nummer) der STB. Läuft der SerienRecorder auf mehreren Boxen, die alle auf die selbe Datenbank (im Netzwerk) zugreifen, "
+			                                                    "können einzelne Marker über diese ID für jede Box einzeln aktiviert oder deaktiviert werden. Timer werden dann nur auf den Boxen erstellt, "
+																"für die der Marker aktiviert ist.")),
 			config.plugins.serienRec.savetopath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen gespeichert werden.")),
 			config.plugins.serienRec.seriensubdir :            (_("Bei 'ja' wird für jede Serien ein eigenes Unterverzeichnis (z.B.\n'%s<Serien_Name>/') für die Aufnahmen erstellt.")) % config.plugins.serienRec.savetopath.value,
 			config.plugins.serienRec.seasonsubdir :            (_("Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-Verzeichnis (z.B.\n"
@@ -6417,6 +6757,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 			                                                    "Bei 'nein' erfolgt die Anzeige der log-Datei mit 1 Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)")),
 			config.plugins.serienRec.firstscreen :             (_("Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen.")),
 			config.plugins.serienRec.SkinType :                (_("Hier kann das Erscheinungsbild des SR ausgewählt werden.")),
+			config.plugins.serienRec.showAllButtons :          (_("Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt.")),
 		}			
 				
 		if config.plugins.serienRec.updateInterval.value == 0:
@@ -6473,7 +6814,8 @@ class serienRecSetup(Screen, ConfigListScreen):
 			config.plugins.serienRec.MainBouquet.value = None
 			config.plugins.serienRec.AlternativeBouquet.value = None
 			config.plugins.serienRec.useAlternativeChannel.value = False
-			
+		
+		config.plugins.serienRec.BoxID.save()		
 		config.plugins.serienRec.savetopath.save()
 		config.plugins.serienRec.justplay.save()
 		config.plugins.serienRec.seriensubdir.save()
@@ -6556,14 +6898,17 @@ class serienRecSetup(Screen, ConfigListScreen):
 		config.plugins.serienRec.TimerName.save()
 		config.plugins.serienRec.firstscreen.save()
 		config.plugins.serienRec.SkinType.save()
+		config.plugins.serienRec.showAllButtons.save()
 		config.plugins.serienRec.databasePath.save()
 		configfile.save()
 
 		if self.SkinType != config.plugins.serienRec.SkinType.value:
-			self.skinChanged = True
+			SelectSkin()
+			setSkinProperties(self)
+			
 		global serienRecDataBase
 		if serienRecDataBase == "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value:
-			self.close((True, self.skinChanged, self.setupModified, True))
+			self.close((True, self.setupModified, True))
 		else:		
 			global dbSerRec
 			f = dbSerRec.text_factory
@@ -6575,7 +6920,7 @@ class serienRecSetup(Screen, ConfigListScreen):
 				dbSerRec = sqlite3.connect(serienRecDataBase)
 				dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 				success = initDB()
-				self.close((True, self.skinChanged, True, success))
+				self.close((True, True, success))
 
 	def callDbChangedMsg(self, answer):
 		global serienRecDataBase
@@ -6589,39 +6934,39 @@ class serienRecSetup(Screen, ConfigListScreen):
 			serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
 		
 		success = initDB()
-		self.close((True, self.skinChanged, True, success))
+		self.close((True, True, success))
 
 	def keyCancel(self):
 		if self.setupModified:
 			self.save()
 		else:
-			self.close((False, self.skinChanged, False, True))
-		
-class serienRecMarkerSetup(Screen, ConfigListScreen):
+			self.close((False, False, True))
+
+class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 	def __init__(self, session, Serie):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.Serie = Serie
 		
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"red"	: self.cancel,
-			"green"	: self.save,
-			"cancel": self.cancel,
-			"ok"	: self.ok,
-			"startTeletext" : self.showAbout,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"red"	: (self.cancel, _("Änderungen verwerfen und zurück zur Serien-Marker-Ansicht")),
+			"green"	: (self.save, _("Einstellungen speichern und zurück zur Serien-Marker-Ansicht")),
+			"cancel": (self.cancel, _("Änderungen verwerfen und zurück zur Serien-Marker-Ansicht")),
+			"ok"	: (self.ok, _("Fenster für Verzeichnisauswahl öffnen")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
-		if config.plugins.serienRec.SkinType.value == "1":
+		if showAllButtons:
 			Skin1_Settings(self)
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
 
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
@@ -6678,6 +7023,13 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		ConfigListScreen.__init__(self, self.list)
 		self.setInfoText()
 		self['config_information_text'].setText(self.HilfeTexte[self.savetopath])
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
 		
 	def setupSkin(self):
 		self.skin = None
@@ -6694,7 +7046,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Verzeichnis auswählen"))
 
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['text_0'].setText(_("Abbrechen"))
 			self['text_1'].setText(_("About"))
 
@@ -6710,12 +7062,18 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			self['text_0'].show()
 			self['text_1'].show()
 		else:
-			self.num_bt_text = (["", "", _("Abbrechen")],
-								["", "", _("About")],
-								["", "", ""],
-								["", "", ""],
-								["", "", ""])
+			self.num_bt_text = ([buttonText_na, buttonText_na, _("Abbrechen")],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, _("Hilfe")],
+								[buttonText_na, buttonText_na, buttonText_na])
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 		
@@ -6794,7 +7152,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 		self.UpdateMenuValues()
 
 	def keyDown(self):
-		self.changedEntry()
+		#self.changedEntry()
 		if self["config"].instance.getCurrentIndex() >= (len(self.list) - 1):
 			self["config"].instance.moveSelectionTo(0)
 		else:
@@ -6807,8 +7165,15 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			text = _("Keine Information verfügbar.")
 		self["config_information_text"].setText(text)
 
+		if self['config'].getCurrent()[1] == self.savetopath:
+			self['bt_ok'].show()
+			self['text_ok'].show()
+		else:
+			self['bt_ok'].hide()
+			self['text_ok'].hide()
+			
 	def keyUp(self):
-		self.changedEntry()
+		#self.changedEntry()
 		if self["config"].instance.getCurrentIndex() < 1:
 			self["config"].instance.moveSelectionTo(len(self.list) - 1)
 		else:
@@ -6821,6 +7186,13 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 			text = _("Keine Information verfügbar.")
 		self["config_information_text"].setText(text)
 
+		if self['config'].getCurrent()[1] == self.savetopath:
+			self['bt_ok'].show()
+			self['text_ok'].show()
+		else:
+			self['bt_ok'].hide()
+			self['text_ok'].hide()
+			
 	def ok(self):
 		ConfigListScreen.keyOK(self)
 		if self["config"].instance.getCurrentIndex() == 0:
@@ -6926,31 +7298,32 @@ class serienRecMarkerSetup(Screen, ConfigListScreen):
 	def cancel(self):
 		self.close(False)
 
-class serienRecChannelSetup(Screen, ConfigListScreen):
+class serienRecChannelSetup(Screen, ConfigListScreen, HelpableScreen):
 	def __init__(self, session, webSender):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.webSender = webSender
 		
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"red"	: self.cancel,
-			"green"	: self.save,
-			"cancel": self.cancel,
-			"ok"	: self.ok,
-			"startTeletext" : self.showAbout,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"red"	: (self.cancel, _("Änderungen verwerfen und zurück zur Channel-Ansicht")),
+			"green"	: (self.save, _("Einstellungen speichern und zurück zur Channel-Ansicht")),
+			"cancel": (self.cancel, _("Änderungen verwerfen und zurück zur Channel-Ansicht")),
+			"ok"	: (self.ok, _("---")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"ok"	: self.ok,
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
-		if config.plugins.serienRec.SkinType.value == "1":
+		if showAllButtons:
 			Skin1_Settings(self)
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
 
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT Vorlaufzeit, Nachlaufzeit, vps FROM Channels WHERE LOWER(WebChannel)=?", (self.webSender.lower(),))
@@ -6985,6 +7358,13 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		ConfigListScreen.__init__(self, self.list)
 		self.setInfoText()
 		self['config_information_text'].setText(self.HilfeTexte[self.enable_margin_before])
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
 
 	def setupSkin(self):
 		self.skin = None
@@ -7000,7 +7380,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_green'].setText(_("Speichern"))
 
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['text_0'].setText(_("Abbrechen"))
 			self['text_1'].setText(_("About"))
 
@@ -7014,12 +7394,18 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 			self['text_0'].show()
 			self['text_1'].show()
 		else:
-			self.num_bt_text = (["", "", _("Abbrechen")],
-								["", "", _("About")],
-								["", "", ""],
-								["", "", ""],
-								["", "", ""])
+			self.num_bt_text = ([buttonText_na, buttonText_na, _("Abbrechen")],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, _("Hilfe")],
+								[buttonText_na, buttonText_na, buttonText_na])
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 		
@@ -7062,7 +7448,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		self.UpdateMenuValues()
 
 	def keyDown(self):
-		self.changedEntry()
+		#self.changedEntry()
 		if self["config"].instance.getCurrentIndex() >= (len(self.list) - 1):
 			self["config"].instance.moveSelectionTo(0)
 		else:
@@ -7076,7 +7462,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 		self["config_information_text"].setText(text)
 
 	def keyUp(self):
-		self.changedEntry()
+		#self.changedEntry()
 		if self["config"].instance.getCurrentIndex() < 1:
 			self["config"].instance.moveSelectionTo(len(self.list) - 1)
 		else:
@@ -7143,31 +7529,42 @@ class serienRecChannelSetup(Screen, ConfigListScreen):
 	def cancel(self):
 		self.close()
 
-class SerienRecFileList(Screen):
+class SerienRecFileList(Screen, HelpableScreen):
 	def __init__(self, session, initDir, title):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.initDir = initDir
 		self.title = title
 		
-		self["actions"] = ActionMap(["HelpActions", "WizardActions", "DirectionActions", "ColorActions", "EPGSelectActions", "SerienRecorderActions"],
-		{
-			"back": self.keyCancel,
-			"cancel": self.keyCancel,
-			"left": self.keyLeft,
-			"right": self.keyRight,
-			"up": self.keyUp,
-			"down": self.keyDown,
-			"ok": self.keyOk,
-			"green": self.keyGreen,
-			"red": self.keyRed,
-			"blue": self.keyBlue,
-			"startTeletext" : self.showAbout
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"left":   (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right":  (self.keyRight, _("zur nächsten Seite blättern")),
+			"up":     (self.keyUp, _("eine Zeile nach oben")),
+			"down":   (self.keyDown, _("eine Zeile nach unten")),
+			"ok":     (self.keyOk, _("ins ausgewählte Verzeichnis wechseln")),
+			"green":  (self.keyGreen, _("ausgewähltes Verzeichnis übernehmen")),
+			"red":    (self.keyRed, _("ausgewähltes Verzeichnis löschen")),
+			"blue":   (self.keyBlue, _("neues Verzeichnis anlegen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
-		if config.plugins.serienRec.SkinType.value == "1":
+		if showAllButtons:
 			Skin1_Settings(self)
 		self.updateFile()
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
 
 	def setupSkin(self):
 		self.skin = None
@@ -7183,7 +7580,7 @@ class SerienRecFileList(Screen):
 		self['text_ok'].setText(_("Auswahl"))
 		self['text_blue'].setText(_("Verzeichnis anlegen"))
 
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['text_0'].setText(_("Abbrechen"))
 			self['text_1'].setText(_("About"))
 
@@ -7201,12 +7598,18 @@ class SerienRecFileList(Screen):
 			self['text_0'].show()
 			self['text_1'].show()
 		else:
-			self.num_bt_text = (["", "", _("Abbrechen")],
-								["", "", _("About")],
-								["", "", ""],
-								["", "", ""],
-								["", "", ""])
+			self.num_bt_text = ([buttonText_na, buttonText_na, _("Abbrechen")],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, _("Hilfe")],
+								[buttonText_na, buttonText_na, buttonText_na])
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 		
@@ -7270,23 +7673,56 @@ class SerienRecFileList(Screen):
 		
 #---------------------------------- Info Functions ------------------------------------------
 
-class serienRecReadLog(Screen):
+class serienRecReadLog(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"cancel": self.keyCancel,
-			"startTeletext" : self.showAbout,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
+
+		self.logliste = []
+
+		self.onLayoutFinish.append(self.readLog)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Abbrechen"))
+		self.num_bt_text[0][0] = buttonText_na
+		self.num_bt_text[4][0] = buttonText_na
+
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			self.num_bt_text[1][2] = buttonText_na
+			Skin1_Settings(self)
+		else:
+			self.num_bt_text[1][2] = ""
+
 			self.displayMode = 2
 			self.updateMenuKeys()
 		
@@ -7296,19 +7732,7 @@ class serienRecReadLog(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
-		self.logliste = []
-
-		self.onLayoutFinish.append(self.readLog)
-		self.onClose.append(self.__onClose)
-
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -7324,16 +7748,11 @@ class serienRecReadLog(Screen):
 
 		self['title'].setText(_("Lese LogFile: (%s)") % logFile)
 
-		self['text_red'].setText(_("Abbrechen"))
-		self.num_bt_text[3][2] = ""
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.num_bt_text[0][0] = _("-----")
-			self.num_bt_text[4][0] = _("-----")
-
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_0'].show()
@@ -7341,10 +7760,6 @@ class serienRecReadLog(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self.num_bt_text[0][0] = ""
-			self.num_bt_text[4][0] = ""
-
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -7361,9 +7776,31 @@ class serienRecReadLog(Screen):
 	def showWishlist(self):
 		self.session.open(serienRecWishlist)
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 		
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.readLog()
+				
 	def readLog(self):
 		if not fileExists(logFile):
 			open(logFile, 'w').close()
@@ -7392,6 +7829,18 @@ class serienRecReadLog(Screen):
 		else:
 			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850, 20, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
 		
+	def keyLeft(self):
+		self['config'].pageUp()
+
+	def keyRight(self):
+		self['config'].pageDown()
+
+	def keyDown(self):
+		self['config'].down()
+
+	def keyUp(self):
+		self['config'].up()
+
 	def __onClose(self):
 		if self.displayTimer:
 			self.displayTimer.stop()
@@ -7400,25 +7849,57 @@ class serienRecReadLog(Screen):
 	def keyCancel(self):
 		self.close()
 
-class serienRecShowConflicts(Screen):
+class serienRecShowConflicts(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"cancel": self.keyCancel,
-			"red"	: self.keyCancel,
-			"blue"	: self.keyBlue,
-			"startTeletext" : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"red"	: (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"blue"	: (self.keyBlue, _("alle Einträge aus der Liste endgültig löschen")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
+
+		self.onLayoutFinish.append(self.readConflicts)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Abbrechen"))
+		self['text_blue'].setText(_("Liste leeren"))
+		self.num_bt_text[1][1] = buttonText_na
+		self.num_bt_text[4][0] = buttonText_na
+
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			self.num_bt_text[1][2] = buttonText_na
+			Skin1_Settings(self)
+		else:
+			self.num_bt_text[1][2] = ""
+
 			self.displayMode = 2
 			self.updateMenuKeys()
 		
@@ -7428,18 +7909,7 @@ class serienRecShowConflicts(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
-
-		self.onLayoutFinish.append(self.readConflicts)
-		self.onClose.append(self.__onClose)
-
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -7452,18 +7922,12 @@ class serienRecShowConflicts(Screen):
 
 		self['title'].setText(_("Timer-Konflikte"))
 
-		self['text_red'].setText(_("Abbrechen"))
-		self['text_blue'].setText(_("Liste leeren"))
-		self.num_bt_text[3][2] = ""
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.num_bt_text[1][1] = _("-----")
-			self.num_bt_text[4][0] = _("-----")
-
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_blue'].show()
@@ -7472,9 +7936,6 @@ class serienRecShowConflicts(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self.num_bt_text[1][1] = ""
-			self.num_bt_text[4][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -7491,8 +7952,30 @@ class serienRecShowConflicts(Screen):
 	def showWishlist(self):
 		self.session.open(serienRecWishlist)
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
+				
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.readConflicts()
 				
 	def readConflicts(self):
 		self.conflictsListe = []
@@ -7516,12 +7999,18 @@ class serienRecShowConflicts(Screen):
 		(zeile) = entry
 		return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850, 20, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
 		
-	def pageUp(self):
+	def keyLeft(self):
 		self['config'].pageUp()
 
-	def pageDown(self):
+	def keyRight(self):
 		self['config'].pageDown()
-		
+
+	def keyDown(self):
+		self['config'].down()
+
+	def keyUp(self):
+		self['config'].up()
+
 	def keyBlue(self):
 		check = self['config'].getCurrent()
 		if check == None:
@@ -7555,46 +8044,40 @@ class serienRecShowConflicts(Screen):
 	def keyCancel(self):
 		self.close()
 
-class serienRecModifyAdded(Screen):
+class serienRecModifyAdded(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			"left"  : self.keyLeft,
-			"right" : self.keyRight,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"red"	: self.keyRed,
-			"green" : self.keyGreen,
-			"yellow" : self.keyYellow,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"0"		: self.readLogFile,
-			"3"		: self.showProposalDB,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"    : (self.keyOK, _("für die ausgewählte Serien neue Einträge hinzufügen")),
+			"cancel": (self.keyCancel, _("alle Änderungen verwerfen und zurück zur vorherigen Ansicht")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"red"	: (self.keyRed, _("ausgewählten Eintrag löschen")),
+			"green" : (self.keyGreen, _("alle Änderungen speichern und zurück zur vorherigen Ansicht")),
+			"yellow": (self.keyYellow, _("umschalten Sortierung ein/aus")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
-		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.displayMode = 2
-			self.updateMenuKeys()
-		
-			self.displayTimer = eTimer()
-			if isDreamboxOS:
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
 
 		self.delAdded = False
 		self.sortedList = False
@@ -7605,7 +8088,34 @@ class serienRecModifyAdded(Screen):
 		
 		self.onLayoutFinish.append(self.readAdded)
 		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
 
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Eintrag löschen"))
+		self['text_green'].setText(_("Speichern"))
+		self['text_ok'].setText(_("Neuer Eintrag"))
+		self['text_yellow'].setText(_("Sortieren"))
+		self.num_bt_text[1][0] = buttonText_na
+
+		self.displayTimer = None
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
+			self.displayMode = 2
+			self.updateMenuKeys()
+		
+			self.displayTimer = eTimer()
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -7626,14 +8136,7 @@ class serienRecModifyAdded(Screen):
 
 		self['cover'].show()
 
-		self['text_red'].setText(_("Eintrag löschen"))
-		self['text_green'].setText(_("Speichern"))
-		self['text_ok'].setText(_("Neuer Eintrag"))
-		self['text_yellow'].setText(_("Sortieren"))
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.num_bt_text[1][0] = _("-----")
-
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -7641,6 +8144,7 @@ class serienRecModifyAdded(Screen):
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_green'].show()
@@ -7651,8 +8155,6 @@ class serienRecModifyAdded(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self.num_bt_text[1][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -7727,9 +8229,31 @@ class serienRecModifyAdded(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.readAdded()
+				
 	def readAdded(self):
 		self.addedliste = []
 		cCursor = dbSerRec.cursor()
@@ -7911,36 +8435,69 @@ class serienRecModifyAdded(Screen):
 		else:
 			self.close()
 
-class serienRecShowSeasonBegins(Screen):
+class serienRecShowSeasonBegins(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			"red"	: self.keyRed,
-			"yellow": self.keyYellow,
-			"blue"	: self.keyBlue,
-			"right" : self.keyRight,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"    : (self.keyOK, _("Marker für die ausgewählte Serie hinzufügen")),
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"red"	: (self.keyRed, _("ausgewählten Eintrag löschen")),
+			"yellow": (self.keyYellow, _("umschalten alle/nur zukünftige anzeigen")),
+			"blue"	: (self.keyBlue, _("alle Einträge aus der Liste endgültig löschen")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.filter = config.plugins.serienRec.serienRecShowSeasonBegins_filter.value
 
 		self.setupSkin()
+
+		self.changesMade = False
+		self.proposalList = []
+		self.onLayoutFinish.append(self.readProposal)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Eintrag löschen"))
+		self['text_ok'].setText(_("Marker übernehmen"))
+		if self.filter:
+			self['text_yellow'].setText(_("Zeige alle"))
+		else:
+			self['text_yellow'].setText(_("Zeige nur neue"))
+		self['text_blue'].setText(_("Liste leeren"))
+
+		self.num_bt_text[3][0] = buttonText_na
+			
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
 		
@@ -7950,20 +8507,7 @@ class serienRecShowSeasonBegins(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
-		
-		self.changesMade = False
-		self.proposalList = []
-		self.onLayoutFinish.append(self.readProposal)
-		self.onClose.append(self.__onClose)
-
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -7976,17 +8520,7 @@ class serienRecShowSeasonBegins(Screen):
 
 		self['cover'].show()
 
-		self['text_red'].setText(_("Eintrag löschen"))
-		self['text_ok'].setText(_("Marker übernehmen"))
-		if self.filter:
-			self['text_yellow'].setText(_("Zeige alle"))
-		else:
-			self['text_yellow'].setText(_("Zeige nur neue"))
-		self['text_blue'].setText(_("Liste leeren"))
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.num_bt_text[3][0] = _("-----")
-			
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_ok'].show()
 			self['bt_yellow'].show()
@@ -7994,6 +8528,7 @@ class serienRecShowSeasonBegins(Screen):
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_ok'].show()
@@ -8004,8 +8539,6 @@ class serienRecShowSeasonBegins(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self.num_bt_text[3][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -8039,9 +8572,9 @@ class serienRecShowSeasonBegins(Screen):
 			imageFound = "%simages/black.png" % serienRecMainPath
 		
 		if CreationFlag == 2:
-			setFarbe = self.red
+			setFarbe = colorRed
 		else:
-			setFarbe = self.white
+			setFarbe = colorWhite
 			
 		Staffel = "S%sE01" % str(Staffel).zfill(2)
 		WochenTag=[_("Mo"), _("Di"), _("Mi"), _("Do"), _("Fr"), _("Sa"), _("So")]
@@ -8055,17 +8588,17 @@ class serienRecShowSeasonBegins(Screen):
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80, 40, picon),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340, 15, 30, 30, loadPNG(imageFound)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 110, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 110, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow, colorYellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 375, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 375, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, self.yellow, self.yellow)
+				(eListboxPythonMultiContent.TYPE_TEXT, 375, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, colorYellow, colorYellow)
 				]
 		else:
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15, 30, 30, loadPNG(imageFound)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow, colorYellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, self.yellow, self.yellow)
+				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, colorYellow, colorYellow)
 				]
 
 	def readLogFile(self):
@@ -8114,8 +8647,30 @@ class serienRecShowSeasonBegins(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
+				
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.readProposal()
 				
 	def getCover(self):
 		check = self['config'].getCurrent()
@@ -8286,47 +8841,41 @@ class serienRecShowSeasonBegins(Screen):
 	def dataError(self, error):
 		print error
 
-class serienRecWishlist(Screen):
+class serienRecWishlist(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			"left"  : self.keyLeft,
-			"right" : self.keyRight,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"red"	: self.keyRed,
-			"green" : self.keyGreen,
-			"yellow": self.keyYellow,
-			"blue"	: self.keyBlue,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"    : (self.keyOK, _("für die ausgewählte Serien neue Einträge hinzufügen")),
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"red"	: (self.keyRed, _("ausgewählten Eintrag löschen")),
+			"green" : (self.keyGreen, _("alle Änderungen speichern und zurück zur vorherigen Ansicht")),
+			"yellow": (self.keyYellow, _("umschalten Sortierung ein/aus")),
+			"blue"	: (self.keyBlue, _("alle Einträge aus der Liste endgültig löschen")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
-		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.displayMode = 2
-			self.updateMenuKeys()
-		
-			self.displayTimer = eTimer()
-			if isDreamboxOS:
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
 		
 		self.delAdded = False
 		self.sortedList = False
@@ -8337,7 +8886,35 @@ class serienRecWishlist(Screen):
 		
 		self.onLayoutFinish.append(self.readWishlist)
 		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
 
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Eintrag löschen"))
+		self['text_green'].setText(_("Speichern"))
+		self['text_ok'].setText(_("Eintrag anlegen"))
+		self['text_yellow'].setText(_("Sortieren"))
+		self['text_blue'].setText(_("Liste leeren"))
+		self.num_bt_text[2][1] = buttonText_na
+
+		self.displayTimer = None
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
+			self.displayMode = 2
+			self.updateMenuKeys()
+		
+			self.displayTimer = eTimer()
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -8360,15 +8937,7 @@ class serienRecWishlist(Screen):
 
 		self['cover'].show()
 
-		self['text_red'].setText(_("Eintrag löschen"))
-		self['text_green'].setText(_("Speichern"))
-		self['text_ok'].setText(_("Eintrag anlegen"))
-		self['text_yellow'].setText(_("Sortieren"))
-		self['text_blue'].setText(_("Liste leeren"))
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.num_bt_text[2][1] = _("-----")
-
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -8377,6 +8946,7 @@ class serienRecWishlist(Screen):
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_green'].show()
@@ -8388,8 +8958,6 @@ class serienRecWishlist(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self.num_bt_text[2][1] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -8462,9 +9030,31 @@ class serienRecWishlist(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.readWishlist()
+				
 	def readWishlist(self):
 		self.addedliste = []
 		cCursor = dbSerRec.cursor()
@@ -8678,31 +9268,56 @@ class serienRecWishlist(Screen):
 		else:
 			self.close()
 
-class serienRecShowInfo(Screen):
+class serienRecShowInfo(Screen, HelpableScreen):
 	def __init__(self, session, serieName, serieUrl):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 		self.serieName = serieName
 		self.serieUrl = serieUrl
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"up"	: self.pageUp,
-			"down"	: self.pageDown,
-			"cancel": self.keyCancel,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"left"  : (self.pageUp, _("zur vorherigen Seite blättern")),
+			"right" : (self.pageDown, _("zur nächsten Seite blättern")),
+			"up"    : (self.pageUp, _("zur vorherigen Seite blättern")),
+			"down"  : (self.pageDown, _("zur nächsten Seite blättern")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
+
+		self.onLayoutFinish.append(self.getData)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText(_("Zurück"))
+		self.num_bt_text[4][0] = buttonText_na
+
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
 		
@@ -8712,12 +9327,7 @@ class serienRecShowInfo(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-
-		self.onLayoutFinish.append(self.getData)
-		self.onClose.append(self.__onClose)
-
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -8728,15 +9338,12 @@ class serienRecShowInfo(Screen):
 
 		self['cover'].show()
 
-		self['text_red'].setText(_("Zurück"))
-
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.num_bt_text[4][0] = _("-----")
-
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
+			self['bt_menu'].show()
 			
 			self['text_red'].show()
 			self['text_0'].show()
@@ -8744,8 +9351,6 @@ class serienRecShowInfo(Screen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-		else:
-			self.num_bt_text[4][0] = ""
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -8779,9 +9384,31 @@ class serienRecShowInfo(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.getData()
+				
 	def getData(self):
 		getPage(self.serieUrl, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		serien_nameCover = "/tmp/serienrecorder/%s.png" % self.serieName
@@ -8823,37 +9450,55 @@ class serienRecShowInfo(Screen):
 	def keyCancel(self):
 		self.close()
 
-class serienRecShowImdbVideos(Screen):
+class serienRecShowImdbVideos(Screen, HelpableScreen):
 	def __init__(self, session, ilink, serien_name, serien_id):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.ilink = ilink
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 		self.serien_id = serien_id
 
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			#"red"	: self.keyRed,
-			#"green" : self.keyGreen,
-			#"yellow": self.keyYellow,
-			#"blue"	: self.keyBlue,
-			#"right" : self.keyRight,
-			#"up"    : self.keyUp,
-			#"down"  : self.keyDown
-			"startTeletext" : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"    : (self.keyOK, _("ausgewähltes Video abspielen")),
+			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
+			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
 
 		self.setupSkin()
+
+		self.onLayoutFinish.append(self.getVideos)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_ok'].setText(_("Video zeigen"))
+
 		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
+		if showAllButtons:
+			self.num_bt_text[1][2] = buttonText_na
+			Skin1_Settings(self)
+		else:
+			self.num_bt_text[1][2] = ""
+
 			self.displayMode = 2
 			self.updateMenuKeys()
 		
@@ -8863,18 +9508,7 @@ class serienRecShowImdbVideos(Screen):
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
-
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
-		
-		self.onLayoutFinish.append(self.getVideos)
-		self.onClose.append(self.__onClose)
-
+			
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -8889,13 +9523,11 @@ class serienRecShowImdbVideos(Screen):
 
 		self['cover'].show()
 
-		self['text_ok'].setText(_("Video zeigen"))
-		self.num_bt_text[3][2] = ""
-
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['bt_ok'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
+			self['bt_menu'].show()
 			
 			self['text_ok'].show()
 			self['text_0'].show()
@@ -8929,9 +9561,31 @@ class serienRecShowImdbVideos(Screen):
 	def showWishlist(self):
 		self.session.open(serienRecWishlist)
 
+	def showManual(self):
+		if BrowserInstalled:
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", True)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:	
+			if result[0]:
+				if config.plugins.serienRec.update.value:
+					serienRecCheckForRecording(self.session, False)
+				elif config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.getVideos()
+				
 	def getVideos(self):
 		videos = imdbVideo().videolist(self.ilink.replace('combined',''))
 		if videos != None:
@@ -8996,7 +9650,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 		self.session = session
 		Screen.__init__(self, session)
 
-		self["actions"] = ActionMap(["OkCancelActions"], {
+		self["actions"] = ActionMap(["SerienRecorderActions"], {
 			"cancel": self.exit,
 			"ok": self.exit
 		}, -1)
@@ -9034,7 +9688,7 @@ class serienRecPluginNotInstalledScreen(Screen, ConfigListScreen):
 		self.session = session
 		Screen.__init__(self, session)
 
-		self["actions"] = ActionMap(["OkCancelActions"], {
+		self["actions"] = ActionMap(["SerienRecorderActions"], {
 			"cancel": self.exit,
 			"ok": self.exit
 		}, -1)
@@ -9052,57 +9706,52 @@ class serienRecPluginNotInstalledScreen(Screen, ConfigListScreen):
 
 #---------------------------------- Main Functions ------------------------------------------
 
-class serienRecMain(Screen):
+class serienRecMain(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 		
-		self["actions"] = ActionMap(["HelpActions", "OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions", "EPGSelectActions", "SerienRecorderActions"], {
-			"ok"    : self.keyOK,
-			"cancel": self.keyCancel,
-			"left"  : self.keyLeft,
-			"right" : self.keyRight,
-			"up"    : self.keyUp,
-			"down"  : self.keyDown,
-			"red"	: self.keyRed,
-			"green"	: self.keyGreen,
-			"yellow": self.keyYellow,
-			"blue"	: self.keyBlue,
-			"info" 	: self.keyCheck,
-			"menu"	: self.recSetup,
-			"nextBouquet" : self.nextPage,
-			"prevBouquet" : self.backPage,
-			"displayHelp"      : self.youtubeSearch,
-			"displayHelp_long" : self.WikipediaSearch,
-			"startTeletext"    : self.showAbout,
-			"0"		: self.readLogFile,
-			"1"		: self.modifyAddedFile,
-			"3"		: self.showProposalDB,
-			"4"		: self.serieInfo,
-			"6"		: self.showConflicts,
-			"7"		: self.showWishlist,
-			"9"     : self.importFromFile,
-			"5"		: self.test
-		}, -2)
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok"    : (self.keyOK, _("Marker für die ausgewählte Serie hinzufügen")),
+			"cancel": (self.keyCancel, _("SerienRecorder beenden")),
+			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
+			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
+			"up"    : (self.keyUp, _("eine Zeile nach oben")),
+			"down"  : (self.keyDown, _("eine Zeile nach unten")),
+			"red"	: (self.keyRed, _("Anzeige-Modus auswählen")),
+			"green"	: (self.keyGreen, _("Ansicht Sender-Zuordnung öffnen")),
+			"yellow": (self.keyYellow, _("Ansicht Serien-Marker öffnen")),
+			"blue"	: (self.keyBlue, _("Ansicht Timer-Liste öffnen")),
+			"info" 	: (self.keyCheck, _("Suchlauf für Timer starten")),
+			"menu"	: (self.recSetup, _("Menü für globale Einstellungen öffnen")),
+			"nextBouquet" : (self.nextPage, _("Serienplaner des nächsten Tages laden")),
+			"prevBouquet" : (self.backPage, _("Serienplaner des vorherigen Tages laden")),
+			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
+			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
+			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
+			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
+			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
+			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"9"     : (self.importFromFile, _("manueller Import der Daten von älteren Versionen (bis 2.3)")),
+			#"5"		: (self.test, _("-")),
+		}, -1)
+		self.helpList[0][2].sort()
+		
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
+		
+		ReadConfigFile()
 
 		if not initDB():
 			self.close()
 
 		self.setupSkin()
-		self.displayTimer = None
-		if config.plugins.serienRec.SkinType.value != "1":
-			self.displayMode = 2
-			self.updateMenuKeys()
-		
-			self.displayTimer = eTimer()
-			if isDreamboxOS:
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		else:
-			Skin1_Settings(self)
 			
 		if config.plugins.serienRec.updateInterval.value == 24:
 			config.plugins.serienRec.timeUpdate.value = True
@@ -9125,11 +9774,6 @@ class serienRecMain(Screen):
 		self.pRegional = 0
 		self.pPaytv = 1		
 		self.pPrime = 1
-		self.red = 0xf23d21
-		self.green = 0x389416
-		self.blue = 0x0064c7
-		self.yellow = 0xbab329
-		self.white = 0xffffff
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
 		self.page = 0
@@ -9137,16 +9781,44 @@ class serienRecMain(Screen):
 		self.modus = "list"
 		self.loading = True
 		self.forceRefresh = False
+		self.daylist = []
 		
 		#self.onLayoutFinish.append(self.startScreen)
 		self.onFirstExecBegin.append(self.startScreen)
 		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
 
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+		
+	def setSkinProperties(self):
+		setSkinProperties(self)
+		
+		self['text_red'].setText(_("Anzeige-Modus"))
+		self['text_green'].setText(_("Sender zuordnen"))
+		self['text_ok'].setText(_("Marker hinzufügen"))
+		self['text_yellow'].setText(_("Serien Marker"))
+		self['text_blue'].setText(_("Timer-Liste"))
+		self.num_bt_text[2][2] = _("Timer suchen")
+		
+		self.displayTimer = None
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
+			self.displayMode = 2
+			self.updateMenuKeys()
+		
+			self.displayTimer = eTimer()
+			if isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
 
-		# normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(50)
@@ -9164,15 +9836,7 @@ class serienRecMain(Screen):
 
 		self['cover'].show()
 
-		self['text_red'].setText(_("Anzeige-Modus"))
-		self['text_green'].setText(_("Channels zuweisen"))
-		self['text_ok'].setText(_("Marker hinzufügen"))
-		self['text_yellow'].setText(_("Serien Marker"))
-		self['text_blue'].setText(_("Timer-Liste"))
-		self.num_bt_text[2][2] = _("Timer suchen")
-		self.num_bt_text[4][2] = _("globale Einstellungen")
-
-		if config.plugins.serienRec.SkinType.value != "1":
+		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -9281,6 +9945,15 @@ class serienRecMain(Screen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Wikipedia von Kashmir")
 
+	def showManual(self):
+		if BrowserInstalled:
+			if self.loading:
+				return
+				
+			self.session.open(Browser, "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html", False)
+		else:
+			self.session.open(serienRecPluginNotInstalledScreen, "Opera Webbrowser")
+			
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 	
@@ -9322,7 +9995,7 @@ class serienRecMain(Screen):
 		self.session.openWithCallback(self.setupClose, serienRecSetup)
 
 	def setupClose(self, result):
-		if not result[3]:
+		if not result[2]:
 			self.close()
 		else:	
 			if result[0]:
@@ -9338,12 +10011,8 @@ class serienRecMain(Screen):
 				#	print "%s[Serien Recorder] AutoCheck Clock-Timer: %s%s" % (self.color_print, config.plugins.serienRec.timeUpdate.value, self.color_end)
 
 			if result[1]:
-				# hier screen mit neuem skin aktualisieren
-				pass
-				
-			if result[2]:
 				self.readWebpage()
-				
+
 	def startScreen(self):
 		print "[Serien Recorder] version %s is running..." % config.plugins.serienRec.showversion.value
 		
@@ -9354,6 +10023,7 @@ class serienRecMain(Screen):
 		
 		if config.plugins.serienRec.Autoupdate.value:
 			checkUpdate(self.session).checkforupdate()
+			
 		self.dayChache = {}
 		if self.isChannelsListEmpty():
 			print "[Serien Recorder] Channellist is empty !"
@@ -9369,7 +10039,7 @@ class serienRecMain(Screen):
 		if not showMainScreen:
 			self.keyCancel()
 			self.close()
-			
+
 		if answer or self.forceRefresh:
 			self.forceRefresh = False
 			self['title'].instance.setForegroundColor(parseColor("white"))
@@ -9532,12 +10202,12 @@ class serienRecMain(Screen):
 		imageHDD = "%simages/hdd_24x24.png" % serienRecMainPath
 		
 		if serieAdded:
-			setFarbe = self.green
+			setFarbe = colorGreen
 		else:
-			setFarbe = self.white
+			setFarbe = colorWhite
 			if str(episode).isdigit():
 				if int(episode) == 1:
-					setFarbe = self.red
+					setFarbe = colorRed
 
 		if int(neu) == 0:					
 			imageNeu = imageNone
@@ -9558,18 +10228,18 @@ class serienRecMain(Screen):
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330, 7, 30, 22, loadPNG(imageNeu)),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330, 30, 30, 22, loadPNG(imageHDDTimer)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 100, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 100, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, colorYellow, colorYellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 365, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 365, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
+				(eListboxPythonMultiContent.TYPE_TEXT, 365, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
 				]
 		else:
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7, 30, 22, loadPNG(imageNeu)),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 30, 30, 22, loadPNG(imageHDDTimer)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 280, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, self.yellow, self.yellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, colorYellow, colorYellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 340, 3, 520, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 340, 29, 520, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, self.yellow, self.yellow)
+				(eListboxPythonMultiContent.TYPE_TEXT, 340, 29, 520, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
 				]
 
 	def keyOK(self):
@@ -9874,7 +10544,27 @@ class checkUpdate():
 		if config.plugins.serienRec.version.value < remoteversion:
 			self.session.openWithCallback(self.startUpdate,MessageBox,_("Für das Serien Recorder Plugin ist ein Update verfügbar!\nWollen Sie es jetzt herunterladen und installieren?"), MessageBox.TYPE_YESNO)
 		else:
-			print "[Serien Recorder] kein update verfügbar."
+			getPage("http://sourceforge.net/projects/w22754/files/SerienRecorder.txt").addCallback(self.gotUpdateInfoFromW22754).addErrback(self.gotError)
+			print "[Serien Recorder] kein update von @einfall verfügbar."
+
+	def gotUpdateInfoFromW22754(self, html):
+		tmp_infolines = html.splitlines()
+		remoteversion = tmp_infolines[0].split(".")
+		self.updateurl = tmp_infolines[1]
+		version = config.plugins.serienRec.showversion.value.split(".")
+		
+		update = False
+		if int(remoteversion[0]) > int(version[0]):
+			update = True
+		elif (int(remoteversion[0]) == int(version[0])) and (int(remoteversion[1]) > int(version[1])):
+			update = True
+		elif (int(remoteversion[0]) == int(version[0])) and (int(remoteversion[1]) == int(version[1])) and (int(remoteversion[2]) > int(version[2])):
+			update = True
+		
+		if update:
+			self.session.openWithCallback(self.startUpdate,MessageBox,_("Für das Serien Recorder Plugin ist ein Update verfügbar!\nWollen Sie es jetzt herunterladen und installieren?"), MessageBox.TYPE_YESNO)
+		else:
+			print "[Serien Recorder] kein update von @w22754 verfügbar."
 			return
 
 	def startUpdate(self,answer):
@@ -9888,8 +10578,8 @@ class SerienRecorderUpdateScreen(Screen):
 	DESKTOP_HEIGHT = getDesktop(0).size().height()
 
 	skin = """
-		<screen name="SerienRecorderUpdate" position="%d,%d" size="1280,720" title=%s backgroundColor="#26181d20" flags="wfNoBorder">
-			<widget name="mplog" position="5,5" size="710,310" font="Regular;24" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="1"/>
+		<screen name="SerienRecorderUpdate" position="%d,%d" size="720,320" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
+			<widget name="mplog" position="5,5" size="710,310" font="Regular;24" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="5"/>
 		</screen>""" % ((DESKTOP_WIDTH - 720) / 2, (DESKTOP_HEIGHT - 320) / 2, _("Serien Recorder Update"))
 
 	def __init__(self, session, updateurl):
@@ -9898,12 +10588,13 @@ class SerienRecorderUpdateScreen(Screen):
 
 		self.updateurl = updateurl
 
-		self["mplog"] = ScrollLabel()
+		#self["mplog"] = ScrollLabel()
+		self["mplog"] = Label()
 		self.onLayoutFinish.append(self.__onLayoutFinished)
 
 	def __onLayoutFinished(self):
 		sl = self["mplog"]
-		sl.instance.setZPosition(1)
+		sl.instance.setZPosition(5)
 		self["mplog"].setText(_("Starte Update, bitte warten..."))
 		self.startPluginUpdate()
 

@@ -12,132 +12,173 @@ msgstr ""
 "X-Generator: Poedit 1.6.9\n"
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:129
-msgid "Benachrichtigung und Marker anlegen"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:129
-msgid "keine"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:129
-msgid "nur Benachrichtigung"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:129
-msgid "nur Marker anlegen"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:141
-msgid "<Serienname>"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:141
-msgid "<Serienname> - SnnEmm - <Episodentitel>"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:342
-msgid "Cover-Suche auf 'Wunschliste.de' erfolglos"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:344
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9468
-msgid "[Serien Recorder] Fehler bei: %s"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:490
-msgid "Serien Recorder v%s"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:493
-msgid "Zeige Log"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:493
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:495
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:496
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:497
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3570
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3572
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5326
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7041
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7043
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7158
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7160
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7325
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7667
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8039
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8388
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:80
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:90
 msgid "-----"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:493
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3569
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4462
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4744
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5758
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6438
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6441
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6735
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6737
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6916
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7040
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7156
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:125
+msgid "AtileHD"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:125
+msgid "SerienRecorder 1"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:125
+msgid "SerienRecorder 2"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:125
+msgid "Skinpart"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:165
+msgid "bei Suchlauf-Ende"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:165
+msgid "bei Suchlauf-Start"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:165
+msgid "bei Suchlauf-Start und Ende"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:165
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:180
+msgid "keine"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:180
+msgid "Benachrichtigung und Marker anlegen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:180
+msgid "nur Benachrichtigung"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:180
+msgid "nur Marker anlegen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:194
+msgid "<Serienname>"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:194
+msgid "<Serienname> - SnnEmm - <Episodentitel>"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:448
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10521
+msgid "[Serien Recorder] Fehler bei: %s"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:509
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:515
+msgid "Zeige Log"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:509
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:515
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3802
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4819
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5146
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6288
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6307
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7045
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7050
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7065
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7380
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7384
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7397
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7584
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7601
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7715
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7891
 msgid "Abbrechen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:494
-msgid "Added Liste"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:510
+msgid "YouTube (lang: Wikipedia)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:494
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:510
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:516
 msgid "Konflikt-Liste"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:494
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5759
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6442
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6738
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6917
-msgid "About"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:510
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:516
+msgid "Timer-Übersicht"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:495
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:511
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:517
 msgid "Merkzettel"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:496
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:512
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:518
 msgid "Neue Serienstarts"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:496
-msgid "YouTube/Wikipedia"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:512
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:518
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6310
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7068
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7400
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7604
+msgid "Hilfe"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:497
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:513
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:519
 msgid "Serien Beschreibung"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:597
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:513
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:519
+msgid "globale Einstellungen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:516
+msgid "YouTube/Wikipedia"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:612
+msgid "Serien Recorder v%s"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:772
 msgid ""
 "[Serien Recorder]\n"
 "Datei 'log' kann nicht im angegebenen Pfad (%s) erzeugt werden.\n"
@@ -146,17 +187,17 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:659
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:847
 msgid "[Serien Recorder] erstelle Subdir: ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:842
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1030
 msgid "[Serien Recorder] Fehler beim Initialisieren der Datenbank"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:843
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1031
 msgid ""
 "[Serien Recorder]\n"
 "Fehler:\n"
@@ -165,34 +206,34 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1613
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1614
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1801
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1802
 msgid "n/a"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1645
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1833
 msgid "Release"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1649
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1837
 msgid "Experimental"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1655
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1843
 msgid "nicht verfügbar"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1891
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2082
 msgid "[Serien Recorder] Versuche Timer anzulegen: ' %s - %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1926
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1936
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2117
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2127
 msgid ""
 "\n"
 "---------' Starte AutoCheckTimer um %s "
@@ -200,49 +241,49 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1928
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2119
 msgid "[Serien Recorder] check: Tabelle SerienMarker leer."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1929
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1939
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5006
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2120
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2130
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5460
 msgid ""
 "---------' AutoCheckTimer Beendet "
 "'---------------------------------------------------------------------------------------"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1938
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2129
 msgid "[Serien Recorder] check: Tabelle Channels leer."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1983
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2034
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2181
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2244
 msgid "[Serien Recorder] AutoCheck Hour-Timer gestartet."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1997
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2048
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2198
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2261
 msgid "[Serien Recorder] AutoCheck Clock-Timer gestartet."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:1998
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2049
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2199
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2262
 msgid "[Serien Recorder] Verbleibende Zeit: %s Minuten"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2026
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2233
 msgid "[Serien Recorder] AutoCheck Timer stop."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2095
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2308
 msgid ""
 "\n"
 "---------' Starte AutoCheckTimer um %s - Page %s (manuell) "
@@ -250,7 +291,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2098
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2311
 msgid ""
 "\n"
 "---------' Starte AutoCheckTimer um %s - Page %s "
@@ -258,16 +299,16 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2100
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2313
 msgid ""
 "[Serien Recorder]\n"
 "Automatischer Suchlauf für neue Timer wurde gestartet."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2201
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2227
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2242
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2414
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2440
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2455
 msgid ""
 "[Serien Recorder]\n"
 "Serien- / Staffelbeginn wurde gefunden.\n"
@@ -275,152 +316,169 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2253
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2466
 msgid "[Serien Recorder] %d. Staffel von '%s' beginnt am %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2255
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2468
 msgid "[Serien Recorder] Staffel %s von '%s' beginnt am %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2267
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2282
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2480
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2495
 msgid "[Serien Recorder] Neuer Marker für '%s' wurde angelegt"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2317
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2379
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2530
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2592
 msgid "[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2338
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2355
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2400
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2416
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2551
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2568
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2629
 msgid ""
 "[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2460
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2673
 msgid ""
 "[Serien Recorder] Versuche deaktivierten Timer aktiv zu erstellen: ' %s - %s "
 "'"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2472
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2685
 msgid "[Serien Recorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2579
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2777
 msgid "[Serien Recorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2583
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5037
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2781
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5491
 msgid "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2599
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2797
 msgid "[Serien Recorder] ' %s ' - Sender nicht erlaubt -> %s -> %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2622
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2655
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2821
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2854
 msgid "ab %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2624
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2659
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2823
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2858
 msgid "0 ab E%s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2625
-msgid ""
-"[Serien Recorder] ' %s ' - Episode nicht erlaubt -> ' S%sE%s ' -> ' %s '"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2824
+msgid "[Serien Recorder] ' %s ' - Episode nicht erlaubt -> ' %s ' -> ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2643
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2842
 msgid "[Serien Recorder] ' %s ' - Timer vom Merkzettel wird angelegt @ %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2662
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4025
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2861
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4397
 msgid "Manuell"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2663
-msgid ""
-"[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' S%sE%s ' -> ' %s '"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2862
+msgid "[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2732
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2942
 msgid ""
 "[Serien Recorder] %s Serie(n) sind vorgemerkt davon wurde(n) %s Timer "
 "erstellt und %s Timer aktualisiert."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2735
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2945
 msgid ""
 "[Serien Recorder] %s Serie(n) sind vorgemerkt davon wurde(n) %s Timer "
 "erstellt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2738
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2948
 msgid ""
 "[Serien Recorder] %s Timer wurde(n) wegen Konfikten deaktiviert erstellt!"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2741
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2951
 msgid "[Serien Recorder] %s Timer vom Merkzettel wurde(n) erstellt!"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2743
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2953
 msgid ""
 "---------' AutoCheckTimer Beendet ( took: %s "
 "sec.)'---------------------------------------------------------------------------------------"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2755
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3142
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3160
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2956
+msgid ""
+"Serien vorgemerkt: %s\n"
+"Timer erstellt: %s\n"
+"Timer aktualisiert: %s\n"
+"Timer mit Konflikten: %s\n"
+"Timer vom Merkzettel: %s"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2957
+msgid ""
+"[Serien Recorder]\n"
+"Automatischer Suchlauf für neue Timer wurde beendet.\n"
+"\n"
+"%s"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2968
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3350
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3368
 msgid ""
 "[Serien Recorder]\n"
 "Box in Deep-Standby fahren?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2764
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2977
 msgid "[Serien Recorder] gehe in Deep-Standby"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2769
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2982
 msgid " (%s. Wiederholung)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2773
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2986
 msgid ""
 "\n"
 "---------' Erstelle Timer%s "
@@ -428,466 +486,843 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2852
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3065
 msgid ""
 "[Serien Recorder]\n"
 "ACHTUNG!  -  %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2893
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3106
 msgid ""
 "[Serien Recorder] ' %s ' - Staffel/Episode%s Timer wurde bereits erstellt -> "
 "' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2901
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3114
 msgid ""
 "[Serien Recorder] ' %s ' - Staffel/Episode%s bereits in added vorhanden -> ' "
 "%s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2914
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3122
 msgid ""
 "[Serien Recorder] ' %s ' - Staffel/Episode%s bereits auf hdd vorhanden -> ' "
 "%s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2930
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3138
 msgid "[Serien Recorder] ' %s ' - Timer (%s:%s-%s:%s) nicht in Zeitspanne %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2937
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2952
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3145
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3160
 msgid "[Serien Recorder] ' %s ' - Backup Timer -> %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2974
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3182
 msgid "[Serien Recorder] ' %s ' - Keine Wiederholung gefunden! -> %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2995
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3203
 msgid ""
 "[Serien Recorder] ' %s ' - Timer wird später angelegt -> Sendetermin: %s - "
 "Erlaubte Zeitspanne bis %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:2999
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3207
 msgid ""
 "[Serien Recorder] ' %s ' - Der Sendetermin liegt in der Vergangenheit: %s - "
 "Aktuelles Datum: %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3019
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3227
 msgid ""
 "[Serien Recorder] ' %s ' - Timer (vom Merkzettel) wurde angelegt%s -> %s %s "
 "@ %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3027
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3235
 msgid "[Serien Recorder] ' %s ' - Timer wurde angelegt%s -> %s %s @ %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3033
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3241
 msgid ""
 "[Serien Recorder] ' %s ' - Timer konnte nicht angelegt werden%s -> %s %s @ %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3037
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5108
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3245
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5538
 msgid "[Serien Recorder] ' %s ' - ACHTUNG! -> %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3049
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3257
 msgid ""
 "[Serien Recorder] ' %s ' - Timer (vom Merkzettel) wurde deaktiviert angelegt"
 "%s -> %s %s @ %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3055
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3263
 msgid ""
 "[Serien Recorder] ' %s ' - Timer wurde deaktiviert angelegt%s -> %s %s @ %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3061
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5081
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5116
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3269
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5524
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5546
 msgid "[Serien Recorder] Tuner belegt: %s %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3120
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5159
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3328
 msgid "[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3125
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5165
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3333
 msgid "[Serien Recorder] Timer angelegt: %s S%sE%s - %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3131
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3149
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3339
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3357
 msgid "[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3233
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3382
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3984
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3995
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4010
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5672
+msgid "zurück zur Serienplaner-Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3383
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3976
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4002
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4782
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5104
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5678
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6219
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7541
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7684
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7860
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8057
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8451
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8854
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9282
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9284
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9719
+msgid "zur vorherigen Seite blättern"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3384
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3977
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4003
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4783
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5105
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5679
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6220
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7542
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7685
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7861
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8058
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8452
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8855
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9283
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9285
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9720
+msgid "zur nächsten Seite blättern"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3385
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3978
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4004
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4784
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5106
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5680
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6215
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6957
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7313
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7543
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7686
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7862
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8059
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8453
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8856
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9721
+msgid "eine Zeile nach oben"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3386
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3979
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4005
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4785
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5107
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5681
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6216
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6958
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7314
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7544
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7687
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7863
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8060
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8454
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8857
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9722
+msgid "eine Zeile nach unten"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3387
+msgid "ausgewählten Timer löschen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3388
+msgid "Sortierung ändern"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3389
+msgid "umschalten alle/nur aktive Timer anzeigen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3390
+msgid "alle vergangenen Timer aus der Datenbank löschen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3391
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3774
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3981
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4007
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4788
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5111
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5677
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7688
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7866
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8064
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8455
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8862
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9286
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9466
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9728
+msgid "Menü für globale Einstellungen öffnen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3392
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3982
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4008
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4789
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5112
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8065
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8456
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8863
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9287
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9731
+msgid "Trailer zur ausgewählten Serie auf YouTube suchen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3393
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3983
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4009
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4790
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5113
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8066
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8457
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8864
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9288
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9732
+msgid "Informationen zur ausgewählten Serie auf Wikipedia suchen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3394
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3985
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4011
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4791
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5114
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5684
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7867
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8067
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8458
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8865
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9289
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9467
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9733
+msgid "Log-File des letzten Suchlaufs anzeigen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3395
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3775
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3986
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4012
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4792
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5115
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5685
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7689
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7868
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8459
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8866
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9290
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9468
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9734
+msgid "Liste der aufgenommenen Folgen bearbeiten"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3396
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3776
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3987
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4013
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4793
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5116
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5686
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7690
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7869
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8068
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8867
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9291
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9469
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9735
+msgid "Liste der Serien/Staffel-Starts anzeigen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3397
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3988
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4014
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4794
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5117
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8069
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8460
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8868
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9470
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9736
+msgid "Informationen zur ausgewählten Serie anzeigen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3398
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3777
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3989
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4015
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4795
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5118
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5687
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7691
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8070
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8461
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8869
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9292
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9471
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9737
+msgid "Liste der Timer-Konflikte anzeigen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3399
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3778
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3990
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4016
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4796
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5119
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5688
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7692
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7870
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8071
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8462
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9293
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9472
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9738
+msgid "Wunschliste (vorgemerkte Folgen) anzeigen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3424
 msgid "Entferne Timer"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3235
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3318
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3426
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3567
 msgid "Zeige früheste Timer zuerst"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3237
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3315
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3428
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3564
 msgid "Zeige neuste Timer zuerst"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3238
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3444
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3429
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3693
 msgid "Zeige auch alte Timer"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3239
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3430
 msgid "Entferne alle alten"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3344
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3593
 msgid "TimerList: %s Timer sind vorhanden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3346
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3595
 msgid "TimerList: %s Aufnahme(n) und %s Timer sind vorhanden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3358
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3607
 msgid "Serien Timer - 0 Serien in der Aufnahmeliste."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3364
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7716
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8580
 msgid "Di"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3364
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7716
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8580
 msgid "Do"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3364
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7716
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8580
 msgid "Fr"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3364
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7716
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8580
 msgid "Mi"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3364
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7716
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8580
 msgid "Mo"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3364
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7716
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8580
 msgid "Sa"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3364
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7716
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8580
 msgid "So"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3412
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3661
 msgid "Timer '- %s -' entfernt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3432
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3681
 msgid "Soll '%s - %s' wirklich entfernt werden?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3441
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3690
 msgid "Zeige nur neue Timer"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3458
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3707
 msgid "Alle alten Timer wurden entfernt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3464
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3713
 msgid "Sollen wirklich alle alten Timer entfernt werden?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3563
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3773
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4781
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4786
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6210
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7540
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7683
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7859
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7864
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8447
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8853
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9281
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9465
+msgid "zurück zur vorherigen Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3836
 msgid "Suche nach neuen Timern läuft."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3618
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3913
 msgid "Autocheck fertig !"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3622
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7080
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3917
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7814
 msgid "[Serien Recorder]"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3632
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3927
 msgid "Suche nach neuen Timern läuft.%s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3749
-msgid "Entferne Serie(n) Marker"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3750
-msgid "Sender auswählen."
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3751
-msgid "Staffel(n) auswählen."
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3752
-msgid "Sendetermine"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3753
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4464
-msgid "Serie Suchen"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3754
-msgid "Exit/Serienplaner"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3755
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8809
-msgid "Timer suchen"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3756
-msgid "Serien Einstellungen"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3919
-msgid "Serien Marker - %s Serien vorgemerkt."
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3953
-msgid "Std."
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3955
-msgid "%s, Alt."
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3957
-msgid "Alt."
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3959
-msgid "%s, Std."
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
 #: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3968
-msgid "Staffel: %s"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3994
+msgid "zur Staffelauswahl"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
 #: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3969
-msgid "Sender (%s): %s"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9718
+msgid "SerienRecorder beenden"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
 #: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3970
-msgid "Wdh./Vorl./Nachl.: %s / %s / %s"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3996
+msgid "umschalten ausgewählter Serien-Marker aktiviert/deaktiviert"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
 #: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3971
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3997
+msgid "ausgewählten Serien-Marker löschen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3972
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3998
+msgid "zur Senderauswahl"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3973
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3999
+msgid "Sendetermine für ausgewählte Serien anzeigen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3974
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4000
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4787
+msgid "Serie manuell suchen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3975
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4001
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9727
+msgid "Suchlauf für Timer starten"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:3980
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4006
+msgid "Menü für Serien-Einstellungen öffnen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4042
+msgid "Sender auswählen."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4043
+msgid "Staffel(n) auswählen."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4044
+msgid "Sendetermine"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4045
+msgid "Serie suchen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4046
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9802
+msgid "Timer suchen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4049
+msgid "Setup Serie (lang: global)"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4050
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5730
+msgid "An/Aus (lang: Löschen)"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4052
+msgid "Exit (lang: Serienplaner)"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4054
+msgid "Setup Serie/global"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4055
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5733
+msgid "(De)aktivieren/Löschen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4057
+msgid "Exit/Serienplaner"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4291
+msgid "Serien Marker - %s Serien vorgemerkt."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4325
+msgid "Std."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4327
+msgid "%s, Alt."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4329
+msgid "Alt."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4331
+msgid "%s, Std."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4340
+msgid "Staffel: %s"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4341
+msgid "Sender (%s): %s"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4342
+msgid "Wdh./Vorl./Nachl.: %s / %s / %s"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4343
 msgid "Dir: %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4025
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4397
 msgid "Alle"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4025
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4397
 msgid "Specials"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4025
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4397
 msgid "folgende"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4153
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4212
-msgid "Sollen die Einträge für '%s' auch aus der Added Liste entfernt werden?"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4525
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4584
+msgid "Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4174
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4546
 msgid "Serie '- %s -' entfernt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4210
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4582
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6145
 msgid "Soll '%s' wirklich entfernt werden?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4313
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4623
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4685
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5040
 msgid "Serien Titel eingeben:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4386
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4754
 msgid "Episode eingeben ab der Timer erstellt werden sollen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4463
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4780
+msgid "Marker für ausgewählte Serie hinzufügen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4820
 msgid "Hinzufügen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4541
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4821
+msgid "Serie Suchen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4958
 msgid "Suche nach ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4571
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4988
 msgid "Die Suche für ' %s ' ergab %s Teffer."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4610
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9226
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5027
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10276
 msgid "Serie '- %s -' zum Serien Marker hinzugefügt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4615
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9233
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5032
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10283
 msgid "Serie '- %s -' existiert bereits im Serien Marker."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4732
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5304
-msgid "Lade Web-Channel / STB-Channels..."
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5102
+msgid "umschalten ausgewählter Sendetermin aktiviert/deaktiviert"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4745
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6914
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5103
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5108
+msgid "zurück zur Serien-Marker-Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5109
+msgid "Timer für aktivierte Sendetermine erstellen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5110
+msgid "umschalten Filter (aktive Sender) aktiviert/deaktiviert"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5147
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7580
 msgid "Auswahl"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4747
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5192
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5149
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5639
 msgid "Filter ausschalten"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4748
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5193
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5150
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5640
 msgid "gefiltert"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4750
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5196
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5152
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5635
 msgid "Filter einschalten"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4751
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5197
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5153
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5636
 msgid "alle"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4816
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5200
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5179
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5775
+msgid "Lade Web-Channel / STB-Channels..."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5281
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5643
 msgid "Suche ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4869
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5334
 msgid "Timer erstellen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4873
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5338
 msgid "%s Sendetermine für ' %s ' gefunden. (%s)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4940
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5400
 msgid ""
 "\n"
 "---------' Starte AutoCheckTimer um %s - (manuell) "
@@ -895,572 +1330,718 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:4998
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5452
 msgid ""
 "[Serien Recorder] Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5004
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5458
 msgid "[Serien Recorder] Es wurde(n) %s Timer erstellt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5014
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5468
 msgid "Keine Sendetermine ausgewählt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5035
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5489
 msgid "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5306
-msgid "Web-Channel"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5602
+msgid "[Serien Recorder] Timer bereits vorhanden: %s %s - %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5307
-msgid "STB-Channel"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5608
+msgid "[Serien Recorder] Timer angelegt: %s %s - %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5308
-msgid "alt. STB-Channel"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5671
+msgid "Popup-Fenster zur Auswahl des STB-Channels öffnen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5323
-msgid "Sender An/Aus-Schalten"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5673
+msgid ""
+"umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5324
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5674
+msgid "ausgewählten Sender aus der Channelliste endgültig löschen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5675
+msgid "Channel-Zuordnung zurücksetzen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5676
+msgid "Menü für Sender-Einstellungen öffnen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5682
+msgid "Trailer zum ausgewählten Sender auf YouTube suchen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5683
+msgid "Informationen zum ausgewählten Sender auf Wikipedia suchen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5725
 msgid "Reset Senderliste"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5325
-msgid "Sender Auswählen"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5726
+msgid "Sender auswählen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5327
-msgid "Sender Einstellungen"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5731
+msgid "Setup Sender (lang: global)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5394
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5558
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5589
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5734
+msgid "Setup Sender/global"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5777
+msgid "Web-Channel"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5778
+msgid "STB-Channel"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5779
+msgid "alt. STB-Channel"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5882
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6046
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6077
 msgid "Channel-Zuordnung"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5402
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5408
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5890
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5896
 msgid "Lade Web-Channels..."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5421
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5909
 msgid "erstelle Channels-List..."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5455
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5943
 msgid "Web-Channel / STB-Channels."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5501
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5989
 msgid "Standard STB-Channel für %s:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5524
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6012
 msgid "alternativer STB-Channels für %s:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5613
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6101
 msgid "Sender '- %s -' wurde aktiviert."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5619
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6107
 msgid "Sender '- %s -' wurde deaktiviert."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5630
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6118
 msgid "Sender-Liste zurücksetzen ?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5730
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6161
+msgid "Sender '- %s -' entfernt."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6209
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6956
+msgid "Fenster für Verzeichnisauswahl öffnen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6211
+msgid "alle Einstellungen auf die Standardwerte zurücksetzen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6212
+msgid "Einstellungen speichern und zurück zur vorherigen Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6213
+msgid "Einstellungen in Datei speichern"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6214
+msgid "Einstellungen aus Datei laden"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6256
 msgid "Erinnerung"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5730
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6256
 msgid "aufnehmen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5730
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6256
 msgid "umschalten"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5730
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6256
 msgid "umschalten und aufnehmen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5752
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6277
 msgid "Serien Recorder - Einstellungen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5753
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6278
 msgid "Defaultwerte"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5754
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6439
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6736
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6913
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7322
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8035
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6279
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7046
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7381
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7579
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8100
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8898
 msgid "Speichern"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5755
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6440
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6280
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7047
 msgid "Verzeichnis auswählen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5756
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6281
 msgid "in Datei speichern"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5757
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6282
 msgid "aus Datei laden"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5804
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6289
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7051
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7385
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7585
+msgid "About"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6323
+msgid "Wollen Sie die Einstellungen wirklich zurücksetzen?"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6355
 msgid ""
 "Die aktuelle Konfiguration wurde in der Datei 'Config.backup' \n"
 "im Verzeichnis '%s' gespeichert."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5844
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5861
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5882
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5903
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6206
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6541
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6555
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6618
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6800
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6814
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6845
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6358
+msgid ""
+"Die Konfiguration aus der Datei 'Config.backup' \n"
+"im Verzeichnis '%s' wird geladen."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6398
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6414
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6436
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6458
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6797
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7165
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7186
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7256
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7461
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7475
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7506
 msgid "Keine Information verfügbar."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5923
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6478
 msgid ""
 "---------  SYSTEM:  "
 "-------------------------------------------------------------------------------------------"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5924
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6479
+msgid "ID der Box:"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6480
 msgid "Speicherort der Aufnahmen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5925
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6481
 msgid "Serien-Verzeichnis anlegen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5926
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6461
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6482
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7085
 msgid "Staffel-Verzeichnis anlegen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5928
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6484
 msgid "    Mindestlänge der Staffelnummer im Verzeichnisnamen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5929
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6485
 msgid "    Füllzeichen für Staffelnummer im Verzeichnisnamen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5930
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6486
 msgid "Anzahl gleichzeitiger Web-Anfragen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5931
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6487
 msgid "Automatisches Plugin-Update:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5932
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6488
 msgid "Speicherort der Datenbank:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5933
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6489
 msgid "Erstelle Backup vor Suchlauf:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5935
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6491
 msgid "    Speicherort für Backup:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5938
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6494
 msgid ""
 "---------  AUTO-CHECK:  "
 "---------------------------------------------------------------------------------------"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5939
-msgid ""
-"Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = "
-"nach Uhrzeit):"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6496
+msgid "Intervall für autom. Suchlauf (Std.) (00 = keiner, 24 = nach Uhrzeit):"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5941
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6498
 msgid "    Uhrzeit für automatischen Suchlauf (nur wenn Intervall = 24):"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5942
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6499
 msgid "Timer für X Tage erstellen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5943
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6500
 msgid "Früheste Zeit für Timer:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5944
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6501
 msgid "Späteste Zeit für Timer:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5945
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6502
 msgid "Versuche die Eventid vom EPGCACHE zu holen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5946
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6503
 msgid "Immer aufnehmen wenn keine Wiederholung gefunden wird:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5948
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6505
 msgid "    maximal X Tage auf Wiederholung warten:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5949
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6506
 msgid "Anzahl der Aufnahmen pro Episode:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5950
-msgid "Anzahl der Tuner für Timer einschränken:"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6507
+msgid "Anzahl der gleichzeitigen Aufnahmen einschränken:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5952
-msgid "    Anzahl der Tuner für Aufnahmen:"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6509
+msgid "    maximale Anzahl gleichzeitigen Aufnahmen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5953
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6510
 msgid "Aktion bei neuer Serie/Staffel:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5955
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6512
+msgid "    auch bei manuellem Suchlauf:"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6513
 msgid "    Einträge löschen die älter sind als X Tage:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5957
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6514
+msgid "nach Änderungen Suchlauf beim Beenden starten:"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6516
 msgid "Aus Deep-StandBy aufwecken:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5958
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6517
 msgid "Nach dem automatischen Suchlauf in Deep-StandBy gehen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5960
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6519
 msgid "    Timeout für Deep-StandBy-Abfrage (in Sek.):"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5963
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6522
 msgid ""
 "---------  TIMER:  "
 "--------------------------------------------------------------------------------------------"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5965
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6523
 msgid "Timer-Art:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5966
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6524
 msgid "Timervorlauf (in Min.):"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5967
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6525
 msgid "Timernachlauf (in Min.):"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5968
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6526
 msgid "Timername:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5969
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6527
 msgid "Manuelle Timer immer erstellen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5974
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6532
 msgid "Bouquets auswählen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5977
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6535
 msgid "    Standard Bouquet:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5978
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6536
 msgid "    Alternatives Bouquet:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5979
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6537
 msgid "    Verwende alternative Channels bei Konflikten:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5982
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6540
+msgid ""
+"---------  OPTIMIERUNGEN:  "
+"------------------------------------------------------------------------------------"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6541
+msgid "Intensive Suche nach angelegten Timern:"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6542
+msgid "Zeige ob die Episode als Aufnahme auf der HDD ist:"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6543
+msgid "Zeitspanne für Timersuche einschränken:"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6546
 msgid ""
 "---------  GUI:  "
 "----------------------------------------------------------------------------------------------"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5983
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6547
+msgid "Skin:"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6550
+msgid "    werden bei diesem Skin immer ALLE Tasten angezeigt:"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6557
+msgid "    Wechselzeit der Tastenanzeige (Sek.):"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6558
 msgid "Starte Plugin mit:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5984
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6559
 msgid "Zeige Picons:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5985
-msgid "Intensive Suche nach angelegten Timern:"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6560
+msgid "Korrektur der Schriftgröße in Listen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5986
-msgid "Zeige ob die Episode als Aufnahme auf der HDD ist:"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5987
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6561
 msgid "Anzahl der wählbaren Staffeln im Menü SerienMarker:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5988
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6562
 msgid "Vor Löschen in SerienMarker und TimerList Benutzer fragen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5989
-msgid "Zeige Nachricht wenn Suchlauf startet:"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6563
+msgid "Benachrichtigung beim Suchlauf:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5990
-msgid "Zeige Nachricht bei Timerkonflikten:"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6564
+msgid "Benachrichtigung bei Timerkonflikten:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5991
-msgid "Wechselzeit der Tastenanzeige (Sek.):"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5992
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6565
 msgid "Screens bei Änderungen sofort aktualisieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5993
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6566
 msgid "Staffelauswahl bei neuen Markern:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5994
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6567
 msgid "Öffne Marker-Ansicht nach Hinzufügen neuer Marker:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5997
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6570
 msgid ""
 "---------  LOG:  "
 "----------------------------------------------------------------------------------------------"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5998
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6571
 msgid "Speicherort für LogFile:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:5999
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6572
 msgid "LogFile-Name mit Datum/Uhrzeit:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6001
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6574
 msgid "    Log-Files löschen die älter sind als X Tage:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6002
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6575
 msgid "DEBUG LOG aktivieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6003
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6576
 msgid "DEBUG LOG - STB Informationen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6004
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6577
 msgid "DEBUG LOG - Senderliste:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6005
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6578
 msgid "DEBUG LOG - Seriensender:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6006
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6579
 msgid "DEBUG LOG - Episoden:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6007
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6580
 msgid "DEBUG LOG - Added:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6008
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6581
 msgid "DEBUG LOG - Festplatte:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6009
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6582
 msgid "DEBUG LOG - Tageszeit:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6010
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6583
 msgid "DEBUG LOG - Zeitbegrenzung:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6011
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6584
 msgid "DEBUG LOG - Timer Debugging:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6012
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6585
 msgid "DEBUG LOG - Scroll zum Ende:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6013
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6586
 msgid "DEBUG LOG - Anzeige mit Zeilenumbruch:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6035
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6562
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6608
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7200
 msgid "Aufnahme-Verzeichnis auswählen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6038
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6611
 msgid "LogFile-Verzeichnis auswählen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6041
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6614
 msgid "Backup-Verzeichnis auswählen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6044
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6617
 msgid "Datenbank-Verzeichnis auswählen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6076
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6649
+msgid ""
+"Die ID (Nummer) der STB. Läuft der SerienRecorder auf mehreren Boxen, die "
+"alle auf die selbe Datenbank (im Netzwerk) zugreifen, können einzelne Marker "
+"über diese ID für jede Box einzeln aktiviert oder deaktiviert werden. Timer "
+"werden dann nur auf den Boxen erstellt, für die der Marker aktiviert ist."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6652
 msgid ""
 "Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen "
 "gespeichert werden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6077
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6653
 msgid ""
 "Bei 'ja' wird für jede Serien ein eigenes Unterverzeichnis (z.B.\n"
 "'%s<Serien_Name>/') für die Aufnahmen erstellt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6078
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6654
 msgid ""
 "Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-"
 "Verzeichnis (z.B.\n"
@@ -1468,28 +2049,28 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6080
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6656
 msgid ""
 "Die Anzahl der Stellen, auf die die Staffelnummer im Namen des Staffel-"
 "Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt wird."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6081
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6657
 msgid ""
 "Auswahl, ob die Staffelnummer im Namen des Staffel-Verzeichnisses mit "
 "führenden Nullen oder mit Leerzeichen aufgefüllt werden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6082
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6658
 msgid ""
 "Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:"
 "%s Uhr)."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6083
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6659
 msgid ""
 "Die maximale Anzahl der gleichzeitigen Suchanfragen auf 'wunschliste.de'.\n"
 "ACHTUING: Eine höhere Anzahl kann den Timer-Suchlauf beschleunigen, kann bei "
@@ -1497,21 +2078,21 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6085
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6661
 msgid ""
 "Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates "
 "gesucht."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6086
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6662
 msgid ""
 "Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank "
 "gespeichert wird."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6087
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6663
 msgid ""
 "Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' "
 "log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein "
@@ -1521,14 +2102,14 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6089
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6665
 msgid ""
 "Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert "
 "werden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6090
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6666
 msgid ""
 "Es werden nur Timer für Folgen erstellt, die innerhalb der nächsten hier "
 "eingestellten Anzahl von Tagen ausgestrahlt werden \n"
@@ -1536,21 +2117,21 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6092
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6668
 msgid ""
 "Die Uhrzeit, ab wann Aufnahmen erlaubt sind.\n"
 "Die erlaubte Zeitspanne beginnt um %s:%s Uhr."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6094
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6670
 msgid ""
 "Die Uhrzeit, bis wann Aufnahmen erlaubt sind.\n"
 "Die erlaubte Zeitspanne endet um %s:%s Uhr."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6096
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6672
 msgid ""
 "Bei 'ja' wird beim Anlegen eines Timers versucht die Anfangs- und Endzeiten "
 "vom EPG zu holen. Außerdem erfolgt bei jedem Timer-Suchlauf ein Abgleich der "
@@ -1558,7 +2139,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6098
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6674
 msgid ""
 "Bei 'ja' werden auch Timer für Folgen erstellt, die ausserhalb der erlaubten "
 "Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, wenn KEINE Wiederholung "
@@ -1570,7 +2151,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6101
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6677
 msgid ""
 "Die Anzahl der Tage, die maximal auf eine Wiederholung gewartet wird, die "
 "innerhalb der erlaubten Zeitspanne ausgestrahlt wird. Wird keine passende "
@@ -1580,12 +2161,12 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6104
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6680
 msgid "Die Anzahl der Aufnahmen, die von einer Folge gemacht werden sollen."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6105
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6681
 msgid ""
 "Bei 'ja' wird die Anzahl von gleichzeitigen (sich überschneidenden) Timern "
 "begrenzt.\n"
@@ -1594,7 +2175,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6107
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6683
 msgid ""
 "Die maximale Anzahl von Timern, die gleichzeitig (sich überschneidend) "
 "erstellt werden. Überprüft werden dabei ALLE Timer, nicht nur die vom "
@@ -1602,7 +2183,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6108
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6684
 msgid ""
 "Wird eine neue Staffel oder Serie gefunden (d.h. Folge 1), wird die hier "
 "eingestellt Aktion ausgeführt:\n"
@@ -1621,7 +2202,14 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6115
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6691
+msgid ""
+"Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/"
+"Serienstarts gesucht."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6692
 msgid ""
 "Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen "
 "(also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der "
@@ -1629,7 +2217,16 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6117
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6694
+msgid ""
+"Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, "
+"falls bei den Channels und/oder Markern Änderungen vorgenommen wurden, die "
+"Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, "
+"neuer Channel zugewiesen, etc.)"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6696
 msgid ""
 "Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, "
 "falls sie sich im Deep-Standby befindet.\n"
@@ -1638,14 +2235,14 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6119
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6698
 msgid ""
 "Bei 'ja' wird die STB nach dem automatischen Timer-Suchlauf wieder in den "
 "Deep-Standby gefahren."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6120
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6699
 msgid ""
 "Bevor die STB in den Deep-Standby fährt, wird für die hier eingestellte "
 "Dauer (in Sekunden) eine entsprechende Nachricht auf dem Bildschirm "
@@ -1655,7 +2252,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6122
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6701
 msgid ""
 "Es kann ausgewählt werden, wie Timer angelegt werden. Die "
 "Auswahlmöglichkeiten sind:\n"
@@ -1670,7 +2267,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6127
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6706
 msgid ""
 "Die Vorlaufzeit für Aufnahmen in Minuten.\n"
 "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem "
@@ -1678,7 +2275,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6129
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6708
 msgid ""
 "Die Nachlaufzeit für Aufnahmen in Minuten.\n"
 "Die Aufnahme endet um die hier eingestellte Anzahl von Minuten noch dem "
@@ -1686,7 +2283,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6131
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6710
 msgid ""
 "Bei 'nein' erfolgt beim manuellen Anlegen von Timern in 'Sendetermine' eine "
 "Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von "
@@ -1700,7 +2297,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6135
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6714
 msgid ""
 "Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser "
 "Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält "
@@ -1711,7 +2308,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6137
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6716
 msgid ""
 "Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Channel-"
 "Zuordnung verwendet werden.\n"
@@ -1719,21 +2316,21 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6139
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6718
 msgid ""
 "Auswahl, welches Bouquet bei der Channel-Zuordnung als Standard verwendet "
 "werden sollen."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6140
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6719
 msgid ""
 "Auswahl, welches Bouquet bei der Channel-Zuordnung als Alternative verwendet "
 "werden sollen."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6141
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6720
 msgid ""
 "Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen "
 "Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu "
@@ -1742,12 +2339,20 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6143
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6722
 msgid "Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6144
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6723
+msgid ""
+"Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung "
+"erfolgen. Serien Recorder muß neu gestartet werden damit die Änderung "
+"wirksam wird."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6724
 msgid ""
 "Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern "
 "gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem "
@@ -1755,7 +2360,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6145
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6725
 msgid ""
 "Bei 'ja' wird in der Hauptansicht ein Symbol für jede Episode angezeigt, die "
 "als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr "
@@ -1763,28 +2368,28 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6146
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6726
 msgid ""
 "Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl "
 "gewählt werden kann."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6147
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6727
 msgid ""
 "Bei 'ja' erfolt eine Sicherheitsabfrage ('Soll ... wirklich entfernt "
 "werden?') vor dem entgültigen Löschen von Serienmarkern oder Timern."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6148
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6728
 msgid ""
-"Bei 'ja' wird für 3 Sekunden eine Nachricht auf dem Bildschirm eingeblendet, "
-"sobald der automatische Timer-Suchlauf startet."
+"Je nach Einstellung wird eine Nachricht auf dem Bildschirm eingeblendet, "
+"sobald der automatische Timer-Suchlauf startet bzw. endet."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6149
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6729
 msgid ""
 "Bei 'ja' wird für jeden Timer, der beim automatische Timer-Suchlauf wegen "
 "eines Konflikts nicht angelegt werden konnte, eine Nachricht auf dem "
@@ -1794,14 +2399,14 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6151
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6731
 msgid ""
 "Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten "
 "wechselt."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6152
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6732
 msgid ""
 "Bei 'ja' werden die Anzeigen nach Änderungen von Markern, Channels, etc. "
 "sofort aktualisiert, was aber je nach STB-Typ und Internet-Verbindung "
@@ -1811,28 +2416,28 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6154
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6734
 msgid ""
 "Auswahl, ob bei neuen Markern die Staffeln manuell eingegeben werden, oder "
 "'Alle' ausgewählt wird."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6155
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6735
 msgid ""
 "Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, "
 "um den neuen Marker bearbeiten zu können."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6156
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6736
 msgid ""
 "Das Verzeichnis auswählen und/oder erstellen, in dem die log-Dateien "
 "gespeichert werden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6157
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6737
 msgid ""
 "Bei 'nein' wird bei jedem Timer-Suchlauf die log-Datei neu erzeugt.\n"
 "Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte log-Datei in "
@@ -1842,14 +2447,14 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6160
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6740
 msgid ""
 "log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden "
 "beim Timer-Suchlauf automatisch gelöscht."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6161
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6741
 msgid ""
 "Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. "
 "Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des "
@@ -1859,14 +2464,14 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6163
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6743
 msgid ""
 "Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die "
 "verwendete STB und das Image beinhalten."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6164
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6744
 msgid ""
 "Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden "
 "Sender in der Channel-Zuordnung kein STB-Channel zugeordnet ist, oder der "
@@ -1874,14 +2479,14 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6165
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6745
 msgid ""
 "Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der ausstrahlende Sender "
 "in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6166
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6746
 msgid ""
 "Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel "
 "oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht "
@@ -1889,21 +2494,21 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6167
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6747
 msgid ""
 "Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge "
 "bereits die maximale Anzahl von Timern vorhanden ist."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6168
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6748
 msgid ""
 "Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge "
 "bereits die maximale Anzahl von Aufnahmen vorhanden ist."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6169
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6749
 msgid ""
 "Bei 'ja' erfolgen Einträge in die log-Datei, wenn die zu timende Folge nicht "
 "in der erlaubten Zeitspanne (%s:%s - %s:%s) liegt, sowie wenn gemäß der "
@@ -1912,7 +2517,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6172
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6752
 msgid ""
 "Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der Sendetermin für die "
 "zu timende Folge in der Verganhenheit, \n"
@@ -1921,21 +2526,21 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6174
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6754
 msgid ""
 "Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der zu erstellende Timer "
 "bereits vorhanden ist, oder der Timer erfolgreich angelegt wurde."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6175
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6755
 msgid ""
 "Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' "
 "auf den Anfang."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6176
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6756
 msgid ""
 "Bei 'ja' erfolgt die Anzeige der log-Datei mit Zeilenumbruch, d.h. es werden "
 "3 Zeilen pro Eintrag angezeigt.\n"
@@ -1944,13 +2549,25 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6178
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6758
 msgid ""
 "Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6183
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6759
+msgid "Hier kann das Erscheinungsbild des SR ausgewählt werden."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6760
+msgid ""
+"Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten "
+"angezeigt werden, oder ob die Anzeige wechselt."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6765
 msgid ""
 "Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
 "Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
@@ -1960,7 +2577,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6190
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6772
 msgid ""
 "Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
 "Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
@@ -1970,7 +2587,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6197
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6779
 msgid ""
 "Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
 "Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
@@ -1981,124 +2598,149 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6315
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6787
+msgid ""
+"Bei 'ja' wird die Timersuche nach Ablauf der Wartezeit für Wiederholungen "
+"(dzt. %s Tage) abgebrochen."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6791
+msgid ""
+"Bei 'ja' wird die Timersuche abgebrochen, wenn der Ausstrahlungstermin zu "
+"weit in der Zukunft liegt (also nach %s)."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6917
 msgid ""
 "Im ausgewählten Verzeichnis existiert noch keine Datenbank.\n"
 "Soll die bestehende Datenbank kopiert werden?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6379
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6417
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6953
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6955
+msgid "Änderungen verwerfen und zurück zur Serien-Marker-Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6954
+msgid "Einstellungen speichern und zurück zur Serien-Marker-Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6982
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7020
 msgid "gemäß Setup (dzt. %s)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6379
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6417
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6982
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7020
 msgid "ja"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6379
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6417
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6982
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7020
 msgid "nein"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6416
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7019
 msgid "Alternativ"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6416
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7019
 msgid "Standard"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6437
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6734
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7044
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7379
 msgid "Serien Recorder - Einstellungen für '%s':"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6459
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7083
 msgid "vom globalen Setup abweichender Speicherort der Aufnahmen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6466
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6754
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7090
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7415
 msgid "vom globalen Setup abweichenden Timervorlauf aktivieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6468
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6756
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7092
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7417
 msgid "      Timervorlauf (in Min.):"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6473
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6759
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7097
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7420
 msgid "vom globalen Setup abweichenden Timernachlauf aktivieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6475
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6761
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7099
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7422
 msgid "      Timernachlauf (in Min.):"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6480
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7104
 msgid "vom globalen Setup abweichende Anzahl der Aufnahmen aktivieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6482
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7106
 msgid "      Anzahl der Aufnahmen:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6487
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7111
 msgid "vom globalen Setup abweichende Früheste Zeit für Timer aktivieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6489
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7113
 msgid "      Früheste Zeit für Timer:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6492
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7116
 msgid "vom globalen Setup abweichende Späteste Zeit für Timer aktivieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6494
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7118
 msgid "      Späteste Zeit für Timer:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6496
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7120
 msgid "Bevorzugte Channel-Liste:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6497
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7121
 msgid "Verwende alternative Channels bei Konflikten:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6575
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7213
 msgid ""
 "Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von '%s' "
 "gespeichert werden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6576
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7214
 msgid ""
 "Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-"
 "Verzeichnis für '%s' (z.B.\n"
@@ -2106,7 +2748,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6577
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7215
 msgid ""
 "Bei 'ja' kann die Vorlaufzeit für Aufnahmen von '%s' eingestellt werden.\n"
 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die "
@@ -2117,7 +2759,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6581
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7219
 msgid ""
 "Die Vorlaufzeit für Aufnahmen von '%s' in Minuten.\n"
 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die "
@@ -2127,7 +2769,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6584
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7222
 msgid ""
 "Bei 'ja' kann die Nachlaufzeit für Aufnahmen von '%s' eingestellt werden.\n"
 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die "
@@ -2138,7 +2780,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6588
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7226
 msgid ""
 "Die Nachlaufzeit für Aufnahmen von '%s' in Minuten.\n"
 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die "
@@ -2148,7 +2790,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6591
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7229
 msgid ""
 "Bei 'ja' kann die Anzahl der Aufnahmen, die von einer Folge von '%s' gemacht "
 "werden sollen, eingestellt werden.\n"
@@ -2158,7 +2800,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6594
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7232
 msgid ""
 "Die Anzahl der Aufnahmen, die von einer Folge von '%s' gemacht werden "
 "sollen.\n"
@@ -2167,7 +2809,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6596
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7234
 msgid ""
 "Bei 'ja' kann die erlaubte Zeitspanne (ab Uhrzeit) für Aufnahmen von '%s' "
 "eingestellt werden.\n"
@@ -2177,7 +2819,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6599
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7237
 msgid ""
 "Die Uhrzeit, ab wann Aufnahmen von '%s' erlaubt sind.\n"
 "Die erlaubte Zeitspanne beginnt um %s:%s Uhr.\n"
@@ -2186,7 +2828,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6602
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7240
 msgid ""
 "Bei 'ja' kann die erlaubte Zeitspanne (bis Uhrzeit) für Aufnahmen von '%s' "
 "eingestellt werden.\n"
@@ -2196,7 +2838,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6605
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7243
 msgid ""
 "Die Uhrzeit, bis wann Aufnahmen von '%s' erlaubt sind.\n"
 "Die erlaubte Zeitspanne endet um %s:%s Uhr.\n"
@@ -2205,14 +2847,14 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6608
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7246
 msgid ""
 "Auswahl, ob die Standard-Channels oder die alternativen Channels für die "
 "Aufnahmen von '%s' verwendet werden sollen."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6609
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7247
 msgid ""
 "Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen "
 "Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu "
@@ -2224,17 +2866,33 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6764
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7309
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7311
+msgid "Änderungen verwerfen und zurück zur Channel-Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7310
+msgid "Einstellungen speichern und zurück zur Channel-Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7312
+msgid "---"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7425
 msgid "VPS für diesen Sender aktivieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6766
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7427
 msgid "      Sicherheitsmodus aktivieren:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6822
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7483
 msgid ""
 "Bei 'ja' kann die Vorlaufzeit für Aufnahmen von '%s' eingestellt werden.\n"
 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die "
@@ -2245,7 +2903,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6826
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7487
 msgid ""
 "Die Vorlaufzeit für Aufnahmen von '%s' in Minuten.\n"
 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die "
@@ -2255,7 +2913,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6829
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7490
 msgid ""
 "Bei 'ja' kann die Nachlaufzeit für Aufnahmen von '%s' eingestellt werden.\n"
 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die "
@@ -2266,7 +2924,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6833
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7494
 msgid ""
 "Die Nachlaufzeit für Aufnahmen von '%s' in Minuten.\n"
 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die "
@@ -2276,7 +2934,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6836
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7497
 msgid ""
 "Bei 'ja' wird VPS für '%s' aktiviert. Die Aufnahme startet erst, wenn der "
 "Sender den Beginn der Ausstrahlung angibt, und endet, wenn der Sender das "
@@ -2284,7 +2942,7 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6838
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7499
 msgid ""
 "Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet.Die programmierten "
 "Start- und Endzeiten werden eingehalten.\n"
@@ -2293,192 +2951,265 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6912
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7545
+msgid "ins ausgewählte Verzeichnis wechseln"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7546
+msgid "ausgewähltes Verzeichnis übernehmen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7547
+msgid "ausgewähltes Verzeichnis löschen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7548
+msgid "neues Verzeichnis anlegen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7578
 msgid "Verzeichnis löschen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6915
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7581
 msgid "Verzeichnis anlegen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6948
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7635
 msgid "Verzeichnis-Name eingeben:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:6984
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7671
 msgid ""
 "Auswahl:\n"
 "%s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7034
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7749
 msgid "Lese LogFile: (%s)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7083
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7817
 msgid ""
 "LogFile:\n"
 "(%s)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7149
-msgid "Timer-Konflikte"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7865
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8450
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8861
+msgid "alle Einträge aus der Liste endgültig löschen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7157
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7666
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8038
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7892
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8493
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8901
 msgid "Liste leeren"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7197
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7923
+msgid "Timer-Konflikte"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7989
 msgid "    @ %s (%s) in Konflikt mit:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7223
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7901
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8265
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8021
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8787
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9197
 msgid "Soll die Liste wirklich geleert werden?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7321
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7660
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8034
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8055
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8852
+msgid "für die ausgewählte Serien neue Einträge hinzufügen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8056
+msgid "alle Änderungen verwerfen und zurück zur vorherigen Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8061
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8448
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8858
+msgid "ausgewählten Eintrag löschen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8062
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8859
+msgid "alle Änderungen speichern und zurück zur vorherigen Ansicht"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8063
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8860
+msgid "umschalten Sortierung ein/aus"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8099
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8487
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8897
 msgid "Eintrag löschen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7323
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8101
 msgid "Neuer Eintrag"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7324
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7529
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8037
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8250
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8102
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8373
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8900
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9182
 msgid "Sortieren"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7424
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8268
 msgid "Diese Episoden werden nicht mehr aufgenommen !"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7445
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8156
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8289
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9088
 msgid "von Episode:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7451
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8162
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8295
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9094
 msgid "bis Episode:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7501
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8222
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8345
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9154
 msgid "%s: Staffel eingeben:"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7533
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8254
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8377
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9186
 msgid "unsortierte Liste"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7590
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8335
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8434
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9267
 msgid "Sollen die Änderungen gespeichert werden?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7661
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8446
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9717
+msgid "Marker für die ausgewählte Serie hinzufügen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8449
+msgid "umschalten alle/nur zukünftige anzeigen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8488
 msgid "Marker übernehmen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7663
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7886
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8490
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8772
 msgid "Zeige alle"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7665
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7889
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8492
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8775
 msgid "Zeige nur neue"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:7696
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8560
 msgid "Neue Serie(n) / Staffel(n):"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8021
-msgid "Diese Episoden sind zur Aufnahme vorgemerkt"
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8036
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8899
 msgid "Eintrag anlegen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8378
-msgid "Serien Beschreibung: %s"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8936
+msgid "Diese Episoden sind zur Aufnahme vorgemerkt"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8387
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9314
 msgid "Zurück"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8528
-msgid "Lade imdbVideos..."
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9337
+msgid "Serien Beschreibung: %s"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8536
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9464
+msgid "ausgewähltes Video abspielen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9493
 msgid "Video zeigen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8578
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9522
+msgid "Lade imdbVideos..."
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9593
 msgid "Es wurde(n) (%s) imdbVideos gefunden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8581
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9596
 msgid "Keine imdbVideos gefunden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8632
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9647
 msgid "Über SerienRecorder"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8670
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9685
 msgid "Plugin nicht installiert"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8681
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9696
 msgid ""
 "SerienRecorder für Enigma2 (v%s) (c) 2014 von einfall und w22754\n"
 "\n"
@@ -2487,154 +3218,185 @@ msgid ""
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8762
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9723
+msgid "Anzeige-Modus auswählen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9724
+msgid "Ansicht Sender-Zuordnung öffnen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9725
+msgid "Ansicht Serien-Marker öffnen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9726
+msgid "Ansicht Timer-Liste öffnen"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9729
+msgid "Serienplaner des nächsten Tages laden"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9730
+msgid "Serienplaner des vorherigen Tages laden"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9739
+msgid "manueller Import der Daten von älteren Versionen (bis 2.3)"
+msgstr ""
+
+#: P:\VUplus DUO2\VU+ DUO2
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9780
 msgid "unbekannt"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8789
-msgid "Llllade infos from Web..."
-msgstr ""
-
-#: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8804
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9797
 msgid "Anzeige-Modus"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8805
-msgid "Channels zuweisen"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9798
+msgid "Sender zuordnen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8806
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9799
 msgid "Marker hinzufügen"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8807
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9800
 msgid "Serien Marker"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8808
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9801
 msgid "Timer-Liste"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8810
-msgid "globale Einstellungen"
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9835
+msgid "Lade infos from Web..."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8848
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9887
 msgid "File-Import erfolgreich ausgeführt"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8916
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9274
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9964
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10324
 msgid "Alle Serien (aktuelle internationale Serien)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8918
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9275
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9966
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10325
 msgid "Neue Serien (aktuelle internationale Serien)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8920
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9276
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9968
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10326
 msgid "Nach aktivierten Sendern (aktuelle internationale Serien)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8923
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9289
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9971
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10339
 msgid "Alle Serienstarts"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8928
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9279
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9976
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10329
 msgid "Alle Serien (Soaps)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8930
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9978
 msgid "Neue Serien ((Soaps)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8932
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9281
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9980
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10331
 msgid "Nach aktivierten Sendern (Soaps)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8937
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9284
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9985
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10334
 msgid "Alle Serien (internationale Serienklassiker)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8939
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9285
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9987
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10335
 msgid "Neue Serien (internationale Serienklassiker)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8941
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9286
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9989
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10336
 msgid "Nach aktivierten Sendern (internationale Serienklassiker)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:8991
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10046
 msgid "Lade Infos vom Web..."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9129
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10179
 msgid "Es wurden für - %s - %s Serie(n) gefunden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9132
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9140
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10182
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10190
 msgid "Es wurden für heute %s Serie(n) gefunden."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9280
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10330
 msgid "Neue Serien (Soaps)"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9466
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10519
 msgid "Suche auf 'Wunschliste.de' erfolglos"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9492
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10545
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10565
 msgid ""
 "Für das Serien Recorder Plugin ist ein Update verfügbar!\n"
 "Wollen Sie es jetzt herunterladen und installieren?"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9510
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10583
 msgid "Serien Recorder Update"
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9524
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10598
 msgid "Starte Update, bitte warten..."
 msgstr ""
 
 #: P:\VUplus DUO2\VU+ DUO2
-#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:9536
+#: Patches\usr\lib\enigma2\python\Plugins\Extensions\serienrecorder\SerienRecorder.py:10610
 msgid ""
 "Serien Recorder wurde erfolgreich aktualisiert!\n"
 "Wollen Sie jetzt Enigma2 GUI neu starten?"

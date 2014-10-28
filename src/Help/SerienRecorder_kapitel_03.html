@@ -1,0 +1,561 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>="SerienRecorder</title>
+
+
+  <meta name="title" content="SerienRecorder">
+
+  <meta name="author" content="w22754">
+
+  <meta name="publisher" content="w22754">
+
+  <meta name="copyright" content="einfall &amp; w22754">
+
+  <meta name="Description" content="SerienRecorder &ndash; 3 Die Sender-Zuordnung">
+
+  <meta name="audience" content="Alle">
+
+  <meta name="robots" content="INDEX,FOLLOW">
+
+  <meta http-equiv="content-language" content="de">
+
+  <link rel="stylesheet" type="text/css" href="images/SerienRecorder_open.css">
+
+  <link rel="prev" href="SerienRecorder_kapitel_02.html">
+
+  <link rel="next" href="SerienRecorder_kapitel_04.html">
+
+  <script type="text/javascript"><!--
+function OpenWin(url,name,height,width)
+{
+var InfoWin = window.open(url,name,"directories=0,height="+height+",width=" + width + ",hotkeys=0,location=0,menubar=0,resizable=1,screenX=150,screenY=10,left=150,top=10,scrollbars=1,status=1,titlebar=0,toolbar=0");
+InfoWin.focus();
+}
+//--></script>
+  <link href="images/prettify.css" type="text/css" rel="stylesheet">
+
+  <script type="text/javascript" src="images/prettify.js"></script>
+</head>
+
+
+<body onload="prettyPrint()" alink="#000099" link="#000099" vlink="#000099">
+
+<table bgcolor="#000066" border="0" cellpadding="0" cellspacing="0" width="100%">
+
+  <tbody>
+
+    <tr>
+
+      <td colspan="2" height="74" valign="bottom"><br>
+
+      </td>
+
+      <td height="74" width="80"><img alt="" style="border: 0px solid ; width: 100px; height: 40px;" src="images/plugin.png"></td>
+
+    </tr>
+
+  </tbody>
+</table>
+
+<br>
+
+<table class="tbl" border="0" cellpadding="0" cellspacing="0" width="100%">
+
+  <tbody>
+
+    <tr>
+
+      <td valign="top" width="190">
+      <table style="width: 190px;" class="tbl1" border="3" cellpadding="3" cellspacing="0">
+
+        <tbody>
+
+          <tr style="color: rgb(255, 255, 255); background-color: rgb(0, 0, 102);">
+
+            <td style="background-color: rgb(255, 255, 255);" class="tbl2"><a class="navnav" href="SerienRecorder.html#_top">Inhaltsverzeichnis</a></td>
+
+          </tr>
+
+          <tr>
+ <td><a class="navnav" href="SerienRecorder_kapitel_01.html#top">1
+Einleitung</a></td>
+
+          </tr>
+
+          <tr>
+ <td><a class="navnav" href="SerienRecorder_kapitel_02.html#top">2
+Der SerienPlaner</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td style="background-color: rgb(0, 0, 102);"><a class="navh2" href="#top">3
+Die Sender-Zuordnung</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_04.html#top">4
+Die Serien-Marker</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_05.html#top">5
+Die Timer-Liste</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_06.html#top">6
+Die Anzeige zus&auml;tzlicher Informationen</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_A.html#top">A
+Anhang</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td></td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+            <table style="text-align: left; background-color: rgb(0, 0, 102); height: 148px; width: 178px;" border="1" cellpadding="2" cellspacing="2">
+
+              <tbody>
+
+                <tr>
+
+                  <td style="background-color: rgb(255, 255, 255);"></td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>Version:<br>
+
+3.0.8</td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>Autor: <br>
+
+@w22754</td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>letzte Aktualisierung:<br>
+
+26.10.2014</td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+      </table>
+
+      </td>
+
+      <td width="10"><img style="width: 10px; height: 10px;" src="images/spacer10.gif" alt="Spacer"></td>
+
+      <td align="center" valign="top" width="85%">
+      <div align="center">
+      <table bgcolor="#ffffff" border="0" cellpadding="0" cellspacing="0" width="98%">
+
+        <tbody>
+
+          <tr>
+
+            <td class="start" colspan="1" align="center" height="22" width="100%">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td width="25%"><a class="navnav" href="SerienRecorder_kapitel_02.html">&nbsp;&lt;&lt;
+&nbsp; zur&uuml;ck</a></td>
+
+                  <td width="49%">
+                  <div align="center"><br>
+
+                  </div>
+
+                  </td>
+
+                  <td align="right" width="25%">
+                  <div align="right"><a href="SerienRecorder_kapitel_04.html" class="navnav">vor&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;</a></div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td valign="top" width="100%">
+            <table style="width: 100%;" class="box" border="0" cellpadding="10" cellspacing="0">
+
+              <tbody>
+
+                <tr>
+
+                  <th style="text-align: center; background-color: rgb(204, 204, 204);" colspan="2"><span class="autor"><big><big><big><big><span style="font-weight: bold;">SerienRecorder</span></big></big></big></big>
+                  <br>
+
+                  <big>ein PlugIn von @einfall und @w22754</big></span><span class="untertitel"></span></th>
+
+                </tr>
+
+                <tr>
+
+                  <td>
+                  <table border="0">
+
+                    <tbody>
+
+                      <tr>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_u.gif" alt="Pfeil"></td>
+
+                        <td colspan="2" class="kap" valign="baseline"><strong><a href="#3_Die_Sender_Zuordnung" class="navh">3&nbsp;Die
+Sender-Zuordnung</a></strong></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td valign="baseline" width="10"><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td style="color: rgb(0, 0, 102);" colspan="1" valign="baseline"><strong><a href="#3.1_Die_Verwendung_von_alternativen_Channels">3.1
+Die Verwendung von alternativen Channels</a></strong></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td><a style="font-weight: bold;" href="#3.2_Die_Sender_Einstellungen">3.2 Die
+Sender-Einstellungen</a></td>
+
+                      </tr>
+
+                    </tbody>
+                  </table>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            <table bgcolor="#eeeeee" border="0" cellpadding="20" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td>
+                  <div style="text-align: center;"> </div>
+
+                  <br>
+
+                  <h1 class="cfett"><a name="3_Die_Sender_Zuordnung"></a><small>3 Die
+Sender-Zuordnung</small></h1>
+
+                  <p style="margin-bottom: 0cm;">Damit der
+SerienRecorder &uuml;berhaupt
+funktioniert, m&uuml;ssen Sender zugewiesen werden, d.h. es muss
+eine
+Verbindung zwischen den Sendern hergestellt werden, die wunschliste.de
+kennt, und denen die mit dem Receiver empfangen werden k&ouml;nnen
+bzw.
+f&uuml;r die Timer erstellt werden sollen.</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <p style="margin-bottom: 0cm; text-align: center;"><span style="font-style: italic;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Sender_Zuordnung.gif"></span></p>
+
+                  <p style="margin-bottom: 0cm; text-align: center;"><span style="font-style: italic;">Fig.3.1: Die Sender-Zuordnung</span><span style="font-style: italic;"></span></p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <p style="margin-bottom: 0cm;">Die
+Sender-Zuordnung ist
+dreispaltig aufgebaut. Die linke Spalte zeigt die Sender die von
+wunschliste.de geliefert werden (Web-Channel), die mittlere Spalte
+zeigt den Sender des Receivers, der dem entsprechenden Web-Channel
+zugewiesen wurde, und die rechte Spalte eine m&ouml;gliche
+alternative
+Zuweisung (z. B. die SD Variante des Senders, falls der HD Sender
+nicht verf&uuml;gbar ist) &ndash; dazu muss die Option
+&bdquo;Bouquets ausw&auml;hlen&ldquo;
+in den <a href="SerienRecorder_kapitel_01.html#1.3_Die_globalen_Einstellungen">globalen
+Einstellungen</a> aktiviert sein.</p>
+
+                  <p style="margin-bottom: 0cm;">&Uuml;ber
+die <span style="font-weight: bold; color: rgb(204, 0, 0);">rote</span>
+Taste lassen sich
+zugewiesene Sender aus- bzw. einschalten (dargestellt durch das Minus-
+und Plus-Symbol). Ein <span style="text-decoration: underline;">langes</span>
+Dr&uuml;cken der <span style="font-weight: bold; color: rgb(204, 0, 0);">roten</span>
+Taste l&ouml;scht den Sender endg&uuml;ltig aus der Liste
+(nat&uuml;rlich nur im SerienRecorder, die Favoriten-Liste selbst
+bleibt unangetastet).</p>
+
+                  <p style="margin-bottom: 0cm;">Beim
+ersten Start sollte man also
+zun&auml;chst die Zuordnung vornehmen, dazu w&auml;hlt man
+einen Sender
+aus, den man empfangen kann, im Beispiel (siehe Fig.2.3) ist das
+&bdquo;3sat&ldquo; und dr&uuml;ckt die&nbsp;<span style="font-weight: bold;">OK</span> Taste. Es
+&ouml;ffnet sich eine
+Liste mit den Sendern, die der Receiver empfangen kann (die
+Favoriten-Liste), und der
+entsprechende Sender kann ausgew&auml;hlt werden.</p>
+
+                  <p style="margin-bottom: 0cm; text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Sender_Zuordnung_Std.gif"></p>
+
+                  <br>
+
+                  <div style="text-align: center;">
+                  <div style="text-align: center;"><span style="font-style: italic;">Fig.3.2: Die Sender-Zuordnung</span></div>
+
+                  <p></p>
+
+                  </div>
+
+Die Auswahl wird mit der <span style="font-weight: bold;">OK</span>
+Taste best&auml;tigt. Hat man in den <a href="SerienRecorder_kapitel_01.html#1.3_Die_globalen_Einstellungen">globalen
+Einstellungen</a>
+festgelegt, dass alternative Bouquets verwendet werden sollen,
+&ouml;ffnet sich jetzt das 2. Popup-Fenster f&uuml;r die
+Auswahl des
+alternativen Senders (s. <a href="#3.1_Die_Verwendung_von_alternativen_Channels">Kapitel
+3.1</a>). Andernfalls kann die Zuordnung f&uuml;r den
+n&auml;chsten Web-Channel vorgenommen werden.<br>
+
+                  <br>
+
+                  <span style="font-style: italic;"></span>
+                  <p style="margin-bottom: 0cm; text-align: left;"><br>
+
+                  </p>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+
+                  </div>
+
+                  <br>
+
+                  <h3><a name="3.1_Die_Verwendung_von_alternativen_Channels"></a>3.1
+Die Verwendung von alternativen Channels</h3>
+
+                  <p>Hier kann zus&auml;tzlich noch ein
+alternativer
+Sender gew&auml;hlt werden. Falls beim Auto-Check ein Timer
+aufgrund
+von Konflikten oder nicht ausreichender Anzahl von Tunern nicht
+erstellt werden kann,&nbsp;dann versucht der SerienRecorder den
+entsprechenden Timer f&uuml;r diesen alternativen Sender zu
+erstellen.&nbsp;</p>
+
+                  <br>
+
+                  <br>
+
+                  <div style="text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Sender_Zuordnung_Alt.gif"><br>
+
+                  <br>
+
+                  <span style="font-style: italic;">Fig.3.3:
+Die Sender-Zuordnung</span><br>
+
+                  <br>
+
+                  <div style="text-align: left;"><br>
+
+                  <br>
+
+Die Auswahl wird mit der <span style="font-weight: bold;">OK</span>
+Taste best&auml;tigt, und man kann die Zuordnung f&uuml;r den
+n&auml;chsten Web-Channel vornehmen.<br>
+
+                  <br>
+
+                  <br>
+
+                  </div>
+
+                  </div>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+
+                  <br>
+
+                  </div>
+
+                  <h3><a name="3.2_Die_Sender_Einstellungen"></a>3.2
+Die Sender-Einstellungen</h3>
+
+                  <p style="margin-bottom: 0cm;">F&uuml;r
+jeden Sender lassen sich &uuml;ber die&nbsp;<span style="font-weight: bold;">MENU</span> Taste
+individuelle Einstellungen vornehmen:</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <div style="text-align: center;"><span style="font-style: italic;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Sender_Einstellungen.gif"></span></div>
+
+                  <p style="margin-bottom: 0cm; text-align: center;"><span style="font-style: italic;">Fig.3.4: Die Sender-Einstellungen</span></p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <p style="margin-bottom: 0cm;">Individuelle
+Timervorlauf- bzw. Timernachlauf Zeiten lassen sich hier definieren.
+Wenn man wei&szlig;,
+dass der Sender sehr unzuverl&auml;ssige Zeitangaben hat, dann
+l&auml;sst
+sich der Wert hier speziell f&uuml;r diesen Sender
+erh&ouml;hen, bzw.
+nat&uuml;rlich auch verringern, wenn der Sender sich sehr genau an
+die
+Start- und Endzeiten h&auml;lt. Ist das VPS Plug-In installiert,
+kann VPS
+f&uuml;r den Sender aktiviert werden, dadurch entscheidet der
+Sender wann
+genau eine Aufnahme startet &ndash; alle
+&ouml;ffentlich-rechtlichen Sender
+(z. B. ARD, ZDF usw.) unterst&uuml;tzen VPS.</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <div style="text-align: center;"><span style="font-style: italic;"></span></div>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a></div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td class="start" colspan="1" align="center" height="22" width="100%">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td width="25%">
+                  <div align="left"><a class="navnav" href="SerienRecorder_kapitel_02.html">&nbsp;&lt;&lt;
+&nbsp; zur&uuml;ck</a></div>
+
+                  </td>
+
+                  <td width="49%">
+                  <div align="center"><a class="navnav" href="#top">&lt;top&gt;</a></div>
+
+                  </td>
+
+                  <td align="right" width="25%">
+                  <div align="right"><a href="SerienRecorder_kapitel_04.html" class="navnav">vor&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;</a></div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+      </table>
+
+      </div>
+
+      </td>
+
+    </tr>
+
+  </tbody>
+</table>
+
+<br>
+
+<br>
+
+<hr align="center" width="70%"><br>
+
+<div align="center">
+<p class="standard"><b>Copyright 2014
+&copy;&nbsp;einfall und&nbsp;w22754</b><br>
+
+</p>
+
+Support: <a href="http://www.vuplus-support.org/wbb3/index.php?page=Thread&amp;threadID=60724">http://www.vuplus-support.org/wbb3/index.php?page=Thread&amp;threadID=60724</a><br>
+
+<br>
+
+Falls Ihr Euch bedanken wollt:<br>
+
+@einfall: schickt eine PN, um die Amazon-Wunschliste zu erhalten<br>
+
+@w22754: via PayPal "Geld senden" an w22754@yahoo.de<br>
+
+<br>
+
+</div>
+
+<br>
+
+<br>
+
+</body>
+</html>

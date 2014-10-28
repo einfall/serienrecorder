@@ -63,7 +63,7 @@
 	<widget name="popup_list2" position="180,170" size="580,370" backgroundColor="#00181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="6" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel25_1200.png" />
 
 	<widget name="config_information" position="912,320" zPosition="3" size="338,300" backgroundColor="transparent" />
-	<widget name="config_information_text" position="915,323" size="332,294" backgroundColor="#000000" transparent="1" halign="left" zPosition="5" font="Regular;14"/>
+	<widget name="config_information_text" position="915,323" size="332,294" backgroundColor="#000000" transparent="0" halign="left" zPosition="5" font="Regular;14"/>
 
 	<widget name="info" position="20,120" size="870,500" font="Regular;24" backgroundColor="#00000000" transparent="1" zPosition="1" />
 	

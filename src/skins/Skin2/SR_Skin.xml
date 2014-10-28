@@ -18,6 +18,7 @@
 
 	<widget name="config_information" position="920,100" size="310,320" zPosition="3" backgroundColor="#000000" />
 	<widget name="config_information_text" position="923,103" size="304,314" zPosition="5" font="Regular;18" halign="left" transparent="1" />
+	<!--widget source="config_information_text" position="923,103" size="304,314" zPosition="5" font="Regular;18" halign="left" transparent="1" render="RunningText" options="movetype=running,startpoint=0,direction=top,steptime=90,repeat=20,startdelay=10000,wrap" /-->
 	
 	<widget name="info" position="60,170" size="850,440" font="Regular;24" transparent="1" zPosition="1" />
 	<widget name="path" position="70,10" size="950,60" font="Regular;20" valign="center" halign="left" transparent="1" />

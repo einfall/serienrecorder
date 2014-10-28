@@ -1,0 +1,532 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>="SerienRecorder</title>
+
+
+  <meta name="title" content="SerienRecorder">
+
+  <meta name="author" content="w22754">
+
+  <meta name="publisher" content="w22754">
+
+  <meta name="copyright" content="einfall &amp; w22754">
+
+  <meta name="Description" content="SerienRecorder &ndash; 2 Der SerienPlaner">
+
+  <meta name="audience" content="Alle">
+
+  <meta name="robots" content="INDEX,FOLLOW">
+
+  <meta http-equiv="content-language" content="de">
+
+  <link rel="stylesheet" type="text/css" href="images/SerienRecorder_open.css">
+
+  <link rel="prev" href="SerienRecorder_kapitel_01.html">
+
+  <link rel="next" href="SerienRecorder_kapitel_03.html">
+
+  <script type="text/javascript"><!--
+function OpenWin(url,name,height,width)
+{
+var InfoWin = window.open(url,name,"directories=0,height="+height+",width=" + width + ",hotkeys=0,location=0,menubar=0,resizable=1,screenX=150,screenY=10,left=150,top=10,scrollbars=1,status=1,titlebar=0,toolbar=0");
+InfoWin.focus();
+}
+//--></script>
+  <link href="images/prettify.css" type="text/css" rel="stylesheet">
+
+  <script type="text/javascript" src="images/prettify.js"></script>
+</head>
+
+
+<body onload="prettyPrint()" alink="#000099" link="#000099" vlink="#000099">
+
+<table bgcolor="#000066" border="0" cellpadding="0" cellspacing="0" width="100%">
+
+  <tbody>
+
+    <tr>
+
+      <td colspan="2" height="74" valign="bottom"><br>
+
+      </td>
+
+      <td height="74" width="80"><img alt="" style="border: 0px solid ; width: 100px; height: 40px;" src="images/plugin.png"></td>
+
+    </tr>
+
+  </tbody>
+</table>
+
+<br>
+
+<table class="tbl" border="0" cellpadding="0" cellspacing="0" width="100%">
+
+  <tbody>
+
+    <tr>
+
+      <td valign="top" width="190">
+      <table style="width: 190px;" class="tbl1" border="3" cellpadding="3" cellspacing="0">
+
+        <tbody>
+
+          <tr style="color: rgb(255, 255, 255); background-color: rgb(0, 0, 102);">
+
+            <td style="background-color: rgb(255, 255, 255);" class="tbl2"><a class="navnav" href="SerienRecorder.html#_top">Inhaltsverzeichnis</a></td>
+
+          </tr>
+
+          <tr>
+ <td><a class="navnav" href="SerienRecorder_kapitel_01.html#top">1
+Einleitung</a></td>
+
+          </tr>
+
+          <tr class="navh2">
+
+            <td style="background-color: rgb(0, 0, 102);"><a class="navh2" href="#top">2
+Der SerienPlaner</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_03.html#top">3
+Die Sender-Zuordnung</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_04.html#top">4
+Die Serien-Marker</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_05.html#top">5
+Die Timer-Liste</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_06.html#top">6
+Die Anzeige zus&auml;tzlicher Informationen</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td><a class="navnav" href="SerienRecorder_kapitel_A.html#top">A
+Anhang</a></td>
+
+          </tr>
+
+          <tr>
+
+            <td></td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+            <table style="text-align: left; background-color: rgb(0, 0, 102); height: 148px; width: 178px;" border="1" cellpadding="2" cellspacing="2">
+
+              <tbody>
+
+                <tr>
+
+                  <td style="background-color: rgb(255, 255, 255);"></td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>Version:<br>
+
+3.0.8</td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>Autor: <br>
+
+@w22754</td>
+
+                </tr>
+
+                <tr style="color: rgb(255, 255, 255);">
+
+                  <td>letzte Aktualisierung:<br>
+
+26.10.2014</td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+      </table>
+
+      </td>
+
+      <td width="10"><img style="width: 10px; height: 10px;" src="images/spacer10.gif" alt="Spacer"></td>
+
+      <td align="center" valign="top" width="85%">
+      <div align="center">
+      <table bgcolor="#ffffff" border="0" cellpadding="0" cellspacing="0" width="98%">
+
+        <tbody>
+
+          <tr>
+
+            <td class="start" colspan="1" align="center" height="22" width="100%">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td width="25%"><a class="navnav" href="SerienRecorder_kapitel_01.html">&nbsp;&lt;&lt;
+&nbsp; zur&uuml;ck</a></td>
+
+                  <td width="49%">
+                  <div align="center"><br>
+
+                  </div>
+
+                  </td>
+
+                  <td align="right" width="25%">
+                  <div align="right"><a href="SerienRecorder_kapitel_03.html" class="navnav">vor&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;</a></div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td valign="top" width="100%">
+            <table style="width: 100%;" class="box" border="0" cellpadding="10" cellspacing="0">
+
+              <tbody>
+
+                <tr>
+
+                  <th style="text-align: center; background-color: rgb(204, 204, 204);" colspan="2"><span class="autor"><big><big><big><big><span style="font-weight: bold;">SerienRecorder</span></big></big></big></big>
+                  <br>
+
+                  <big>ein PlugIn von @einfall und @w22754</big></span><span class="untertitel"></span></th>
+
+                </tr>
+
+                <tr>
+
+                  <td>
+                  <table border="0">
+
+                    <tbody>
+
+                      <tr>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_u.gif" alt="Pfeil"></td>
+
+                        <td colspan="2" class="kap" valign="baseline"><strong><a href="#2_Der_SerienPlaner" class="navh">2
+Der SerienPlaner</a></strong></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td valign="baseline" width="10"><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td style="color: rgb(0, 0, 102);" colspan="1" valign="baseline"><strong><a href="#2.1_Die_Anzeige_Modi">2.1
+Der Anzeige-Modus</a></strong></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td><a style="font-weight: bold;" href="#2.2_Die_Sender_Zuordnung">2.2 Die Sender-Zuordnung</a></td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td></td>
+
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+
+                        <td><a style="font-weight: bold;" href="#2.3_Die_Serien-Marker">2.3 Die Serien-Marker</a></td>
+
+                      </tr>
+                      <tr>
+                        <td></td>
+                        <td><img style="border: 0px solid ; width: 10px; height: 10px;" src="images/pfeil_rechts5.gif" alt="Pfeil"></td>
+                        <td><a style="font-weight: bold;" href="2.4_Die_Timer">2.4 Die Timer</a></td>
+                      </tr>
+
+                    </tbody>
+                  </table>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            <table bgcolor="#eeeeee" border="0" cellpadding="20" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td>
+                  <div style="text-align: center;"> </div>
+
+                  <br>
+
+                  <h1 class="cfett"><a name="2_Der_SerienPlaner"></a><small>2 Der
+SerienPlaner</small></h1>
+
+                  <p>Dies ist die Haupt-Ansicht des
+SerienRecorders,
+die uns alle Folgen des aktuellen Tages anzeigt, sowie Informationen
+f&uuml;r welche Folgen bereits Timer erstellt wurden (Timer-Symbol <img style="width: 20px; height: 12px;" alt="" src="images/timer.png">), welche bereits aufgenommen wurden
+(Festplattensymbol <img style="width: 16px; height: 16px;" alt="" src="images/hdd_24x24.png">), und welche
+erstmalig ausgestrahlt werden (<img style="width: 20px; height: 12px;" alt="" src="images/neu.png">). </p>
+
+Mit den Pfeiltasten kann man durch die
+Liste bl&auml;ttern, zeilenweise (Pfeil hoch/runter) oder
+seitenweise
+(Pfeil links/rechts).<br>
+
+Mit den Bouquet Tasten l&auml;&szlig;t sich zum
+n&auml;chsten Tag bzw.
+wieder zur&uuml;ck bl&auml;ttern (nicht aber zu vergangenen
+Tagen).<br>
+
+                  <br>
+
+                  <div style="text-align: center;"><span style="font-style: italic;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_SerienPlaner.gif"><br>
+
+                  <br>
+
+Fig.2.1: Der SerienPlaner (die Haupt-Ansicht)<br>
+
+                  </span>
+                  <p style="margin-bottom: 0cm; text-align: left;"></p>
+
+                  <p style="margin-bottom: 0cm; text-align: left;">Bei
+Serien, die f&uuml;r die Timer-Erstellung vorgemerkt sind (ein
+entsprechender Serien-Marker&nbsp;ist vorhanden), wird der
+Serienname
+in <span style="color: rgb(0, 153, 0);">gr&uuml;ner</span>
+Farbe angezeigt, alle anderen in <span style="color: rgb(255, 255, 255); background-color: rgb(192, 192, 192);">wei&szlig;</span>.
+Wurde bei einer&nbsp;Serie, f&uuml;r die noch kein Marker
+existiert,
+eine Folge mit der Nummer 1 (d.h. Beginn einer neuen Serie oder
+Staffel) gefunden, so wird Der Serienname bei dieser Folge in <span style="color: rgb(204, 0, 0);">roter</span> Farbe
+dargestellt. Das erleichtert das intuitive Erkennen, dass eventuell ein
+neuer Marker angelegt werden soll.&nbsp;</p>
+
+                  <p style="margin-bottom: 0cm; text-align: left;">
+                  </p>
+
+                  </div>
+
+                  <br>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+
+                  </div>
+
+                  <br>
+
+                  <h3><a name="2.1_Die_Anzeige_Modi"></a>2.1
+Der Anzeige-Modus&nbsp; <img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyRed.gif" hspace="1" vspace="1"></h3>
+
+                  <p style="margin-bottom: 0cm;">&Uuml;ber
+den Anzeige-Modus l&auml;sst sich
+einstellen welche Serien im Hauptbildschirm anzeigt werden sollen.
+Sinnvoll ist eine der Einstellungen die die Anzeige auf die
+aktivierten Sender beschr&auml;nkt.</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <div style="text-align: center;"><img style="width: 70%; height: 39%;" alt="" src="images/SR_Anzeige_Modi.gif"><br>
+
+                  <br>
+
+                  <span style="font-style: italic;">Fig.2.2
+Der Anzeige-Modus</span></div>
+
+                  <h3><br>
+
+                  </h3>
+
+                  <h3><a name="2.2_Die_Sender_Zuordnung"></a>2.2
+Die Sender-Zuordnung &nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyGreen.gif" hspace="1" vspace="1"></h3>
+
+                  <p style="margin-bottom: 0cm;">Damit der
+SerienRecorder &uuml;berhaupt
+funktioniert, m&uuml;ssen Sender zugewiesen werden. Wie das
+funktioniert ist im <a href="SerienRecorder_kapitel_03.html#3_Die_Sender_Zuordnung">n&auml;chsten
+Kapitel</a> beschrieben.</p>
+
+                  <p style="margin-bottom: 0cm;"></p>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a></div>
+
+                  <h3><a name="2.3_Die_Serien-Marker"></a>2.3
+Die Serien-Marker &nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/key_ok.png" hspace="1" vspace="1">&nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyYellow.gif" hspace="1" vspace="1"></h3>
+
+                  <p>
+Damit eine Serie beim Suchlauf (Auto-Check)&nbsp;einbezogen werden
+kann, muss f&uuml;r diese Serein ein sogenannter Marker erstellt
+werden. Die einfachste Methode ist, den Marker direkt aus der
+SerienPlaner-Ansicht zu erstellen. Daf&uuml;r gen&uuml;gt es,
+die
+gew&uuml;nschte Serie auszuw&auml;hlen und die <span style="font-weight: bold;">OK</span>
+Taste zu dr&uuml;cken. Die gew&auml;hlte Serie wird zu den
+Serien-Markern hinzugef&uuml;gt, und die Serien-Marker-Ansicht
+&ouml;ffnet sich (s. <a href="SerienRecorder_kapitel_04.html#4_Die_Serien_Marker">Kapitel
+4</a>), um alle Einstellungen f&uuml;r den neuen Marker
+vornehmen zu k&ouml;nnen. Mit der <span style="font-weight: bold; color: rgb(255, 255, 0); background-color: rgb(153, 153, 153);">gelben</span>
+Taste gelangt man direkt in die Serien-Marker-Ansicht.
+                  </p>
+                  <div style="text-align: center;"><br>
+
+                  <br>
+
+                  <span style="font-style: italic;"></span><br>
+
+                  </div>
+
+                  <div style="text-align: center;"><a href="#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+                  <br>
+                  <div style="text-align: left;">
+                  <h3><a name="2.4_Die_Timer"></a>2.4 Die Timer &nbsp;<img style="border: 1px solid ; width: 16px; height: 16px;" alt="" src="images/SR_keyBlue.gif" hspace="1" vspace="1"></h3>
+                  <p>Mit der <span style="color: rgb(51, 51, 255); font-weight: bold;">blauen</span> Taste gelangt man in die Timer-Liste (s. <a href="SerienRecorder_kapitel_05.html#5_Die_Timer_Liste">Kapitel 5</a>), die alle vergangenen und zuk&uuml;nftigen Timer beinhaltet.</p>
+                  <br>
+                  <br>
+                  <div style="text-align: center;"><a href="SerienRecorder_kapitel_02.html#top"><img style="border: 0px solid ; width: 58px; height: 20px;" alt="Zum Seitenanfang" title="Zum Seitenanfang" src="images/jupiters.gif"></a><br>
+                  </div>
+                  </div>
+                  </div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td class="start" colspan="1" align="center" height="22" width="100%">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+
+              <tbody>
+
+                <tr>
+
+                  <td width="25%">
+                  <div align="left"><a class="navnav" href="SerienRecorder_kapitel_01.html">&nbsp;&lt;&lt;
+&nbsp; zur&uuml;ck</a></div>
+
+                  </td>
+
+                  <td width="49%">
+                  <div align="center"><a class="navnav" href="#top">&lt;top&gt;</a></div>
+
+                  </td>
+
+                  <td align="right" width="25%">
+                  <div align="right"><a href="SerienRecorder_kapitel_03.html" class="navnav">vor&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;</a></div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+            </table>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+      </table>
+
+      </div>
+
+      </td>
+
+    </tr>
+
+  </tbody>
+</table>
+
+<br>
+
+<br>
+
+<hr align="center" width="70%"><br>
+
+<div align="center">
+<p class="standard"><b>Copyright 2014
+&copy;&nbsp;einfall und&nbsp;w22754</b><br>
+
+</p>
+
+Support: <a href="http://www.vuplus-support.org/wbb3/index.php?page=Thread&amp;threadID=60724">http://www.vuplus-support.org/wbb3/index.php?page=Thread&amp;threadID=60724</a><br>
+
+<br>
+
+Falls Ihr Euch bedanken wollt:<br>
+
+@einfall: schickt eine PN, um die Amazon-Wunschliste zu erhalten<br>
+
+@w22754: via PayPal "Geld senden" an w22754@yahoo.de<br>
+
+<br>
+
+</div>
+
+<br>
+
+<br>
+
+</body>
+</html>
