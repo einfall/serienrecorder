@@ -2180,8 +2180,8 @@ class serienRecCheckForRecording():
 			print "%sSerien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
 		elif not self.manuell and config.plugins.serienRec.timeUpdate.value:
-			loctime = localtime()
-			acttime = (loctime[3] * 60 + loctime[4])
+			#loctime = time.localtime()
+			acttime = (lt[3] * 60 + lt[4])
 			deltime = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
 			if acttime < deltime:
 				deltatime = deltime - acttime
@@ -2243,8 +2243,8 @@ class serienRecCheckForRecording():
 			print "%s[Serien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
 		elif config.plugins.serienRec.timeUpdate.value:
-			loctime = localtime()
-			acttime = (loctime[3] * 60 + loctime[4])
+			#loctime = time.localtime()
+			acttime = (lt[3] * 60 + lt[4])
 			deltime = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
 			if acttime < deltime:
 				deltatime = deltime - acttime
