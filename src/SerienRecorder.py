@@ -10553,6 +10553,11 @@ class checkUpdate():
 		self.updateurl = tmp_infolines[1]
 		version = config.plugins.serienRec.showversion.value.split(".")
 		
+		if len(version) < 3:
+			version.extend((3-len(version)) * '0')
+		if len(remoteversion) < 3:
+			remoteversion.extend((3-len(remoteversion)) * '0')
+		
 		update = False
 		if int(remoteversion[0]) > int(version[0]):
 			update = True
