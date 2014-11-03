@@ -36,28 +36,28 @@
 	<widget name="info" position="60,170" size="850,440" font="Regular;24" backgroundColor="#20606060" transparent="1" zPosition="1" />
 	<widget name="path" position="70,47" size="950,43" font="Regular;20" foregroundColor="#00ffffff" backgroundColor="#20606060" valign="center" halign="left" transparent="1" />
 
-	<widget name="bt_ok" position="930,435" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_ok.png" alphatest="on" />
+	<widget name="bt_ok" position="930,435" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_ok.png" alphatest="on" />
 	<widget name="text_ok" position="965,435" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
 	
-	<widget name="bt_0" position="930,465" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_0.png" alphatest="on" />
-	<widget name="bt_5" position="930,465" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_5.png" alphatest="on" />
-	<widget name="bt_exit" position="930,465" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_exit.png" alphatest="on" />
+	<widget name="bt_0" position="930,465" size="35,25" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_0.png" alphatest="on" />
+	<widget name="bt_5" position="930,465" size="35,25" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_5.png" alphatest="on" />
+	<widget name="bt_exit" position="930,465" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_exit.png" alphatest="on" />
 	<widget name="text_0" position="965,465" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
-	<widget name="bt_1" position="930,495" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_1.png" alphatest="on" />
-	<widget name="bt_6" position="930,495" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_6.png" alphatest="on" />
-	<widget name="bt_text" position="930,495" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_text.png" alphatest="on" />
+	<widget name="bt_1" position="930,495" size="35,25" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_1.png" alphatest="on" />
+	<widget name="bt_6" position="930,495" size="35,25" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_6.png" alphatest="on" />
+	<widget name="bt_text" position="930,495" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_text.png" alphatest="on" />
 	<widget name="text_1" position="965,495" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
-	<widget name="bt_2" position="930,525" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_2.png" alphatest="on" />
-	<widget name="bt_7" position="930,525" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_7.png" alphatest="on" />
-	<widget name="bt_epg" position="930,525" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_epg.png" alphatest="on" />
+	<widget name="bt_2" position="930,525" size="35,25" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_2.png" alphatest="on" />
+	<widget name="bt_7" position="930,525" size="35,25" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_7.png" alphatest="on" />
+	<widget name="bt_epg" position="930,525" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_epg.png" alphatest="on" />
 	<widget name="text_2" position="965,525" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
-	<widget name="bt_3" position="930,555" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_3.png" alphatest="on" />
-	<widget name="bt_8" position="930,555" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_8.png" alphatest="on" />
-	<widget name="bt_info" position="930,555" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_help.png" alphatest="on" />
+	<widget name="bt_3" position="930,555" size="35,25" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_3.png" alphatest="on" />
+	<widget name="bt_8" position="930,555" size="35,25" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_8.png" alphatest="on" />
+	<widget name="bt_info" position="930,555" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_help.png" alphatest="on" />
 	<widget name="text_3" position="965,555" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
-	<widget name="bt_4" position="930,585" size="35,25" zPosition="3" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_4.png" alphatest="on" />
-	<widget name="bt_9" position="930,585" size="35,25" zPosition="2" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_9.png" alphatest="on" />
-	<widget name="bt_menu" position="930,585" size="35,25" zPosition="1" pixmap="/usr/share/enigma2/AtileHD/skin_default/buttons/key_menu.png" alphatest="on" />
+	<widget name="bt_4" position="930,585" size="35,25" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_4.png" alphatest="on" />
+	<widget name="bt_9" position="930,585" size="35,25" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_9.png" alphatest="on" />
+	<widget name="bt_menu" position="930,585" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_menu.png" alphatest="on" />
 	<widget name="text_4" position="965,585" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
 	<widget name="text_red" position="70,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#20b81c46" transparent="1" />
 	<widget name="text_green" position="365,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#20009f3c" transparent="1" />
