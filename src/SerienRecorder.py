@@ -4971,8 +4971,8 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		if int(count_lines) >= 1:
 			for line in data.splitlines():
 				infos = line.split('|')
-				if len(infos) == 3:
-					(name_Serie, year_Serie, id_Serie) = infos
+				if len(infos) == 4:
+					(name_Serie, year_Serie, id_Serie, temp) = infos
 					# encode utf-8
 					name_Serie = iso8859_Decode(name_Serie)
 					raw = re.findall('(.*?)(\[%s\])?\Z' % self.serien_name, name_Serie, re.I | re.S)
