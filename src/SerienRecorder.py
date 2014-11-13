@@ -351,16 +351,18 @@ def convertWunschlisteTimetoUnixtime(rawTime):
 def getNextDayUnixtime(min, hour, day, month):
 	now = datetime.datetime.now()
 	if int(month) < now.month:
-		now.year += 1
-	date = datetime.datetime(int(now.year),int(month),int(day),int(hour),int(min))
+		date = datetime.datetime(int(now.year) + 1,int(month),int(day),int(hour),int(min))
+	else:
+		date = datetime.datetime(int(now.year),int(month),int(day),int(hour),int(min))
 	date += datetime.timedelta(days=1)
 	return date.strftime("%s")
 
 def getUnixTimeAll(min, hour, day, month):
 	now = datetime.datetime.now()
 	if int(month) < now.month:
-		now.year += 1
-	return datetime.datetime(now.year, int(month), int(day), int(hour), int(min)).strftime("%s")
+		return datetime.datetime(int(now.year) + 1, int(month), int(day), int(hour), int(min)).strftime("%s")
+	else:
+		return datetime.datetime(int(now.year), int(month), int(day), int(hour), int(min)).strftime("%s")
 	
 def getUnixTimeWithDayOffset(std, min, AddDays):
 	now = datetime.datetime.now()
@@ -5440,8 +5442,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				(start_hour, start_min) = l[2].split('.')
 				now = datetime.datetime.now()
 				if int(month) < now.month:
-					now.year += 1
-				return time.mktime((now.year, int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
+					return time.mktime((int(now.year) + 1, int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
+				else:
+					return time.mktime((int(now.year), int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
 			raw.sort(key=y)
 		
 			for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
