@@ -4456,7 +4456,7 @@ class serienRecMarker(Screen, HelpableScreen):
 			id = re.findall('epg_print.pl\?s=([0-9]+)', serien_url)
 			if id:
 				#self.session.openWithCallback(self.callTimerAdded, serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s/episoden" % id[0], self.serien_nameCover)
-				self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s/episoden" % id[0], self.serien_nameCover)
+				self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s" % id[0], self.serien_nameCover)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -4823,7 +4823,7 @@ class serienRecMarker(Screen, HelpableScreen):
 
 			serien_name = self['config'].getCurrent()[0][0]
 			serien_url = self['config'].getCurrent()[0][1]
-
+			
 			print "teestt"
 			#serien_url = getUrl(serien_url.replace('epg_print.pl?s=',''))
 			print serien_url
@@ -5331,7 +5331,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (Serie.lower(),))
 		row = cCursor.fetchone()	
 		if not row:
-			Url = 'http://www.wunschliste.de/epg_print.pl?s='+str(Id)
+			Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(Id)
 			if config.plugins.serienRec.defaultStaffel.value == "0":
 				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (Serie, Url))
 			else:
@@ -6015,11 +6015,17 @@ class serienRecBaseButtons():
 
 	def serieInfo(self):
 		if self.loading:
+			writeTestLog("loading")
 			return
 
-		id = re.findall('epg_print.pl\?s=([0-9]+)', self.serie_url)
-		if id:
-			self.session.open(serienRecShowInfo, self.serien_name, "http://www.wunschliste.de/%s" % id[0])
+		#id = re.findall('epg_print.pl\?s=([0-9]+)', self.serie_url)
+		writeTestLog(self.serien_name)
+		writeTestLog(self.serie_url)
+		#writeTestLog(id)
+		#if id:
+		#	writeTestLog("http://www.wunschliste.de/%s" % id[0])
+		#	self.session.open(serienRecShowInfo, self.serien_name, "http://www.wunschliste.de/%s" % id[0])
+		self.session.open(serienRecShowInfo, self.serien_name, self.serie_url)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -6116,7 +6122,7 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 		self.serien_cover = serien_cover
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok"    : (self.keyOK, _("umschalten ausgewählter Sendetermin aktiviert/deaktiviert")),
+			"ok"    : (self.keyOK, _("Informationen zur ausgewählten Episode anzeigen")),
 			"cancel": (self.keyCancel, _("zurück zur Serien-Marker-Ansicht")),
 			"left"  : (self.keyLeft, _("zur vorherigen Seite blättern")),
 			"right" : (self.keyRight, _("zur nächsten Seite blättern")),
@@ -6213,7 +6219,7 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 		self['title'].setText(_("Suche Episoden ' %s '") % self.serien_name)
 		print self.serie_url
 
-		getPage(self.serie_url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
+		getPage("%s/episoden" % self.serie_url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
 
 	def resultsEpisodes(self, data):
 		parsingOK = False
@@ -6295,6 +6301,7 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 		sindex = self['config'].getSelectedIndex()
 		if len(self.episodes_list) != 0:
 			if self.episodes_list[sindex][3]:
+				writeTestLog("http://www.wunschliste.de/%s" % self.episodes_list[sindex][3])
 				self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.episodes_list[sindex][4], "http://www.wunschliste.de/%s" % self.episodes_list[sindex][3])
 
 	def __onClose(self):
@@ -10372,7 +10379,8 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 
 	def parseData(self, data):
 		infoText = ""
-		info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?<p class="clear mb4"></p>.(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="small credits">(.*?)</p>(.*?))?<div class="clear"></div>', data, re.S)
+		#info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?<p class="clear mb4"></p>.(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="small credits">(.*?)</p>(.*?))?<div class="clear"></div>', data, re.S)
+		info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?<p class="clear mb4"></p>.(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="credits">(.*?)</p>(.*?))?<div class="clear"></div>', data, re.S)
 		if info:
 			for transmission,otransmission,ranking,description,credit,cast in info:
 				if transmission:
@@ -10390,6 +10398,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 					infoText += credit
 				infoText += "\n"
 				if cast:
+					cast = cast.split('<p><a href="',1)[0]
 					cast = re.sub('<p>|</p>', '', cast)
 					cast = re.sub('<(?:a|span).*?>.*?</(?:a|span)>', '', cast)
 					infoText += cast
