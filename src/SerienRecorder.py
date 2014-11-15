@@ -11031,6 +11031,8 @@ class serienRecMain(Screen, HelpableScreen):
 		if answer:
 			dayCache.clear()
 			
+		self.setHeadline()
+
 		date = datetime.datetime.now()
 		date += datetime.timedelta(days=self.page)
 		key = time.strftime('%d.%m.%Y', date.timetuple())
@@ -11042,7 +11044,6 @@ class serienRecMain(Screen, HelpableScreen):
 			self.loading = True
 			url = "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(self.page))
 			print url
-			self.setHeadline()
 
 			c1 = re.compile('s_regional\[.*?\]=(.*?);\ns_paytv\[.*?\]=(.*?);\ns_neu\[.*?\]=(.*?);\ns_prime\[.*?\]=(.*?);.*?<td rowspan="3" class="zeit">(.*?) Uhr</td>.*?<a href="(/serie/.*?)" class=".*?">(.*?)</a>.*?href="http://www.wunschliste.de/kalender.pl\?s=(.*?)\&.*?alt="(.*?)".*?<tr><td rowspan="2"></td><td>(.*?)<a href=".*?" target="_new">(.*?)</a>', re.S)
 			c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
