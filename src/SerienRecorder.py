@@ -6015,16 +6015,8 @@ class serienRecBaseButtons():
 
 	def serieInfo(self):
 		if self.loading:
-			writeTestLog("loading")
 			return
 
-		#id = re.findall('epg_print.pl\?s=([0-9]+)', self.serie_url)
-		writeTestLog(self.serien_name)
-		writeTestLog(self.serie_url)
-		#writeTestLog(id)
-		#if id:
-		#	writeTestLog("http://www.wunschliste.de/%s" % id[0])
-		#	self.session.open(serienRecShowInfo, self.serien_name, "http://www.wunschliste.de/%s" % id[0])
 		self.session.open(serienRecShowInfo, self.serien_name, self.serie_url)
 
 	def showConflicts(self):
@@ -6301,7 +6293,6 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 		sindex = self['config'].getSelectedIndex()
 		if len(self.episodes_list) != 0:
 			if self.episodes_list[sindex][3]:
-				writeTestLog("http://www.wunschliste.de/%s" % self.episodes_list[sindex][3])
 				self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.episodes_list[sindex][4], "http://www.wunschliste.de/%s" % self.episodes_list[sindex][3])
 
 	def __onClose(self):
