@@ -152,8 +152,8 @@ def ReadConfigFile():
 	try:
 		t = list(os.walk("%simages" % serienRecMainPath))
 		for x in t[0][1]:
-			#if x not in ("Skin2", "AtileHD"):
-			choices.append((x, x))
+			if x not in ("sender", "Original"):
+				choices.append((x, x))
 	except:
 		pass
 	config.plugins.serienRec.piconPath = ConfigSelection(choices = choices, default="Original") 
@@ -6881,6 +6881,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 		self.setupModified = False
 		self.SkinType = config.plugins.serienRec.SkinType.value
+		self.piconPath = config.plugins.serienRec.piconPath.value
 		
 		self.__C_JUSTPLAY__ = 0
 		self.__C_ZAPBEFORERECORD__ = 1
@@ -7628,11 +7629,25 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.databasePath.save()
 		configfile.save()
 
-		if os.path.exists('%simages/sender' % serienRecMainPath):
-			if os.path.islink('%simages/sender' % serienRecMainPath):
-				os.unlink('%simages/sender' % serienRecMainPath)
-		os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
-
+		if self.piconPath != config.plugins.serienRec.piconPath.value:
+			if os.path.exists('%simages/sender' % serienRecMainPath):
+				if os.path.islink('%simages/sender' % serienRecMainPath):
+					os.unlink('%simages/sender' % serienRecMainPath)
+				else:
+					try:
+						shutil.rmtree('%simages/sender' % serienRecMainPath)
+					except:
+						try:
+							shutil.move('%simages/sender' % serienRecMainPath, '%simages/sender_old' % serienRecMainPath)
+							shutil.rmtree('%simages/sender_old' % serienRecMainPath, True)
+						except:
+							pass
+							
+			try:
+				os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
+			except:
+				pass
+			
 		if self.SkinType != config.plugins.serienRec.SkinType.value:
 			SelectSkin()
 			setSkinProperties(self)
@@ -10717,10 +10732,8 @@ class serienRecMain(Screen, HelpableScreen):
 		if not initDB():
 			self.close()
 
-		if os.path.exists('%simages/sender' % serienRecMainPath):
-			if os.path.islink('%simages/sender' % serienRecMainPath):
-				os.unlink('%simages/sender' % serienRecMainPath)
-		os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
+		if not os.path.exists('%simages/sender' % serienRecMainPath):
+			os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
 		
 		self.setupSkin()
 			
