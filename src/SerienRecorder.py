@@ -473,9 +473,10 @@ def getCover(self, serien_name, id):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif id:
 		url = "http://www.wunschliste.de%s/links" % id
-		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self)
+		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self)
 
 def getCoverDataError(error, self):
+	self.ErrorMsg = error
 	if self is not None: 
 		#self['title'].setText(_("Cover-Suche auf 'Wunschliste.de' erfolglos"))
 		#self['title'].instance.setForegroundColor(parseColor("white"))
@@ -490,7 +491,7 @@ def getCoverDataError(error, self):
 def getImdblink(data, self, serien_nameCover):
 	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 	if ilink:
-		getPage(ilink[0], headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self)
+		getPage(ilink[0], agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self)
 	else:
 		print "[Serien Recorder] es wurde kein imdb-link für ein cover gefunden."
 		
@@ -2439,7 +2440,7 @@ class serienRecCheckForRecording():
 		
 	def readWebpageForNewStaffel(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'})
 		
 	def parseWebpageForNewStaffel(self, data, daypage, c1, c2, c3):
 		daylist = []
@@ -2930,7 +2931,7 @@ class serienRecCheckForRecording():
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, timeout=20, headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, timeout=20, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'})
 
 	def parseWebpage(self, data, c1, c2, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time):
 		self.count_url += 1
@@ -5273,7 +5274,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self['title'].setText(_("Suche nach ' %s '") % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("white"))
 		url = "http://www.wunschliste.de/ajax/search_dropdown.pl?%s" % urlencode({'q': self.serien_name})
-		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.results).addErrback(self.dataError)
+		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.results).addErrback(self.dataError)
 
 	def results(self, data):
 		self.serienlist = []
@@ -5600,7 +5601,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche ' %s '") % self.serien_name)
 		print self.serie_url
-		getPage(self.serie_url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
+		getPage(self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
 
 	def resultsTermine(self, data, serien_name):
 		parsingOK = False
@@ -5987,7 +5988,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche ' %s '") % self.serien_name)
 		print self.serie_url
-		getPage(self.serie_url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
+		getPage(self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
 
 	def __onClose(self):
 		if self.displayTimer:
@@ -6211,7 +6212,7 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 		self['title'].setText(_("Suche Episoden ' %s '") % self.serien_name)
 		print self.serie_url
 
-		getPage("%s/episoden" % self.serie_url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
+		getPage("%s/episoden" % self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
 
 	def resultsEpisodes(self, data):
 		parsingOK = False
@@ -6535,7 +6536,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		print "[SerienRecorder] call webpage.."
 		self['title'].setText(_("Lade Web-Channels..."))
 		url = "http://www.wunschliste.de/updates/stationen"
-		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.createWebChannels).addErrback(self.dataError)
+		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.createWebChannels).addErrback(self.dataError)
 		
 	def createWebChannels(self, data):
 		print "[SerienRecorder] get webchannels.."
@@ -10174,7 +10175,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 				self.getData()
 				
 	def getData(self):
-		getPage(self.serieUrl, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 		showCover(serien_nameCover, self, serien_nameCover)
 
@@ -10379,7 +10380,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 				self.getData()
 
 	def getData(self):
-		getPage(self.serieUrl, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 		showCover(serien_nameCover, self, serien_nameCover)
 
@@ -10855,7 +10856,7 @@ class serienRecMain(Screen, HelpableScreen):
 		serien_id = self['config'].getCurrent()[0][14]
 		url = "http://www.wunschliste.de/%s/links" % serien_id
 		print url
-		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
+		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
 			
 	def getImdblink2(self, data):
 		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
@@ -11062,7 +11063,7 @@ class serienRecMain(Screen, HelpableScreen):
 			c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
 			c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
 
-			getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
+			getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
 
 	def parseWebpage(self, data, c1, c2, c3, useCache=False):
 		if useCache:
@@ -11552,6 +11553,7 @@ class serienRecMain(Screen, HelpableScreen):
 			self.modus = "list"
 
 	def dataError(self, error):
+		self.ErrorMsg = error
 		self['title'].setText(_("Suche auf 'Wunschliste.de' erfolglos"))
 		self['title'].instance.setForegroundColor(parseColor("white"))
 		writeLog(_("[Serien Recorder] Fehler bei: %s") % self.ErrorMsg, True)
