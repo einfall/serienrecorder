@@ -5268,38 +5268,17 @@ class serienRecAddSerie(Screen, HelpableScreen):
 
 			if result[1]:
 				self.searchSerie()
-				
+
 	def searchSerie(self):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche nach ' %s '") % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("white"))
-		url = "http://www.wunschliste.de/ajax/search_dropdown.pl?%s" % urlencode({'q': self.serien_name})
-		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.results).addErrback(self.dataError)
 
-	def results(self, data):
-		self.serienlist = []
-		count_lines = len(data.splitlines())
-		#first = False
-		#if count_lines == 1:
-		#	print "[Serien Recorder] only one hit for ' %s '" % self.serien_name
-		#	first = True
+		from SearchSerie import SearchSerie
+		SearchSerie(self.serien_name, self.results).request()
 
-		if int(count_lines) >= 1:
-			for line in data.splitlines():
-				infos = line.split('|',3)
-				if len(infos) == 4:
-					(name_Serie, year_Serie, id_Serie, unknown) = infos
-					# encode utf-8
-					name_Serie = iso8859_Decode(name_Serie)
-					raw = re.findall('(.*?)(\[%s\])?\Z' % self.serien_name, name_Serie, re.I | re.S)
-					if raw:
-						(name_Serie, x) = raw
-						self.serienlist.append((name_Serie[0], year_Serie, id_Serie))
-					else:
-						self.serienlist.append((name_Serie, year_Serie, id_Serie))
-		else:
-			print "[Serien Recorder] keine Sendetermine für ' %s ' gefunden." % self.serien_name
-
+	def results(self, serienlist):	
+		self.serienlist = serienlist
 		self.chooseMenuList.setList(map(self.buildList, self.serienlist))
 		self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(len(self.serienlist))))
 		self['title'].instance.setForegroundColor(parseColor("white"))
@@ -5594,67 +5573,48 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 			if result[1]:
 				self.searchSerie()
-				
-	def searchSerie(self):
+
+	def searchEvents(self):
 		if not self.serien_cover == "nix":
 			showCover(self.serien_cover, self, self.serien_cover)
-		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche ' %s '") % self.serien_name)
+		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		print self.serie_url
-		getPage(self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
+		
+		raw = re.findall(".*?(\d+)", self.serie_url)
+		serien_id = raw[0]
+		print serien_id
+		
+		from SearchEvents import SearchEvents
+		SearchEvents(self.serien_name, serien_id, self.resultsEvents).request()
 
-	def resultsTermine(self, data, serien_name):
-		parsingOK = False
+	def resultsEvents(self, sendetermine_list):
 		self.sendetermine_list = []
 
-		raw = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)x(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
-		#('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
-		
-		raw2 = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(.*?x))(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
-		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
-		if raw:
-			parsingOK = True
-
-		if parsingOK:
-			def y(l):
-				(day, month) = l[1].split('.')
-				(start_hour, start_min) = l[2].split('.')
-				now = datetime.datetime.now()
-				if int(month) < now.month:
-					return time.mktime((int(now.year) + 1, int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
+		for serien_name,sender,datum,startzeit,endzeit,staffel,episode,title,status in sendetermine_list:
+			if self.FilterEnabled:
+				# filter sender
+				cSender_list = checkSender(sender)
+				if len(cSender_list) == 0:
+					webChannel = sender
+					stbChannel = ""
+					altstbChannel = ""
 				else:
-					return time.mktime((int(now.year), int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
-			raw.sort(key=y)
-		
-			for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
-				# umlaute umwandeln
-				sender = iso8859_Decode(sender)
-				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
-				title = iso8859_Decode(title)
-				staffel = iso8859_Decode(staffel)
-
-				if self.FilterEnabled:
-					# filter sender
-					cSender_list = self.checkSender(sender)
-					if len(cSender_list) == 0:
-						webChannel = sender
-						stbChannel = ""
-						altstbChannel = ""
-					else:
-						(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
-
-					if stbChannel == "":
-						print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel)
-						continue
-						
-					if int(status) == 0:
-						print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel)
-						continue
-					
-				self.sendetermine_list.append([serien_name, sender, datum, startzeit, endzeit, staffel, str(episode).zfill(2), title, "0"])
-
-			self['text_green'].setText(_("Timer erstellen"))
+					(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
 			
+				if stbChannel == "":
+					print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (self.serien_name, webChannel)
+					continue
+					
+				if int(status) == 0:
+					print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (self.serien_name, webChannel)
+					continue
+				
+			self.sendetermine_list.append([serien_name, sender, datum, startzeit, endzeit, staffel, episode, title, status])
+
+		if len(self.sendetermine_list):
+			self['text_green'].setText(_("Timer erstellen"))
+
 		self.chooseMenuList.setList(map(self.buildList_termine, self.sendetermine_list))
 		self.loading = False
 		self['title'].setText(_("%s Sendetermine für ' %s ' gefunden. (%s)") % (str(len(self.sendetermine_list)), self.serien_name, self.title_txt))
@@ -6531,24 +6491,16 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		else:
 			print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
 		cCursor.close()
-		
+
 	def readWebChannels(self):
 		print "[SerienRecorder] call webpage.."
 		self['title'].setText(_("Lade Web-Channels..."))
-		url = "http://www.wunschliste.de/updates/stationen"
-		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.createWebChannels).addErrback(self.dataError)
-		
-	def createWebChannels(self, data):
-		print "[SerienRecorder] get webchannels.."
-		self['title'].setText(_("Lade Web-Channels..."))
-		stations = re.findall('<option value=".*?>(.*?)</option>', data, re.S)
-		if stations:
-			web_chlist = []
-			for station in stations:
-				if station != 'alle':
-					station = iso8859_Decode(station)
-					web_chlist.append((station.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')))
 
+		from WebChannels import WebChannels
+		WebChannels(self.createWebChannels).request()
+
+	def createWebChannels(self, web_chlist):
+		if web_chlist:
 			web_chlist.sort(key=lambda x: x.lower())
 			print web_chlist
 			self.serienRecChlist = []
@@ -11702,7 +11654,12 @@ def autostart(reason, **kwargs):
 				serienRecCheckForRecording(session, False)
 			else:
 				print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
-			
+
+		#API
+		from SerienRecorderResource import addWebInterfaceForDreamMultimedia
+		addWebInterfaceForDreamMultimedia(session)
+
+
 def main(session, **kwargs):
 	session.open(serienRecMain)
 	#print "open screen %s", config.plugins.serienRec.firstscreen.value
