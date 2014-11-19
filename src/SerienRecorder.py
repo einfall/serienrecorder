@@ -5428,7 +5428,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		self.sendetermine_list = []
 		self.loading = True
 		
-		self.onLayoutFinish.append(self.searchSerie)
+		self.onLayoutFinish.append(self.searchEvents)
 		self.onClose.append(self.__onClose)
 		self.onLayoutFinish.append(self.setSkinProperties)
 
