@@ -34,7 +34,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter, eConsoleAppContainer
 from Tools.Directories import pathExists, fileExists, SCOPE_SKIN_IMAGE, resolveFilename
-import sys, os, base64, re, time, shutil, datetime, codecs, urllib2
+import sys, os, base64, re, time, shutil, datetime, codecs, urllib2, random
 from twisted.web import client, error as weberror
 from twisted.internet import reactor, defer
 from urllib import urlencode
@@ -479,7 +479,7 @@ def getCover(self, serien_name, id):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif id:
 		url = "http://www.wunschliste.de%s/links" % id
-		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self)
+		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self)
 
 def getCoverDataError(error, self):
 	self.ErrorMsg = error
@@ -538,6 +538,23 @@ def showCover(data, self, serien_nameCover, force_show=True):
 					self['cover'].show()
 		else:
 			print("Coverfile not found: %s" % serien_nameCover)
+
+def getUserAgent():
+	userAgents = [
+		"Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; de) Presto/2.9.168 Version/11.52",
+	    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20120101 Firefox/29.0",
+	    "Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0",
+	    "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)",
+	    "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)",
+	    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
+	    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.67 Safari/537.36",
+	    "Mozilla/5.0 (compatible; Konqueror/4.5; FreeBSD) KHTML/4.5.4 (like Gecko)",
+	    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0"
+	]
+	today = datetime.date.today()
+	random.seed(today.toordinal())
+	return userAgents[random.randint(0, 8)]
+
 
 def setSkinProperties(self, isLayoutFinshed=True):
 	global longButtonText
@@ -2446,7 +2463,7 @@ class serienRecCheckForRecording():
 		
 	def readWebpageForNewStaffel(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
 		
 	def parseWebpageForNewStaffel(self, data, daypage, c1, c2, c3):
 		daylist = []
@@ -2937,7 +2954,7 @@ class serienRecCheckForRecording():
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, timeout=20, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
 
 	def parseWebpage(self, data, c1, c2, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time):
 		self.count_url += 1
@@ -5954,7 +5971,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche ' %s '") % self.serien_name)
 		print self.serie_url
-		getPage(self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
+		getPage(self.serie_url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsTermine, self.serien_name).addErrback(self.dataError)
 
 	def __onClose(self):
 		if self.displayTimer:
@@ -6178,7 +6195,7 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 		self['title'].setText(_("Suche Episoden ' %s '") % self.serien_name)
 		print self.serie_url
 
-		getPage("%s/episoden" % self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
+		getPage("%s/episoden" % self.serie_url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
 
 	def resultsEpisodes(self, data):
 		parsingOK = False
@@ -10133,7 +10150,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 				self.getData()
 				
 	def getData(self):
-		getPage(self.serieUrl, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 		showCover(serien_nameCover, self, serien_nameCover)
 
@@ -10338,7 +10355,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 				self.getData()
 
 	def getData(self):
-		getPage(self.serieUrl, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 		showCover(serien_nameCover, self, serien_nameCover)
 
@@ -10814,7 +10831,7 @@ class serienRecMain(Screen, HelpableScreen):
 		serien_id = self['config'].getCurrent()[0][14]
 		url = "http://www.wunschliste.de/%s/links" % serien_id
 		print url
-		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
+		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
 			
 	def getImdblink2(self, data):
 		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
@@ -11021,7 +11038,7 @@ class serienRecMain(Screen, HelpableScreen):
 			c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
 			c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
 
-			getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
+			getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
 
 	def parseWebpage(self, data, c1, c2, c3, useCache=False):
 		if useCache:
