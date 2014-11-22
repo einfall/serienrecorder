@@ -245,7 +245,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.10"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.11"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
