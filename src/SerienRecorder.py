@@ -251,7 +251,13 @@ def ReadConfigFile():
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
 	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
 	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.0"))
-	
+
+	# Override settings for maxWebRequests and AutoCheckIn due to restrictions of Wunschliste.de
+	config.plugins.serienRec.maxWebRequests.setValue(1)
+	config.plugins.serienRec.save()
+	config.plugins.serienRec.updateInterval.setValue(24)
+	config.plugins.serienRec.updateInterval.save()
+
 	SelectSkin()
 ReadConfigFile()
 
@@ -7089,9 +7095,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		                                          config.plugins.serienRec.seasonsubdirnumerlength,
 		                                          config.plugins.serienRec.coverPath,
 		                                          config.plugins.serienRec.BackupPath,
-												  config.plugins.serienRec.updateInterval,
+												  #config.plugins.serienRec.updateInterval,
 												  config.plugins.serienRec.deltime,
-												  config.plugins.serienRec.maxWebRequests,
+												  #config.plugins.serienRec.maxWebRequests,
 												  config.plugins.serienRec.checkfordays,
 												  config.plugins.serienRec.globalFromTime,
 												  config.plugins.serienRec.globalToTime,
@@ -7113,9 +7119,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		                                          config.plugins.serienRec.seasonsubdirnumerlength,
 		                                          config.plugins.serienRec.coverPath,
 		                                          config.plugins.serienRec.BackupPath,
-												  config.plugins.serienRec.updateInterval,
+												  #config.plugins.serienRec.updateInterval,
 												  config.plugins.serienRec.deltime,
-												  config.plugins.serienRec.maxWebRequests,
+												  #config.plugins.serienRec.maxWebRequests,
 												  config.plugins.serienRec.checkfordays,
 												  config.plugins.serienRec.globalFromTime,
 												  config.plugins.serienRec.globalToTime,
@@ -7141,7 +7147,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.seasonsubdir.value:
 			self.list.append(getConfigListEntry(_("    Mindestlänge der Staffelnummer im Verzeichnisnamen:"), config.plugins.serienRec.seasonsubdirnumerlength))
 			self.list.append(getConfigListEntry(_("    Füllzeichen für Staffelnummer im Verzeichnisnamen:"), config.plugins.serienRec.seasonsubdirfillchar))
-		self.list.append(getConfigListEntry(_("Anzahl gleichzeitiger Web-Anfragen:"), config.plugins.serienRec.maxWebRequests))
+		#self.list.append(getConfigListEntry(_("Anzahl gleichzeitiger Web-Anfragen:"), config.plugins.serienRec.maxWebRequests))
 		self.list.append(getConfigListEntry(_("Automatisches Plugin-Update:"), config.plugins.serienRec.Autoupdate))
 		self.list.append(getConfigListEntry(_("Speicherort der Datenbank:"), config.plugins.serienRec.databasePath))
 		self.list.append(getConfigListEntry(_("Speicherort der Cover:"), config.plugins.serienRec.coverPath))
@@ -7152,9 +7158,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------")))
 		#self.list.append(getConfigListEntry(_("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):"), config.plugins.serienRec.updateInterval)) #3600000
-		self.list.append(getConfigListEntry(_("Intervall für autom. Suchlauf (Std.) (00 = keiner, 24 = nach Uhrzeit):"), config.plugins.serienRec.updateInterval)) #3600000
+		#self.list.append(getConfigListEntry(_("Intervall für autom. Suchlauf (Std.) (00 = keiner, 24 = nach Uhrzeit):"), config.plugins.serienRec.updateInterval)) #3600000
 		if config.plugins.serienRec.updateInterval.value == 24:
-			self.list.append(getConfigListEntry(_("    Uhrzeit für automatischen Suchlauf (nur wenn Intervall = 24):"), config.plugins.serienRec.deltime))
+			self.list.append(getConfigListEntry(_("Uhrzeit für automatischen Suchlauf:"), config.plugins.serienRec.deltime))
 		self.list.append(getConfigListEntry(_("Timer für X Tage erstellen:"), config.plugins.serienRec.checkfordays))
 		self.list.append(getConfigListEntry(_("Früheste Zeit für Timer:"), config.plugins.serienRec.globalFromTime))
 		self.list.append(getConfigListEntry(_("Späteste Zeit für Timer:"), config.plugins.serienRec.globalToTime))
@@ -7328,8 +7334,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.seasonsubdirnumerlength : (_("Die Anzahl der Stellen, auf die die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt wird.")),
 			config.plugins.serienRec.seasonsubdirfillchar :    (_("Auswahl, ob die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt werden.")),
 			config.plugins.serienRec.deltime :                 (_("Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:%s Uhr).")) % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2)),
-			config.plugins.serienRec.maxWebRequests :          (_("Die maximale Anzahl der gleichzeitigen Suchanfragen auf 'wunschliste.de'.\n"
-			                                                    "ACHTUING: Eine höhere Anzahl kann den Timer-Suchlauf beschleunigen, kann bei langsamer Internet-Verbindung aber auch zu Problemen führen!!")),
+			#config.plugins.serienRec.maxWebRequests :          (_("Die maximale Anzahl der gleichzeitigen Suchanfragen auf 'wunschliste.de'.\n"
+			#                                                    "ACHTUING: Eine höhere Anzahl kann den Timer-Suchlauf beschleunigen, kann bei langsamer Internet-Verbindung aber auch zu Problemen führen!!")),
 			config.plugins.serienRec.Autoupdate :              (_("Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht.")),
 			config.plugins.serienRec.databasePath :            (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.")),
 			config.plugins.serienRec.AutoBackup :              (_("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
@@ -7436,27 +7442,27 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.showAllButtons :          (_("Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt.")),
 		}			
 				
-		if config.plugins.serienRec.updateInterval.value == 0:
-			self.HilfeTexte.update({
-				config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
-															"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
-															"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit.\n"
-															"Bei jeder anderen Einstellung in den eingestellten Intervallen."))
-			})
-		elif config.plugins.serienRec.updateInterval.value == 24:
-			self.HilfeTexte.update({
-				config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
-															"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
-															"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit (%s:%s Uhr).\n"
-															"Bei jeder anderen Einstellung in den eingestellten Intervallen.")) % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2))
-			})
-		else:
-			self.HilfeTexte.update({
-				config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
-															"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
-															"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit.\n"
-															"Bei jeder anderen Einstellung in den eingestellten Intervallen (alle %s Stunden).")) % str(config.plugins.serienRec.updateInterval.value)
-			})
+		# if config.plugins.serienRec.updateInterval.value == 0:
+		# 	self.HilfeTexte.update({
+		# 		config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
+		# 													"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
+		# 													"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit.\n"
+		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen."))
+		# 	})
+		# elif config.plugins.serienRec.updateInterval.value == 24:
+		# 	self.HilfeTexte.update({
+		# 		config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
+		# 													"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
+		# 													"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit (%s:%s Uhr).\n"
+		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen.")) % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2))
+		# 	})
+		# else:
+		# 	self.HilfeTexte.update({
+		# 		config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
+		# 													"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
+		# 													"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit.\n"
+		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen (alle %s Stunden).")) % str(config.plugins.serienRec.updateInterval.value)
+		# 	})
 			
 		if config.plugins.serienRec.forceRecording.value:
 			self.HilfeTexte.update({
