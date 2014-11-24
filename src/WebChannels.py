@@ -48,7 +48,7 @@ class WebChannels(object):
 			for station in stations:
 				if station != 'alle':
 					station = iso8859_Decode(station)
-					web_chlist.append((station.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')))
+					web_chlist.append((station.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').replace('&#x1f512;','')))
 
 		if (self.user_callback):
 			self.user_callback(web_chlist)
