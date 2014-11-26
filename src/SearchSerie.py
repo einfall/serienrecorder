@@ -10,6 +10,8 @@ import socket
 from urllib import urlencode
 from urllib2 import urlopen, Request, URLError
 
+from SerienRecorder import getUserAgent
+
 
 class SearchSerie(object):
 	def __init__(self, serien_name, user_callback=None, user_errback=None):
@@ -20,7 +22,8 @@ class SearchSerie(object):
 	def	request(self):
 		print "[SerienRecorder] request ' %s '" % self.serien_name
 		url = "http://www.wunschliste.de/ajax/search_dropdown.pl?%s" % urlencode( { 'q': re.sub("[^a-zA-Z0-9-*]", " ", self.serien_name) } )
-		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
+		#getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
+		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
 		print "[SerienRecorder] request_and_return ' %s '" % self.serien_name

@@ -29,12 +29,12 @@ from Screens.HelpMenu import HelpableScreen
 from Screens.InputBox import InputBox
 from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
-from Screens.Standby import TryQuitMainloop
+from Screens.Standby import TryQuitMainloop, Standby
 from Screens.VirtualKeyBoard import VirtualKeyBoard
 
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter, eConsoleAppContainer
 from Tools.Directories import pathExists, fileExists, SCOPE_SKIN_IMAGE, resolveFilename
-import sys, os, base64, re, time, shutil, datetime, codecs, urllib2
+import sys, os, base64, re, time, shutil, datetime, codecs, urllib2, random
 from twisted.web import client, error as weberror
 from twisted.internet import reactor, defer
 from urllib import urlencode
@@ -56,8 +56,9 @@ from Components.TimerSanityCheck import TimerSanityCheck
 from enigma import eEPGCache, iServiceInformation
 
 from Tools import Notifications
-#from Components.Renderer.RunningText import RunningText
+
 import sqlite3
+import cPickle as pickle
 
 colorRed    = 0xf23d21
 colorGreen  = 0x389416
@@ -187,7 +188,8 @@ def ReadConfigFile():
 	config.plugins.serienRec.max_season = ConfigInteger(30, (1,999))
 	config.plugins.serienRec.Autoupdate = ConfigYesNo(default = True)
 	config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
-	config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
+	#config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
+	config.plugins.serienRec.afterAutocheck = ConfigSelection(choices = [("0", _("keine")), ("1", _("in Standby gehen")), ("2", _("in Deep-Standby gehen"))], default = "0")
 	config.plugins.serienRec.DSBTimeout = ConfigInteger(20, (0,999))
 	config.plugins.serienRec.showNotification = ConfigSelection(choices = [("0", _("keine")), ("1", _("bei Suchlauf-Start")), ("2", _("bei Suchlauf-Ende")), ("3", _("bei Suchlauf-Start und Ende"))], default = "1")
 	config.plugins.serienRec.LogFilePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
@@ -246,7 +248,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.12"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.13"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -288,6 +290,7 @@ coverToShow = None
 runAutocheckAtExit = False
 
 dayCache = {}
+termineCache = {}
 
 # init EPGTranslator
 if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/EPGTranslator/plugin.pyo"):
@@ -486,7 +489,7 @@ def getCover(self, serien_name, id):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif id:
 		url = "http://www.wunschliste.de%s/links" % id
-		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self)
 
 def getCoverDataError(error, self, serien_nameCover):
 	if self is not None: 
@@ -545,6 +548,23 @@ def showCover(data, self, serien_nameCover, force_show=True):
 					self['cover'].show()
 		else:
 			print("Coverfile not found: %s" % serien_nameCover)
+
+def getUserAgent():
+	userAgents = [
+		"Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; de) Presto/2.9.168 Version/11.52",
+	    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20120101 Firefox/29.0",
+	    "Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0",
+	    "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)",
+	    "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)",
+	    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
+	    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.67 Safari/537.36",
+	    "Mozilla/5.0 (compatible; Konqueror/4.5; FreeBSD) KHTML/4.5.4 (like Gecko)",
+	    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0"
+	]
+	today = datetime.date.today()
+	random.seed(today.toordinal())
+	return userAgents[random.randint(0, 8)]
+
 
 def setSkinProperties(self, isLayoutFinshed=True):
 	global longButtonText
@@ -1941,51 +1961,61 @@ def getSTBType():
 	return STBType
 		
 def writePlanerData():
-	return
 	if not os.path.exists("%stmp/" % serienRecMainPath):
 		try:
 			os.makedirs("%stmp/" % serienRecMainPath)
 		except:
 			pass
 	if os.path.isdir("%stmp/" % serienRecMainPath):
-		f = codecs.open("%stmp/planer" % serienRecMainPath, "wb", encoding="utf-8")
-		for key in dayCache:
-			l=[]
-			(a,b)=dayCache[key]
-			for each in b:
-				s="("
-				for e in each:
-					s=u"%s'%s', " % (s,str(e).decode("utf-8"))
-				l.append(u"%s)" % s)
-			f.write("'%s': (%s, [%s])\n" % (key, a, ', '.join(l)))				
+		f = open("%stmp/planer_%s" % (serienRecMainPath, config.plugins.serienRec.screeplaner.value), "wb")
+		p = pickle.Pickler(f, 2)
+		global dayCache
+		p.dump(dayCache)
+		f.close()
+
+def writeTermineData(data=None):
+	if not os.path.exists("%stmp/" % serienRecMainPath):
+		try:
+			os.makedirs("%stmp/" % serienRecMainPath)
+		except:
+			pass
+	if os.path.isdir("%stmp/" % serienRecMainPath):
+		f = open("%stmp/termine" % serienRecMainPath, "wb")
+		p = pickle.Pickler(f, 2)
+		if data is None: 
+			global termineCache
+			data = termineCache
+		p.dump(data)
 		f.close()
 
 def readPlanerData():
-	return
 	global dayCache
 	dayCache.clear()
 	
-	planerFile = "%stmp/planer" % serienRecMainPath
+	planerFile = "%stmp/planer_%s" % (serienRecMainPath, config.plugins.serienRec.screeplaner.value)
 	if fileExists(planerFile):
-		f = codecs.open(planerFile, "r", encoding="utf-8")
-		for s in f.readlines():
-			try:
-				r = re.findall("'(.*?)':.*?\(\['(.*?)'\],.*?\[(.*?)\]\).*?", s, re.S)
-				for each in r:
-					r1 = re.findall("\('(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)',.*?'(.*?)'.*?\)", each[2], re.S)
-					r2=[]
-					for e in r1:
-						r3=[]
-						for x in e:
-							x = unicode(x, 'ISO-8859-1')
-							x = x.encode("utf-8")
-							if x == 'False': x = False	
-							if x == 'True': x = True
-							r3.append(x)
-						r2.append(tuple(r3))
-					dayCache.update({each[0]: ([each[1],], r2)})
-			except:
-				pass
+		f = open(planerFile, "r")
+		u = pickle.Unpickler(f)
+		dayCache = u.load()
+		f.close()
+
+		heute = time.strptime(time.strftime('%d.%m.%Y', datetime.datetime.now().timetuple()), '%d.%m.%Y')
+		l = []
+		for key in dayCache: 
+			if time.strptime(key, '%d.%m.%Y') < heute: l.append(key)
+		for key in l:
+			del dayCache[key]
+
+
+def readTermineData():
+	global termineCache
+	termineCache.clear()
+	
+	termineFile = "%stmp/termine" % serienRecMainPath
+	if fileExists(termineFile):
+		f = open(termineFile, "r")
+		u = pickle.Unpickler(f)
+		termineCache = u.load()
 		f.close()
 
 
@@ -2219,7 +2249,6 @@ class serienRecCheckForRecording():
 		serienRecCheckForRecording.instance = self
 		self.session = session
 		self.manuell = manuell
-		self.daylist = []
 		self.page = 1
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
@@ -2474,7 +2503,7 @@ class serienRecCheckForRecording():
 		else:
 			if not self.manuell:
 				global dayCache
-				dayCache = {}
+				dayCache.clear()
 			self.startCheck3()
 
 	def startCheck2(self):
@@ -2485,7 +2514,7 @@ class serienRecCheckForRecording():
 			cTmp.close()
 
 		global dayCache
-		dayCache = {}
+		dayCache.clear()
 
 		if str(config.plugins.serienRec.maxWebRequests.value).isdigit():
 			ds = defer.DeferredSemaphore(tokens=int(config.plugins.serienRec.maxWebRequests.value))
@@ -2501,10 +2530,10 @@ class serienRecCheckForRecording():
 		
 	def readWebpageForNewStaffel(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
 		
 	def parseWebpageForNewStaffel(self, data, daypage, c1, c2, c3):
-		daylist = []
+		daylist = [[],[],[],[]]
 
 		# read channels
 		self.senderListe = {}
@@ -2690,19 +2719,15 @@ class serienRecCheckForRecording():
 							
 					title = "%s - %s" % (seasonEpisodeString, title)
 
-					if int(config.plugins.serienRec.screenmode.value) == 0:
-						daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					elif int(config.plugins.serienRec.screenmode.value) == 1:
-						if int(neu) == 1:
-							daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					elif int(config.plugins.serienRec.screenmode.value) == 2:
-						if len(cSender_list) != 0:
-							(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
-							if int(status) == 1:
-								daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					elif int(config.plugins.serienRec.screenmode.value) == 3:
-						if re.search('01', episode, re.S):
-							daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					daylist[0].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					if int(neu) == 1:
+						daylist[1].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					if len(cSender_list) != 0:
+						(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
+						if int(status) == 1:
+							daylist[2].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					if re.search('01', episode, re.S):
+						daylist[3].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 
 		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
 			if head_datum:
@@ -2714,6 +2739,9 @@ class serienRecCheckForRecording():
 				
 							
 	def createNewMarker(self, result=True):
+		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
+			writePlanerData()
+			
 		if (config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value):
 			cCursor = dbSerRec.cursor()
 			cCursor.execute("SELECT Serie, Staffel, StaffelStart FROM NeuerStaffelbeginn WHERE CreationFlag>0 ORDER BY UTCStaffelStart")
@@ -2960,6 +2988,9 @@ class serienRecCheckForRecording():
 		dbTmp.commit()
 		cTmp.close()
 		
+		global termineCache
+		termineCache.clear()
+			
 		# read channels
 		self.senderListe = {}
 		for s in self.readSenderListe():
@@ -2993,7 +3024,7 @@ class serienRecCheckForRecording():
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, timeout=20, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
 
 	def parseWebpage(self, data, c1, c2, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time):
 		self.count_url += 1
@@ -3001,11 +3032,15 @@ class serienRecCheckForRecording():
 		raw = c1.findall(data)
 		raw2 = c2.findall(data)
 		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
+
+		global termineCache
+		termineCache.update({serien_name:raw})
+
 		# check for parsing error
 		if not raw:
 			# parsing error -> nothing to do
 			return
-			
+		
 		(fromTime, toTime) = getTimeSpan(serien_name)
 		if self.NoOfRecords < AnzahlAufnahmen:
 			self.NoOfRecords = AnzahlAufnahmen
@@ -3224,9 +3259,9 @@ class serienRecCheckForRecording():
 		cCursor.close()
 		#dbTmp.close()
 
-		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
-			writePlanerData()
-				
+		if config.plugins.serienRec.planerCacheEnabled.value:
+			writeTermineData()
+			
 		# Statistik
 		self.speedEndTime = time.clock()
 		speedTime = (self.speedEndTime-self.speedStartTime)
@@ -3255,19 +3290,23 @@ class serienRecCheckForRecording():
 		autoCheckFinished = True
 
 		# in den deep-standby fahren.
-		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.afterAutocheck.value and not self.manuell:
+		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
 			if config.plugins.serienRec.DSBTimeout.value > 0:
-				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in Deep-Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
 			else:
 				self.gotoDeepStandby(True)
-				
 		return result
 				
 	def gotoDeepStandby(self, answer):
 		if answer:
-			print "[Serien Recorder] gehe in Deep-Standby"
-			writeLog(_("[Serien Recorder] gehe in Deep-Standby"))
-			self.session.open(TryQuitMainloop, 1)
+			if config.plugins.serienRec.afterAutocheck.value == "2":
+				print "[Serien Recorder] gehe in Deep-Standby"
+				writeLog(_("[Serien Recorder] gehe in Deep-Standby"))
+				self.session.open(TryQuitMainloop, 1)
+			else:
+				print "[Serien Recorder] gehe in Standby"
+				writeLog(_("[Serien Recorder] gehe in Standby"))
+				Notifications.AddNotification(Standby)
 
 	def searchTimer(self, NoOfRecords):
 		if NoOfRecords:
@@ -3696,13 +3735,13 @@ class serienRecCheckForRecording():
 		autoCheckFinished = True
 		
 		# in den deep-standby fahren.
-		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.afterAutocheck.value and not self.manuell:
+		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
 			if config.plugins.serienRec.DSBTimeout.value > 0:
-				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in Deep-Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
 			else:
 				self.gotoDeepStandby(True)
 		self.close()
-
+		
 	def checkError(self, error):
 		print "[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)" % error
 		writeLog(_("[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)") % error, True)
@@ -3714,9 +3753,9 @@ class serienRecCheckForRecording():
 		autoCheckFinished = True
 		
 		# in den deep-standby fahren.
-		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.afterAutocheck.value and not self.manuell:
+		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
 			if config.plugins.serienRec.DSBTimeout.value > 0:
-				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in Deep-Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
 			else:
 				self.gotoDeepStandby(True)
 		self.close()
@@ -5489,6 +5528,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		}, 0)
 
 		self.FilterEnabled = True
+		self.title_txt = _("gefiltert")
+		
 		self.changesMade = False
 		
 		self.setupSkin()
@@ -5641,21 +5682,27 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					serienRecCheckForRecording(self.session, False)
 
 			if result[1]:
-				self.searchSerie()
+				self.searchEvents()
 
 	def searchEvents(self):
-		if not self.serien_cover == "nix":
-			showCover(self.serien_cover, self, self.serien_cover)
-		self['title'].setText(_("Suche ' %s '") % self.serien_name)
-		print "[SerienRecorder] suche ' %s '" % self.serien_name
+		global termineCache
+		if self.serien_name in termineCache:
+			self['title'].setText(_("Lade ' %s '") % self.serien_name)
+			print "[SerienRecorder] lade ' %s '" % self.serien_name
+		else:
+			self['title'].setText(_("Suche ' %s '") % self.serien_name)
+			print "[SerienRecorder] suche ' %s '" % self.serien_name
 		print self.serie_url
 		
+		if not self.serien_cover == "nix" and config.plugins.serienRec.showCover.value:
+			showCover(self.serien_cover, self, self.serien_cover)
+			
 		raw = re.findall(".*?(\d+)", self.serie_url)
 		serien_id = raw[0]
 		print serien_id
 		
 		from SearchEvents import SearchEvents
-		SearchEvents(self.serien_name, serien_id, self.resultsEvents).request()
+		SearchEvents(self.serien_name, serien_id, termineCache, self.resultsEvents).request()
 
 	def resultsEvents(self, sendetermine_list):
 		self.sendetermine_list = []
@@ -5994,7 +6041,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 	def keyGreen(self):
 		if self.getTimes():
 			self.changesMade = True
-			self.searchSerie()
+			self.searchEvents()
 			
 	def keyYellow(self):
 		self['text_red'].setText("")
@@ -6023,7 +6070,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		print serien_id
 		
 		from SearchEvents import SearchEvents
-		SearchEvents(self.serien_name, serien_id, self.resultsEvents).request()
+		global termineCache
+		SearchEvents(self.serien_name, serien_id, termineCache, self.resultsEvents).request()
 		
 	def __onClose(self):
 		if self.displayTimer:
@@ -6242,25 +6290,21 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 		updateMenuKeys(self)
 
 	def searchEpisodes(self):
-		if not self.serien_cover == "nix":
+		if not self.serien_cover == "nix" and config.plugins.serienRec.showCover.value:
 			showCover(self.serien_cover, self, self.serien_cover)
 		print "[SerienRecorder] Suche Episoden' %s '" % self.serien_name
 		self['title'].setText(_("Suche Episoden ' %s '") % self.serien_name)
 		print self.serie_url
 
-		getPage("%s/episoden" % self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
+		getPage("%s/episoden" % self.serie_url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
 
 	def resultsEpisodes(self, data):
-		parsingOK = False
 		self.episodes_list = []
 
 		raw = re.findall('<div class="l(?: ts)?" id="ep_[0-9]+">.*?<span class="epg_st".*?title="Staffel">(.*?)</span>.*?(?:<span class="epg_ep" title="Episode">(.*?)</span>.*?)?<span class="epl4(.*?)".*?>.*?<a href="(.*?)">(.*?)(?:<span class="otitel">(.*?)</span>)?</a>.*?</div>', data, re.S)
 		#('1', ['2'], [' tv'], '/episode/368700/arrow-die-rueckkehr', 'Die Rückkehr ', '(Pilot)')
 
 		if raw:
-			parsingOK = True
-
-		if parsingOK:
 			for season,episode,tv,info_url,title,otitle in raw:
 				# Umlaute umwandeln
 				title = iso8859_Decode(title)
@@ -7245,13 +7289,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.ActionOnNew.value != "0":
 			self.list.append(getConfigListEntry(_("    auch bei manuellem Suchlauf:"), config.plugins.serienRec.ActionOnNewManuell))
 			self.list.append(getConfigListEntry(_("    Einträge löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteOlderThan))
-		self.list.append(getConfigListEntry(_("lade Serien-Planer beim automatischen Suchlauf:"), config.plugins.serienRec.planerCacheEnabled))
+		self.list.append(getConfigListEntry(_("Serien-Planer und Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
 		self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		if config.plugins.serienRec.updateInterval.value == 24:
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
-			self.list.append(getConfigListEntry(_("Nach dem automatischen Suchlauf in Deep-StandBy gehen:"), config.plugins.serienRec.afterAutocheck))
-			if config.plugins.serienRec.afterAutocheck.value:
-				self.list.append(getConfigListEntry(_("    Timeout für Deep-StandBy-Abfrage (in Sek.):"), config.plugins.serienRec.DSBTimeout))
+			self.list.append(getConfigListEntry(_("Aktion nach dem automatischen Suchlauf:"), config.plugins.serienRec.afterAutocheck))
+			if int(config.plugins.serienRec.afterAutocheck.value):
+				self.list.append(getConfigListEntry(_("    Timeout für (Deep-)StandBy-Abfrage (in Sek.):"), config.plugins.serienRec.DSBTimeout))
 			
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  TIMER:  --------------------------------------------------------------------------------------------")))
@@ -7443,12 +7487,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
 																"und auch nicht mehr angezeigt.")) % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))),
 			#config.plugins.serienRec.autoSearchForCovers :     (_("Bei 'ja' wird nach Beenden des automatischen Suchlaufs die Suche nach Covern gestartet. Diese Suche erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.")),
-			config.plugins.serienRec.planerCacheEnabled :      (_("Bei 'ja' werden beim automatischen Suchlauf die Daten für den Serienplaner geladen und gespeichert. Diese Suche erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.")),
+			config.plugins.serienRec.planerCacheEnabled :      (_("Bei 'ja' werden beim automatischen Suchlauf die Daten für den Serienplaner und die Sendetermine geladen und gespeichert. Diese Suche erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.")),
 			config.plugins.serienRec.runAutocheckAtExit :      (_("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Channels und/oder Markern Änderungen vorgenommen wurden, "
 			                                                    "die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Channel zugewiesen, etc.)")),
 			config.plugins.serienRec.wakeUpDSB :               (_("Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
 			                                                    "Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die STB im Deep-Standby befindet.")),
-			config.plugins.serienRec.afterAutocheck :          (_("Bei 'ja' wird die STB nach dem automatischen Timer-Suchlauf wieder in den Deep-Standby gefahren.")),
+			#config.plugins.serienRec.afterAutocheck :          (_("Bei 'ja' wird die STB nach dem automatischen Timer-Suchlauf wieder in den Deep-Standby gefahren.")),
+			config.plugins.serienRec.afterAutocheck :          (_("Hier kann ausgewählt werden, ob die STB nach dem automatischen Suchlauf in Standby oder Depp-Standby gehen soll.")),
 			config.plugins.serienRec.DSBTimeout :              (_("Bevor die STB in den Deep-Standby fährt, wird für die hier eingestellte Dauer (in Sekunden) eine entsprechende Nachricht auf dem Bildschirm angezeigt. "
 			                                                    "Während dieser Zeitspanne hat der Benutzer die Möglichkeit, das Herunterfahren der STB abzubrechen. Nach Ablauf dieser Zeitspanne fährt die STB automatisch in den Deep-Stanby.")),
 			self.kindOfTimer :                                 (_("Es kann ausgewählt werden, wie Timer angelegt werden. Die Auswahlmöglichkeiten sind:\n"
@@ -7761,17 +7806,17 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.seasonsubdir = ConfigSelection(choices = [("-1", _("gemäß Setup (dzt. %s)") % str(config.plugins.serienRec.seasonsubdir.value).replace('True', _('ja')).replace('False', _('nein'))), ("0", _("nein")), ("1", _("ja"))], default=str(Staffelverzeichnis))
 		
 		if str(Vorlaufzeit).isdigit():
-			self.margin_before = ConfigInteger(Vorlaufzeit, (0,99))
+			self.margin_before = ConfigInteger(Vorlaufzeit, (0,999))
 			self.enable_margin_before = ConfigYesNo(default = True)
 		else:
-			self.margin_before = ConfigInteger(config.plugins.serienRec.margin_before.value, (0,99))
+			self.margin_before = ConfigInteger(config.plugins.serienRec.margin_before.value, (0,999))
 			self.enable_margin_before = ConfigYesNo(default = False)
 			
 		if str(Nachlaufzeit).isdigit():
-			self.margin_after = ConfigInteger(Nachlaufzeit, (0,99))
+			self.margin_after = ConfigInteger(Nachlaufzeit, (0,999))
 			self.enable_margin_after = ConfigYesNo(default = True)
 		else:
-			self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0,99))
+			self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0,999))
 			self.enable_margin_after = ConfigYesNo(default = False)
 			
 		if str(AnzahlWiederholungen).isdigit():
@@ -10211,9 +10256,10 @@ class serienRecShowInfo(Screen, HelpableScreen):
 				self.getData()
 				
 	def getData(self):
-		getPage(self.serieUrl, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
-		serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
-		showCover(serien_nameCover, self, serien_nameCover)
+		getPage(self.serieUrl, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		if config.plugins.serienRec.showCover.value:
+			serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
+			showCover(serien_nameCover, self, serien_nameCover)
 
 	def parseData(self, data):
 		infoText = ""
@@ -10417,9 +10463,10 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 				self.getData()
 
 	def getData(self):
-		getPage(self.serieUrl, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
-		serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
-		showCover(serien_nameCover, self, serien_nameCover)
+		getPage(self.serieUrl, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		if config.plugins.serienRec.showCover.value:
+			serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
+			showCover(serien_nameCover, self, serien_nameCover)
 
 	def parseData(self, data):
 		infoText = ""
@@ -10786,8 +10833,6 @@ class serienRecMain(Screen, HelpableScreen):
 			config.plugins.serienRec.timeUpdate.value = False
 			config.plugins.serienRec.update.value = True
 
-		self.pNeu = int(config.plugins.serienRec.screenmode.value)
-
 		global showMainScreen
 		if config.plugins.serienRec.firstscreen.value == "0":
 			showMainScreen = True
@@ -10803,9 +10848,14 @@ class serienRecMain(Screen, HelpableScreen):
 		self.ErrorMsg = _("unbekannt")
 		self.modus = "list"
 		self.loading = True
-		self.daylist = []
+		self.daylist = [[],[],[],[]]
 		
-		readPlanerData()
+		global dayCache
+		global termineCache
+		if not len(dayCache):
+			readPlanerData()
+		if not len(termineCache):
+			readTermineData()
 		
 		#self.onLayoutFinish.append(self.startScreen)
 		self.onFirstExecBegin.append(self.startScreen)
@@ -10897,7 +10947,7 @@ class serienRecMain(Screen, HelpableScreen):
 		serien_id = self['config'].getCurrent()[0][14]
 		url = "http://www.wunschliste.de/%s/links" % serien_id
 		print url
-		getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
+		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
 			
 	def getImdblink2(self, data):
 		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
@@ -10914,7 +10964,12 @@ class serienRecMain(Screen, HelpableScreen):
 		self['title'].instance.setForegroundColor(parseColor("white"))
 
 	def reloadSerienplaner(self):
-		self.readWebpage()
+		date = datetime.datetime.now()
+		date += datetime.timedelta(days=self.page)
+		key = time.strftime('%d.%m.%Y', date.timetuple())
+		if key in dayCache: 
+			del dayCache[key]
+		self.readWebpage(False)
 		
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
@@ -11040,8 +11095,6 @@ class serienRecMain(Screen, HelpableScreen):
 		#	elif int(config.plugins.serienRec.screenmode.value) == 2:
 		#		self['headline'].setText(_("Nach aktivierten Sendern (US/UK Serienkalender)"))
 				
-		self.pNeu = int(config.plugins.serienRec.screenmode.value)
-		
 		self['headline'].instance.setForegroundColor(parseColor("red"))
 
 	def recSetup(self):
@@ -11091,21 +11144,23 @@ class serienRecMain(Screen, HelpableScreen):
 			self.keyCancel()
 			self.close()
 
+		self.loading = True
+			
 		global dayCache
 		if answer:
 			dayCache.clear()
 			
 		self.setHeadline()
+		self['title'].instance.setForegroundColor(parseColor("white"))
 
 		date = datetime.datetime.now()
 		date += datetime.timedelta(days=self.page)
 		key = time.strftime('%d.%m.%Y', date.timetuple())
 		if key in dayCache:
+			self['title'].setText(_("Lade Infos vom Speicher..."))
 			self.parseWebpage(dayCache[key], None, None, None, True)
 		else:
-			self['title'].instance.setForegroundColor(parseColor("white"))
 			self['title'].setText(_("Lade Infos vom Web..."))
-			self.loading = True
 			url = "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(self.page))
 			print url
 
@@ -11113,13 +11168,13 @@ class serienRecMain(Screen, HelpableScreen):
 			c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
 			c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
 
-			getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
+			getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
 
 	def parseWebpage(self, data, c1, c2, c3, useCache=False):
 		if useCache:
 			(head_datum, self.daylist) = data
 		else:
-			self.daylist = []
+			self.daylist = [[],[],[],[]]
 			self.ErrorMsg = "start reading from Wunschliste.de"
 			head_datum = re.findall('<li class="datum">(.*?)</li>', data, re.S)
 
@@ -11217,48 +11272,58 @@ class serienRecMain(Screen, HelpableScreen):
 							bereits_vorhanden = countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False) > 0 and True or False
 							
 					title = "%s - %s" % (seasonEpisodeString, title)
-					if self.pNeu == 0:
-						self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					elif self.pNeu == 1:
-						if int(neu) == 1:
-							self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					elif self.pNeu == 2:
-						if len(cSender_list) != 0:
-							(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
-							if int(status) == 1:
-								self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					elif self.pNeu == 3:
-						if re.search('01', episode, re.S):
-							self.daylist.append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					#if int(config.plugins.serienRec.screenmode.value) == 0:
+					#	self.daylist[0].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					#elif int(config.plugins.serienRec.screenmode.value) == 1:
+					#	if int(neu) == 1:
+					#		self.daylist[1].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					#elif int(config.plugins.serienRec.screenmode.value) == 2:
+					#	if len(cSender_list) != 0:
+					#		(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
+					#		if int(status) == 1:
+					#			self.daylist[2].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					#elif int(config.plugins.serienRec.screenmode.value) == 3:
+					#	if re.search('01', episode, re.S):
+					#		self.daylist[3].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					self.daylist[0].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					if int(neu) == 1:
+						self.daylist[1].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					if len(cSender_list) != 0:
+						(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
+						if int(status) == 1:
+							self.daylist[2].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					if re.search('01', episode, re.S):
+						self.daylist[3].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 
-			print "[Serien Recorder] Es wurden %s Serie(n) gefunden" % len(self.daylist)
+			print "[Serien Recorder] Es wurden %s Serie(n) gefunden" % len(self.daylist[int(config.plugins.serienRec.screenmode.value)])
 			
-			self.loading = False
-		
 			if head_datum:
 				d = head_datum[0].split(',')
 				d.reverse()
 				key = d[0].strip()
 				global dayCache
 				dayCache.update({key:(head_datum, self.daylist)})
-		
-		if len(self.daylist) != 0:
+				writePlanerData()
+				
+		self.loading = False
+
+		if len(self.daylist[int(config.plugins.serienRec.screenmode.value)]) != 0:
 			if head_datum:
-				self['title'].setText(_("Es wurden für - %s - %s Serie(n) gefunden.") % (head_datum[0], len(self.daylist)))
+				self['title'].setText(_("Es wurden für - %s - %s Serie(n) gefunden.") % (head_datum[0], len(self.daylist[int(config.plugins.serienRec.screenmode.value)])))
 				self['title'].instance.setForegroundColor(parseColor("white"))
 			else:
-				self['title'].setText(_("Es wurden für heute %s Serie(n) gefunden.") % len(self.daylist))
+				self['title'].setText(_("Es wurden für heute %s Serie(n) gefunden.") % len(self.daylist[int(config.plugins.serienRec.screenmode.value)]))
 				self['title'].instance.setForegroundColor(parseColor("white"))
-			self.chooseMenuList.setList(map(self.buildList, self.daylist))
+			self.chooseMenuList.setList(map(self.buildList, self.daylist[int(config.plugins.serienRec.screenmode.value)]))
 			self.ErrorMsg = "'getCover()'"
 			self.getCover()
 		else:
 			if int(self.page) < 1 and not int(self.page) == 0:
 				self.page -= 1
-			self['title'].setText(_("Es wurden für heute %s Serie(n) gefunden.") % len(self.daylist))
+			self['title'].setText(_("Es wurden für heute %s Serie(n) gefunden.") % len(self.daylist[int(config.plugins.serienRec.screenmode.value)]))
 			self['title'].instance.setForegroundColor(parseColor("white"))
 			print "[Serien Recorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
-			self.chooseMenuList.setList(map(self.buildList, self.daylist))
+			self.chooseMenuList.setList(map(self.buildList, self.daylist[int(config.plugins.serienRec.screenmode.value)]))
 			
 	def buildList(self, entry):
 		(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id) = entry
@@ -11362,7 +11427,6 @@ class serienRecMain(Screen, HelpableScreen):
 			self['popup_bg'].hide()
 			self['config'].show()
 			self.modus = "list"
-			self.pNeu = int(status)
 			config.plugins.serienRec.screenmode.value = int(status)
 			config.plugins.serienRec.screeplaner.value = int(planer_id)
 			print "[SerienRecorder] neu: %s - planer: %s" % (config.plugins.serienRec.screenmode.value, config.plugins.serienRec.screeplaner.value)
@@ -11370,10 +11434,11 @@ class serienRecMain(Screen, HelpableScreen):
 			config.plugins.serienRec.screeplaner.save()
 			configfile.save()
 			self.chooseMenuList.setList(map(self.buildList, []))
-			if (self.screeplaner != config.plugins.serienRec.screeplaner.value) or (self.screenmode != config.plugins.serienRec.screenmode.value):
-				self.readWebpage()
-			else:
-				self.readWebpage(False)
+			#if (self.screeplaner != config.plugins.serienRec.screeplaner.value) or (self.screenmode != config.plugins.serienRec.screenmode.value):
+			if self.screeplaner != config.plugins.serienRec.screeplaner.value:
+				dayCache.clear()
+				readPlanerData()
+			self.readWebpage(False)
 
 	def getCover(self):
 		if self.loading:
@@ -11591,6 +11656,7 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def __onClose(self):
 		writePlanerData()
+		writeTermineData()
 		if self.displayTimer:
 			self.displayTimer.stop()
 			self.displayTimer = None

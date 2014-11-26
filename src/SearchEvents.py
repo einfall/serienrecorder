@@ -11,19 +11,29 @@ import socket
 from urllib import urlencode
 from urllib2 import urlopen, Request, URLError
 
+from SerienRecorder import getUserAgent
+#from SerienRecorder import writeTestLog
+
 
 class SearchEvents(object):
-	def __init__(self, serien_name, serien_id, user_callback=None, user_errback=None):
+	def __init__(self, serien_name, serien_id, termineCache, user_callback=None, user_errback=None):
 		#self.FilterEnabled = filter_enabled
 		self.serien_name = serien_name
-		self.serie_url = "http://www.wunschliste.de/epg_print.pl?s=" + serien_id
+		self.serie_url = "http://www.wunschliste.de/epg_print.pl?s=%s" % str(serien_id)
+		self.termineCache = termineCache
 		self.user_callback = user_callback
 		self.user_errback  = user_errback
 
 	def	request(self):
-		print "[SerienRecorder] suche ' %s '" % self.serien_name
-		print self.serie_url
-		getPage(self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
+		if self.serien_name in self.termineCache:
+			self.__callback(self.termineCache[self.serien_name], True)
+			#writeTestLog("in cache: %s" % self.serien_name)
+		else:
+			#writeTestLog("not in cache: %s" % self.serien_name)
+			print "[SerienRecorder] suche ' %s '" % self.serien_name
+			print self.serie_url
+			#getPage(self.serie_url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
+			getPage(self.serie_url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
 		print "[SerienRecorder] suche dates"
@@ -42,16 +52,23 @@ class SearchEvents(object):
 		if (self.user_errback):
 			self.user_errback(error)
 
-	def __callback(self, data):
+	def __callback(self, data, useCache=False):
 		from SerienRecorder import iso8859_Decode
 		sendetermine_list = []
 
-		raw = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)x(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
-		#('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
-
-		raw2 = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(.*?x))(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
-		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
-		
+		if useCache:
+			#writeTestLog("use cache: %s" % self.serien_name)
+			raw = data
+		else:
+			#writeTestLog("dont use cache: %s" % self.serien_name)
+			#('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
+			#raw = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)x(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
+			raw = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>', data)
+			raw2 = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(.*?x))(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
+			raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
+			
+			self.termineCache.update({self.serien_name:raw})
+			
 		if raw:
 			def y(l):
 				(day, month) = l[1].split('.')
@@ -93,4 +110,4 @@ class SearchEvents(object):
 		if (self.user_callback):
 			self.user_callback(sendetermine_list)
 
-		return sendetermine_list
+		return (sendetermine_list)
