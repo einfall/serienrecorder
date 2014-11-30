@@ -29,7 +29,7 @@ from Screens.HelpMenu import HelpableScreen
 from Screens.InputBox import InputBox
 from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
-from Screens.Standby import TryQuitMainloop, Standby
+from Screens.Standby import TryQuitMainloop
 from Screens.VirtualKeyBoard import VirtualKeyBoard
 
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter, eConsoleAppContainer
@@ -160,6 +160,7 @@ def ReadConfigFile():
 	
 	#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 	config.plugins.serienRec.BoxID = ConfigSelectionNumber(1, 16, 1, default = 1)
+	config.plugins.serienRec.setupType = ConfigSelection(choices = [("0", _("einfach")), ("1", _("Experte"))], default = "0")
 	config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
 	config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
 	config.plugins.serienRec.seasonsubdirnumerlength = ConfigInteger(1, (1,4))
@@ -248,7 +249,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.14"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.15"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -3325,14 +3326,15 @@ class serienRecCheckForRecording():
 				
 	def gotoDeepStandby(self, answer):
 		if answer:
+			import Screens.Standby
 			if config.plugins.serienRec.afterAutocheck.value == "2":
 				print "[Serien Recorder] gehe in Deep-Standby"
 				writeLog(_("[Serien Recorder] gehe in Deep-Standby"))
 				self.session.open(TryQuitMainloop, 1)
-			else:
+			elif not Screens.Standby.inStandby:
 				print "[Serien Recorder] gehe in Standby"
 				writeLog(_("[Serien Recorder] gehe in Standby"))
-				Notifications.AddNotification(Standby)
+				Notifications.AddNotification(Screens.Standby.Standby)
 
 	def searchTimer(self, NoOfRecords):
 		if NoOfRecords:
@@ -7284,7 +7286,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 	def createConfigList(self):
 		self.list = []
 		self.list.append(getConfigListEntry(_("---------  SYSTEM:  -------------------------------------------------------------------------------------------")))
-		self.list.append(getConfigListEntry(_("ID der Box:"), config.plugins.serienRec.BoxID))
+		if config.plugins.serienRec.setupType.value == "1":
+			self.list.append(getConfigListEntry(_("ID der Box:"), config.plugins.serienRec.BoxID))
+		self.list.append(getConfigListEntry(_("Umfang der Einstellungen:"), config.plugins.serienRec.setupType))
 		self.list.append(getConfigListEntry(_("Speicherort der Aufnahmen:"), config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry(_("Serien-Verzeichnis anlegen:"), config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry(_("Staffel-Verzeichnis anlegen:"), config.plugins.serienRec.seasonsubdir))
@@ -7293,12 +7297,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry(_("    Füllzeichen für Staffelnummer im Verzeichnisnamen:"), config.plugins.serienRec.seasonsubdirfillchar))
 		#self.list.append(getConfigListEntry(_("Anzahl gleichzeitiger Web-Anfragen:"), config.plugins.serienRec.maxWebRequests))
 		self.list.append(getConfigListEntry(_("Automatisches Plugin-Update:"), config.plugins.serienRec.Autoupdate))
-		if config.plugins.serienRec.Autoupdate.value:
-			self.list.append(getConfigListEntry(_("    Art der Updates:"), config.plugins.serienRec.updateType))
-		self.list.append(getConfigListEntry(_("Speicherort der Datenbank:"), config.plugins.serienRec.databasePath))
-		self.list.append(getConfigListEntry(_("Erstelle Backup vor Suchlauf:"), config.plugins.serienRec.AutoBackup))
-		if config.plugins.serienRec.AutoBackup.value:
-			self.list.append(getConfigListEntry(_("    Speicherort für Backup:"), config.plugins.serienRec.BackupPath))
+		if config.plugins.serienRec.setupType.value == "1":
+			if config.plugins.serienRec.Autoupdate.value:
+				self.list.append(getConfigListEntry(_("    Art der Updates:"), config.plugins.serienRec.updateType))
+			self.list.append(getConfigListEntry(_("Speicherort der Datenbank:"), config.plugins.serienRec.databasePath))
+			self.list.append(getConfigListEntry(_("Erstelle Backup vor Suchlauf:"), config.plugins.serienRec.AutoBackup))
+			if config.plugins.serienRec.AutoBackup.value:
+				self.list.append(getConfigListEntry(_("    Speicherort für Backup:"), config.plugins.serienRec.BackupPath))
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------")))
@@ -7307,102 +7312,108 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.updateInterval.value == 24:
 			self.list.append(getConfigListEntry(_("Uhrzeit für automatischen Suchlauf:"), config.plugins.serienRec.deltime))
 		self.list.append(getConfigListEntry(_("Timer für X Tage erstellen:"), config.plugins.serienRec.checkfordays))
-		self.list.append(getConfigListEntry(_("Früheste Zeit für Timer:"), config.plugins.serienRec.globalFromTime))
-		self.list.append(getConfigListEntry(_("Späteste Zeit für Timer:"), config.plugins.serienRec.globalToTime))
-		self.list.append(getConfigListEntry(_("Versuche die Eventid vom EPGCACHE zu holen:"), config.plugins.serienRec.eventid))
-		self.list.append(getConfigListEntry(_("Immer aufnehmen wenn keine Wiederholung gefunden wird:"), config.plugins.serienRec.forceRecording))
-		if config.plugins.serienRec.forceRecording.value:
-			self.list.append(getConfigListEntry(_("    maximal X Tage auf Wiederholung warten:"), config.plugins.serienRec.TimeSpanForRegularTimer))
-		self.list.append(getConfigListEntry(_("Anzahl der Aufnahmen pro Episode:"), config.plugins.serienRec.NoOfRecords))
-		self.list.append(getConfigListEntry(_("Anzahl der Tuner für Aufnahmen einschränken:"), config.plugins.serienRec.selectNoOfTuners))
-		if config.plugins.serienRec.selectNoOfTuners.value:
-			self.list.append(getConfigListEntry(_("    maximale Anzahl der zu benutzenden Tuner:"), config.plugins.serienRec.tuner))
-		self.list.append(getConfigListEntry(_("Aktion bei neuer Serie/Staffel:"), config.plugins.serienRec.ActionOnNew))
-		if config.plugins.serienRec.ActionOnNew.value != "0":
-			self.list.append(getConfigListEntry(_("    auch bei manuellem Suchlauf:"), config.plugins.serienRec.ActionOnNewManuell))
-			self.list.append(getConfigListEntry(_("    Einträge löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteOlderThan))
-			self.list.append(getConfigListEntry(_("Serien-Planer und Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
-		else:
-			self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
-		self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
+		if config.plugins.serienRec.setupType.value == "1":
+			self.list.append(getConfigListEntry(_("Früheste Zeit für Timer:"), config.plugins.serienRec.globalFromTime))
+			self.list.append(getConfigListEntry(_("Späteste Zeit für Timer:"), config.plugins.serienRec.globalToTime))
+			self.list.append(getConfigListEntry(_("Versuche die Eventid vom EPGCACHE zu holen:"), config.plugins.serienRec.eventid))
+			self.list.append(getConfigListEntry(_("Immer aufnehmen wenn keine Wiederholung gefunden wird:"), config.plugins.serienRec.forceRecording))
+			if config.plugins.serienRec.forceRecording.value:
+				self.list.append(getConfigListEntry(_("    maximal X Tage auf Wiederholung warten:"), config.plugins.serienRec.TimeSpanForRegularTimer))
+			self.list.append(getConfigListEntry(_("Anzahl der Aufnahmen pro Episode:"), config.plugins.serienRec.NoOfRecords))
+			self.list.append(getConfigListEntry(_("Anzahl der Tuner für Aufnahmen einschränken:"), config.plugins.serienRec.selectNoOfTuners))
+			if config.plugins.serienRec.selectNoOfTuners.value:
+				self.list.append(getConfigListEntry(_("    maximale Anzahl der zu benutzenden Tuner:"), config.plugins.serienRec.tuner))
+			self.list.append(getConfigListEntry(_("Aktion bei neuer Serie/Staffel:"), config.plugins.serienRec.ActionOnNew))
+			if config.plugins.serienRec.ActionOnNew.value != "0":
+				self.list.append(getConfigListEntry(_("    auch bei manuellem Suchlauf:"), config.plugins.serienRec.ActionOnNewManuell))
+				self.list.append(getConfigListEntry(_("    Einträge löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteOlderThan))
+				self.list.append(getConfigListEntry(_("Serien-Planer und Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
+			else:
+				self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
+			self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		if config.plugins.serienRec.updateInterval.value == 24:
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
 			self.list.append(getConfigListEntry(_("Aktion nach dem automatischen Suchlauf:"), config.plugins.serienRec.afterAutocheck))
-			if int(config.plugins.serienRec.afterAutocheck.value):
-				self.list.append(getConfigListEntry(_("    Timeout für (Deep-)StandBy-Abfrage (in Sek.):"), config.plugins.serienRec.DSBTimeout))
+			if config.plugins.serienRec.setupType.value == "1":
+				if int(config.plugins.serienRec.afterAutocheck.value):
+					self.list.append(getConfigListEntry(_("    Timeout für (Deep-)StandBy-Abfrage (in Sek.):"), config.plugins.serienRec.DSBTimeout))
 			
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  TIMER:  --------------------------------------------------------------------------------------------")))
-		self.list.append(getConfigListEntry(_("Timer-Art:"), self.kindOfTimer))
+		if config.plugins.serienRec.setupType.value == "1":
+			self.list.append(getConfigListEntry(_("Timer-Art:"), self.kindOfTimer))
 		self.list.append(getConfigListEntry(_("Timervorlauf (in Min.):"), config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry(_("Timernachlauf (in Min.):"), config.plugins.serienRec.margin_after))
-		self.list.append(getConfigListEntry(_("Timername:"), config.plugins.serienRec.TimerName))
-		self.list.append(getConfigListEntry(_("Manuelle Timer immer erstellen:"), config.plugins.serienRec.forceManualRecording))
-		tvbouquets = getTVBouquets()
-		if len(tvbouquets) < 2:
-			config.plugins.serienRec.selectBouquets.value = False
-		else:
-			self.list.append(getConfigListEntry(_("Bouquets auswählen:"), config.plugins.serienRec.selectBouquets))
-			if config.plugins.serienRec.selectBouquets.value:
-				self.getTVBouquetSelection()
-				self.list.append(getConfigListEntry(_("    Standard Bouquet:"), config.plugins.serienRec.MainBouquet))
-				self.list.append(getConfigListEntry(_("    Alternatives Bouquet:"), config.plugins.serienRec.AlternativeBouquet))
-				self.list.append(getConfigListEntry(_("    Verwende alternative Channels bei Konflikten:"), config.plugins.serienRec.useAlternativeChannel))
+		if config.plugins.serienRec.setupType.value == "1":
+			self.list.append(getConfigListEntry(_("Timername:"), config.plugins.serienRec.TimerName))
+			self.list.append(getConfigListEntry(_("Manuelle Timer immer erstellen:"), config.plugins.serienRec.forceManualRecording))
+			tvbouquets = getTVBouquets()
+			if len(tvbouquets) < 2:
+				config.plugins.serienRec.selectBouquets.value = False
+			else:
+				self.list.append(getConfigListEntry(_("Bouquets auswählen:"), config.plugins.serienRec.selectBouquets))
+				if config.plugins.serienRec.selectBouquets.value:
+					self.getTVBouquetSelection()
+					self.list.append(getConfigListEntry(_("    Standard Bouquet:"), config.plugins.serienRec.MainBouquet))
+					self.list.append(getConfigListEntry(_("    Alternatives Bouquet:"), config.plugins.serienRec.AlternativeBouquet))
+					self.list.append(getConfigListEntry(_("    Verwende alternative Channels bei Konflikten:"), config.plugins.serienRec.useAlternativeChannel))
 
-		self.list.append(getConfigListEntry(""))
-		self.list.append(getConfigListEntry(_("---------  OPTIMIERUNGEN:  ------------------------------------------------------------------------------------")))
-		self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
-		self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahme auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
-		self.list.append(getConfigListEntry(_("Zeitspanne für Timersuche einschränken:"), config.plugins.serienRec.breakTimersuche))
+			self.list.append(getConfigListEntry(""))
+			self.list.append(getConfigListEntry(_("---------  OPTIMIERUNGEN:  ------------------------------------------------------------------------------------")))
+			self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
+			self.list.append(getConfigListEntry(_("Zeige ob die Episode als Aufnahme auf der HDD ist:"), config.plugins.serienRec.sucheAufnahme))
+			self.list.append(getConfigListEntry(_("Zeitspanne für Timersuche einschränken:"), config.plugins.serienRec.breakTimersuche))
 
-		self.list.append(getConfigListEntry(""))
-		self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
-		self.list.append(getConfigListEntry(_("Skin:"), config.plugins.serienRec.SkinType))
-		global showAllButtons
-		if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD"):
-			self.list.append(getConfigListEntry(_("    werden bei diesem Skin immer ALLE Tasten angezeigt:"), config.plugins.serienRec.showAllButtons))
-			showAllButtons = config.plugins.serienRec.showAllButtons.value
-		elif config.plugins.serienRec.SkinType.value in ("", "AtileHD"):
-			showAllButtons = False
-		else:
-			showAllButtons = True
-		if not showAllButtons:
-			self.list.append(getConfigListEntry(_("    Wechselzeit der Tastenanzeige (Sek.):"), config.plugins.serienRec.DisplayRefreshRate))
-		self.list.append(getConfigListEntry(_("Starte Plugin mit:"), config.plugins.serienRec.firstscreen))
-		self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
-		if config.plugins.serienRec.showPicons.value:
-			self.list.append(getConfigListEntry(_("    Verwende folgende Picons:"), config.plugins.serienRec.piconPath))
-		self.list.append(getConfigListEntry(_("Zeige Cover:"), config.plugins.serienRec.showCover))
-		if config.plugins.serienRec.showCover.value:
-			self.list.append(getConfigListEntry(_("    Speicherort der Cover:"), config.plugins.serienRec.coverPath))
-			#self.list.append(getConfigListEntry(_("    starte Cover-Suche beim automatischen Suchlauf:"), config.plugins.serienRec.autoSearchForCovers))
-		self.list.append(getConfigListEntry(_("Korrektur der Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
-		self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
-		self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
-		self.list.append(getConfigListEntry(_("Benachrichtigung beim Suchlauf:"), config.plugins.serienRec.showNotification))
-		self.list.append(getConfigListEntry(_("Benachrichtigung bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
-		self.list.append(getConfigListEntry(_("Screens bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
-		self.list.append(getConfigListEntry(_("Staffelauswahl bei neuen Markern:"), config.plugins.serienRec.defaultStaffel))
-		self.list.append(getConfigListEntry(_("Öffne Marker-Ansicht nach Hinzufügen neuer Marker:"), config.plugins.serienRec.openMarkerScreen))
+			self.list.append(getConfigListEntry(""))
+			self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
+			self.list.append(getConfigListEntry(_("Skin:"), config.plugins.serienRec.SkinType))
+			global showAllButtons
+			if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD"):
+				self.list.append(getConfigListEntry(_("    werden bei diesem Skin immer ALLE Tasten angezeigt:"), config.plugins.serienRec.showAllButtons))
+				showAllButtons = config.plugins.serienRec.showAllButtons.value
+			elif config.plugins.serienRec.SkinType.value in ("", "AtileHD"):
+				showAllButtons = False
+			else:
+				showAllButtons = True
+			if not showAllButtons:
+				self.list.append(getConfigListEntry(_("    Wechselzeit der Tastenanzeige (Sek.):"), config.plugins.serienRec.DisplayRefreshRate))
+			self.list.append(getConfigListEntry(_("Starte Plugin mit:"), config.plugins.serienRec.firstscreen))
+			self.list.append(getConfigListEntry(_("Zeige Picons:"), config.plugins.serienRec.showPicons))
+			if config.plugins.serienRec.showPicons.value:
+				self.list.append(getConfigListEntry(_("    Verwende folgende Picons:"), config.plugins.serienRec.piconPath))
+			self.list.append(getConfigListEntry(_("Zeige Cover:"), config.plugins.serienRec.showCover))
+			if config.plugins.serienRec.showCover.value:
+				self.list.append(getConfigListEntry(_("    Speicherort der Cover:"), config.plugins.serienRec.coverPath))
+				#self.list.append(getConfigListEntry(_("    starte Cover-Suche beim automatischen Suchlauf:"), config.plugins.serienRec.autoSearchForCovers))
+			self.list.append(getConfigListEntry(_("Korrektur der Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
+			self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
+			self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
+			self.list.append(getConfigListEntry(_("Benachrichtigung beim Suchlauf:"), config.plugins.serienRec.showNotification))
+			self.list.append(getConfigListEntry(_("Benachrichtigung bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
+			self.list.append(getConfigListEntry(_("Screens bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
+			self.list.append(getConfigListEntry(_("Staffelauswahl bei neuen Markern:"), config.plugins.serienRec.defaultStaffel))
+			self.list.append(getConfigListEntry(_("Öffne Marker-Ansicht nach Hinzufügen neuer Marker:"), config.plugins.serienRec.openMarkerScreen))
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  LOG:  ----------------------------------------------------------------------------------------------")))
-		self.list.append(getConfigListEntry(_("Speicherort für LogFile:"), config.plugins.serienRec.LogFilePath))
-		self.list.append(getConfigListEntry(_("LogFile-Name mit Datum/Uhrzeit:"), config.plugins.serienRec.longLogFileName))
-		if config.plugins.serienRec.longLogFileName.value:
-			self.list.append(getConfigListEntry(_("    Log-Files löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteLogFilesOlderThan))
+		if config.plugins.serienRec.setupType.value == "1":
+			self.list.append(getConfigListEntry(_("Speicherort für LogFile:"), config.plugins.serienRec.LogFilePath))
+			self.list.append(getConfigListEntry(_("LogFile-Name mit Datum/Uhrzeit:"), config.plugins.serienRec.longLogFileName))
+			if config.plugins.serienRec.longLogFileName.value:
+				self.list.append(getConfigListEntry(_("    Log-Files löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteLogFilesOlderThan))
 		self.list.append(getConfigListEntry(_("DEBUG LOG aktivieren:"), config.plugins.serienRec.writeLog))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - STB Informationen:"), config.plugins.serienRec.writeLogVersion))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Senderliste:"), config.plugins.serienRec.writeLogChannels))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Seriensender:"), config.plugins.serienRec.writeLogAllowedSender))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Episoden:"), config.plugins.serienRec.writeLogAllowedEpisodes))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Added:"), config.plugins.serienRec.writeLogAdded))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Festplatte:"), config.plugins.serienRec.writeLogDisk))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Tageszeit:"), config.plugins.serienRec.writeLogTimeRange))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Zeitbegrenzung:"), config.plugins.serienRec.writeLogTimeLimit))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Timer Debugging:"), config.plugins.serienRec.writeLogTimerDebug))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Scroll zum Ende:"), config.plugins.serienRec.logScrollLast))
-		self.list.append(getConfigListEntry(_("DEBUG LOG - Anzeige mit Zeilenumbruch:"), config.plugins.serienRec.logWrapAround))
+		if config.plugins.serienRec.setupType.value == "1":
+			self.list.append(getConfigListEntry(_("DEBUG LOG - STB Informationen:"), config.plugins.serienRec.writeLogVersion))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Senderliste:"), config.plugins.serienRec.writeLogChannels))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Seriensender:"), config.plugins.serienRec.writeLogAllowedSender))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Episoden:"), config.plugins.serienRec.writeLogAllowedEpisodes))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Added:"), config.plugins.serienRec.writeLogAdded))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Festplatte:"), config.plugins.serienRec.writeLogDisk))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Tageszeit:"), config.plugins.serienRec.writeLogTimeRange))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Zeitbegrenzung:"), config.plugins.serienRec.writeLogTimeLimit))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Timer Debugging:"), config.plugins.serienRec.writeLogTimerDebug))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Scroll zum Ende:"), config.plugins.serienRec.logScrollLast))
+			self.list.append(getConfigListEntry(_("DEBUG LOG - Anzeige mit Zeilenumbruch:"), config.plugins.serienRec.logWrapAround))
 
 	def getTVBouquetSelection(self):
 		self.bouquetList = []
@@ -7477,6 +7488,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.BoxID :                   (_("Die ID (Nummer) der STB. Läuft der SerienRecorder auf mehreren Boxen, die alle auf die selbe Datenbank (im Netzwerk) zugreifen, "
 			                                                    "können einzelne Marker über diese ID für jede Box einzeln aktiviert oder deaktiviert werden. Timer werden dann nur auf den Boxen erstellt, "
 																"für die der Marker aktiviert ist.")),
+			config.plugins.serienRec.setupType :               (_("Hier kann die Komplexität des Einstellungs-Menüs eingestellt werden.")),
 			config.plugins.serienRec.savetopath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen gespeichert werden.")),
 			config.plugins.serienRec.seriensubdir :            (_("Bei 'ja' wird für jede Serien ein eigenes Unterverzeichnis (z.B.\n'%s<Serien_Name>/') für die Aufnahmen erstellt.")) % config.plugins.serienRec.savetopath.value,
 			config.plugins.serienRec.seasonsubdir :            (_("Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-Verzeichnis (z.B.\n"
@@ -7659,7 +7671,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.AlternativeBouquet.value = None
 			config.plugins.serienRec.useAlternativeChannel.value = False
 		
-		config.plugins.serienRec.BoxID.save()		
+		config.plugins.serienRec.BoxID.save()
+		config.plugins.serienRec.setupType.save()
 		config.plugins.serienRec.savetopath.save()
 		config.plugins.serienRec.justplay.save()
 		config.plugins.serienRec.seriensubdir.save()
@@ -11822,7 +11835,7 @@ class SerienRecorderUpdateScreen(Screen):
 			except:
 				#self.session.open(MessageBox, _("Der Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
 				self.close()
-	
+
 		self["mplog"].setText(_("Starte Update, bitte warten..."))
 		self.startPluginUpdate()
 
@@ -11836,12 +11849,13 @@ class SerienRecorderUpdateScreen(Screen):
 			#self.container.execute("dpkg --install --force-overwrite --force-depends %s" % str(self.target))
 			self.container.execute("dpkg --install %s && apt-get update && apt-get -f install" % str(self.target))
 		else:
-			self.container.execute("opkg install --force-overwrite --force-depends %s" % str(self.target))
+			self.container.execute("opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.target))
 
 	def finishedPluginUpdate(self,retval):
 		if self.updateFromGit:
 			if fileExists(self.target):
 				os.remove(self.target)
+			urllib.urlcleanup()
 		self.session.openWithCallback(self.restartGUI, MessageBox, _("Serien Recorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?"), MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, answer):
@@ -11864,15 +11878,15 @@ class checkGitHubUpdate():
 		self.response = json.load(data)
 		latestVersion = self.response[0]['name'][1:]
 		
-		if config.plugins.serienRec.updateType.value == "0" and self.checkIfBetaVersion(latestVersion) == True: # Stable
+		if config.plugins.serienRec.updateType.value == "0" and self.checkIfBetaVersion(latestVersion): # Stable
 			latestVersion = self.searchLatestStable()
 
-		remoteversion = map(lambda x: int(x), latestVersion.split("."))
-		version = map(lambda x: int(x), config.plugins.serienRec.showversion.value.split("."))
+		remoteversion = map(lambda x: int(x), latestVersion.split("-")[0].split("."))
+		version = map(lambda x: int(x), config.plugins.serienRec.showversion.value.split("-")[0].split("."))
 
-		if remoteversion > version:
+		if (remoteversion > version) or ((remoteversion == version) and (self.checkIfBetaVersion(config.plugins.serienRec.showversion.value) and not self.checkIfBetaVersion(latestVersion))):
 			self.latestVersion = latestVersion
-			self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das Serien Recorder Plugin ist ein GitHub-Update verfügbar!\nWollen Sie es jetzt herunterladen und installieren?"), MessageBox.TYPE_YESNO)
+			self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das Serien Recorder Plugin ist ein Update (v%s) verfügbar!\nWollen Sie es jetzt herunterladen und installieren?") % str(latestVersion), MessageBox.TYPE_YESNO, msgBoxID="[Serien Recorder] Update available")
 
 	def checkIfBetaVersion(self, foundVersion):
 		isBeta = foundVersion.find("beta")
