@@ -34,10 +34,9 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter, eConsoleAppContainer
 from Tools.Directories import pathExists, fileExists, SCOPE_SKIN_IMAGE, resolveFilename
-import sys, os, base64, re, time, shutil, datetime, codecs, urllib2, random
+import sys, os, base64, re, time, shutil, datetime, codecs, urllib, urllib2, random
 from twisted.web import client, error as weberror
 from twisted.internet import reactor, defer
-from urllib import urlencode
 from skin import parseColor, loadSkin
 
 from Screens.ChannelSelection import service_types_tv
@@ -57,7 +56,7 @@ from enigma import eEPGCache, iServiceInformation
 
 from Tools import Notifications
 
-import sqlite3
+import sqlite3, httplib, json
 import cPickle as pickle
 
 colorRed    = 0xf23d21
@@ -187,6 +186,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0,99))
 	config.plugins.serienRec.max_season = ConfigInteger(30, (1,999))
 	config.plugins.serienRec.Autoupdate = ConfigYesNo(default = True)
+	config.plugins.serienRec.updateType = ConfigSelection(choices = [("0", _("nur Released")), ("1", _("alle (auch beta)"))], default = "0")
 	config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default = False)
 	#config.plugins.serienRec.afterAutocheck = ConfigYesNo(default = False)
 	config.plugins.serienRec.afterAutocheck = ConfigSelection(choices = [("0", _("keine")), ("1", _("in Standby gehen")), ("2", _("in Deep-Standby gehen"))], default = "0")
@@ -248,7 +248,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.13"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.14"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -608,16 +608,11 @@ def InitSkin(self):
 			self.skin = SRSkin.read()
 			SRSkin.close()
 		except:
-			global showAllButtons
 			showAllButtons = False
-			global longButtonText
 			longButtonText = False
-			global buttonText_na
 			buttonText_na = _("-----")
 			
-			global skinName
 			skinName = default_skinName
-			global skin
 			skin = default_skin
 
 			SRSkin = open(skin)
@@ -822,23 +817,54 @@ def writeLogFilter(type, text, forceWrite=False):
 		
 		writeLogFile.close()
 
-def checkTuner(check_start, check_end):
+def checkTuner(check_start, check_end, check_stbRef):
 	if not config.plugins.serienRec.selectNoOfTuners.value:
 		return True
 		
+	cRecords = 1
+	lTuner = []
+	lTimerStart = {}
+	lTimerEnd = {}
+	check_stbRef = check_stbRef.split(":")[4:7]
+	
 	timers = serienRecAddTimer.getTimersTime()
-	cTuner = 1
-	for name, begin, end in timers:
-		print name, begin, end
+	for name, begin, end, service_ref in timers:
+		#print name, begin, end, service_ref
 		if not ((int(check_end) < int(begin)) or (int(check_start) > int(end))):
-			print "between"
-			cTuner += 1
-			break
-			
-	if cTuner <= int(config.plugins.serienRec.tuner.value):
+			#print "between"
+			cRecords += 1
+
+			service_ref = str(service_ref).split(":")[4:7]
+			if str(check_stbRef).lower() == str(service_ref).lower():
+				if int(check_start) > int(begin): begin = check_start
+				if int(check_end) < int(end): end = check_end
+				lTimerStart.update({int(begin) : int(end)})
+				lTimerEnd.update({int(end) : int(begin)})
+			else:
+				if not lTuner.count(service_ref):
+					lTuner.append(service_ref)
+
+	if int(check_start) in lTimerStart:
+		l = lTimerStart.items()
+		l.sort(key=lambda x: x[0])
+		for each in l:
+			if (each[0] <= lTimerStart[int(check_start)]) and (each[1] > lTimerStart[int(check_start)]): 
+				lTimerStart.update({int(check_start) : each[1]})
+				
+		if int(check_end) in lTimerEnd:
+			l = lTimerEnd.items()
+			l.sort(key=lambda x: x[0], reverse=True)
+			for each in l:
+				if (each[0] >= lTimerEnd[int(check_end)]) and (each[1] < lTimerEnd[int(check_end)]): 
+					lTimerEnd.update({int(check_end) : each[1]})
+					
+			if lTimerStart[int(check_start)] >= lTimerEnd[int(check_end)]: 
+				lTuner.append(check_stbRef)
+						
+	if lTuner.count(check_stbRef):
 		return True
 	else:
-		return False
+		return (len(lTuner) < int(config.plugins.serienRec.tuner.value))
 
 def checkFileAccess():
 	# überprüfe ob logFile als Datei erzeigt werden kann
@@ -2086,7 +2112,7 @@ class serienRecAddTimer():
 		timers = []
 
 		for timer in recordHandler.timer_list:
-			timers.append((timer.name, timer.begin, timer.end))
+			timers.append((timer.name, timer.begin, timer.end, timer.service_ref))
 		return timers
 
 	@staticmethod
@@ -3589,7 +3615,7 @@ class serienRecCheckForRecording():
 			
 		# versuche timer anzulegen
 		# setze strings für addtimer
-		if checkTuner(start_unixtime, end_unixtime):
+		if checkTuner(start_unixtime, end_unixtime, stbRef):
 			if config.plugins.serienRec.TimerName.value == "0":
 				timer_name = label_serie
 			else:
@@ -5933,7 +5959,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
 				# versuche timer anzulegen
-				if checkTuner(start_unixtime_eit, end_unixtime_eit):
+				if checkTuner(start_unixtime_eit, end_unixtime_eit, timer_stbRef):
 					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
 					if result["result"]:
 						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit):
@@ -5949,7 +5975,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					# try to get eventID (eit) from epgCache
 					alt_eit, alt_end_unixtime_eit, alt_start_unixtime_eit = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_altstbRef)
 					# versuche timer anzulegen
-					if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit):
+					if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit, timer_altstbRef):
 						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
 						if result["result"]:
 							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit):
@@ -7205,10 +7231,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 	def keyLeft(self):
 		ConfigListScreen.keyLeft(self)
+		if self['config'].getCurrent()[1] in (config.plugins.serienRec.forceRecording, config.plugins.serienRec.ActionOnNew): self.setInfoText()
 		if self['config'].getCurrent()[1] not in (config.plugins.serienRec.savetopath,
 		                                          config.plugins.serienRec.seasonsubdirnumerlength,
 		                                          config.plugins.serienRec.coverPath,
 		                                          config.plugins.serienRec.BackupPath,
+												  config.plugins.serienRec.updateType,
 												  #config.plugins.serienRec.updateInterval,
 												  config.plugins.serienRec.deltime,
 												  #config.plugins.serienRec.maxWebRequests,
@@ -7229,10 +7257,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 	def keyRight(self):
 		ConfigListScreen.keyRight(self)
+		if self['config'].getCurrent()[1] in (config.plugins.serienRec.forceRecording, config.plugins.serienRec.ActionOnNew): self.setInfoText()
 		if self['config'].getCurrent()[1] not in (config.plugins.serienRec.savetopath,
 		                                          config.plugins.serienRec.seasonsubdirnumerlength,
 		                                          config.plugins.serienRec.coverPath,
 		                                          config.plugins.serienRec.BackupPath,
+												  config.plugins.serienRec.updateType,
 												  #config.plugins.serienRec.updateInterval,
 												  config.plugins.serienRec.deltime,
 												  #config.plugins.serienRec.maxWebRequests,
@@ -7263,6 +7293,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry(_("    Füllzeichen für Staffelnummer im Verzeichnisnamen:"), config.plugins.serienRec.seasonsubdirfillchar))
 		#self.list.append(getConfigListEntry(_("Anzahl gleichzeitiger Web-Anfragen:"), config.plugins.serienRec.maxWebRequests))
 		self.list.append(getConfigListEntry(_("Automatisches Plugin-Update:"), config.plugins.serienRec.Autoupdate))
+		if config.plugins.serienRec.Autoupdate.value:
+			self.list.append(getConfigListEntry(_("    Art der Updates:"), config.plugins.serienRec.updateType))
 		self.list.append(getConfigListEntry(_("Speicherort der Datenbank:"), config.plugins.serienRec.databasePath))
 		self.list.append(getConfigListEntry(_("Erstelle Backup vor Suchlauf:"), config.plugins.serienRec.AutoBackup))
 		if config.plugins.serienRec.AutoBackup.value:
@@ -7282,14 +7314,16 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.forceRecording.value:
 			self.list.append(getConfigListEntry(_("    maximal X Tage auf Wiederholung warten:"), config.plugins.serienRec.TimeSpanForRegularTimer))
 		self.list.append(getConfigListEntry(_("Anzahl der Aufnahmen pro Episode:"), config.plugins.serienRec.NoOfRecords))
-		self.list.append(getConfigListEntry(_("Anzahl der gleichzeitigen Aufnahmen einschränken:"), config.plugins.serienRec.selectNoOfTuners))
+		self.list.append(getConfigListEntry(_("Anzahl der Tuner für Aufnahmen einschränken:"), config.plugins.serienRec.selectNoOfTuners))
 		if config.plugins.serienRec.selectNoOfTuners.value:
-			self.list.append(getConfigListEntry(_("    maximale Anzahl gleichzeitigen Aufnahmen:"), config.plugins.serienRec.tuner))
+			self.list.append(getConfigListEntry(_("    maximale Anzahl der zu benutzenden Tuner:"), config.plugins.serienRec.tuner))
 		self.list.append(getConfigListEntry(_("Aktion bei neuer Serie/Staffel:"), config.plugins.serienRec.ActionOnNew))
 		if config.plugins.serienRec.ActionOnNew.value != "0":
 			self.list.append(getConfigListEntry(_("    auch bei manuellem Suchlauf:"), config.plugins.serienRec.ActionOnNewManuell))
 			self.list.append(getConfigListEntry(_("    Einträge löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteOlderThan))
-		self.list.append(getConfigListEntry(_("Serien-Planer und Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
+			self.list.append(getConfigListEntry(_("Serien-Planer und Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
+		else:
+			self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
 		self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		if config.plugins.serienRec.updateInterval.value == 24:
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
@@ -7453,6 +7487,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			#config.plugins.serienRec.maxWebRequests :          (_("Die maximale Anzahl der gleichzeitigen Suchanfragen auf 'wunschliste.de'.\n"
 			#                                                    "ACHTUING: Eine höhere Anzahl kann den Timer-Suchlauf beschleunigen, kann bei langsamer Internet-Verbindung aber auch zu Problemen führen!!")),
 			config.plugins.serienRec.Autoupdate :              (_("Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht.")),
+			config.plugins.serienRec.updateType :              (_("Auswahl, ob auch beta-Versionen installiert werden sollen.")),
 			config.plugins.serienRec.databasePath :            (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.")),
 			config.plugins.serienRec.AutoBackup :              (_("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
 			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/').")) % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)),
@@ -7473,9 +7508,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			                                                    "Wird keine passende Wiederholung gefunden (oder aber eine Wiederholung, die aber zu weit in der Zukunft liegt), "
 																"wird ein Timer für den frühestmöglichen Termin (auch außerhalb der erlaubten Zeitspanne) erstellt.")),
 			config.plugins.serienRec.NoOfRecords :             (_("Die Anzahl der Aufnahmen, die von einer Folge gemacht werden sollen.")),
-			config.plugins.serienRec.selectNoOfTuners :        (_("Bei 'ja' wird die Anzahl von gleichzeitigen (sich überschneidenden) Timern begrenzt.\n"
+			config.plugins.serienRec.selectNoOfTuners :        (_("Bei 'ja' wird die Anzahl der vom SR benutzten Tuner für gleichzeitige Aufnahmen begrenzt.\n"
                                                                 "Bei 'nein' werden alle verfügbaren Tuner für Timer benutzt, die Überprüfung ob noch ein weiterer Timer erzeugt werden kann, übernimmt enigma2.")),
-			config.plugins.serienRec.tuner :                   (_("Die maximale Anzahl von Timern, die gleichzeitig (sich überschneidend) erstellt werden. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten.")),
+			config.plugins.serienRec.tuner :                   (_("Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten.")),
 			config.plugins.serienRec.ActionOnNew :             (_("Wird eine neue Staffel oder Serie gefunden (d.h. Folge 1), wird die hier eingestellt Aktion ausgeführt:\n"
 			                                                    "  - 'keine': es erfolgt keine weitere Aktion.\n"
 																"  - 'nur Benachrichtigung': Es wird eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
@@ -7487,7 +7522,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
 																"und auch nicht mehr angezeigt.")) % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))),
 			#config.plugins.serienRec.autoSearchForCovers :     (_("Bei 'ja' wird nach Beenden des automatischen Suchlaufs die Suche nach Covern gestartet. Diese Suche erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.")),
-			config.plugins.serienRec.planerCacheEnabled :      (_("Bei 'ja' werden beim automatischen Suchlauf die Daten für den Serienplaner und die Sendetermine geladen und gespeichert. Diese Suche erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.")),
 			config.plugins.serienRec.runAutocheckAtExit :      (_("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Channels und/oder Markern Änderungen vorgenommen wurden, "
 			                                                    "die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Channel zugewiesen, etc.)")),
 			config.plugins.serienRec.wakeUpDSB :               (_("Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
@@ -7591,6 +7625,16 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				config.plugins.serienRec.breakTimersuche : (_("Bei 'ja' wird die Timersuche abgebrochen, wenn der Ausstrahlungstermin zu weit in der Zukunft liegt (also nach %s).")) % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400)))
 			})
 
+		if config.plugins.serienRec.ActionOnNew.value != "0":
+			self.HilfeTexte.update({
+				config.plugins.serienRec.planerCacheEnabled : (_("Bei 'ja' werden beim automatischen Suchlauf die Daten für den Serienplaner und die Sendetermine geladen und gespeichert. "
+															   "Die Speicherung der Serienplaner-Daten erfolgt nicht, wenn der Suchlauf manuell gestartet wurde."))
+			})
+		else:
+			self.HilfeTexte.update({
+				config.plugins.serienRec.planerCacheEnabled : (_("Bei 'ja' werden beim automatischen Suchlauf die Sendetermine geladen und gespeichert."))
+			})
+
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
@@ -7633,6 +7677,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.margin_after.save()
 		config.plugins.serienRec.max_season.save()
 		config.plugins.serienRec.Autoupdate.save()
+		config.plugins.serienRec.updateType.save()
 		config.plugins.serienRec.globalFromTime.save()
 		config.plugins.serienRec.globalToTime.save()
 		config.plugins.serienRec.timeUpdate.save()
@@ -11128,7 +11173,8 @@ class serienRecMain(Screen, HelpableScreen):
 				serienRecCheckForRecording(self.session, False)
 		
 		if config.plugins.serienRec.Autoupdate.value:
-			checkUpdate(self.session).checkforupdate()
+			#checkUpdate(self.session).checkforupdate()
+			checkGitHubUpdate(self.session).checkForUpdate()
 			
 		if self.isChannelsListEmpty():
 			print "[Serien Recorder] Channellist is empty !"
@@ -11716,29 +11762,15 @@ class checkUpdate():
 			self.session.openWithCallback(self.startUpdate,MessageBox,_("Für das Serien Recorder Plugin ist ein Update verfügbar!\nWollen Sie es jetzt herunterladen und installieren?"), MessageBox.TYPE_YESNO)
 		else:
 			getPage("http://master.dl.sourceforge.net/project/w22754/SerienRecorder.txt").addCallback(self.gotUpdateInfoFromW22754).addErrback(self.gotError)
-			#getPage("http://sourceforge.net/projects/w22754/files/SerienRecorder.txt").addCallback(self.gotUpdateInfoFromW22754).addErrback(self.gotError)
 			print "[Serien Recorder] kein update von @einfall verfügbar."
 
 	def gotUpdateInfoFromW22754(self, html):
 		tmp_infolines = html.splitlines()
-		remoteversion = tmp_infolines[0].split(".")
+		remoteversion = map(lambda x: int(x), tmp_infolines[0].split("."))
 		self.updateurl = tmp_infolines[1]
-		version = config.plugins.serienRec.showversion.value.split(".")
-		
-		if len(version) < 3:
-			version.extend((3-len(version)) * '0')
-		if len(remoteversion) < 3:
-			remoteversion.extend((3-len(remoteversion)) * '0')
-		
-		update = False
-		if int(remoteversion[0]) > int(version[0]):
-			update = True
-		elif (int(remoteversion[0]) == int(version[0])) and (int(remoteversion[1]) > int(version[1])):
-			update = True
-		elif (int(remoteversion[0]) == int(version[0])) and (int(remoteversion[1]) == int(version[1])) and (int(remoteversion[2]) > int(version[2])):
-			update = True
-		
-		if update:
+		version = map(lambda x: int(x), config.plugins.serienRec.showversion.value.split("."))
+
+		if remoteversion > version:
 			self.session.openWithCallback(self.startUpdate,MessageBox,_("Für das Serien Recorder Plugin ist ein Update verfügbar!\nWollen Sie es jetzt herunterladen und installieren?"), MessageBox.TYPE_YESNO)
 		else:
 			print "[Serien Recorder] kein update von @w22754 verfügbar."
@@ -11746,7 +11778,7 @@ class checkUpdate():
 
 	def startUpdate(self,answer):
 		if answer:
-			self.session.open(SerienRecorderUpdateScreen,self.updateurl)
+			self.session.open(SerienRecorderUpdateScreen, self.updateurl, False)
 		else:
 			return
 
@@ -11759,12 +11791,13 @@ class SerienRecorderUpdateScreen(Screen):
 			<widget name="mplog" position="5,5" size="710,310" font="Regular;18" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="5"/>
 		</screen>""" % ((DESKTOP_WIDTH - 720) / 2, (DESKTOP_HEIGHT - 320) / 2, _("Serien Recorder Update"))
 
-	def __init__(self, session, updateurl):
+	def __init__(self, session, updateurl, updateFromGit=True):
 		self.session = session
 		Screen.__init__(self, session)
 
-		self.updateurl = updateurl
-
+		self.target = updateurl
+		self.updateFromGit = updateFromGit
+		
 		#self["mplog"] = ScrollLabel()
 		self["mplog"] = Label()
 		self.onLayoutFinish.append(self.__onLayoutFinished)
@@ -11772,6 +11805,24 @@ class SerienRecorderUpdateScreen(Screen):
 	def __onLayoutFinished(self):
 		sl = self["mplog"]
 		sl.instance.setZPosition(5)
+
+		if self.updateFromGit:
+			self["mplog"].setText(_("Starte Download, bitte warten..."))
+			try:
+				file_name = "/tmp/%s" % self.target.split('/')[-1]
+				if fileExists(file_name):
+					os.remove(file_name)
+				urllib.urlcleanup()
+				data = urllib.urlretrieve(self.target, file_name)
+				self.target = data[0]
+				
+				if not fileExists(self.target):
+					#self.session.open(MessageBox, _("Der Download ist fehlgeschlagen.\nDie Installation wird abgebrochen."), MessageBox.TYPE_INFO)
+					self.close()
+			except:
+				#self.session.open(MessageBox, _("Der Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
+				self.close()
+	
 		self["mplog"].setText(_("Starte Update, bitte warten..."))
 		self.startPluginUpdate()
 
@@ -11781,9 +11832,16 @@ class SerienRecorderUpdateScreen(Screen):
 		self.container.stdoutAvail.append(self.mplog)
 		#self.container.stderrAvail.append(self.mplog)
 		#self.container.dataAvail.append(self.mplog)
-		self.container.execute("opkg install --force-overwrite --force-depends %s" % str(self.updateurl))
+		if isDreamboxOS:
+			#self.container.execute("dpkg --install --force-overwrite --force-depends %s" % str(self.target))
+			self.container.execute("dpkg --install %s && apt-get update && apt-get -f install" % str(self.target))
+		else:
+			self.container.execute("opkg install --force-overwrite --force-depends %s" % str(self.target))
 
 	def finishedPluginUpdate(self,retval):
+		if self.updateFromGit:
+			if fileExists(self.target):
+				os.remove(self.target)
 		self.session.openWithCallback(self.restartGUI, MessageBox, _("Serien Recorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?"), MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, answer):
@@ -11795,6 +11853,58 @@ class SerienRecorderUpdateScreen(Screen):
 	def mplog(self,str):
 		self["mplog"].setText(str)
 
+class checkGitHubUpdate():		
+	def __init__(self, session):
+		self.session = session
+
+	def checkForUpdate(self):
+		conn = httplib.HTTPSConnection("api.github.com",timeout=10, port=443)
+		conn.request(url="/repos/einfall/serienrecorder/tags", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
+		data = conn.getresponse()
+		self.response = json.load(data)
+		latestVersion = self.response[0]['name'][1:]
+		
+		if config.plugins.serienRec.updateType.value == "0" and self.checkIfBetaVersion(latestVersion) == True: # Stable
+			latestVersion = self.searchLatestStable()
+
+		remoteversion = map(lambda x: int(x), latestVersion.split("."))
+		version = map(lambda x: int(x), config.plugins.serienRec.showversion.value.split("."))
+
+		if remoteversion > version:
+			self.latestVersion = latestVersion
+			self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das Serien Recorder Plugin ist ein GitHub-Update verfügbar!\nWollen Sie es jetzt herunterladen und installieren?"), MessageBox.TYPE_YESNO)
+
+	def checkIfBetaVersion(self, foundVersion):
+		isBeta = foundVersion.find("beta")
+		if isBeta != -1:
+			return True
+		else:
+			return False
+
+	def searchLatestStable(self):
+		isStable = False
+		latestStabel = ""
+		idx = 0
+		
+		while not isStable:
+			idx += 1
+			latestStabel = self.response[idx]['name'][1:]
+			isBeta = self.checkIfBetaVersion(latestStabel)
+			if not isBeta:
+				isStable = True
+				
+		return latestStabel
+
+	def startUpdate(self,answer):
+		if answer:
+			if isDreamboxOS:
+				remoteUrl = "https://github.com/einfall/serienrecorder/releases/download/v%s/enigma2-plugin-extensions-serienrecorder_%s_all.deb" % (str(self.latestVersion), str(self.latestVersion))
+			else:
+				remoteUrl = "https://github.com/einfall/serienrecorder/releases/download/v%s/enigma2-plugin-extensions-serienrecorder_%s_all.ipk" % (str(self.latestVersion), str(self.latestVersion))
+			self.session.open(SerienRecorderUpdateScreen, remoteUrl)
+		else:
+			return
+			
 def getNextWakeup():
 	color_print = "\033[93m"
 	color_end = "\33[0m"
