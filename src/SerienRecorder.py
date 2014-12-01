@@ -249,7 +249,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.15"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.16-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -7286,9 +7286,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 	def createConfigList(self):
 		self.list = []
 		self.list.append(getConfigListEntry(_("---------  SYSTEM:  -------------------------------------------------------------------------------------------")))
+		self.list.append(getConfigListEntry(_("Umfang der Einstellungen:"), config.plugins.serienRec.setupType))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("ID der Box:"), config.plugins.serienRec.BoxID))
-		self.list.append(getConfigListEntry(_("Umfang der Einstellungen:"), config.plugins.serienRec.setupType))
 		self.list.append(getConfigListEntry(_("Speicherort der Aufnahmen:"), config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry(_("Serien-Verzeichnis anlegen:"), config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry(_("Staffel-Verzeichnis anlegen:"), config.plugins.serienRec.seasonsubdir))
@@ -11794,81 +11794,9 @@ class checkUpdate():
 
 	def startUpdate(self,answer):
 		if answer:
-			self.session.open(SerienRecorderUpdateScreen, self.updateurl, False)
+			self.session.open(SerienRecorderUpdateScreen, self.updateurl)
 		else:
 			return
-
-class SerienRecorderUpdateScreen(Screen):
-	DESKTOP_WIDTH  = getDesktop(0).size().width()
-	DESKTOP_HEIGHT = getDesktop(0).size().height()
-
-	skin = """
-		<screen name="SerienRecorderUpdate" position="%d,%d" size="720,320" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
-			<widget name="mplog" position="5,5" size="710,310" font="Regular;18" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="5"/>
-		</screen>""" % ((DESKTOP_WIDTH - 720) / 2, (DESKTOP_HEIGHT - 320) / 2, _("Serien Recorder Update"))
-
-	def __init__(self, session, updateurl, updateFromGit=True):
-		self.session = session
-		Screen.__init__(self, session)
-
-		self.target = updateurl
-		self.updateFromGit = updateFromGit
-		
-		#self["mplog"] = ScrollLabel()
-		self["mplog"] = Label()
-		self.onLayoutFinish.append(self.__onLayoutFinished)
-
-	def __onLayoutFinished(self):
-		sl = self["mplog"]
-		sl.instance.setZPosition(5)
-
-		if self.updateFromGit:
-			self["mplog"].setText(_("Starte Download, bitte warten..."))
-			try:
-				file_name = "/tmp/%s" % self.target.split('/')[-1]
-				if fileExists(file_name):
-					os.remove(file_name)
-				urllib.urlcleanup()
-				data = urllib.urlretrieve(self.target, file_name)
-				self.target = data[0]
-				
-				if not fileExists(self.target):
-					#self.session.open(MessageBox, _("Der Download ist fehlgeschlagen.\nDie Installation wird abgebrochen."), MessageBox.TYPE_INFO)
-					self.close()
-			except:
-				#self.session.open(MessageBox, _("Der Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
-				self.close()
-
-		self["mplog"].setText(_("Starte Update, bitte warten..."))
-		self.startPluginUpdate()
-
-	def startPluginUpdate(self):
-		self.container=eConsoleAppContainer()
-		self.container.appClosed.append(self.finishedPluginUpdate)
-		self.container.stdoutAvail.append(self.mplog)
-		#self.container.stderrAvail.append(self.mplog)
-		#self.container.dataAvail.append(self.mplog)
-		if isDreamboxOS:
-			#self.container.execute("dpkg --install --force-overwrite --force-depends %s" % str(self.target))
-			self.container.execute("dpkg --install %s && apt-get update && apt-get -f install" % str(self.target))
-		else:
-			self.container.execute("opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.target))
-
-	def finishedPluginUpdate(self,retval):
-		if self.updateFromGit:
-			if fileExists(self.target):
-				os.remove(self.target)
-			urllib.urlcleanup()
-		self.session.openWithCallback(self.restartGUI, MessageBox, _("Serien Recorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?"), MessageBox.TYPE_YESNO)
-
-	def restartGUI(self, answer):
-		if answer:
-			self.session.open(TryQuitMainloop, 3)
-		else:
-			self.close()
-
-	def mplog(self,str):
-		self["mplog"].setText(str)
 
 class checkGitHubUpdate():		
 	def __init__(self, session):
@@ -11884,10 +11812,14 @@ class checkGitHubUpdate():
 		if config.plugins.serienRec.updateType.value == "0" and self.checkIfBetaVersion(latestVersion): # Stable
 			latestVersion = self.searchLatestStable()
 
-		remoteversion = map(lambda x: int(x), latestVersion.split("-")[0].split("."))
-		version = map(lambda x: int(x), config.plugins.serienRec.showversion.value.split("-")[0].split("."))
+		remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
+		version=config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
+		remoteversion.extend((max([len(remoteversion),len(version)])-len(remoteversion)) * '0')
+		remoteversion=map(lambda x: int(x), remoteversion)
+		version.extend((max([len(remoteversion),len(version)])-len(version)) * '0')
+		version=map(lambda x: int(x), version)
 
-		if (remoteversion > version) or ((remoteversion == version) and (self.checkIfBetaVersion(config.plugins.serienRec.showversion.value) and not self.checkIfBetaVersion(latestVersion))):
+		if (remoteversion > version):
 			self.latestVersion = latestVersion
 			self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das Serien Recorder Plugin ist ein Update (v%s) verfügbar!\nWollen Sie es jetzt herunterladen und installieren?") % str(latestVersion), MessageBox.TYPE_YESNO, msgBoxID="[Serien Recorder] Update available")
 
@@ -11922,6 +11854,101 @@ class checkGitHubUpdate():
 		else:
 			return
 			
+class SerienRecorderUpdateScreen(Screen):
+	DESKTOP_WIDTH  = getDesktop(0).size().width()
+	DESKTOP_HEIGHT = getDesktop(0).size().height()
+
+	skin = """
+		<screen name="SerienRecorderUpdate" position="%d,%d" size="720,320" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
+			<widget name="mplog" position="5,5" size="710,310" font="Regular;18" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="5"/>
+			<widget name="activityslider" position="5,280" size="710,20" borderWidth="1" transparent="1"  zPosition="5"/>
+		</screen>""" % ((DESKTOP_WIDTH - 720) / 2, (DESKTOP_HEIGHT - 320) / 2, _("Serien Recorder Update"))
+
+	def __init__(self, session, updateurl):
+		from Components.Slider import Slider
+		
+		self.session = session
+		Screen.__init__(self, session)
+		self.target = updateurl
+		
+		#self["mplog"] = ScrollLabel()
+		self["mplog"] = Label()
+		
+		self.activityslider = Slider(0, 200)
+		self["activityslider"] = self.activityslider
+		self.activity = 0
+		self.activityTimer = eTimer()
+		self.activityTimer.callback.append(self.doActivityTimer)
+		
+		self.onLayoutFinish.append(self.__onLayoutFinished)
+
+	def doActivityTimer(self):
+		self.activity += 1
+		if self.activity == 201:
+			self.activity = 1
+		self.activityslider.setValue(self.activity)
+		
+	def startActivityTimer(self):
+		self.activityTimer.start(100, False)
+		
+	def stopActivityTimer(self):
+		self.activityTimer.stop()
+		
+	def __onLayoutFinished(self):
+		sl = self["mplog"]
+		sl.instance.setZPosition(5)
+
+		self["mplog"].setText(_("Download wurde gestartet, bitte warten..."))
+		self.activityslider.setValue(0)
+		self.startActivityTimer()
+
+		self.file_name = "/tmp/%s" % self.target.split('/')[-1]
+		if fileExists(self.file_name):
+			os.remove(self.file_name)
+		downloadPage(self.target, self.file_name).addCallback(self.downloadFinished).addErrback(self.downloadError)
+
+	def downloadFinished(self, data):
+		#self.stopActivityTimer()
+		if fileExists(self.file_name):
+			self["mplog"].setText(_("Starte Update, bitte warten..."))
+
+			#self.activity = 0
+			#self.activityslider.setValue(0)
+			#self.startActivityTimer()
+
+			self.container=eConsoleAppContainer()
+			self.container.appClosed.append(self.finishedPluginUpdate)
+			self.container.stdoutAvail.append(self.mplog)
+			#self.container.stderrAvail.append(self.mplog)
+			#self.container.dataAvail.append(self.mplog)
+			if isDreamboxOS:
+				#self.container.execute("dpkg --install --force-overwrite --force-depends %s" % str(self.file_name))
+				self.container.execute("dpkg --install %s && apt-get update && apt-get -f install" % str(self.file_name))
+			else:
+				self.container.execute("opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.file_name))
+		else:	
+			self.downloadError()
+
+	def downloadError(self):
+		self.stopActivityTimer()
+		self.session.open(MessageBox, _("Der Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
+		self.close()
+		
+	def finishedPluginUpdate(self,retval):
+		self.stopActivityTimer()
+		if fileExists(self.file_name):
+			os.remove(self.file_name)
+		self.session.openWithCallback(self.restartGUI, MessageBox, _("Serien Recorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?"), MessageBox.TYPE_YESNO)
+
+	def restartGUI(self, answer):
+		if answer:
+			self.session.open(TryQuitMainloop, 3)
+		else:
+			self.close()
+
+	def mplog(self,str):
+		self["mplog"].setText(str)
+
 def getNextWakeup():
 	color_print = "\033[93m"
 	color_end = "\33[0m"
