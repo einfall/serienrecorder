@@ -7347,17 +7347,20 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("Timername:"), config.plugins.serienRec.TimerName))
 			self.list.append(getConfigListEntry(_("Manuelle Timer immer erstellen:"), config.plugins.serienRec.forceManualRecording))
-			tvbouquets = getTVBouquets()
-			if len(tvbouquets) < 2:
-				config.plugins.serienRec.selectBouquets.value = False
-			else:
+		tvbouquets = getTVBouquets()
+		if len(tvbouquets) < 2:
+			config.plugins.serienRec.selectBouquets.value = False
+		else:
+			if config.plugins.serienRec.setupType.value == "1":
 				self.list.append(getConfigListEntry(_("Bouquets auswählen:"), config.plugins.serienRec.selectBouquets))
-				if config.plugins.serienRec.selectBouquets.value:
-					self.getTVBouquetSelection()
+			if config.plugins.serienRec.selectBouquets.value:
+				self.getTVBouquetSelection()
+				if config.plugins.serienRec.setupType.value == "1":
 					self.list.append(getConfigListEntry(_("    Standard Bouquet:"), config.plugins.serienRec.MainBouquet))
 					self.list.append(getConfigListEntry(_("    Alternatives Bouquet:"), config.plugins.serienRec.AlternativeBouquet))
 					self.list.append(getConfigListEntry(_("    Verwende alternative Channels bei Konflikten:"), config.plugins.serienRec.useAlternativeChannel))
-
+		
+		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(""))
 			self.list.append(getConfigListEntry(_("---------  OPTIMIERUNGEN:  ------------------------------------------------------------------------------------")))
 			self.list.append(getConfigListEntry(_("Intensive Suche nach angelegten Timern:"), config.plugins.serienRec.intensiveTimersuche))
