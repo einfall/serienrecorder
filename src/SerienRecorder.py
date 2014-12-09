@@ -11878,8 +11878,11 @@ class SerienRecorderUpdateScreen(Screen):
 		self["activityslider"] = self.activityslider
 		self.activity = 0
 		self.activityTimer = eTimer()
-		self.activityTimer.callback.append(self.doActivityTimer)
-		
+		if isDreamboxOS:
+			self.activityTimer_conn = self.activityTimer.timeout.connect(self.doActivityTimer)
+		else:
+			self.activityTimer.callback.append(self.doActivityTimer)
+
 		self.onLayoutFinish.append(self.__onLayoutFinished)
 
 	def doActivityTimer(self):
