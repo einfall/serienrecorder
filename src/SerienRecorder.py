@@ -171,6 +171,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.AutoBackup = ConfigYesNo(default = False)
 	config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.eventid = ConfigYesNo(default = True)
+	config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit")), ("2", _("nach EPGRefresh"))], default = "1")
 	config.plugins.serienRec.update = ConfigYesNo(default = False)
 	config.plugins.serienRec.updateInterval = ConfigInteger(0, (0,24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
@@ -2270,6 +2271,7 @@ class serienRecAddTimer():
 class serienRecCheckForRecording():
 
 	instance = None
+	epgrefresh_instance = None
 
 	def __init__(self, session, manuell):
 		assert not serienRecCheckForRecording.instance, "Go is a singleton class!"
@@ -2354,6 +2356,15 @@ class serienRecCheckForRecording():
 		dbTmp.commit()
 		cTmp.close()
 
+		# Remove EPGRefresh notifier
+		try:
+			from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
+			self.epgrefresh_instance = epgrefresh
+			writeLog(_("[Serien Recorder] Removed EPGRefresh notifier"), True)
+			self.epgrefresh_instance.removeFinishNotifier(self.startCheck)
+		except:
+			writeLog(_("[Serien Recorder] EPGRefresh not installed!"), True)
+
 		if not self.manuell and config.plugins.serienRec.update.value:
 			refreshTimer = eTimer()
 			if isDreamboxOS:
@@ -2364,7 +2375,7 @@ class serienRecCheckForRecording():
 			refreshTimer.start(updateZeit, True)
 			print "%sSerien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
-		elif not self.manuell and config.plugins.serienRec.timeUpdate.value:
+		elif not self.manuell and config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			acttime = (lt[3] * 60 + lt[4])
 			deltime = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
 			if acttime < deltime:
@@ -2381,6 +2392,14 @@ class serienRecCheckForRecording():
 			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
 			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Minuten") % str(deltatime), True)
+		elif not self.manuell and config.plugins.serienRec.autochecktype.value == "2":
+			try:
+				from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
+				self.epgrefresh_instance = epgrefresh
+				writeLog(_("[Serien Recorder] Added EPGRefresh notifier"), True)
+				self.epgrefresh_instance.addFinishNotifier(self.startCheck)
+			except:
+				writeLog(_("[Serien Recorder] EPGRefresh not installed!"), True)
 		else:
 			print "[Serien Recorder] checkRecTimer manuell."
 			global runAutocheckAtExit
@@ -2427,7 +2446,7 @@ class serienRecCheckForRecording():
 			refreshTimer.start(updateZeit, True)
 			print "%s[Serien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
-		elif config.plugins.serienRec.timeUpdate.value:
+		elif config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			acttime = (lt[3] * 60 + lt[4])
 			deltime = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
 			if acttime < deltime:
@@ -6425,7 +6444,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			"cancel"   : (self.keyCancel, _("zurück zur Serienplaner-Ansicht")),
 			"red"	   : (self.keyRed, _("umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert")),
 			"red_long" : (self.keyRedLong, _("ausgewählten Sender aus der Channelliste endgültig löschen")),
-			"green"    : (self.keyGreen, _("Channel-Zuordnung zurücksetzen")),
+			"green"    : (self.keyGreen, _("Kanal-Zuordnung zurücksetzen")),
 			"menu"     : (self.channelSetup, _("Menü für Sender-Einstellungen öffnen")),
 			"menu_long": (self.recSetup, _("Menü für globale Einstellungen öffnen")),
 			"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
@@ -6634,7 +6653,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self.serienRecChlist.append((webSender, servicename, altservicename, status))
 
 		if len(self.serienRecChlist) != 0:
-			self['title'].setText(_("Channel-Zuordnung"))
+			self['title'].setText(_("Kanäle zuordnen"))
 			self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
 		else:
 			print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
@@ -6790,7 +6809,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				runAutocheckAtExit = True
 				dbSerRec.commit()
 				cCursor.close()
-				self['title'].setText(_("Channel-Zuordnung"))
+				self['title'].setText(_("Kanäle zuordnen"))
 				self.showChannels()
 		else:
 			self.modus = "list"
@@ -6821,7 +6840,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			runAutocheckAtExit = True
 			dbSerRec.commit()
 			cCursor.close()
-			self['title'].setText(_("Channel-Zuordnung"))
+			self['title'].setText(_("Kanäle zuordnen"))
 			self.showChannels()
 				
 	def keyRed(self):
@@ -7309,8 +7328,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.list.append(getConfigListEntry(_("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------")))
 		#self.list.append(getConfigListEntry(_("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):"), config.plugins.serienRec.updateInterval)) #3600000
 		#self.list.append(getConfigListEntry(_("Intervall für autom. Suchlauf (Std.) (00 = keiner, 24 = nach Uhrzeit):"), config.plugins.serienRec.updateInterval)) #3600000
-		if config.plugins.serienRec.updateInterval.value == 24:
-			self.list.append(getConfigListEntry(_("Uhrzeit für automatischen Suchlauf:"), config.plugins.serienRec.deltime))
+		self.list.append(getConfigListEntry(_("Automatischen Suchlauf ausführen:"), config.plugins.serienRec.autochecktype))
+		if config.plugins.serienRec.autochecktype.value == "1":
+			if config.plugins.serienRec.updateInterval.value == 24:
+				self.list.append(getConfigListEntry(_("Uhrzeit für automatischen Suchlauf:"), config.plugins.serienRec.deltime))
 		self.list.append(getConfigListEntry(_("Timer für X Tage erstellen:"), config.plugins.serienRec.checkfordays))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("Früheste Zeit für Timer:"), config.plugins.serienRec.globalFromTime))
@@ -7331,7 +7352,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			else:
 				self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
 			self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
-		if config.plugins.serienRec.updateInterval.value == 24:
+		if config.plugins.serienRec.autochecktype.value >= "1":
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
 			self.list.append(getConfigListEntry(_("Aktion nach dem automatischen Suchlauf:"), config.plugins.serienRec.afterAutocheck))
 			if config.plugins.serienRec.setupType.value == "1":
@@ -7560,10 +7581,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			                                                    "ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, soferne nicht ein Konflikt mit anderen Timern besteht.")),
 			config.plugins.serienRec.TimerName :               (_("Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
 																"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden.")),
-			config.plugins.serienRec.selectBouquets :          (_("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Channel-Zuordnung verwendet werden.\n"
-			                                                    "Bei 'nein' wird das erste Bouquet für die Channel-Zuordnung benutzt.")),
-			config.plugins.serienRec.MainBouquet :             (_("Auswahl, welches Bouquet bei der Channel-Zuordnung als Standard verwendet werden sollen.")),
-			config.plugins.serienRec.AlternativeBouquet :      (_("Auswahl, welches Bouquet bei der Channel-Zuordnung als Alternative verwendet werden sollen.")),
+			config.plugins.serienRec.selectBouquets :          (_("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Kanal-Zuordnung verwendet werden.\n"
+			                                                    "Bei 'nein' wird das erste Bouquet für die Kanal-Zuordnung benutzt.")),
+			config.plugins.serienRec.MainBouquet :             (_("Auswahl, welches Bouquet bei der Kanal-Zuordnung als Standard verwendet werden sollen.")),
+			config.plugins.serienRec.AlternativeBouquet :      (_("Auswahl, welches Bouquet bei der Kanal-Zuordnung als Alternative verwendet werden sollen.")),
 			config.plugins.serienRec.useAlternativeChannel :   (_("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu erstellen, "
 										                        "falls der Timer auf dem bevorzugten Channel nicht angelegt werden kann.")),
 			config.plugins.serienRec.showPicons :              (_("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.")),
@@ -7590,7 +7611,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.writeLog :                (_("Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des Timer-Suchlaufs.\n"
 			                                                    "Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern.")),
 			config.plugins.serienRec.writeLogVersion :         (_("Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten.")),
-			config.plugins.serienRec.writeLogChannels :        (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Channel-Zuordnung kein STB-Channel zugeordnet ist, oder der STB-Channel deaktiviert ist.")),
+			config.plugins.serienRec.writeLogChannels :        (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Kanal-Zuordnung kein STB-Channel zugeordnet ist, oder der STB-Channel deaktiviert ist.")),
 			config.plugins.serienRec.writeLogAllowedSender :   (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der ausstrahlende Sender in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.")),
 			config.plugins.serienRec.writeLogAllowedEpisodes : (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.")),
 			config.plugins.serienRec.writeLogAdded :           (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist.")),
@@ -7607,6 +7628,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.firstscreen :             (_("Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen.")),
 			config.plugins.serienRec.SkinType :                (_("Hier kann das Erscheinungsbild des SR ausgewählt werden.")),
 			config.plugins.serienRec.showAllButtons :          (_("Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt.")),
+		    config.plugins.serienRec.autochecktype :           (_("Bei 'manuell' wird kein automatischer Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
+		                                                        "Bei 'zur gewählten Uhrzeit' wird der automatische Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
+		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nach dem der EPGRefresh beendet ist.")),
 		}			
 				
 		# if config.plugins.serienRec.updateInterval.value == 0:
@@ -7659,6 +7683,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		
 	def save(self):
 		config.plugins.serienRec.showNotification.save()
+		config.plugins.serienRec.autochecktype.save()
+
 		if config.plugins.serienRec.updateInterval.value == 24:
 			config.plugins.serienRec.timeUpdate.value = True
 			config.plugins.serienRec.update.value = False
