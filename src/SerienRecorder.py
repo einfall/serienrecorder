@@ -7352,7 +7352,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			else:
 				self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
 			self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
-		if config.plugins.serienRec.autochecktype.value >= "1":
+		if config.plugins.serienRec.autochecktype.value  in ("0", "1"):
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
 			self.list.append(getConfigListEntry(_("Aktion nach dem automatischen Suchlauf:"), config.plugins.serienRec.afterAutocheck))
 			if config.plugins.serienRec.setupType.value == "1":
@@ -7816,6 +7816,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if self.SkinType != config.plugins.serienRec.SkinType.value:
 			SelectSkin()
 			setSkinProperties(self)
+
+		if config.plugins.serienRec.ActionOnNew.value in ("2", "3"):
+			self.session.open(MessageBox, _("Die Einstellung 'Aktion bei neuer Serie/Staffel' ist so eingestellt, dass automatisch neue Serien-Marker für jede gefundene neue Serie/Staffel angelegt werden. Dies kann zu sehr vielen Serien-Markern bzw. Timern und Aufnahmen führen."), MessageBox.TYPE_INFO)
 			
 		global serienRecDataBase
 		if serienRecDataBase == "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value:
