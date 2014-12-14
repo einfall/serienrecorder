@@ -6444,7 +6444,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			"cancel"   : (self.keyCancel, _("zurück zur Serienplaner-Ansicht")),
 			"red"	   : (self.keyRed, _("umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert")),
 			"red_long" : (self.keyRedLong, _("ausgewählten Sender aus der Channelliste endgültig löschen")),
-			"green"    : (self.keyGreen, _("Kanal-Zuordnung zurücksetzen")),
+			"green"    : (self.keyGreen, _("Sender-Zuordnung zurücksetzen")),
 			"menu"     : (self.channelSetup, _("Menü für Sender-Einstellungen öffnen")),
 			"menu_long": (self.recSetup, _("Menü für globale Einstellungen öffnen")),
 			"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
@@ -6653,7 +6653,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self.serienRecChlist.append((webSender, servicename, altservicename, status))
 
 		if len(self.serienRecChlist) != 0:
-			self['title'].setText(_("Kanäle zuordnen"))
+			self['title'].setText(_("Sender zuordnen"))
 			self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
 		else:
 			print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
@@ -6809,7 +6809,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				runAutocheckAtExit = True
 				dbSerRec.commit()
 				cCursor.close()
-				self['title'].setText(_("Kanäle zuordnen"))
+				self['title'].setText(_("Sender zuordnen"))
 				self.showChannels()
 		else:
 			self.modus = "list"
@@ -6840,7 +6840,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			runAutocheckAtExit = True
 			dbSerRec.commit()
 			cCursor.close()
-			self['title'].setText(_("Kanäle zuordnen"))
+			self['title'].setText(_("Sender zuordnen"))
 			self.showChannels()
 				
 	def keyRed(self):
@@ -7581,10 +7581,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			                                                    "ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, soferne nicht ein Konflikt mit anderen Timern besteht.")),
 			config.plugins.serienRec.TimerName :               (_("Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
 																"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden.")),
-			config.plugins.serienRec.selectBouquets :          (_("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Kanal-Zuordnung verwendet werden.\n"
-			                                                    "Bei 'nein' wird das erste Bouquet für die Kanal-Zuordnung benutzt.")),
-			config.plugins.serienRec.MainBouquet :             (_("Auswahl, welches Bouquet bei der Kanal-Zuordnung als Standard verwendet werden sollen.")),
-			config.plugins.serienRec.AlternativeBouquet :      (_("Auswahl, welches Bouquet bei der Kanal-Zuordnung als Alternative verwendet werden sollen.")),
+			config.plugins.serienRec.selectBouquets :          (_("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Sender-Zuordnung verwendet werden.\n"
+			                                                    "Bei 'nein' wird das erste Bouquet für die Sender-Zuordnung benutzt.")),
+			config.plugins.serienRec.MainBouquet :             (_("Auswahl, welches Bouquet bei der Sender-Zuordnung als Standard verwendet werden sollen.")),
+			config.plugins.serienRec.AlternativeBouquet :      (_("Auswahl, welches Bouquet bei der Sender-Zuordnung als Alternative verwendet werden sollen.")),
 			config.plugins.serienRec.useAlternativeChannel :   (_("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu erstellen, "
 										                        "falls der Timer auf dem bevorzugten Channel nicht angelegt werden kann.")),
 			config.plugins.serienRec.showPicons :              (_("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.")),
@@ -7611,7 +7611,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.writeLog :                (_("Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des Timer-Suchlaufs.\n"
 			                                                    "Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern.")),
 			config.plugins.serienRec.writeLogVersion :         (_("Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten.")),
-			config.plugins.serienRec.writeLogChannels :        (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Kanal-Zuordnung kein STB-Channel zugeordnet ist, oder der STB-Channel deaktiviert ist.")),
+			config.plugins.serienRec.writeLogChannels :        (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Sender-Zuordnung kein STB-Channel zugeordnet ist, oder der STB-Channel deaktiviert ist.")),
 			config.plugins.serienRec.writeLogAllowedSender :   (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der ausstrahlende Sender in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.")),
 			config.plugins.serienRec.writeLogAllowedEpisodes : (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.")),
 			config.plugins.serienRec.writeLogAdded :           (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist.")),
