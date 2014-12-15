@@ -7352,7 +7352,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			else:
 				self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
 			self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
-		if config.plugins.serienRec.autochecktype.value  in ("0", "1"):
+		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
 			self.list.append(getConfigListEntry(_("Aktion nach dem automatischen Suchlauf:"), config.plugins.serienRec.afterAutocheck))
 			if config.plugins.serienRec.setupType.value == "1":
