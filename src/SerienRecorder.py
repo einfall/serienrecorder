@@ -29,7 +29,7 @@ from Screens.HelpMenu import HelpableScreen
 from Screens.InputBox import InputBox
 from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
-from Screens.Standby import TryQuitMainloop
+import Screens.Standby
 from Screens.VirtualKeyBoard import VirtualKeyBoard
 
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter, eConsoleAppContainer
@@ -230,7 +230,8 @@ def ReadConfigFile():
 	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default = True)
 	config.plugins.serienRec.runAutocheckAtExit = ConfigYesNo(default = False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default = False)
-
+	config.plugins.serienRec.showAdvice = ConfigYesNo(default = True)
+	
 	config.plugins.serienRec.selectBouquets = ConfigYesNo(default = False)
 	#config.plugins.serienRec.MainBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites (TV)")
 	#config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites-SD (TV)")
@@ -491,7 +492,7 @@ def getCover(self, serien_name, id):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif id:
 		url = "http://www.wunschliste.de%s/links" % id
-		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self)
+		getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
 
 def getCoverDataError(error, self, serien_nameCover):
 	if self is not None: 
@@ -509,7 +510,8 @@ def getCoverDataError(error, self, serien_nameCover):
 def getImdblink(data, self, serien_nameCover):
 	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 	if ilink:
-		getPage(ilink[0], agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+		#getPage(ilink[0], timeout=20, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+		getPage(ilink[0], timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
 	else:
 		print "[Serien Recorder] es wurde kein imdb-link für ein cover gefunden."
 		
@@ -886,8 +888,8 @@ def checkFileAccess():
 			logFileValid = False
 	
 	if not logFileValid:
-		logFile = "%slog" % serienRecMainPath			
-		Notifications.AddPopup(_("[Serien Recorder]\nDatei 'log' kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!") % (config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] checkFileAccess")
+		logFile = "%slog" % serienRecMainPath	
+		Notifications.AddPopup(_("[Serien Recorder]\nDatei 'log' kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!") % (config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] checkFileAccess")
 			
 def checkTimerAdded(sender, serie, staffel, episode, start_unixtime):
 	#"Castle" "S03E20 - Die Pizza-Connection" "1392997800" "1:0:19:EF76:3F9:1:C00000:0:0:0:" "kabel eins"
@@ -1089,37 +1091,37 @@ def getMarker():
 			dbSerRec.commit()
 		cTmp.close()
 		
-		if SerieEnabled:
-			if alleSender:
-				sender = ['Alle',]
-			else:
-				sender = []
-				cSender = dbSerRec.cursor()
-				cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY LOWER(ErlaubterSender)", (ID,))
-				cSenderList = cSender.fetchall()
-				if len(cSenderList) > 0:
-					sender = list(zip(*cSenderList)[0])
-				cSender.close()
+		#if SerieEnabled:
+		if alleSender:
+			sender = ['Alle',]
+		else:
+			sender = []
+			cSender = dbSerRec.cursor()
+			cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY LOWER(ErlaubterSender)", (ID,))
+			cSenderList = cSender.fetchall()
+			if len(cSenderList) > 0:
+				sender = list(zip(*cSenderList)[0])
+			cSender.close()
 			
-			if AlleStaffelnAb == -2:			# 'Manuell'
-				staffeln = [AlleStaffelnAb,]
-			else:
-				staffeln = []
-				cStaffel = dbSerRec.cursor()
-				cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
-				cStaffelList = cStaffel.fetchall()
-				if len(cStaffelList) > 0:
-					staffeln = list(zip(*cStaffelList)[0])
-				if AlleStaffelnAb < 999999:
-					staffeln.insert(0, -1)
-					staffeln.append(AlleStaffelnAb)
-				cStaffel.close()
+		if AlleStaffelnAb == -2:			# 'Manuell'
+			staffeln = [AlleStaffelnAb,]
+		else:
+			staffeln = []
+			cStaffel = dbSerRec.cursor()
+			cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
+			cStaffelList = cStaffel.fetchall()
+			if len(cStaffelList) > 0:
+				staffeln = list(zip(*cStaffelList)[0])
+			if AlleStaffelnAb < 999999:
+				staffeln.insert(0, -1)
+				staffeln.append(AlleStaffelnAb)
+			cStaffel.close()
 			
-			AnzahlAufnahmen = int(config.plugins.serienRec.NoOfRecords.value)
-			if str(AnzahlWiederholungen).isdigit():
-				AnzahlAufnahmen = int(AnzahlWiederholungen)
+		AnzahlAufnahmen = int(config.plugins.serienRec.NoOfRecords.value)
+		if str(AnzahlWiederholungen).isdigit():
+			AnzahlAufnahmen = int(AnzahlWiederholungen)
 					
-			return_list.append((serie, url, staffeln, sender, AbEpisode, AnzahlAufnahmen))
+		return_list.append((serie, url, staffeln, sender, AbEpisode, AnzahlAufnahmen, SerieEnabled))
 	cCursor.close()
 	return return_list
 
@@ -1152,7 +1154,7 @@ def initDB():
 			dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 		except:
 			writeLog(_("[Serien Recorder] Fehler beim Initialisieren der Datenbank"))
-			Notifications.AddPopup(_("[Serien Recorder]\nFehler:\nDatenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!"), MessageBox.TYPE_INFO, timeout=-1)
+			Notifications.AddPopup(_("[Serien Recorder]\nFehler:\nDatenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!"), MessageBox.TYPE_INFO, timeout=10)
 			return False
 	
 	if os.path.getsize(serienRecDataBase) == 0:
@@ -2034,7 +2036,6 @@ def readPlanerData():
 		for key in l:
 			del dayCache[key]
 
-
 def readTermineData():
 	global termineCache
 	termineCache.clear()
@@ -2539,17 +2540,16 @@ class serienRecCheckForRecording():
 		writeLog(sMsg, True)
 
 		self.urls = []
-		self.new_urls = []
-		self.urls = []
+		self.MessageList = []
 		self.speedStartTime = time.clock()
 
 		# suche nach neuen Serien, Covern und Planer-Cache
 		if ((config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value)) or ((not self.manuell) and config.plugins.serienRec.autoSearchForCovers.value) or ((not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value):
 			self.startCheck2()
 		else:
-			if not self.manuell:
-				global dayCache
-				dayCache.clear()
+			#if not self.manuell:
+			#	global dayCache
+			#	dayCache.clear()
 			self.startCheck3()
 
 	def startCheck2(self):
@@ -2559,8 +2559,8 @@ class serienRecCheckForRecording():
 			dbTmp.commit()
 			cTmp.close()
 
-		global dayCache
-		dayCache.clear()
+		#global dayCache
+		#dayCache.clear()
 
 		if str(config.plugins.serienRec.maxWebRequests.value).isdigit():
 			ds = defer.DeferredSemaphore(tokens=int(config.plugins.serienRec.maxWebRequests.value))
@@ -2576,7 +2576,7 @@ class serienRecCheckForRecording():
 		
 	def readWebpageForNewStaffel(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
 		
 	def parseWebpageForNewStaffel(self, data, daypage, c1, c2, c3):
 		daylist = [[],[],[],[]]
@@ -2639,6 +2639,7 @@ class serienRecCheckForRecording():
 
 										if not self.manuell:
 											if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
+												self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
 												Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
 									cCursor.close()
 									
@@ -2665,6 +2666,7 @@ class serienRecCheckForRecording():
 
 													if not self.manuell:
 														if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
+															self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
 															Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
 									else:
 										cCursor.execute("SELECT TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=? AND TimerForSpecials=0", (serien_name.lower(),))				
@@ -2680,6 +2682,7 @@ class serienRecCheckForRecording():
 
 												if not self.manuell:
 													if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
+														self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
 														Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
 									
 									cCursor.close()
@@ -3064,15 +3067,16 @@ class serienRecCheckForRecording():
 		##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
 		#c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((.*?)x(.*?)\).<span class="titel">(.*?)</span></td></tr>')
 		c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
+		#c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(.*?x))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
 		c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
-		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,c1,c2,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen in self.urls]
+		downloads = [ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,c1,c2,serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,SerieEnabled).addErrback(self.dataError) for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled in self.urls]
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
 		return getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
 
-	def parseWebpage(self, data, c1, c2, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time):
+	def parseWebpage(self, data, c1, c2, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time, SerieEnabled=True):
 		self.count_url += 1
 
 		raw = c1.findall(data)
@@ -3087,178 +3091,179 @@ class serienRecCheckForRecording():
 			# parsing error -> nothing to do
 			return
 		
-		(fromTime, toTime) = getTimeSpan(serien_name)
-		if self.NoOfRecords < AnzahlAufnahmen:
-			self.NoOfRecords = AnzahlAufnahmen
-		
-		# loop over all transmissions
-		for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
-			# umlaute umwandeln
-			sender = iso8859_Decode(sender)
-			sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
-			title = iso8859_Decode(title)
-			staffel = iso8859_Decode(staffel)
-
-			# if there is no season or episode number it can be a special
-			# but if we have more than one special and wunschliste.de does not
-			# give us an episode number we are unable to differentiate between these specials
-			if not staffel and not episode:
-				staffel = "S"
-				episode = "0"
-				
-			# initialize strings
-			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
-			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
-			sTitle = "%s - %s" % (serien_name, seasonEpisodeString)
-
-			# Process channel relevant data
-
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft welche sender aktiviert und eingestellt sind.
-			#
-			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
-			if stbChannel == "":
-				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '") % (label_serie, webChannel))
-				continue
-				
-			if int(status) == 0:
-				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (label_serie, webChannel))
-				continue
-				
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft ob der sender zum sender von der Serie aus dem serien marker passt.
-			#
-			serieAllowed = False
-			if 'Alle' in allowedSender:
-				serieAllowed = True
-			elif sender in allowedSender:
-				serieAllowed = True
-				
-			if not serieAllowed:
-				writeLogFilter("allowedSender", _("[Serien Recorder] ' %s ' - Sender nicht erlaubt -> %s -> %s") % (label_serie, sender, allowedSender))
-				continue
+		if SerieEnabled:
+			(fromTime, toTime) = getTimeSpan(serien_name)
+			if self.NoOfRecords < AnzahlAufnahmen:
+				self.NoOfRecords = AnzahlAufnahmen
 			
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft welche staffel(n) erlaubt sind
-			#
-			serieAllowed = False
-			if -2 in staffeln:                          	# 'Manuell'
+			# loop over all transmissions
+			for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
+				# umlaute umwandeln
+				sender = iso8859_Decode(sender)
+				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
+				title = iso8859_Decode(title)
+				staffel = iso8859_Decode(staffel)
+
+				# if there is no season or episode number it can be a special
+				# but if we have more than one special and wunschliste.de does not
+				# give us an episode number we are unable to differentiate between these specials
+				if not staffel and not episode:
+					staffel = "S"
+					episode = "0"
+					
+				# initialize strings
+				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+				label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
+				sTitle = "%s - %s" % (serien_name, seasonEpisodeString)
+
+				# Process channel relevant data
+
+				##############################
+				#
+				# CHECK
+				#
+				# ueberprueft welche sender aktiviert und eingestellt sind.
+				#
+				(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
+				if stbChannel == "":
+					writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '") % (label_serie, webChannel))
+					continue
+					
+				if int(status) == 0:
+					writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (label_serie, webChannel))
+					continue
+					
+				##############################
+				#
+				# CHECK
+				#
+				# ueberprueft ob der sender zum sender von der Serie aus dem serien marker passt.
+				#
 				serieAllowed = False
-			elif (-1 in staffeln) and (0 in staffeln):		# 'Alle'
-				serieAllowed = True
-			elif str(staffel).isdigit():
-				if int(staffel) == 0:
-					if str(episode).isdigit():
-						if int(episode) < int(AbEpisode):
-							if config.plugins.serienRec.writeLogAllowedSender.value:
-								liste = staffeln[:]
-								liste.sort()
-								liste.reverse()
-								if -1 in staffeln:
-									liste.remove(-1)
-									liste[0] = _("ab %s") % liste[0]
-								liste.reverse()
-								liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
-								writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Episode nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
-							continue
-						else:
-							serieAllowed = True
-				elif int(staffel) in staffeln:
+				if 'Alle' in allowedSender:
 					serieAllowed = True
-				elif -1 in staffeln:		# 'folgende'
-					if int(staffel) >= max(staffeln):
+				elif sender in allowedSender:
+					serieAllowed = True
+					
+				if not serieAllowed:
+					writeLogFilter("allowedSender", _("[Serien Recorder] ' %s ' - Sender nicht erlaubt -> %s -> %s") % (label_serie, sender, allowedSender))
+					continue
+				
+				##############################
+				#
+				# CHECK
+				#
+				# ueberprueft welche staffel(n) erlaubt sind
+				#
+				serieAllowed = False
+				if -2 in staffeln:                          	# 'Manuell'
+					serieAllowed = False
+				elif (-1 in staffeln) and (0 in staffeln):		# 'Alle'
+					serieAllowed = True
+				elif str(staffel).isdigit():
+					if int(staffel) == 0:
+						if str(episode).isdigit():
+							if int(episode) < int(AbEpisode):
+								if config.plugins.serienRec.writeLogAllowedSender.value:
+									liste = staffeln[:]
+									liste.sort()
+									liste.reverse()
+									if -1 in staffeln:
+										liste.remove(-1)
+										liste[0] = _("ab %s") % liste[0]
+									liste.reverse()
+									liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
+									writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Episode nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
+								continue
+							else:
+								serieAllowed = True
+					elif int(staffel) in staffeln:
 						serieAllowed = True
-			elif getSpecialsAllowed(serien_name):
-				serieAllowed = True
-				
-			vomMerkzettel = False
-			if not serieAllowed:
-				cCursorTmp = dbSerRec.cursor()
-				cCursorTmp.execute("SELECT * FROM Merkzettel WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serien_name.lower(), str(staffel).lower(), str(episode).zfill(2).lower()))
-				row = cCursorTmp.fetchone()
-				if row:
-					writeLog(_("[Serien Recorder] ' %s ' - Timer vom Merkzettel wird angelegt @ %s") % (label_serie, stbChannel), True)
+					elif -1 in staffeln:		# 'folgende'
+						if int(staffel) >= max(staffeln):
+							serieAllowed = True
+				elif getSpecialsAllowed(serien_name):
 					serieAllowed = True
-					vomMerkzettel = True
+					
+				vomMerkzettel = False
+				if not serieAllowed:
+					cCursorTmp = dbSerRec.cursor()
+					cCursorTmp.execute("SELECT * FROM Merkzettel WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serien_name.lower(), str(staffel).lower(), str(episode).zfill(2).lower()))
+					row = cCursorTmp.fetchone()
+					if row:
+						writeLog(_("[Serien Recorder] ' %s ' - Timer vom Merkzettel wird angelegt @ %s") % (label_serie, stbChannel), True)
+						serieAllowed = True
+						vomMerkzettel = True
+					cCursorTmp.close()
+					
+				if not serieAllowed:
+					if config.plugins.serienRec.writeLogAllowedSender.value:
+						liste = staffeln[:]
+						liste.sort()
+						liste.reverse()
+						if -1 in staffeln:
+							liste.remove(-1)
+							liste[0] = _("ab %s") % liste[0]
+						liste.reverse()
+						if str(episode).isdigit():
+							if int(episode) < int(AbEpisode):
+								liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
+						if -2 in staffeln:
+							liste.remove(-2)
+							liste.insert(0, _("Manuell"))
+						writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
+					continue
+
+				# Process time and date relevant data
+
+				(margin_before, margin_after) = getMargins(serien_name, sender)
+
+				# formatiere start/end-zeit
+				(day, month) = datum.split('.')
+				(start_hour, start_min) = startzeit.split('.')
+				(end_hour, end_min) = endzeit.split('.')
+
+				start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
+
+				if int(start_hour) > int(end_hour):
+					end_unixtime = getNextDayUnixtime(end_min, end_hour, day, month)
+				else:
+					end_unixtime = getUnixTimeAll(end_min, end_hour, day, month)
+
+				# setze die vorlauf/nachlauf-zeit
+				start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+				end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
+
+
+				# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
+				if config.plugins.serienRec.breakTimersuche.value:
+					if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
+						start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
+						end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
+						if not allowedTimeRange(fromTime, toTime, start_time, end_time):
+							if not config.plugins.serienRec.forceRecording.value:
+								break
+
+					TimeSpan_time = int(future_time)
+					if config.plugins.serienRec.forceRecording.value:
+						TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
+					if int(start_unixtime) > int(TimeSpan_time):
+						# We reached the maximal time range to look for transmissions, so we can break here
+						break
+
+				##############################
+				#
+				# try to get eventID (eit) from epgCache
+				#
+				eit, new_end_unixtime, new_start_unixtime = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
+				alt_eit, alt_end_unixtime, alt_start_unixtime = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
+
+				(dirname, dirname_serie) = getDirname(serien_name, staffel)
+
+				cCursorTmp = dbTmp.cursor()
+				sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+				cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel)))
 				cCursorTmp.close()
-				
-			if not serieAllowed:
-				if config.plugins.serienRec.writeLogAllowedSender.value:
-					liste = staffeln[:]
-					liste.sort()
-					liste.reverse()
-					if -1 in staffeln:
-						liste.remove(-1)
-						liste[0] = _("ab %s") % liste[0]
-					liste.reverse()
-					if str(episode).isdigit():
-						if int(episode) < int(AbEpisode):
-							liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
-					if -2 in staffeln:
-						liste.remove(-2)
-						liste.insert(0, _("Manuell"))
-					writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
-				continue
-
-			# Process time and date relevant data
-
-			(margin_before, margin_after) = getMargins(serien_name, sender)
-
-			# formatiere start/end-zeit
-			(day, month) = datum.split('.')
-			(start_hour, start_min) = startzeit.split('.')
-			(end_hour, end_min) = endzeit.split('.')
-
-			start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
-
-			if int(start_hour) > int(end_hour):
-				end_unixtime = getNextDayUnixtime(end_min, end_hour, day, month)
-			else:
-				end_unixtime = getUnixTimeAll(end_min, end_hour, day, month)
-
-			# setze die vorlauf/nachlauf-zeit
-			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
-			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
-
-
-			# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
-			if config.plugins.serienRec.breakTimersuche.value:
-				if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
-					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
-					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
-					if not allowedTimeRange(fromTime, toTime, start_time, end_time):
-						if not config.plugins.serienRec.forceRecording.value:
-							break
-
-				TimeSpan_time = int(future_time)
-				if config.plugins.serienRec.forceRecording.value:
-					TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
-				if int(start_unixtime) > int(TimeSpan_time):
-					# We reached the maximal time range to look for transmissions, so we can break here
-					break
-
-			##############################
-			#
-			# try to get eventID (eit) from epgCache
-			#
-			eit, new_end_unixtime, new_start_unixtime = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
-			alt_eit, alt_end_unixtime, alt_start_unixtime = getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
-
-			(dirname, dirname_serie) = getDirname(serien_name, staffel)
-
-			cCursorTmp = dbTmp.cursor()
-			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel)))
-			cCursorTmp.close()
 			
 	def createTimer(self, result=True):
 		dbTmp.commit()
@@ -3338,18 +3343,24 @@ class serienRecCheckForRecording():
 		# in den deep-standby fahren.
 		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
 			if config.plugins.serienRec.DSBTimeout.value > 0:
-				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+				try:
+					self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+				except:
+					self.gotoDeepStandby(True)
 			else:
 				self.gotoDeepStandby(True)
 		return result
 				
 	def gotoDeepStandby(self, answer):
 		if answer:
-			import Screens.Standby
 			if config.plugins.serienRec.afterAutocheck.value == "2":
+				for each in self.MessageList:
+					Notifications.RemovePopup(each[3])
+
 				print "[Serien Recorder] gehe in Deep-Standby"
 				writeLog(_("[Serien Recorder] gehe in Deep-Standby"))
-				self.session.open(TryQuitMainloop, 1)
+				#self.session.open(Screens.Standby.TryQuitMainloop, 1)
+				Notifications.AddNotification(Screens.Standby.TryQuitMainloop, 1)
 			elif not Screens.Standby.inStandby:
 				print "[Serien Recorder] gehe in Standby"
 				writeLog(_("[Serien Recorder] gehe in Standby"))
@@ -3453,7 +3464,8 @@ class serienRecCheckForRecording():
 				
 				if len(self.konflikt) > 0:
 					if config.plugins.serienRec.showMessageOnConflicts.value:
-						Notifications.AddPopup(_("[Serien Recorder]\nACHTUNG!  -  %s") % self.konflikt, MessageBox.TYPE_INFO, timeout=-1)
+						self.MessageList.append((_("[Serien Recorder]\nACHTUNG!  -  %s") % self.konflikt, MessageBox.TYPE_INFO, -1, self.konflikt))
+						Notifications.AddPopup(_("[Serien Recorder]\nACHTUNG!  -  %s") % self.konflikt, MessageBox.TYPE_INFO, timeout=-1, id=self.konflikt)
 						
 			##############################
 			#
@@ -3802,7 +3814,10 @@ class serienRecCheckForRecording():
 		# in den deep-standby fahren.
 		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
 			if config.plugins.serienRec.DSBTimeout.value > 0:
-				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+				try:
+					self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+				except:
+					self.gotoDeepStandby(True)
 			else:
 				self.gotoDeepStandby(True)
 		self.close()
@@ -6343,7 +6358,7 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 		self['title'].setText(_("Suche Episoden ' %s '") % self.serien_name)
 		print self.serie_url
 
-		getPage("%s/episoden" % self.serie_url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
+		getPage("%s/episoden" % self.serie_url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
 
 	def resultsEpisodes(self, data):
 		self.episodes_list = []
@@ -7025,15 +7040,32 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
 		self.setInfoText()
-		self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.BoxID])
+		self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.BoxID][0])
+		#config.plugins.serienRec.showAdvice.value = True
+		if config.plugins.serienRec.showAdvice.value:
+			self.onShown.append(self.showAdvice)
 		self.onLayoutFinish.append(self.setSkinProperties)
-
+		
+	def showAdvice(self):
+		self.onShown.remove(self.showAdvice)
+		self.session.openWithCallback(self.switchOffAdvice, MessageBox, _("Hinweis:\n"
+		                                "Zusätzliche Informationen zu den Einstellungen erhalten Sie durch langes Drücken der Taste 'HILFE'.\n"
+										"Es wird dann die entsprechenden Stelle in der Bedienungsanleitung angezeigt.\n"
+										"\n"
+		                                "Diesen Hinweis nicht mehr anzeigen:\n"), MessageBox.TYPE_YESNO, default = False)
+										
+	def switchOffAdvice(self, answer=False):
+		if answer:
+			config.plugins.serienRec.showAdvice.value = False
+		config.plugins.serienRec.showAdvice.save()
+		configfile.save()
+		
 	def callHelpAction(self, *args):
 		HelpableScreen.callHelpAction(self, *args)
 		
 	def setSkinProperties(self):
 		setSkinProperties(self)
-			
+		
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -7079,9 +7111,15 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 	def showManual(self):
 		if OperaBrowserInstalled:
-			self.session.open(Browser, SR_OperatingManual, True)
+			if self['config'].getCurrent()[1] in self.HilfeTexte:
+				self.session.open(Browser, ("%s#%s") % (SR_OperatingManual.replace(".html", "_kapitel_01.html"), self.HilfeTexte[self['config'].getCurrent()[1]][1]), True)
+			else:
+				self.session.open(Browser, ("%s#1.3_Die_globalen_Einstellungen") % SR_OperatingManual.replace(".html", "_kapitel_01.html"), True)
 		elif DMMBrowserInstalled:
-			self.session.open(Browser, True, SR_OperatingManual)
+			if self['config'].getCurrent()[1] in self.HilfeTexte:
+				self.session.open(Browser, True, ("%s#%s") % (SR_OperatingManual.replace(".html", "_kapitel_01.html"), self.HilfeTexte[self['config'].getCurrent()[1]][1]))
+			else:
+				self.session.open(Browser, True, ("%s#1.3_Die_globalen_Einstellungen") % SR_OperatingManual.replace(".html", "_kapitel_01.html"))
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Webbrowser")
 			
@@ -7162,7 +7200,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self['config'].instance.moveSelection(self['config'].instance.pageUp)
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
 		except:
 			text = _("Keine Information verfügbar.")
 		self["config_information_text"].setText(text)
@@ -7178,7 +7216,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self['config'].instance.moveSelection(self['config'].instance.pageDown)
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
 		except:
 			text = _("Keine Information verfügbar.")
 		self["config_information_text"].setText(text)
@@ -7208,7 +7246,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['config'].instance.moveSelection(self['config'].instance.moveDown)
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
 		except:
 			text = _("Keine Information verfügbar.")
 		self["config_information_text"].setText(text)
@@ -7238,7 +7276,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['config'].instance.moveSelection(self['config'].instance.moveUp)
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
 		except:
 			text = _("Keine Information verfügbar.")
 		self["config_information_text"].setText(text)
@@ -7252,62 +7290,71 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 	def keyLeft(self):
 		ConfigListScreen.keyLeft(self)
-		if self['config'].getCurrent()[1] in (config.plugins.serienRec.forceRecording, config.plugins.serienRec.ActionOnNew): self.setInfoText()
-		if self['config'].getCurrent()[1] not in (config.plugins.serienRec.savetopath,
-		                                          config.plugins.serienRec.seasonsubdirnumerlength,
-		                                          config.plugins.serienRec.coverPath,
-		                                          config.plugins.serienRec.BackupPath,
-												  config.plugins.serienRec.updateType,
-												  #config.plugins.serienRec.updateInterval,
-												  config.plugins.serienRec.deltime,
-												  #config.plugins.serienRec.maxWebRequests,
-												  config.plugins.serienRec.checkfordays,
-												  config.plugins.serienRec.globalFromTime,
-												  config.plugins.serienRec.globalToTime,
-												  config.plugins.serienRec.TimeSpanForRegularTimer,
-												  config.plugins.serienRec.margin_before,
-												  config.plugins.serienRec.margin_after,
-												  config.plugins.serienRec.max_season,
-												  config.plugins.serienRec.DSBTimeout,
-												  config.plugins.serienRec.LogFilePath,
-												  config.plugins.serienRec.deleteLogFilesOlderThan,
-												  config.plugins.serienRec.deleteOlderThan,
-												  config.plugins.serienRec.NoOfRecords,
-												  config.plugins.serienRec.tuner):
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.setupType:
 			self.changedEntry()
+			self['config'].instance.moveSelectionTo(int(config.plugins.serienRec.setupType.value) + 1)
+		else:
+			if self['config'].getCurrent()[1] in (config.plugins.serienRec.forceRecording, config.plugins.serienRec.ActionOnNew): self.setInfoText()
+			if self['config'].getCurrent()[1] not in (config.plugins.serienRec.setupType,
+													  config.plugins.serienRec.savetopath,
+													  config.plugins.serienRec.seasonsubdirnumerlength,
+													  config.plugins.serienRec.coverPath,
+													  config.plugins.serienRec.BackupPath,
+													  config.plugins.serienRec.updateType,
+													  #config.plugins.serienRec.updateInterval,
+													  config.plugins.serienRec.deltime,
+													  #config.plugins.serienRec.maxWebRequests,
+													  config.plugins.serienRec.checkfordays,
+													  config.plugins.serienRec.globalFromTime,
+													  config.plugins.serienRec.globalToTime,
+													  config.plugins.serienRec.TimeSpanForRegularTimer,
+													  config.plugins.serienRec.margin_before,
+													  config.plugins.serienRec.margin_after,
+													  config.plugins.serienRec.max_season,
+													  config.plugins.serienRec.DSBTimeout,
+													  config.plugins.serienRec.LogFilePath,
+													  config.plugins.serienRec.deleteLogFilesOlderThan,
+													  config.plugins.serienRec.deleteOlderThan,
+													  config.plugins.serienRec.NoOfRecords,
+													  config.plugins.serienRec.tuner):
+				self.changedEntry()
 
 	def keyRight(self):
 		ConfigListScreen.keyRight(self)
-		if self['config'].getCurrent()[1] in (config.plugins.serienRec.forceRecording, config.plugins.serienRec.ActionOnNew): self.setInfoText()
-		if self['config'].getCurrent()[1] not in (config.plugins.serienRec.savetopath,
-		                                          config.plugins.serienRec.seasonsubdirnumerlength,
-		                                          config.plugins.serienRec.coverPath,
-		                                          config.plugins.serienRec.BackupPath,
-												  config.plugins.serienRec.updateType,
-												  #config.plugins.serienRec.updateInterval,
-												  config.plugins.serienRec.deltime,
-												  #config.plugins.serienRec.maxWebRequests,
-												  config.plugins.serienRec.checkfordays,
-												  config.plugins.serienRec.globalFromTime,
-												  config.plugins.serienRec.globalToTime,
-												  config.plugins.serienRec.TimeSpanForRegularTimer,
-												  config.plugins.serienRec.margin_before,
-												  config.plugins.serienRec.margin_after,
-												  config.plugins.serienRec.max_season,
-												  config.plugins.serienRec.DSBTimeout,
-												  config.plugins.serienRec.LogFilePath,
-												  config.plugins.serienRec.deleteLogFilesOlderThan,
-												  config.plugins.serienRec.deleteOlderThan,
-												  config.plugins.serienRec.NoOfRecords,
-												  config.plugins.serienRec.tuner):
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.setupType:
 			self.changedEntry()
+			self['config'].instance.moveSelectionTo(int(config.plugins.serienRec.setupType.value) + 1)
+		else:
+			if self['config'].getCurrent()[1] in (config.plugins.serienRec.forceRecording, config.plugins.serienRec.ActionOnNew): self.setInfoText()
+			if self['config'].getCurrent()[1] not in (config.plugins.serienRec.savetopath,
+													  config.plugins.serienRec.seasonsubdirnumerlength,
+													  config.plugins.serienRec.coverPath,
+													  config.plugins.serienRec.BackupPath,
+													  config.plugins.serienRec.updateType,
+													  #config.plugins.serienRec.updateInterval,
+													  config.plugins.serienRec.deltime,
+													  #config.plugins.serienRec.maxWebRequests,
+													  config.plugins.serienRec.checkfordays,
+													  config.plugins.serienRec.globalFromTime,
+													  config.plugins.serienRec.globalToTime,
+													  config.plugins.serienRec.TimeSpanForRegularTimer,
+													  config.plugins.serienRec.margin_before,
+													  config.plugins.serienRec.margin_after,
+													  config.plugins.serienRec.max_season,
+													  config.plugins.serienRec.DSBTimeout,
+													  config.plugins.serienRec.LogFilePath,
+													  config.plugins.serienRec.deleteLogFilesOlderThan,
+													  config.plugins.serienRec.deleteOlderThan,
+													  config.plugins.serienRec.NoOfRecords,
+													  config.plugins.serienRec.tuner):
+				self.changedEntry()
 
 	def createConfigList(self):
 		self.list = []
 		self.list.append(getConfigListEntry(_("---------  SYSTEM:  -------------------------------------------------------------------------------------------")))
-		self.list.append(getConfigListEntry(_("Umfang der Einstellungen:"), config.plugins.serienRec.setupType))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("ID der Box:"), config.plugins.serienRec.BoxID))
+		self.list.append(getConfigListEntry(_("Umfang der Einstellungen:"), config.plugins.serienRec.setupType))
 		self.list.append(getConfigListEntry(_("Speicherort der Aufnahmen:"), config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry(_("Serien-Verzeichnis anlegen:"), config.plugins.serienRec.seriensubdir))
 		self.list.append(getConfigListEntry(_("Staffel-Verzeichnis anlegen:"), config.plugins.serienRec.seasonsubdir))
@@ -7331,7 +7378,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.list.append(getConfigListEntry(_("Automatischen Suchlauf ausführen:"), config.plugins.serienRec.autochecktype))
 		if config.plugins.serienRec.autochecktype.value == "1":
 			if config.plugins.serienRec.updateInterval.value == 24:
-				self.list.append(getConfigListEntry(_("Uhrzeit für automatischen Suchlauf:"), config.plugins.serienRec.deltime))
+				self.list.append(getConfigListEntry(_("    Uhrzeit für automatischen Suchlauf:"), config.plugins.serienRec.deltime))
 		self.list.append(getConfigListEntry(_("Timer für X Tage erstellen:"), config.plugins.serienRec.checkfordays))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("Früheste Zeit für Timer:"), config.plugins.serienRec.globalFromTime))
@@ -7352,6 +7399,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			else:
 				self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
 			self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
+		#if config.plugins.serienRec.updateInterval.value == 24:
 		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
 			self.list.append(getConfigListEntry(_("Aktion nach dem automatischen Suchlauf:"), config.plugins.serienRec.afterAutocheck))
@@ -7511,126 +7559,126 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.HilfeTexte = {
 			config.plugins.serienRec.BoxID :                   (_("Die ID (Nummer) der STB. Läuft der SerienRecorder auf mehreren Boxen, die alle auf die selbe Datenbank (im Netzwerk) zugreifen, "
 			                                                    "können einzelne Marker über diese ID für jede Box einzeln aktiviert oder deaktiviert werden. Timer werden dann nur auf den Boxen erstellt, "
-																"für die der Marker aktiviert ist.")),
-			config.plugins.serienRec.setupType :               (_("Hier kann die Komplexität des Einstellungs-Menüs eingestellt werden.")),
-			config.plugins.serienRec.savetopath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen gespeichert werden.")),
-			config.plugins.serienRec.seriensubdir :            (_("Bei 'ja' wird für jede Serien ein eigenes Unterverzeichnis (z.B.\n'%s<Serien_Name>/') für die Aufnahmen erstellt.")) % config.plugins.serienRec.savetopath.value,
+																"für die der Marker aktiviert ist."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.setupType :               (_("Hier kann die Komplexität des Einstellungs-Menüs eingestellt werden."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.savetopath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen gespeichert werden."), "Speicherort_der_Aufnahme"),
+			config.plugins.serienRec.seriensubdir :            (_("Bei 'ja' wird für jede Serien ein eigenes Unterverzeichnis (z.B.\n'%s<Serien_Name>/') für die Aufnahmen erstellt.") % config.plugins.serienRec.savetopath.value, "Serien_Verzeichnis_anlegen"),
 			config.plugins.serienRec.seasonsubdir :            (_("Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-Verzeichnis (z.B.\n"
-			                                                    "'%s<Serien_Name>/Season %s') erstellt.")) % (config.plugins.serienRec.savetopath.value, str("1").zfill(config.plugins.serienRec.seasonsubdirnumerlength.value)),
-			config.plugins.serienRec.seasonsubdirnumerlength : (_("Die Anzahl der Stellen, auf die die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt wird.")),
-			config.plugins.serienRec.seasonsubdirfillchar :    (_("Auswahl, ob die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt werden.")),
-			config.plugins.serienRec.deltime :                 (_("Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:%s Uhr).")) % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2)),
+			                                                    "'%s<Serien_Name>/Season %s') erstellt.") % (config.plugins.serienRec.savetopath.value, str("1").zfill(config.plugins.serienRec.seasonsubdirnumerlength.value)), "Staffel_Verzeichnis_anlegen"),
+			config.plugins.serienRec.seasonsubdirnumerlength : (_("Die Anzahl der Stellen, auf die die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt wird."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.seasonsubdirfillchar :    (_("Auswahl, ob die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt werden."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.deltime :                 (_("Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:%s Uhr).") % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2)), "1.3_Die_globalen_Einstellungen"),
 			#config.plugins.serienRec.maxWebRequests :          (_("Die maximale Anzahl der gleichzeitigen Suchanfragen auf 'wunschliste.de'.\n"
-			#                                                    "ACHTUING: Eine höhere Anzahl kann den Timer-Suchlauf beschleunigen, kann bei langsamer Internet-Verbindung aber auch zu Problemen führen!!")),
-			config.plugins.serienRec.Autoupdate :              (_("Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht.")),
-			config.plugins.serienRec.updateType :              (_("Auswahl, ob auch beta-Versionen installiert werden sollen.")),
-			config.plugins.serienRec.databasePath :            (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.")),
+			#                                                    "ACHTUING: Eine höhere Anzahl kann den Timer-Suchlauf beschleunigen, kann bei langsamer Internet-Verbindung aber auch zu Problemen führen!!"), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.Autoupdate :              (_("Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.updateType :              (_("Auswahl, ob auch beta-Versionen installiert werden sollen."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.databasePath :            (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird."), "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              (_("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
-			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/').")) % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)),
-			config.plugins.serienRec.coverPath :               (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Cover gespeichert werden.")),
-			config.plugins.serienRec.BackupPath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert werden.")),
+			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/').") % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.coverPath :               (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Cover gespeichert werden."), "Speicherort_der_Cover"),
+			config.plugins.serienRec.BackupPath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert werden."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.checkfordays :            (_("Es werden nur Timer für Folgen erstellt, die innerhalb der nächsten hier eingestellten Anzahl von Tagen ausgestrahlt werden \n"
-			                                                    "(also bis %s).")) % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))),
+			                                                    "(also bis %s).") % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))), "Timer_Fuer_X_Tage"),
 			config.plugins.serienRec.globalFromTime :          (_("Die Uhrzeit, ab wann Aufnahmen erlaubt sind.\n"
-							                                    "Die erlaubte Zeitspanne beginnt um %s:%s Uhr.")) % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2)),
+							                                    "Die erlaubte Zeitspanne beginnt um %s:%s Uhr.") % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2)), "Frueheste_Zeit"),
 			config.plugins.serienRec.globalToTime :            (_("Die Uhrzeit, bis wann Aufnahmen erlaubt sind.\n"
-						                                        "Die erlaubte Zeitspanne endet um %s:%s Uhr.")) % (str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)),
+						                                        "Die erlaubte Zeitspanne endet um %s:%s Uhr.") % (str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Spaeteste_Zeit"),
 			config.plugins.serienRec.eventid :                 (_("Bei 'ja' wird beim Anlegen eines Timers versucht die Anfangs- und Endzeiten vom EPG zu holen. "
-			                                                    "Außerdem erfolgt bei jedem Timer-Suchlauf ein Abgleich der Anfangs- und Endzeiten aller Timer mit den EPG-Daten.")),
+			                                                    "Außerdem erfolgt bei jedem Timer-Suchlauf ein Abgleich der Anfangs- und Endzeiten aller Timer mit den EPG-Daten."), "Hole_EventID"),
 			config.plugins.serienRec.forceRecording :          (_("Bei 'ja' werden auch Timer für Folgen erstellt, die ausserhalb der erlaubten Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, "
-			                                                    "wenn KEINE Wiederholung innerhalb der erlaubten Zeitspanne gefunden wird. Wird eine passende Wiederholung zu einem späteren Zeitpunkt gefunden, dann wird der Timer für diese Wiederholung erstellt.\n"
-			                                                    "Bei 'nein' werden ausschließlich Timer für jene Folgen erstellt, die innerhalb der erlaubten Zeitspanne liegen.")) % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2), str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)),
+			                                                    "falls KEINE Wiederholung innerhalb der erlaubten Zeitspanne gefunden wird. Wird eine passende Wiederholung zu einem späteren Zeitpunkt gefunden, dann wird der Timer für diese Wiederholung erstellt.\n"
+			                                                    "Bei 'nein' werden ausschließlich Timer für jene Folgen erstellt, die innerhalb der erlaubten Zeitspanne liegen.") % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2), str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Immer_aufnehmen"),
 			config.plugins.serienRec.TimeSpanForRegularTimer : (_("Die Anzahl der Tage, die maximal auf eine Wiederholung gewartet wird, die innerhalb der erlaubten Zeitspanne ausgestrahlt wird. "
 			                                                    "Wird keine passende Wiederholung gefunden (oder aber eine Wiederholung, die aber zu weit in der Zukunft liegt), "
-																"wird ein Timer für den frühestmöglichen Termin (auch außerhalb der erlaubten Zeitspanne) erstellt.")),
-			config.plugins.serienRec.NoOfRecords :             (_("Die Anzahl der Aufnahmen, die von einer Folge gemacht werden sollen.")),
+																"wird ein Timer für den frühestmöglichen Termin (auch außerhalb der erlaubten Zeitspanne) erstellt."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.NoOfRecords :             (_("Die Anzahl der Aufnahmen, die von einer Folge gemacht werden sollen."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.selectNoOfTuners :        (_("Bei 'ja' wird die Anzahl der vom SR benutzten Tuner für gleichzeitige Aufnahmen begrenzt.\n"
-                                                                "Bei 'nein' werden alle verfügbaren Tuner für Timer benutzt, die Überprüfung ob noch ein weiterer Timer erzeugt werden kann, übernimmt enigma2.")),
-			config.plugins.serienRec.tuner :                   (_("Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten.")),
+                                                                "Bei 'nein' werden alle verfügbaren Tuner für Timer benutzt, die Überprüfung ob noch ein weiterer Timer erzeugt werden kann, übernimmt enigma2."), "Anzahl_der_Tuner"),
+			config.plugins.serienRec.tuner :                   (_("Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten."), "Anzahl_der_Tuner"),
 			config.plugins.serienRec.ActionOnNew :             (_("Wird eine neue Staffel oder Serie gefunden (d.h. Folge 1), wird die hier eingestellt Aktion ausgeführt:\n"
 			                                                    "  - 'keine': es erfolgt keine weitere Aktion.\n"
 																"  - 'nur Benachrichtigung': Es wird eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
 																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.\n"
 																"  - 'nur Marker anlegen': Es wird automatisch ein neuer Serienmarker für die gefundene Serie angelegt.\n"
 																"  - 'Benachrichtigung und Marker anlegen': Es wird sowohl ein neuer Serienmarker angelegt, als auch eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
-																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.")),
-			config.plugins.serienRec.ActionOnNewManuell :      (_("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht.")),
+																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird."), "Aktion_bei_neuer_Staffel"),
+			config.plugins.serienRec.ActionOnNewManuell :      (_("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht."), "Aktion_bei_neuer_Staffel"),
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
-																"und auch nicht mehr angezeigt.")) % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))),
-			#config.plugins.serienRec.autoSearchForCovers :     (_("Bei 'ja' wird nach Beenden des automatischen Suchlaufs die Suche nach Covern gestartet. Diese Suche erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.")),
+																"und auch nicht mehr angezeigt.") % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))), "1.3_Die_globalen_Einstellungen"),
+			#config.plugins.serienRec.autoSearchForCovers :     (_("Bei 'ja' wird nach Beenden des automatischen Suchlaufs die Suche nach Covern gestartet. Diese Suche erfolgt nicht, wenn der Suchlauf manuell gestartet wurde."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.runAutocheckAtExit :      (_("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Channels und/oder Markern Änderungen vorgenommen wurden, "
-			                                                    "die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Channel zugewiesen, etc.)")),
+			                                                    "die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Channel zugewiesen, etc.)"), "Suchlauf_beim_Beenden"),
 			config.plugins.serienRec.wakeUpDSB :               (_("Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
-			                                                    "Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die STB im Deep-Standby befindet.")),
-			#config.plugins.serienRec.afterAutocheck :          (_("Bei 'ja' wird die STB nach dem automatischen Timer-Suchlauf wieder in den Deep-Standby gefahren.")),
-			config.plugins.serienRec.afterAutocheck :          (_("Hier kann ausgewählt werden, ob die STB nach dem automatischen Suchlauf in Standby oder Depp-Standby gehen soll.")),
+			                                                    "Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die STB im Deep-Standby befindet."), "Deep-Standby"),
+			#config.plugins.serienRec.afterAutocheck :          (_("Bei 'ja' wird die STB nach dem automatischen Timer-Suchlauf wieder in den Deep-Standby gefahren."), "Deep-Standby"),
+			config.plugins.serienRec.afterAutocheck :          (_("Hier kann ausgewählt werden, ob die STB nach dem automatischen Suchlauf in Standby oder Deep-Standby gehen soll."), "Deep-Standby"),
 			config.plugins.serienRec.DSBTimeout :              (_("Bevor die STB in den Deep-Standby fährt, wird für die hier eingestellte Dauer (in Sekunden) eine entsprechende Nachricht auf dem Bildschirm angezeigt. "
-			                                                    "Während dieser Zeitspanne hat der Benutzer die Möglichkeit, das Herunterfahren der STB abzubrechen. Nach Ablauf dieser Zeitspanne fährt die STB automatisch in den Deep-Stanby.")),
+			                                                    "Während dieser Zeitspanne hat der Benutzer die Möglichkeit, das Herunterfahren der STB abzubrechen. Nach Ablauf dieser Zeitspanne fährt die STB automatisch in den Deep-Stanby."), "Deep-Standby"),
 			self.kindOfTimer :                                 (_("Es kann ausgewählt werden, wie Timer angelegt werden. Die Auswahlmöglichkeiten sind:\n"
 			                                                    "  - 'aufnehmen': Ein 'normaler' Timer wird erstellt\n"
 																"  - 'umschalten': Es wird ein Timer erstellt, bei dem nur auf den aufzunehmenden Sender umgeschaltet wird. Es erfolgt KEINE Aufnahme\n"
 																"  - 'umschalten und aufnehmen': Es wird ein Timer erstellt, bei dem vor der Aufnahme auf den aufzunehmenden Sender umgeschaltet wird\n"
-																"  - 'Erinnerung': Es wird ein Timer erstellt, bei dem lediglich eine Erinnerungs-Nachricht auf dem Bildschirm eingeblendet wird. Es wird weder umgeschaltet, noch erfolgt eine Aufnahme")),
+																"  - 'Erinnerung': Es wird ein Timer erstellt, bei dem lediglich eine Erinnerungs-Nachricht auf dem Bildschirm eingeblendet wird. Es wird weder umgeschaltet, noch erfolgt eine Aufnahme"), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.margin_before :           (_("Die Vorlaufzeit für Aufnahmen in Minuten.\n"
-			                                                    "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem tatsächlichen Beginn der Sendung")),
+			                                                    "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem tatsächlichen Beginn der Sendung"), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.margin_after :            (_("Die Nachlaufzeit für Aufnahmen in Minuten.\n"
-			                                                    "Die Aufnahme endet um die hier eingestellte Anzahl von Minuten noch dem tatsächlichen Ende der Sendung")),
+			                                                    "Die Aufnahme endet um die hier eingestellte Anzahl von Minuten noch dem tatsächlichen Ende der Sendung"), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.forceManualRecording :    (_("Bei 'nein' erfolgt beim manuellen Anlegen von Timern in 'Sendetermine' eine Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen erreicht wurde. "
 			                                                    "In diesem Fall wird der Timer NICHT angelegt, und es erfolgt ein entsprechender Eintrag im log.\n"
 			                                                    "Bei 'ja' wird beim manuellen Anlegen von Timern in 'Sendetermine' die Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen vorhanden sind, "
-			                                                    "ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, soferne nicht ein Konflikt mit anderen Timern besteht.")),
+			                                                    "ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, soferne nicht ein Konflikt mit anderen Timern besteht."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.TimerName :               (_("Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
-																"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden.")),
-			config.plugins.serienRec.selectBouquets :          (_("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Sender-Zuordnung verwendet werden.\n"
-			                                                    "Bei 'nein' wird das erste Bouquet für die Sender-Zuordnung benutzt.")),
-			config.plugins.serienRec.MainBouquet :             (_("Auswahl, welches Bouquet bei der Sender-Zuordnung als Standard verwendet werden sollen.")),
-			config.plugins.serienRec.AlternativeBouquet :      (_("Auswahl, welches Bouquet bei der Sender-Zuordnung als Alternative verwendet werden sollen.")),
+																"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.selectBouquets :          (_("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Channel-Zuordnung verwendet werden.\n"
+			                                                    "Bei 'nein' wird das erste Bouquet für die Channel-Zuordnung benutzt."), "Bouquet_Auswahl"),
+			config.plugins.serienRec.MainBouquet :             (_("Auswahl, welches Bouquet bei der Channel-Zuordnung als Standard verwendet werden sollen."), "Bouquet_Auswahl"),
+			config.plugins.serienRec.AlternativeBouquet :      (_("Auswahl, welches Bouquet bei der Channel-Zuordnung als Alternative verwendet werden sollen."), "Bouquet_Auswahl"),
 			config.plugins.serienRec.useAlternativeChannel :   (_("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu erstellen, "
-										                        "falls der Timer auf dem bevorzugten Channel nicht angelegt werden kann.")),
-			config.plugins.serienRec.showPicons :              (_("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.")),
-			config.plugins.serienRec.piconPath :               (_("Auswahl, welche Sender-Logos angezeigt werden. Serien Recorder muß neu gestartet werden damit die Änderung wirksam wird.")),
-			config.plugins.serienRec.showCover :               (_("Bei 'nein' werden keine Cover angezeigt.")),
-			config.plugins.serienRec.listFontsize :            (_("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. Serien Recorder muß neu gestartet werden damit die Änderung wirksam wird.")),
-			config.plugins.serienRec.intensiveTimersuche :     (_("Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.")),
-			config.plugins.serienRec.sucheAufnahme :           (_("Bei 'ja' wird in der Hauptansicht ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv.")),
-			config.plugins.serienRec.max_season :              (_("Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann.")),
-			config.plugins.serienRec.confirmOnDelete :         (_("Bei 'ja' erfolt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem entgültigen Löschen von Serienmarkern oder Timern.")),
-			config.plugins.serienRec.showNotification :        (_("Je nach Einstellung wird eine Nachricht auf dem Bildschirm eingeblendet, sobald der automatische Timer-Suchlauf startet bzw. endet.")),
+										                        "falls der Timer auf dem bevorzugten Channel nicht angelegt werden kann."), "Bouquet_Auswahl"),
+			config.plugins.serienRec.showPicons :              (_("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.piconPath :               (_("Auswahl, welche Sender-Logos angezeigt werden. Serien Recorder muß neu gestartet werden damit die Änderung wirksam wird."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.showCover :               (_("Bei 'nein' werden keine Cover angezeigt."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.listFontsize :            (_("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. Serien Recorder muß neu gestartet werden damit die Änderung wirksam wird."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.intensiveTimersuche :     (_("Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist."), "intensive_Suche"),
+			config.plugins.serienRec.sucheAufnahme :           (_("Bei 'ja' wird in der Hauptansicht ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv."), "Aufnahme_vorhanden"),
+			config.plugins.serienRec.max_season :              (_("Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.confirmOnDelete :         (_("Bei 'ja' erfolt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem entgültigen Löschen von Serienmarkern oder Timern."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.showNotification :        (_("Je nach Einstellung wird eine Nachricht auf dem Bildschirm eingeblendet, sobald der automatische Timer-Suchlauf startet bzw. endet."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.showMessageOnConflicts :  (_("Bei 'ja' wird für jeden Timer, der beim automatische Timer-Suchlauf wegen eines Konflikts nicht angelegt werden konnte, eine Nachricht auf dem Bildschirm eingeblendet.\n"
-			                                                    "Diese Nachrichten bleiben solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden.")),
-			config.plugins.serienRec.DisplayRefreshRate :      (_("Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt.")),
+			                                                    "Diese Nachrichten bleiben solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.DisplayRefreshRate :      (_("Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.refreshViews :            (_("Bei 'ja' werden die Anzeigen nach Änderungen von Markern, Channels, etc. sofort aktualisiert, was aber je nach STB-Typ und Internet-Verbindung zeitintensiv sein kann.\n"
-			                                                    "Bei 'nein' erfolgt die Aktualisierung erst, wenn die Anzeige erneut geöffnet wird.")),
-			config.plugins.serienRec.defaultStaffel :          (_("Auswahl, ob bei neuen Markern die Staffeln manuell eingegeben werden, oder 'Alle' ausgewählt wird.")),
-			config.plugins.serienRec.openMarkerScreen :        (_("Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können.")),
-			config.plugins.serienRec.LogFilePath :             (_("Das Verzeichnis auswählen und/oder erstellen, in dem die log-Dateien gespeichert werden.")),
+			                                                    "Bei 'nein' erfolgt die Aktualisierung erst, wenn die Anzeige erneut geöffnet wird."), "Sofortige_Aktualisierung"),
+			config.plugins.serienRec.defaultStaffel :          (_("Auswahl, ob bei neuen Markern die Staffeln manuell eingegeben werden, oder 'Alle' ausgewählt wird."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.openMarkerScreen :        (_("Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.LogFilePath :             (_("Das Verzeichnis auswählen und/oder erstellen, in dem die log-Dateien gespeichert werden."), "Das_Log"),
 			config.plugins.serienRec.longLogFileName :         (_("Bei 'nein' wird bei jedem Timer-Suchlauf die log-Datei neu erzeugt.\n"
 			                                                    "Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet "
-																"(z.B.\n%slog_%s%s%s%s%s")) % (config.plugins.serienRec.LogFilePath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)),
-			config.plugins.serienRec.deleteLogFilesOlderThan : (_("log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht.")),
+																"(z.B.\n%slog_%s%s%s%s%s") % (config.plugins.serienRec.LogFilePath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "Das_Log"),
+			config.plugins.serienRec.deleteLogFilesOlderThan : (_("log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."), "Das_Log"),
 			config.plugins.serienRec.writeLog :                (_("Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des Timer-Suchlaufs.\n"
-			                                                    "Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern.")),
-			config.plugins.serienRec.writeLogVersion :         (_("Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten.")),
-			config.plugins.serienRec.writeLogChannels :        (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Sender-Zuordnung kein STB-Channel zugeordnet ist, oder der STB-Channel deaktiviert ist.")),
-			config.plugins.serienRec.writeLogAllowedSender :   (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der ausstrahlende Sender in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.")),
-			config.plugins.serienRec.writeLogAllowedEpisodes : (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.")),
-			config.plugins.serienRec.writeLogAdded :           (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist.")),
-			config.plugins.serienRec.writeLogDisk :            (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Aufnahmen vorhanden ist.")),
+			                                                    "Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern."), "Das_Log"),
+			config.plugins.serienRec.writeLogVersion :         (_("Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten."), "Das_Log"),
+			config.plugins.serienRec.writeLogChannels :        (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Channel-Zuordnung kein STB-Channel zugeordnet ist, oder der STB-Channel deaktiviert ist."), "Das_Log"),
+			config.plugins.serienRec.writeLogAllowedSender :   (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der ausstrahlende Sender in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist."), "Das_Log"),
+			config.plugins.serienRec.writeLogAllowedEpisodes : (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist."), "Das_Log"),
+			config.plugins.serienRec.writeLogAdded :           (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist."), "Das_Log"),
+			config.plugins.serienRec.writeLogDisk :            (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Aufnahmen vorhanden ist."), "Das_Log"),
 			config.plugins.serienRec.writeLogTimeRange :       (_("Bei 'ja' erfolgen Einträge in die log-Datei, wenn die zu timende Folge nicht in der erlaubten Zeitspanne (%s:%s - %s:%s) liegt, "
 			                                                    "sowie wenn gemäß der Einstellung 'Immer aufnehmen wenn keine Wiederholung gefunden wird' = 'ja' "
-																"ein Timer ausserhalb der erlaubten Zeitspanne angelegt wird.")) % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2), str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)),
+																"ein Timer ausserhalb der erlaubten Zeitspanne angelegt wird.") % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2), str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Das_Log"),
 			config.plugins.serienRec.writeLogTimeLimit :       (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der Sendetermin für die zu timende Folge in der Verganhenheit, \n"
-			                                                    "oder mehr als die in 'Timer für X Tage erstellen' eingestellte Anzahl von Tagen in der Zukunft liegt (jetzt also nach %s).")) % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))),
-			config.plugins.serienRec.writeLogTimerDebug :      (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der zu erstellende Timer bereits vorhanden ist, oder der Timer erfolgreich angelegt wurde.")),
-			config.plugins.serienRec.logScrollLast :           (_("Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang.")),
+			                                                    "oder mehr als die in 'Timer für X Tage erstellen' eingestellte Anzahl von Tagen in der Zukunft liegt (jetzt also nach %s).") % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))), "Das_Log"),
+			config.plugins.serienRec.writeLogTimerDebug :      (_("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der zu erstellende Timer bereits vorhanden ist, oder der Timer erfolgreich angelegt wurde."), "Das_Log"),
+			config.plugins.serienRec.logScrollLast :           (_("Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang."), "Das_Log"),
 			config.plugins.serienRec.logWrapAround :           (_("Bei 'ja' erfolgt die Anzeige der log-Datei mit Zeilenumbruch, d.h. es werden 3 Zeilen pro Eintrag angezeigt.\n"
-			                                                    "Bei 'nein' erfolgt die Anzeige der log-Datei mit 1 Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)")),
-			config.plugins.serienRec.firstscreen :             (_("Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen.")),
-			config.plugins.serienRec.SkinType :                (_("Hier kann das Erscheinungsbild des SR ausgewählt werden.")),
-			config.plugins.serienRec.showAllButtons :          (_("Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt.")),
+			                                                    "Bei 'nein' erfolgt die Anzeige der log-Datei mit 1 Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)"), "Das_Log"),
+			config.plugins.serienRec.firstscreen :             (_("Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.SkinType :                (_("Hier kann das Erscheinungsbild des SR ausgewählt werden."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.showAllButtons :          (_("Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt."), "1.3_Die_globalen_Einstellungen"),
 		    config.plugins.serienRec.autochecktype :           (_("Bei 'manuell' wird kein automatischer Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
 		                                                        "Bei 'zur gewählten Uhrzeit' wird der automatische Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
-		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nach dem der EPGRefresh beendet ist.")),
+		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist."), "1.3_Die_globalen_Einstellungen"),
 		}			
 				
 		# if config.plugins.serienRec.updateInterval.value == 0:
@@ -7638,49 +7686,49 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		# 		config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
 		# 													"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
 		# 													"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit.\n"
-		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen."))
+		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen."), "1.3_Die_globalen_Einstellungen")
 		# 	})
 		# elif config.plugins.serienRec.updateInterval.value == 24:
 		# 	self.HilfeTexte.update({
 		# 		config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
 		# 													"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
 		# 													"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit (%s:%s Uhr).\n"
-		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen.")) % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2))
+		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen.") % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2)), "1.3_Die_globalen_Einstellungen")
 		# 	})
 		# else:
 		# 	self.HilfeTexte.update({
 		# 		config.plugins.serienRec.updateInterval :  (_("Zeitintervall (in Stunden) für den automatischen Timer-Suchlauf.\n"
 		# 													"Bei '00' ist der automatische Timer-Suchlauf komplett ausgeschaltet.\n"
 		# 													"Bei '24' erfolgt der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit.\n"
-		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen (alle %s Stunden).")) % str(config.plugins.serienRec.updateInterval.value)
+		# 													"Bei jeder anderen Einstellung in den eingestellten Intervallen (alle %s Stunden).") % str(config.plugins.serienRec.updateInterval.value), "1.3_Die_globalen_Einstellungen")
 		# 	})
 			
 		if config.plugins.serienRec.forceRecording.value:
 			self.HilfeTexte.update({
-				config.plugins.serienRec.breakTimersuche : (_("Bei 'ja' wird die Timersuche nach Ablauf der Wartezeit für Wiederholungen (dzt. %s Tage) abgebrochen.")) % int(config.plugins.serienRec.TimeSpanForRegularTimer.value)
+				config.plugins.serienRec.breakTimersuche : (_("Bei 'ja' wird die Timersuche nach Ablauf der Wartezeit für Wiederholungen (dzt. %s Tage) abgebrochen.") % int(config.plugins.serienRec.TimeSpanForRegularTimer.value), "1.3_Die_globalen_Einstellungen")
 			})
 		else:
 			self.HilfeTexte.update({
-				config.plugins.serienRec.breakTimersuche : (_("Bei 'ja' wird die Timersuche abgebrochen, wenn der Ausstrahlungstermin zu weit in der Zukunft liegt (also nach %s).")) % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400)))
+				config.plugins.serienRec.breakTimersuche : (_("Bei 'ja' wird die Timersuche abgebrochen, wenn der Ausstrahlungstermin zu weit in der Zukunft liegt (also nach %s).") % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))), "1.3_Die_globalen_Einstellungen")
 			})
 
 		if config.plugins.serienRec.ActionOnNew.value != "0":
 			self.HilfeTexte.update({
 				config.plugins.serienRec.planerCacheEnabled : (_("Bei 'ja' werden beim automatischen Suchlauf die Daten für den Serienplaner und die Sendetermine geladen und gespeichert. "
-															   "Die Speicherung der Serienplaner-Daten erfolgt nicht, wenn der Suchlauf manuell gestartet wurde."))
+															   "Die Speicherung der Serienplaner-Daten erfolgt nicht, wenn der Suchlauf manuell gestartet wurde."), "Daten_speichern")
 			})
 		else:
 			self.HilfeTexte.update({
-				config.plugins.serienRec.planerCacheEnabled : (_("Bei 'ja' werden beim automatischen Suchlauf die Sendetermine geladen und gespeichert."))
+				config.plugins.serienRec.planerCacheEnabled : (_("Bei 'ja' werden beim automatischen Suchlauf die Sendetermine geladen und gespeichert."), "Daten_speichern")
 			})
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
 		except:
 			text = _("Keine Information verfügbar.")
 
 		self["config_information_text"].setText(text)
-		
+
 	def save(self):
 		config.plugins.serienRec.showNotification.save()
 		config.plugins.serienRec.autochecktype.save()
@@ -7811,7 +7859,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			try:
 				os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
 			except:
-				pass
+				config.plugins.serienRec.showPicons.value = False
 			
 		if self.SkinType != config.plugins.serienRec.SkinType.value:
 			SelectSkin()
@@ -10346,7 +10394,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 				self.getData()
 				
 	def getData(self):
-		getPage(self.serieUrl, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		if config.plugins.serienRec.showCover.value:
 			serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 			showCover(serien_nameCover, self, serien_nameCover)
@@ -10553,7 +10601,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 				self.getData()
 
 	def getData(self):
-		getPage(self.serieUrl, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		if config.plugins.serienRec.showCover.value:
 			serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 			showCover(serien_nameCover, self, serien_nameCover)
@@ -10909,8 +10957,19 @@ class serienRecMain(Screen, HelpableScreen):
 			self.close()
 
 		if not os.path.exists('%simages/sender' % serienRecMainPath):
-			os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
-		
+			try:
+				if os.path.islink('%simages/sender' % serienRecMainPath):
+					os.unlink('%simages/sender' % serienRecMainPath)
+				if os.path.exists('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value)):
+					os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
+				else:
+					os.symlink('%simages/Original' % serienRecMainPath, '%simages/sender' % serienRecMainPath)
+					config.plugins.serienRec.piconPath.value = "Original"
+					config.plugins.serienRec.piconPath.save()
+					configfile.save()
+			except:
+				config.plugins.serienRec.showPicons.value = False
+					
 		self.setupSkin()
 			
 		if config.plugins.serienRec.updateInterval.value == 24:
@@ -11037,7 +11096,7 @@ class serienRecMain(Screen, HelpableScreen):
 		serien_id = self['config'].getCurrent()[0][14]
 		url = "http://www.wunschliste.de/%s/links" % serien_id
 		print url
-		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
+		getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
 			
 	def getImdblink2(self, data):
 		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
@@ -11259,7 +11318,7 @@ class serienRecMain(Screen, HelpableScreen):
 			c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
 			c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
 
-			getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
+			getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
 
 	def parseWebpage(self, data, c1, c2, c3, useCache=False):
 		if useCache:
@@ -11527,7 +11586,6 @@ class serienRecMain(Screen, HelpableScreen):
 			self.chooseMenuList.setList(map(self.buildList, []))
 			#if (self.screeplaner != config.plugins.serienRec.screeplaner.value) or (self.screenmode != config.plugins.serienRec.screenmode.value):
 			if self.screeplaner != config.plugins.serienRec.screeplaner.value:
-				dayCache.clear()
 				readPlanerData()
 			self.readWebpage(False)
 
@@ -11832,9 +11890,13 @@ class checkGitHubUpdate():
 		self.session = session
 
 	def checkForUpdate(self):
-		conn = httplib.HTTPSConnection("api.github.com",timeout=10, port=443)
-		conn.request(url="/repos/einfall/serienrecorder/tags", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
-		data = conn.getresponse()
+		conn = httplib.HTTPSConnection("api.github.com", timeout=20, port=443)
+		try:
+			conn.request(url="/repos/einfall/serienrecorder/tags", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
+			data = conn.getresponse()
+		except:
+			return
+			
 		self.response = json.load(data)
 		latestVersion = self.response[0]['name'][1:]
 		
@@ -11879,7 +11941,7 @@ class checkGitHubUpdate():
 				remoteUrl = "https://github.com/einfall/serienrecorder/releases/download/v%s/enigma2-plugin-extensions-serienrecorder_%s_all.deb" % (str(self.latestVersion), str(self.latestVersion))
 			else:
 				remoteUrl = "https://github.com/einfall/serienrecorder/releases/download/v%s/enigma2-plugin-extensions-serienrecorder_%s_all.ipk" % (str(self.latestVersion), str(self.latestVersion))
-			self.session.open(SerienRecorderUpdateScreen, remoteUrl)
+			self.session.open(SerienRecorderUpdateScreen, remoteUrl, self.latestVersion)
 		else:
 			return
 			
@@ -11890,34 +11952,50 @@ class SerienRecorderUpdateScreen(Screen):
 	skin = """
 		<screen name="SerienRecorderUpdate" position="%d,%d" size="720,320" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
 			<widget name="mplog" position="5,5" size="710,310" font="Regular;18" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="5"/>
-			<widget name="activityslider" position="5,280" size="710,20" borderWidth="1" transparent="1"  zPosition="5"/>
+			<widget name="activityslider" position="5,280" size="710,25" borderWidth="1" transparent="1" zPosition="4"/>
+			<widget name="status" position="30,280" size="660,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
 		</screen>""" % ((DESKTOP_WIDTH - 720) / 2, (DESKTOP_HEIGHT - 320) / 2, _("Serien Recorder Update"))
 
-	def __init__(self, session, updateurl):
+	def __init__(self, session, updateurl, version):
 		from Components.Slider import Slider
 		
 		self.session = session
 		Screen.__init__(self, session)
 		self.target = updateurl
+		self.version = version
+		self.file_name = "/tmp/%s" % self.target.split('/')[-1]
+		self.fileSize = 5 * 1024
+		self.downloadDone = False
 		
-		#self["mplog"] = ScrollLabel()
 		self["mplog"] = Label()
 		
-		self.activityslider = Slider(0, 200)
+		self.status = Label(_("Preparing... Please wait"))
+		self["status"] = self.status
+		self.activityslider = Slider(0, 100)
 		self["activityslider"] = self.activityslider
 		self.activity = 0
 		self.activityTimer = eTimer()
 		if isDreamboxOS:
-			self.activityTimer_conn = self.activityTimer.timeout.connect(self.doActivityTimer)
+			self.activityTimerConnection = self.activityTimer.timeout.connect(self.doActivityTimer)
 		else:
 			self.activityTimer.callback.append(self.doActivityTimer)
 
 		self.onLayoutFinish.append(self.__onLayoutFinished)
 
 	def doActivityTimer(self):
-		self.activity += 1
-		if self.activity == 201:
-			self.activity = 1
+		if self.downloadDone:
+			self.activity += 1
+			if self.activity == 101:
+				self.activity = 1
+		else:
+			if os.path.exists(self.file_name):
+				kBbytesDownloaded = int(os.path.getsize(self.file_name) / 1024)
+			else:
+				kBbytesDownloaded = 0
+					
+			self.activity = int(kBbytesDownloaded * 100 / self.fileSize)
+			self.status.setText("%s / %s kB (%s%%)" % (kBbytesDownloaded, self.fileSize, self.activity))
+			
 		self.activityslider.setValue(self.activity)
 		
 	def startActivityTimer(self):
@@ -11925,21 +12003,39 @@ class SerienRecorderUpdateScreen(Screen):
 		
 	def stopActivityTimer(self):
 		self.activityTimer.stop()
+		if self.activityTimer:
+			self.activityTimer.stop()
+			self.activityTimer = None
+
+		if isDreamboxOS:
+			self.activityTimerConnection = None
 		
 	def __onLayoutFinished(self):
 		sl = self["mplog"]
 		sl.instance.setZPosition(5)
 
+		getPage(str(self.target.replace("/download/", "/tag/").rsplit('/', 1)[0]), timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getFileSize).addErrback(self.downloadError)
+		
 		self["mplog"].setText(_("Download wurde gestartet, bitte warten..."))
 		self.activityslider.setValue(0)
 		self.startActivityTimer()
 
-		self.file_name = "/tmp/%s" % self.target.split('/')[-1]
 		if fileExists(self.file_name):
 			os.remove(self.file_name)
 		downloadPage(self.target, self.file_name).addCallback(self.downloadFinished).addErrback(self.downloadError)
 
+	def getFileSize(self, data):
+		raw = re.findall('<a href="/einfall/serienrecorder/releases/download/v.*?/enigma2-plugin-extensions-serienrecorder_.*?_all.ipk".*?aria-label="(.*?)">enigma2-plugin-extensions-serienrecorder_.*?_all.ipk</span>',data,re.S)
+		if len(raw):
+			self.fileSize = int(float(raw[0].replace("MB", "").strip()) * 1024.0)
+		else:
+			self.fileSize = 5 * 1024
+		
 	def downloadFinished(self, data):
+		self.downloadDone = True
+		self.activity = 0
+		self.status.setText("")
+		
 		#self.stopActivityTimer()
 		if fileExists(self.file_name):
 			self["mplog"].setText(_("Starte Update, bitte warten..."))
@@ -11974,7 +12070,7 @@ class SerienRecorderUpdateScreen(Screen):
 
 	def restartGUI(self, answer):
 		if answer:
-			self.session.open(TryQuitMainloop, 3)
+			self.session.open(Screens.Standby.TryQuitMainloop, 3)
 		else:
 			self.close()
 
