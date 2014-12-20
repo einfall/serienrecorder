@@ -251,17 +251,23 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="030"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.16"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.0.17-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
+	config.plugins.serienRec.addedListSorted = ConfigYesNo(default = False)
+	config.plugins.serienRec.wishListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
 	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.0"))
 
 	# Override settings for maxWebRequests, AutoCheckInterval and due to restrictions of Wunschliste.de
 	config.plugins.serienRec.maxWebRequests.setValue(1)
 	config.plugins.serienRec.maxWebRequests.save()
-	config.plugins.serienRec.updateInterval.setValue(24)
+	if config.plugins.serienRec.autochecktype.value == "0":
+		config.plugins.serienRec.updateInterval.setValue(0)
+	else:
+		if int(config.plugins.serienRec.updateInterval.value) > 0:
+			config.plugins.serienRec.updateInterval.setValue(24)
 	config.plugins.serienRec.updateInterval.save()
 	config.plugins.serienRec.autoSearchForCovers.setValue(False)
 	config.plugins.serienRec.autoSearchForCovers.save()
@@ -270,6 +276,7 @@ def ReadConfigFile():
 	SelectSkin()
 ReadConfigFile()
 
+UpdateAvailable = False
 if config.plugins.serienRec.firstscreen.value == "0":
 	showMainScreen = True
 else:
@@ -3833,9 +3840,9 @@ class serienRecTimer(Screen, HelpableScreen):
 
 		self['text_red'].setText(_("Entferne Timer"))
 		if config.plugins.serienRec.recordListView.value == 0:
-			self['text_green'].setText(_("Zeige früheste Timer zuerst"))
-		elif config.plugins.serienRec.recordListView.value == 1:
 			self['text_green'].setText(_("Zeige neuste Timer zuerst"))
+		elif config.plugins.serienRec.recordListView.value == 1:
+			self['text_green'].setText(_("Zeige früheste Timer zuerst"))
 		self['text_yellow'].setText(_("Zeige auch alte Timer"))
 		self['text_blue'].setText(_("Entferne alle alten"))
 
@@ -3979,6 +3986,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			config.plugins.serienRec.recordListView.value = 1
 			self['text_green'].setText(_("Zeige früheste Timer zuerst"))
 		config.plugins.serienRec.recordListView.save()
+		configfile.save()
 		self.readTimer()
 
 	def readTimer(self, showTitle=True):
@@ -7248,7 +7256,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 	def keyLeft(self):
 		ConfigListScreen.keyLeft(self)
-		if self['config'].getCurrent()[1] == config.plugins.serienRec.setupType:
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.autochecktype:
+			self.changedEntry()
+			if config.plugins.serienRec.autochecktype.value == "0":
+				config.plugins.serienRec.updateInterval.setValue(0)
+			else:
+				config.plugins.serienRec.updateInterval.setValue(24)
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.setupType:
 			self.changedEntry()
 			self['config'].instance.moveSelectionTo(int(config.plugins.serienRec.setupType.value) + 1)
 		else:
@@ -7279,7 +7293,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 	def keyRight(self):
 		ConfigListScreen.keyRight(self)
-		if self['config'].getCurrent()[1] == config.plugins.serienRec.setupType:
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.autochecktype:
+			self.changedEntry()
+			if config.plugins.serienRec.autochecktype.value == "0":
+				config.plugins.serienRec.updateInterval.setValue(0)
+			else:
+				config.plugins.serienRec.updateInterval.setValue(24)
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.setupType:
 			self.changedEntry()
 			self['config'].instance.moveSelectionTo(int(config.plugins.serienRec.setupType.value) + 1)
 		else:
@@ -9010,9 +9030,8 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self.setupSkin()
 
 		self.delAdded = False
-		self.sortedList = False
-		self.addedliste = []
-		self.addedliste_tmp = []
+		self.addedlist = []
+		self.addedlist_tmp = []
 		self.dbData = []
 		self.modus = "config"
 		
@@ -9029,7 +9048,10 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self['text_red'].setText(_("Eintrag löschen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Neuer Eintrag"))
-		self['text_yellow'].setText(_("Sortieren"))
+		if config.plugins.serienRec.addedListSorted.value:
+			self['text_yellow'].setText(_("unsortierte Liste"))
+		else:
+			self['text_yellow'].setText(_("Sortieren"))
 		self.num_bt_text[1][0] = buttonText_na
 
 		self.displayTimer = None
@@ -9188,19 +9210,21 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 				self.readAdded()
 				
 	def readAdded(self):
-		self.addedliste = []
+		self.addedlist = []
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT Serie, Staffel, Episode FROM AngelegteTimer")
 		for row in cCursor:
 			(Serie, Staffel, Episode) = row
 			zeile = "%s S%sE%s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2))
-			self.addedliste.append((zeile, Serie, Staffel, Episode))
+			self.addedlist.append((zeile, Serie, Staffel, Episode))
 		cCursor.close()
 		
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText(_("Diese Episoden werden nicht mehr aufgenommen !"))
-		self.addedliste_tmp = self.addedliste[:]
-		self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
+		self.addedlist_tmp = self.addedlist[:]
+		if config.plugins.serienRec.addedListSorted.value:
+			self.addedlist_tmp.sort()
+		self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
 		self.getCover()
 			
 	def buildList(self, entry):
@@ -9251,15 +9275,15 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			self['config'].hide()
-			addedlist = []
+			l = []
 
 			cCursor = dbSerRec.cursor()
 			cCursor.execute("SELECT Serie FROM SerienMarker ORDER BY Serie")
 			cMarkerList = cCursor.fetchall()
 			for row in cMarkerList:
-				addedlist.append(row)
+				l.append(row)
 			cCursor.close()
-			self.chooseMenuList_popup.setList(map(self.buildList_popup, addedlist))
+			self.chooseMenuList_popup.setList(map(self.buildList_popup, l))
 			self['popup_list'].moveToIndex(0)
 		else:
 			self.modus = "config"
@@ -9286,9 +9310,9 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			zeile = self['config'].getCurrent()[0]
 			(title, serie, staffel, episode) = zeile
 			self.dbData.append((serie.lower(), str(staffel).lower(), episode.lower()))
-			self.addedliste_tmp.remove(zeile)
-			self.addedliste.remove(zeile)
-			self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
+			self.addedlist_tmp.remove(zeile)
+			self.addedlist.remove(zeile)
+			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
 			self.delAdded = True;
 			
 	def keyGreen(self):
@@ -9300,17 +9324,20 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self.close()
 			
 	def keyYellow(self):
-		if len(self.addedliste_tmp) != 0:
-			if self.sortedList:
-				self.addedliste_tmp = self.addedliste[:]
+		if len(self.addedlist_tmp) != 0:
+			if config.plugins.serienRec.addedListSorted.value:
+				self.addedlist_tmp = self.addedlist[:]
 				self['text_yellow'].setText(_("Sortieren"))
-				self.sortedList = False
+				config.plugins.serienRec.addedListSorted.setValue(False)
 			else:
-				self.addedliste_tmp.sort()
+				self.addedlist_tmp.sort()
 				self['text_yellow'].setText(_("unsortierte Liste"))
-				self.sortedList = True
-
-			self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
+				config.plugins.serienRec.addedListSorted.setValue(True)
+			config.plugins.serienRec.addedListSorted.save()
+			configfile.save()
+			
+			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
+			self.getCover()
 		
 	def getCover(self):
 		if self.modus == "config":
@@ -9712,7 +9739,8 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		self.readProposal()
 		config.plugins.serienRec.serienRecShowSeasonBegins_filter.value = self.filter
 		config.plugins.serienRec.serienRecShowSeasonBegins_filter.save()
-
+		configfile.save()
+		
 	def keyBlue(self):
 		check = self['config'].getCurrent()
 		if check == None:
@@ -9814,9 +9842,8 @@ class serienRecWishlist(Screen, HelpableScreen):
 		self.setupSkin()
 		
 		self.delAdded = False
-		self.sortedList = False
-		self.addedliste = []
-		self.addedliste_tmp = []
+		self.wishlist = []
+		self.wishlist_tmp = []
 		self.dbData = []
 		self.modus = "config"
 		
@@ -9833,7 +9860,10 @@ class serienRecWishlist(Screen, HelpableScreen):
 		self['text_red'].setText(_("Eintrag löschen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Eintrag anlegen"))
-		self['text_yellow'].setText(_("Sortieren"))
+		if config.plugins.serienRec.wishListSorted.value:
+			self['text_yellow'].setText(_("unsortierte Liste"))
+		else:
+			self['text_yellow'].setText(_("Sortieren"))
 		self['text_blue'].setText(_("Liste leeren"))
 		self.num_bt_text[2][1] = buttonText_na
 
@@ -9995,17 +10025,19 @@ class serienRecWishlist(Screen, HelpableScreen):
 				self.readWishlist()
 				
 	def readWishlist(self):
-		self.addedliste = []
+		self.wishlist = []
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT Serie, Staffel, Episode FROM Merkzettel")
 		for row in cCursor:
 			(Serie, Staffel, Episode) = row
 			zeile = "%s S%sE%s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2))
-			self.addedliste.append((zeile, Serie, Staffel, Episode))
+			self.wishlist.append((zeile, Serie, Staffel, Episode))
 		cCursor.close()
 		
-		self.addedliste_tmp = self.addedliste[:]
-		self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
+		self.wishlist_tmp = self.wishlist[:]
+		if config.plugins.serienRec.wishListSorted.value:
+			self.wishlist_tmp.sort()
+		self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
 		self.getCover()
 		
 	def buildList(self, entry):
@@ -10066,15 +10098,15 @@ class serienRecWishlist(Screen, HelpableScreen):
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			self['config'].hide()
-			self.addedlist = []
+			l = []
 
 			cCursor = dbSerRec.cursor()
 			cCursor.execute("SELECT Serie FROM SerienMarker ORDER BY Serie")
 			cMarkerList = cCursor.fetchall()
 			for row in cMarkerList:
-				self.addedlist.append(row)
+				l.append(row)
 			cCursor.close()
-			self.chooseMenuList_popup.setList(map(self.buildList_popup, self.addedlist))
+			self.chooseMenuList_popup.setList(map(self.buildList_popup, l))
 			self['popup_list'].moveToIndex(0)
 		else:
 			self.modus = "config"
@@ -10101,9 +10133,9 @@ class serienRecWishlist(Screen, HelpableScreen):
 			zeile = self['config'].getCurrent()[0]
 			(title, serie, staffel, episode) = zeile
 			self.dbData.append((serie.lower(), str(staffel).lower(), episode.lower()))
-			self.addedliste_tmp.remove(zeile)
-			self.addedliste.remove(zeile)
-			self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
+			self.wishlist_tmp.remove(zeile)
+			self.wishlist.remove(zeile)
+			self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
 			self.delAdded = True;
 			
 	def keyGreen(self):
@@ -10115,16 +10147,20 @@ class serienRecWishlist(Screen, HelpableScreen):
 		self.close()
 			
 	def keyYellow(self):
-		if len(self.addedliste_tmp) != 0:
-			if self.sortedList:
-				self.addedliste_tmp = self.addedliste[:]
+		if len(self.wishlist_tmp) != 0:
+			if config.plugins.serienRec.wishListSorted.value:
+				self.wishlist_tmp = self.wishlist[:]
 				self['text_yellow'].setText(_("Sortieren"))
-				self.sortedList = False
+				config.plugins.serienRec.wishListSorted.setValue(False)
 			else:
-				self.addedliste_tmp.sort()
+				self.wishlist_tmp.sort()
 				self['text_yellow'].setText(_("unsortierte Liste"))
-				self.sortedList = True
-			self.chooseMenuList.setList(map(self.buildList, self.addedliste_tmp))
+				config.plugins.serienRec.wishListSorted.setValue(True)
+			config.plugins.serienRec.wishListSorted.save()
+			configfile.save()
+			
+			self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
+			self.getCover()
 		
 	def keyBlue(self):
 		check = self['config'].getCurrent()
@@ -10929,7 +10965,7 @@ class serienRecMain(Screen, HelpableScreen):
 				config.plugins.serienRec.showPicons.value = False
 					
 		self.setupSkin()
-			
+		
 		if config.plugins.serienRec.updateInterval.value == 24:
 			config.plugins.serienRec.timeUpdate.value = True
 			config.plugins.serienRec.update.value = False
@@ -11234,6 +11270,8 @@ class serienRecMain(Screen, HelpableScreen):
 			if config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
 				serienRecCheckForRecording(self.session, False)
 		
+		global UpdateAvailable
+		UpdateAvailable = False
 		if config.plugins.serienRec.Autoupdate.value:
 			#checkUpdate(self.session).checkforupdate()
 			checkGitHubUpdate(self.session).checkForUpdate()
@@ -11248,7 +11286,7 @@ class serienRecMain(Screen, HelpableScreen):
 				self.readWebpage(False)
 
 	def readWebpage(self, answer=True):
-		if not showMainScreen:
+		if (not showMainScreen) and (not UpdateAvailable):
 			self.keyCancel()
 			self.close()
 
@@ -11806,6 +11844,8 @@ class checkUpdate():
 		self.session = session
 
 	def checkforupdate(self):
+		global UpdateAvailable
+		UpdateAvailable = False
 		try:
 			getPage("http://master.dl.sourceforge.net/project/serienrec/version.txt").addCallback(self.gotUpdateInfo).addErrback(self.gotError)
 		except Exception, error:
@@ -11832,6 +11872,7 @@ class checkUpdate():
 		version = map(lambda x: int(x), config.plugins.serienRec.showversion.value.split("."))
 
 		if remoteversion > version:
+			UpdateAvailable = True
 			self.session.openWithCallback(self.startUpdate,MessageBox,_("Für das Serien Recorder Plugin ist ein Update verfügbar!\nWollen Sie es jetzt herunterladen und installieren?"), MessageBox.TYPE_YESNO)
 		else:
 			print "[Serien Recorder] kein update von @w22754 verfügbar."
@@ -11848,6 +11889,8 @@ class checkGitHubUpdate():
 		self.session = session
 
 	def checkForUpdate(self):
+		global UpdateAvailable
+		UpdateAvailable = False
 		conn = httplib.HTTPSConnection("api.github.com", timeout=20, port=443)
 		try:
 			conn.request(url="/repos/einfall/serienrecorder/tags", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
@@ -11869,6 +11912,7 @@ class checkGitHubUpdate():
 		version=map(lambda x: int(x), version)
 
 		if (remoteversion > version):
+			UpdateAvailable = True
 			self.latestVersion = latestVersion
 			self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das Serien Recorder Plugin ist ein Update (v%s) verfügbar!\nWollen Sie es jetzt herunterladen und installieren?") % str(latestVersion), MessageBox.TYPE_YESNO, msgBoxID="[Serien Recorder] Update available")
 
@@ -11899,7 +11943,11 @@ class checkGitHubUpdate():
 				remoteUrl = "https://github.com/einfall/serienrecorder/releases/download/v%s/enigma2-plugin-extensions-serienrecorder_%s_all.deb" % (str(self.latestVersion), str(self.latestVersion))
 			else:
 				remoteUrl = "https://github.com/einfall/serienrecorder/releases/download/v%s/enigma2-plugin-extensions-serienrecorder_%s_all.ipk" % (str(self.latestVersion), str(self.latestVersion))
-			self.session.open(SerienRecorderUpdateScreen, remoteUrl, self.latestVersion)
+				
+			try:
+				self.session.open(SerienRecorderUpdateScreen, remoteUrl, self.latestVersion)
+			except:
+				Notifications.AddPopup(_("[Serien Recorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO, timeout=3)
 		else:
 			return
 			
@@ -12017,7 +12065,7 @@ class SerienRecorderUpdateScreen(Screen):
 
 	def downloadError(self):
 		self.stopActivityTimer()
-		self.session.open(MessageBox, _("Der Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
+		self.session.open(MessageBox, _("[Serien Recorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
 		self.close()
 		
 	def finishedPluginUpdate(self,retval):
