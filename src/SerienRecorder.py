@@ -7744,6 +7744,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.margin_before.save()
 		config.plugins.serienRec.margin_after.save()
 		config.plugins.serienRec.max_season.save()
+		config.plugins.serienRec.max_season.save()
 		config.plugins.serienRec.Autoupdate.save()
 		config.plugins.serienRec.updateType.save()
 		config.plugins.serienRec.globalFromTime.save()
@@ -11816,7 +11817,7 @@ class serienRecMain(Screen, HelpableScreen):
 			if runAutocheckAtExit and config.plugins.serienRec.runAutocheckAtExit.value:
 				singleTimer = eTimer()
 				if isDreamboxOS:
-					self.singleTimer_conn = self.singleTimer.timeout.connect(serienRecCheckForRecording(self.session, True))
+					singleTimer_conn = singleTimer.timeout.connect(serienRecCheckForRecording(self.session, True))
 				else:
 					singleTimer.callback.append(serienRecCheckForRecording(self.session, True))
 				singleTimer.start(10000, True)
