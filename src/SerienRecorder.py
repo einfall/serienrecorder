@@ -224,7 +224,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
 	config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
 	config.plugins.serienRec.logWrapAround = ConfigYesNo(default = False)
-	config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", _("<Serienname> - SnnEmm - <Episodentitel>")), ("1", _("<Serienname>"))], default="0")
+	config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", _("<Serienname> - SnnEmm - <Episodentitel>")), ("1", _("<Serienname>")), ("2", _("SnnEmm - <Episodentitel>"))], default="0")
 	config.plugins.serienRec.refreshViews = ConfigYesNo(default = True)
 	config.plugins.serienRec.defaultStaffel = ConfigSelection(choices = [("0","'Alle'"), ("1", "'Manuell'")], default="0")
 	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default = True)
@@ -2973,6 +2973,8 @@ class serienRecCheckForRecording():
 								label_serie = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 								if config.plugins.serienRec.TimerName.value == "0":
 									timer_name = label_serie
+								elif config.plugins.serienRec.TimerName.value == "2":
+									timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 								else:
 									timer_name = serien_name
 								writeLog(_("[Serien Recorder] Versuche deaktivierten Timer aktiv zu erstellen: ' %s - %s '") % (serien_title, dirname))
@@ -3616,6 +3618,8 @@ class serienRecCheckForRecording():
 		if checkTuner(start_unixtime, end_unixtime, stbRef):
 			if config.plugins.serienRec.TimerName.value == "0":
 				timer_name = label_serie
+			elif config.plugins.serienRec.TimerName.value == "2":
+				timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title)
 			else:
 				timer_name = serien_name
 			result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
@@ -4062,7 +4066,12 @@ class serienRecTimer(Screen, HelpableScreen):
 			return
 			
 	def removeTimer(self, serien_name, serien_title, serien_time, serien_channel, serien_eit=0):
-		title = "%s - %s" % (serien_name, serien_title)
+		if config.plugins.serienRec.TimerName.value == "1":    #"<Serienname>"
+			title = serien_name
+		elif config.plugins.serienRec.TimerName.value == "2":  #"SnnEmm - <Episodentitel>"
+			title = serien_title
+		else:  #"<Serienname> - SnnEmm - <Episodentitel>"
+			title = "%s - %s" % (serien_name, serien_title)
 		removed = serienRecAddTimer.removeTimerEntry(title, serien_time, serien_eit)
 		if not removed:
 			print "[Serien Recorder] enigma2 NOOOTTT removed"
@@ -4070,7 +4079,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			print "[Serien Recorder] enigma2 Timer removed."
 		cCursor = dbSerRec.cursor()
 		if serien_eit > 0:
-			cCursor.execute("DELETE FROM AngelegteTimer WHERE EventID=?", (serien_eit, ))
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE EventID=? AND StartZeitstempel>=?", (serien_eit, int(time.time())))
 		else:
 			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (serien_name.lower(), serien_time, serien_channel.lower()))
 		dbSerRec.commit()
@@ -4117,9 +4126,8 @@ class serienRecTimer(Screen, HelpableScreen):
 		
 	def removeOldTimerFromDB(self, answer):
 		if answer:
-			current_time = int(time.time())
 			cCursor = dbSerRec.cursor()
-			cCursor.execute("DELETE FROM AngelegteTimer WHERE StartZeitstempel<?", (current_time, ))
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE StartZeitstempel<?", (int(time.time()), ))
 			dbSerRec.commit()
 			cCursor.close()
 		
@@ -5942,6 +5950,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			else:
 				if config.plugins.serienRec.TimerName.value == "0":
 					timer_name = label_serie
+				elif config.plugins.serienRec.TimerName.value == "2":
+					timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title)
 				else:
 					timer_name = serien_name
 
@@ -7743,7 +7753,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.maxWebRequests.save()
 		config.plugins.serienRec.margin_before.save()
 		config.plugins.serienRec.margin_after.save()
-		config.plugins.serienRec.max_season.save()
 		config.plugins.serienRec.max_season.save()
 		config.plugins.serienRec.Autoupdate.save()
 		config.plugins.serienRec.updateType.save()
