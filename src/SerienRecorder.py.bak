@@ -2947,7 +2947,6 @@ class serienRecCheckForRecording():
 		cCursor.close()
 		cTimer.close()
 
-	def activateTimer(self):
 		# versuche deaktivierte Timer zu aktivieren oder auf anderer Box zu erstellen
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE TimerAktiviert=0")
@@ -3271,9 +3270,6 @@ class serienRecCheckForRecording():
 	def createTimer(self, result=True):
 		dbTmp.commit()
 
-		# versuche deaktivierte Timer zu erstellen
-		self.activateTimer()
-		
 		# jetzt die Timer erstellen	
 		for x in range(self.NoOfRecords): 
 			self.searchTimer(x)
