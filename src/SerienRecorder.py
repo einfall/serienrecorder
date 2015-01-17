@@ -68,6 +68,7 @@ colorWhite  = 0xffffff
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
+InfoFile = "%sStartupInfoText" % serienRecMainPath
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -231,6 +232,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.runAutocheckAtExit = ConfigYesNo(default = False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default = False)
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default = True)
+	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default = True)
 	
 	config.plugins.serienRec.selectBouquets = ConfigYesNo(default = False)
 	#config.plugins.serienRec.MainBouquet = ConfigSelection(choices = [("Favourites (TV)", _("Favourites (TV)")), ("Favourites-SD (TV)", _("Favourites-SD (TV)"))], default="Favourites (TV)")
@@ -2991,6 +2993,20 @@ class serienRecCheckForRecording():
 
 								timerFound = True
 								break
+
+					if not timerFound:
+						# suche in (manuell) aktivierten Timern
+						for timer in recordHandler.timer_list:
+							if timer and timer.service_ref:
+								if (timer.begin == serien_time) and (timer.eit == eit) and (str(timer.service_ref).lower() == stbRef.lower()):
+									# Eintrag in das timer file
+									cTimer = dbSerRec.cursor()
+									cTimer.execute("UPDATE OR IGNORE AngelegteTimer SET TimerAktiviert=1 WHERE Serie=? AND Staffel=? AND Episode=? AND Titel=? AND StartZeitstempel=? AND ServiceRef=? AND webChannel=? AND EventID=?", row)
+									dbSerRec.commit()
+									cTimer.close()
+
+									timerFound = True
+									break
 
 					if not timerFound:
 						# versuche deaktivierten Timer (auf anderer Box) zu erstellen
@@ -6268,7 +6284,6 @@ class serienRecBaseButtons():
 		else:
 			self.close(False)
 
-
 class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 	def __init__(self, session, serien_name, serie_url, serien_cover):
 		Screen.__init__(self, session)
@@ -6465,6 +6480,7 @@ class serienRecEpisodes(serienRecBaseButtons, Screen, HelpableScreen):
 
 	def dataError(self, error):
 		print error
+
 
 #---------------------------------- Channel Functions ------------------------------------------
 
@@ -7060,7 +7076,11 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
 		self.setInfoText()
-		self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.BoxID][0])
+		if config.plugins.serienRec.setupType.value == "1":
+			self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.BoxID][0])
+		else:
+			self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.setupType][0])
+			
 		#config.plugins.serienRec.showAdvice.value = True
 		if config.plugins.serienRec.showAdvice.value:
 			self.onShown.append(self.showAdvice)
@@ -9266,11 +9286,11 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 	def readAdded(self):
 		self.addedlist = []
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT Serie, Staffel, Episode FROM AngelegteTimer")
+		cCursor.execute("SELECT Serie, Staffel, Episode, Titel FROM AngelegteTimer")
 		for row in cCursor:
-			(Serie, Staffel, Episode) = row
-			zeile = "%s S%sE%s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2))
-			self.addedlist.append((zeile, Serie, Staffel, Episode))
+			(Serie, Staffel, Episode, title) = row
+			zeile = "%s - S%sE%s - %s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2), title)
+			self.addedlist.append((zeile.replace(" - dump", " - %s" % _("(Manuell hinzugefügt !!)")), Serie, Staffel, Episode, title))
 		cCursor.close()
 		
 		self['title'].instance.setForegroundColor(parseColor("red"))
@@ -9282,7 +9302,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self.getCover()
 			
 	def buildList(self, entry):
-		(zeile, Serie, Staffel, Episode) = entry
+		(zeile, Serie, Staffel, Episode, title) = entry
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
 			]
@@ -9318,7 +9338,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 				cCursor = dbSerRec.cursor()
 				for i in range(int(self.aFromEpisode), int(self.aToEpisode)+1):
 					print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(self.aSerie), str(self.aStaffel), str(i))
-					cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (self.aSerie, self.aStaffel, str(i).zfill(2), "dump", 0, "dump", "dump", 0, 1))
+					cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, CurrentTime, ?, ?, ?, ?)", (self.aSerie, self.aStaffel, str(i).zfill(2), "dump", 0, "dump", "dump", 0, 1))
 				dbSerRec.commit()
 				cCursor.close()
 				self.readAdded()
@@ -9362,8 +9382,8 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			return
 		else:
 			zeile = self['config'].getCurrent()[0]
-			(title, serie, staffel, episode) = zeile
-			self.dbData.append((serie.lower(), str(staffel).lower(), episode.lower()))
+			(txt, serie, staffel, episode, title) = zeile
+			self.dbData.append((serie.lower(), str(staffel).lower(), episode.lower(), title.lower()))
 			self.addedlist_tmp.remove(zeile)
 			self.addedlist.remove(zeile)
 			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
@@ -9372,7 +9392,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 	def keyGreen(self):
 		if self.delAdded:
 			cCursor = dbSerRec.cursor()
-			cCursor.executemany("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", self.dbData)
+			cCursor.executemany("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=?", self.dbData)
 			dbSerRec.commit()
 			cCursor.close()
 		self.close()
@@ -11054,10 +11074,24 @@ class serienRecMain(Screen, HelpableScreen):
 		if not len(termineCache):
 			readTermineData()
 		
+		#config.plugins.serienRec.showStartupInfoText.value = True
+		#config.plugins.serienRec.showStartupInfoText.save()
+		#configfile.save()
+		
 		#self.onLayoutFinish.append(self.startScreen)
-		self.onFirstExecBegin.append(self.startScreen)
+		if config.plugins.serienRec.showStartupInfoText.value:
+			global InfoFile
+			if fileExists(InfoFile):
+				self.onFirstExecBegin.append(self.showInfoText)
+			else:
+				self.onFirstExecBegin.append(self.startScreen)
+		else:
+			self.onFirstExecBegin.append(self.startScreen)
 		self.onClose.append(self.__onClose)
 		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def showInfoText(self):
+		self.session.openWithCallback(self.startScreen, ShowStartupInfo)
 
 	def callHelpAction(self, *args):
 		HelpableScreen.callHelpAction(self, *args)
@@ -11472,19 +11506,6 @@ class serienRecMain(Screen, HelpableScreen):
 							bereits_vorhanden = countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False) > 0 and True or False
 							
 					title = "%s - %s" % (seasonEpisodeString, title)
-					#if int(config.plugins.serienRec.screenmode.value) == 0:
-					#	self.daylist[0].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					#elif int(config.plugins.serienRec.screenmode.value) == 1:
-					#	if int(neu) == 1:
-					#		self.daylist[1].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					#elif int(config.plugins.serienRec.screenmode.value) == 2:
-					#	if len(cSender_list) != 0:
-					#		(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
-					#		if int(status) == 1:
-					#			self.daylist[2].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
-					#elif int(config.plugins.serienRec.screenmode.value) == 3:
-					#	if re.search('01', episode, re.S):
-					#		self.daylist[3].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 					self.daylist[0].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 					if int(neu) == 1:
 						self.daylist[1].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
@@ -11527,7 +11548,6 @@ class serienRecMain(Screen, HelpableScreen):
 			
 	def buildList(self, entry):
 		(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id) = entry
-		#entry = [(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id)]
 		
 		imageNone = "%simages/black.png" % serienRecMainPath
 		imageNeu = "%simages/neu.png" % serienRecMainPath
@@ -12004,14 +12024,14 @@ class checkGitHubUpdate():
 				Notifications.AddPopup(_("[Serien Recorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO, timeout=3)
 		else:
 			return
-			
+
 class SerienRecorderUpdateScreen(Screen):
 	DESKTOP_WIDTH  = getDesktop(0).size().width()
 	DESKTOP_HEIGHT = getDesktop(0).size().height()
 
 	skin = """
 		<screen name="SerienRecorderUpdate" position="%d,%d" size="720,320" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
-			<widget name="mplog" position="5,5" size="710,310" font="Regular;18" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="5"/>
+			<widget name="srlog" position="5,5" size="710,310" font="Regular;18" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="5"/>
 			<widget name="activityslider" position="5,280" size="710,25" borderWidth="1" transparent="1" zPosition="4"/>
 			<widget name="status" position="30,280" size="660,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
 		</screen>""" % ((DESKTOP_WIDTH - 720) / 2, (DESKTOP_HEIGHT - 320) / 2, _("Serien Recorder Update"))
@@ -12027,12 +12047,12 @@ class SerienRecorderUpdateScreen(Screen):
 		self.fileSize = 5 * 1024
 		self.downloadDone = False
 		
-		self["mplog"] = Label()
+		self['srlog'] = Label()
 		
 		self.status = Label(_("Preparing... Please wait"))
-		self["status"] = self.status
+		self['status'] = self.status
 		self.activityslider = Slider(0, 100)
-		self["activityslider"] = self.activityslider
+		self['activityslider'] = self.activityslider
 		self.activity = 0
 		self.activityTimer = eTimer()
 		if isDreamboxOS:
@@ -12071,12 +12091,12 @@ class SerienRecorderUpdateScreen(Screen):
 			self.activityTimerConnection = None
 		
 	def __onLayoutFinished(self):
-		sl = self["mplog"]
+		sl = self['srlog']
 		sl.instance.setZPosition(5)
 
 		getPage(str(self.target.replace("/download/", "/tag/").rsplit('/', 1)[0]), timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getFileSize).addErrback(self.downloadError)
 		
-		self["mplog"].setText(_("Download wurde gestartet, bitte warten..."))
+		self['srlog'].setText(_("Download wurde gestartet, bitte warten..."))
 		self.activityslider.setValue(0)
 		self.startActivityTimer()
 
@@ -12098,7 +12118,7 @@ class SerienRecorderUpdateScreen(Screen):
 		
 		#self.stopActivityTimer()
 		if fileExists(self.file_name):
-			self["mplog"].setText(_("Starte Update, bitte warten..."))
+			self['srlog'].setText(_("Starte Update, bitte warten..."))
 
 			#self.activity = 0
 			#self.activityslider.setValue(0)
@@ -12106,9 +12126,9 @@ class SerienRecorderUpdateScreen(Screen):
 
 			self.container=eConsoleAppContainer()
 			self.container.appClosed.append(self.finishedPluginUpdate)
-			self.container.stdoutAvail.append(self.mplog)
-			#self.container.stderrAvail.append(self.mplog)
-			#self.container.dataAvail.append(self.mplog)
+			self.container.stdoutAvail.append(self.srlog)
+			#self.container.stderrAvail.append(self.srlog)
+			#self.container.dataAvail.append(self.srlog)
 			if isDreamboxOS:
 				#self.container.execute("dpkg --install --force-overwrite --force-depends %s" % str(self.file_name))
 				self.container.execute("dpkg --install %s && apt-get update && apt-get -f install" % str(self.file_name))
@@ -12129,13 +12149,91 @@ class SerienRecorderUpdateScreen(Screen):
 		self.session.openWithCallback(self.restartGUI, MessageBox, _("Serien Recorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?"), MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, answer):
+		config.plugins.serienRec.showStartupInfoText.value = True
+		config.plugins.serienRec.showStartupInfoText.save()
+		configfile.save()
+		
 		if answer:
 			self.session.open(Screens.Standby.TryQuitMainloop, 3)
 		else:
 			self.close()
 
-	def mplog(self,str):
-		self["mplog"].setText(str)
+	def srlog(self,str):
+		self['srlog'].setText(str)
+
+class ShowStartupInfo(Screen):
+	DESKTOP_WIDTH  = getDesktop(0).size().width()
+	DESKTOP_HEIGHT = getDesktop(0).size().height()
+
+	BUTTON_X = DESKTOP_WIDTH / 2
+	BUTTON_Y = DESKTOP_HEIGHT - 50
+	
+	skin = """
+		<screen name="SerienRecorderHints" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
+			<widget name="srlog" position="5,5" size="%d,%d" font="Regular;21" valign="left" halign="top" foregroundColor="white" transparent="1" zPosition="5"/>
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="text_ok" position="%d,%d" size="%d,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="text_exit" position="%d,%d" size="%d,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
+		</screen>""" % (10, 10, DESKTOP_WIDTH - 20, DESKTOP_HEIGHT - 20, _("Serien Recorder InfoText"), 
+		                DESKTOP_WIDTH - 30, DESKTOP_HEIGHT - 80,
+						BUTTON_X + 50, BUTTON_Y,
+						BUTTON_X + 100, BUTTON_Y, BUTTON_X - 100,
+						50, BUTTON_Y,
+						100, BUTTON_Y, BUTTON_X - 100,
+						)
+
+	def __init__(self, session):
+		self.session = session
+		Screen.__init__(self, session)
+		
+		self["actions"] = ActionMap(["SerienRecorderActions",], {
+			"ok"    : self.keyOK,
+			"cancel": self.keyCancel,
+			"left"  : self.keyLeft,
+			"right" : self.keyRight,
+			"up"    : self.keyUp,
+			"down"  : self.keyDown,
+		}, -1)
+		
+		self['srlog'] = ScrollLabel()
+		self['text_ok'] = Label(_("Exit und nicht mehr anzeigen"))
+		self['text_exit'] = Label(_("Exit"))
+		
+		self.onLayoutFinish.append(self.__onLayoutFinished)
+
+	def __onLayoutFinished(self):
+		sl = self['srlog']
+		sl.instance.setZPosition(5)
+
+		text = ""
+		global InfoFile
+		if fileExists(InfoFile):
+			readFile = open(InfoFile, "r")
+			text = readFile.read()
+			readFile.close()
+		self['srlog'].setText(text)
+
+	def keyLeft(self):
+		self['srlog'].pageUp()
+
+	def keyRight(self):
+		self['srlog'].pageDown()
+
+	def keyDown(self):
+		self['srlog'].pageDown()
+
+	def keyUp(self):
+		self['srlog'].pageUp()
+
+	def keyOK(self):
+		config.plugins.serienRec.showStartupInfoText.value = False
+		config.plugins.serienRec.showStartupInfoText.save()
+		configfile.save()
+		self.close()
+
+	def keyCancel(self):
+		self.close()
 
 def getNextWakeup():
 	color_print = "\033[93m"
