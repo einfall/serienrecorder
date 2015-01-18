@@ -209,7 +209,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
 	config.plugins.serienRec.writeLogVersion = ConfigYesNo(default = True)
 	config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
-	config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen"))], default="0")
+	config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", _("keine")), ("1", _("nur Benachrichtigung")), ("2", _("nur Marker anlegen")), ("3", _("Benachrichtigung und Marker anlegen")), ("4", _("nur Suchen"))], default="0")
 	config.plugins.serienRec.ActionOnNewManuell = ConfigYesNo(default = True)
 	config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
 	config.plugins.serienRec.autoSearchForCovers = ConfigYesNo(default = False)
@@ -2401,6 +2401,7 @@ class serienRecCheckForRecording():
 		serienRecCheckForRecording.instance = self
 		self.session = session
 		self.manuell = manuell
+		self.newSeriesOrEpisodesFound = False
 		self.page = 1
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
@@ -2760,6 +2761,7 @@ class serienRecCheckForRecording():
 										dbSerRec.commit()
 
 										if not self.manuell:
+											self.newSeriesOrEpisodesFound = True
 											if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
 												self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
 												Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
@@ -2787,6 +2789,7 @@ class serienRecCheckForRecording():
 													dbSerRec.commit()
 
 													if not self.manuell:
+														self.newSeriesOrEpisodesFound = True
 														if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
 															self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
 															Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
@@ -2803,6 +2806,7 @@ class serienRecCheckForRecording():
 												dbSerRec.commit()
 
 												if not self.manuell:
+													self.newSeriesOrEpisodesFound = True
 													if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
 														self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
 														Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
@@ -3503,7 +3507,11 @@ class serienRecCheckForRecording():
 		print "---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime)
 		if (config.plugins.serienRec.showNotification.value in ("2", "3")) and (not self.manuell):
 			statisticMessage = _("Serien vorgemerkt: %s\nTimer erstellt: %s\nTimer aktualisiert: %s\nTimer mit Konflikten: %s\nTimer vom Merkzettel: %s") % (str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate), str(self.countNotActiveTimer), str(self.countTimerFromWishlist))
-			Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde beendet.\n\n%s") % statisticMessage, MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] Suchlauf wurde beendet")
+			newSeasonOrEpisodeMessage = _("")
+			if self.newSeriesOrEpisodesFound:
+				newSeasonOrEpisodeMessage = _("\n\nNeuer Serien- oder Staffelbeginn gefunden")
+
+			Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde beendet.\n\n%s%s") % (statisticMessage, newSeasonOrEpisodeMessage), MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] Suchlauf wurde beendet")
 
 		if config.plugins.serienRec.longLogFileName.value:
 			shutil.copy(logFile, logFileSave)
@@ -7731,7 +7739,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.\n"
 																"  - 'nur Marker anlegen': Es wird automatisch ein neuer Serienmarker für die gefundene Serie angelegt.\n"
 																"  - 'Benachrichtigung und Marker anlegen': Es wird sowohl ein neuer Serienmarker angelegt, als auch eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
-																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird."), "Aktion_bei_neuer_Staffel"),
+																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird."), "Aktion_bei_neuer_Staffel\n"
+																"  - 'Nur Suche': Es wird nur eine Suche durchgeführt, die Ergebnisse können über Taste 3 abgerufen werden."),
 			config.plugins.serienRec.ActionOnNewManuell :      (_("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht."), "Aktion_bei_neuer_Staffel"),
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
 																"und auch nicht mehr angezeigt.") % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))), "1.3_Die_globalen_Einstellungen"),
