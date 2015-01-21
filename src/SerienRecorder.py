@@ -6462,8 +6462,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if raw:
 			for season,episode,tv,info_url,title,otitle in raw:
 				# Umlaute umwandeln
-				title = iso8859_Decode(title)
-				otitle = iso8859_Decode(otitle)
+				title = iso8859_Decode(title.strip())
+				otitle = iso8859_Decode(otitle.strip())
 				season = iso8859_Decode(season)
 				self.episodes_list.append([season, episode, tv, info_url, title, otitle])
 
