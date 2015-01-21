@@ -30,7 +30,6 @@ from Screens.InputBox import InputBox
 from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
 import Screens.Standby
-from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
 
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter, eConsoleAppContainer
 from Tools.Directories import pathExists, fileExists, SCOPE_SKIN_IMAGE, resolveFilename
@@ -38,6 +37,11 @@ import sys, os, base64, re, time, shutil, datetime, codecs, urllib, urllib2, ran
 from twisted.web import client, error as weberror
 from twisted.internet import reactor, defer
 from skin import parseColor, loadSkin
+
+if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
+	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
+else:
+	from Screens.VirtualKeyBoard import VirtualKeyBoard as NTIVirtualKeyBoard
 
 from Screens.ChannelSelection import service_types_tv
 from ServiceReference import ServiceReference
@@ -176,7 +180,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.update = ConfigYesNo(default = False)
 	config.plugins.serienRec.updateInterval = ConfigInteger(0, (0,24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
-	config.plugins.serienRec.deltime = ConfigClock(default = 6*3600+time.timezone)
+	config.plugins.serienRec.deltime = ConfigClock(default = 8*3600+time.timezone)
 	config.plugins.serienRec.maxWebRequests = ConfigInteger(1, (1,99))
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
 	config.plugins.serienRec.globalFromTime = ConfigClock(default = 0+time.timezone)
@@ -2487,7 +2491,7 @@ class serienRecCheckForRecording():
 			writeLog(_("[Serien Recorder] Removed EPGRefresh notifier"), True)
 			self.epgrefresh_instance.removeFinishNotifier(self.startCheck)
 		except:
-			writeLog(_("[Serien Recorder] EPGRefresh not installed!"), True)
+			writeLog(_("[Serien Recorder] EPGRefresh (v2.1.1 or higher) not installed!"), True)
 
 		if not self.manuell and config.plugins.serienRec.update.value:
 			refreshTimer = eTimer()
@@ -2523,7 +2527,7 @@ class serienRecCheckForRecording():
 				writeLog(_("[Serien Recorder] Added EPGRefresh notifier"), True)
 				self.epgrefresh_instance.addFinishNotifier(self.startCheck)
 			except:
-				writeLog(_("[Serien Recorder] EPGRefresh not installed!"), True)
+				writeLog(_("[Serien Recorder] EPGRefresh (v2.1.1 or higher) not installed!"), True)
 		else:
 			print "[Serien Recorder] checkRecTimer manuell."
 			global runAutocheckAtExit
@@ -7739,8 +7743,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.\n"
 																"  - 'nur Marker anlegen': Es wird automatisch ein neuer Serienmarker für die gefundene Serie angelegt.\n"
 																"  - 'Benachrichtigung und Marker anlegen': Es wird sowohl ein neuer Serienmarker angelegt, als auch eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
-																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird."), "Aktion_bei_neuer_Staffel\n"
-																"  - 'Nur Suche': Es wird nur eine Suche durchgeführt, die Ergebnisse können über Taste 3 abgerufen werden."),
+																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.\n"
+																"  - 'Nur Suche': Es wird nur eine Suche durchgeführt, die Ergebnisse können über Taste 3 abgerufen werden."), "Aktion_bei_neuer_Staffel"),
 			config.plugins.serienRec.ActionOnNewManuell :      (_("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht."), "Aktion_bei_neuer_Staffel"),
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
 																"und auch nicht mehr angezeigt.") % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))), "1.3_Die_globalen_Einstellungen"),
@@ -7817,7 +7821,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.showAllButtons :          (_("Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt."), "1.3_Die_globalen_Einstellungen"),
 		    config.plugins.serienRec.autochecktype :           (_("Bei 'manuell' wird kein automatischer Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
 		                                                        "Bei 'zur gewählten Uhrzeit' wird der automatische Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
-		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist."), "1.3_Die_globalen_Einstellungen"),
+		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer)."), "1.3_Die_globalen_Einstellungen"),
 		}			
 				
 		# if config.plugins.serienRec.updateInterval.value == 0:
