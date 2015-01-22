@@ -69,6 +69,7 @@ colorBlue   = 0x0064c7
 colorYellow = 0xbab329
 colorWhite  = 0xffffff
 
+WebTimeout = 20
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
@@ -505,7 +506,7 @@ def getCover(self, serien_name, id):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif id:
 		url = "http://www.wunschliste.de%s/links" % id
-		getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+		getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
 
 def getCoverDataError(error, self, serien_nameCover):
 	if self is not None: 
@@ -524,7 +525,7 @@ def getImdblink(data, self, serien_nameCover):
 	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 	if ilink:
 		#getPage(ilink[0], timeout=20, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
-		getPage(ilink[0], timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+		getPage(ilink[0], timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
 	else:
 		print "[Serien Recorder] es wurde kein imdb-link für ein cover gefunden."
 		
@@ -2058,6 +2059,18 @@ def readTermineData():
 		termineCache = u.load()
 		f.close()
 
+def testWebConnection():
+	conn = httplib.HTTPConnection("www.google.com", timeout=WebTimeout)
+	try:
+		conn.request("GET", "/")
+		data = conn.getresponse()
+		#print "Status: %s   and reason: %s" % (data.status, data.reason)
+		conn.close()
+		return True
+	except:
+		conn.close()
+	return False
+
 
 class PicLoader:
 	def __init__(self, width, height, sc=None):
@@ -2670,6 +2683,34 @@ class serienRecCheckForRecording():
 		self.MessageList = []
 		self.speedStartTime = time.clock()
 
+		# teste Verbindung ins Internet
+		if not testWebConnection():
+			writeLog(_("\nkeine Verbindung ins Internet. AutoCheck wurde abgebrochen!!\n"), True)
+
+			# Statistik
+			self.speedEndTime = time.clock()
+			speedTime = (self.speedEndTime - self.speedStartTime)
+			writeLog(_("---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------") % str(speedTime), True)
+			print "---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime)
+
+			if config.plugins.serienRec.longLogFileName.value:
+				shutil.copy(logFile, logFileSave)
+			
+			global autoCheckFinished
+			autoCheckFinished = True
+
+			# in den deep-standby fahren.
+			if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
+				if config.plugins.serienRec.DSBTimeout.value > 0:
+					try:
+						self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+					except:
+						self.gotoDeepStandby(True)
+				else:
+					self.gotoDeepStandby(True)
+			return
+		
+		
 		# suche nach neuen Serien, Covern und Planer-Cache
 		if ((config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value)) or ((not self.manuell) and config.plugins.serienRec.autoSearchForCovers.value) or ((not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value):
 			self.startCheck2()
@@ -2703,7 +2744,7 @@ class serienRecCheckForRecording():
 		
 	def readWebpageForNewStaffel(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
 		
 	def parseWebpageForNewStaffel(self, data, daypage, c1, c2, c3):
 		daylist = [[],[],[],[]]
@@ -3250,7 +3291,7 @@ class serienRecCheckForRecording():
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
 
 	def parseWebpage(self, data, c1, c2, serien_name, SerieUrl, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time, SerieEnabled=True):
 		self.count_url += 1
@@ -3279,6 +3320,40 @@ class serienRecCheckForRecording():
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 				title = iso8859_Decode(title)
 				staffel = iso8859_Decode(staffel)
+
+				# formatiere start/end-zeit
+				(day, month) = datum.split('.')
+				(start_hour, start_min) = startzeit.split('.')
+				(end_hour, end_min) = endzeit.split('.')
+
+				start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
+
+				if int(start_hour) > int(end_hour):
+					end_unixtime = getNextDayUnixtime(end_min, end_hour, day, month)
+				else:
+					end_unixtime = getUnixTimeAll(end_min, end_hour, day, month)
+
+				# setze die vorlauf/nachlauf-zeit
+				(margin_before, margin_after) = getMargins(serien_name, sender)
+				start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+				end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
+
+				# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
+				if config.plugins.serienRec.breakTimersuche.value:
+					TimeSpan_time = int(future_time)
+					if config.plugins.serienRec.forceRecording.value:
+						TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
+					if int(start_unixtime) > int(TimeSpan_time):
+						# We reached the maximal time range to look for transmissions, so we can break here
+						break
+
+				if not config.plugins.serienRec.forceRecording.value:
+					if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
+						start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
+						end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
+						if not allowedTimeRange(fromTime, toTime, start_time, end_time):
+							continue
+
 
 				# if there is no season or episode number it can be a special
 				# but if we have more than one special and wunschliste.de does not
@@ -3389,43 +3464,6 @@ class serienRecCheckForRecording():
 							liste.insert(0, _("Manuell"))
 						writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
 					continue
-
-				# Process time and date relevant data
-
-				(margin_before, margin_after) = getMargins(serien_name, sender)
-
-				# formatiere start/end-zeit
-				(day, month) = datum.split('.')
-				(start_hour, start_min) = startzeit.split('.')
-				(end_hour, end_min) = endzeit.split('.')
-
-				start_unixtime = getUnixTimeAll(start_min, start_hour, day, month)
-
-				if int(start_hour) > int(end_hour):
-					end_unixtime = getNextDayUnixtime(end_min, end_hour, day, month)
-				else:
-					end_unixtime = getUnixTimeAll(end_min, end_hour, day, month)
-
-				# setze die vorlauf/nachlauf-zeit
-				start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
-				end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
-
-
-				# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
-				if config.plugins.serienRec.breakTimersuche.value:
-					if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
-						start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
-						end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
-						if not allowedTimeRange(fromTime, toTime, start_time, end_time):
-							if not config.plugins.serienRec.forceRecording.value:
-								break
-
-					TimeSpan_time = int(future_time)
-					if config.plugins.serienRec.forceRecording.value:
-						TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
-					if int(start_unixtime) > int(TimeSpan_time):
-						# We reached the maximal time range to look for transmissions, so we can break here
-						break
 
 				##############################
 				#
@@ -3579,15 +3617,6 @@ class serienRecCheckForRecording():
 			##
 			## erstellt das serien verzeichnis
 			(dirname, dirname_serie) = getDirname(serien_name, staffel)
-			#if not fileExists(dirname):
-			#	print "[Serien Recorder] erstelle Subdir %s" % dirname
-			#	writeLog(_("[Serien Recorder] erstelle Subdir: ' %s '") % dirname)
-			#	os.makedirs(dirname)
-			#if fileExists(dirname):
-			#	if fileExists("%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname_serie, serien_name)):
-			#		shutil.copy("%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname_serie, serien_name))
-			#	if fileExists("%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname, serien_name)):
-			#		shutil.copy("%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, serien_name))
 			self.enableDirectoryCreation = False
 
 			self.konflikt = ""
@@ -6451,7 +6480,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self['title'].setText(_("Suche Episoden ' %s '") % self.serien_name)
 		print self.serie_url
 
-		getPage("%s/episoden" % self.serie_url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
+		getPage("%s/episoden" % self.serie_url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
 
 	def resultsEpisodes(self, data):
 		self.episodes_list = []
@@ -10547,7 +10576,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 				self.getData()
 				
 	def getData(self):
-		getPage(self.serieUrl, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		if config.plugins.serienRec.showCover.value:
 			serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 			showCover(serien_nameCover, self, serien_nameCover)
@@ -10754,7 +10783,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 				self.getData()
 
 	def getData(self):
-		getPage(self.serieUrl, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
 		if config.plugins.serienRec.showCover.value:
 			serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 			showCover(serien_nameCover, self, serien_nameCover)
@@ -11263,7 +11292,7 @@ class serienRecMain(Screen, HelpableScreen):
 		serien_id = self['config'].getCurrent()[0][14]
 		url = "http://www.wunschliste.de/%s/links" % serien_id
 		print url
-		getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
+		getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
 			
 	def getImdblink2(self, data):
 		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
@@ -11487,7 +11516,7 @@ class serienRecMain(Screen, HelpableScreen):
 			c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
 			c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
 
-			getPage(url, timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
+			getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
 
 	def parseWebpage(self, data, c1, c2, c3, useCache=False):
 		if useCache:
@@ -12050,13 +12079,13 @@ class checkGitHubUpdate():
 	def checkForUpdate(self):
 		global UpdateAvailable
 		UpdateAvailable = False
-		conn = httplib.HTTPSConnection("api.github.com", timeout=20, port=443)
+		conn = httplib.HTTPSConnection("api.github.com", timeout=WebTimeout, port=443)
 		try:
 			conn.request(url="/repos/einfall/serienrecorder/tags", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
 			data = conn.getresponse()
 		except:
 			return
-			
+		
 		self.response = json.load(data)
 		latestVersion = self.response[0]['name'][1:]
 		
@@ -12179,7 +12208,7 @@ class SerienRecorderUpdateScreen(Screen):
 		sl = self['srlog']
 		sl.instance.setZPosition(5)
 
-		getPage(str(self.target.replace("/download/", "/tag/").rsplit('/', 1)[0]), timeout=20, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getFileSize).addErrback(self.downloadError)
+		getPage(str(self.target.replace("/download/", "/tag/").rsplit('/', 1)[0]), timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getFileSize).addErrback(self.downloadError)
 		
 		self['srlog'].setText(_("Download wurde gestartet, bitte warten..."))
 		self.activityslider.setValue(0)
