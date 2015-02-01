@@ -1187,12 +1187,12 @@ def addToWishlist(seriesName, fromEpisode, toEpisode, season):
 	else:
 		return False
 
-def addToAddedList(seriesName, fromEpisode, toEpisode, season):
+def addToAddedList(seriesName, fromEpisode, toEpisode, season, episodeTitle):
 	if int(fromEpisode) != 0 or int(toEpisode) != 0:
 		cCursor = dbSerRec.cursor()
 		for i in range(int(fromEpisode), int(toEpisode)+1):
 			print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(seriesName), str(season), str(i))
-			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (seriesName, season, str(i).zfill(2), "dump", (int(time.time())), "dump", "dump", 0, 1))
+			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (seriesName, season, str(i).zfill(2), episodeTitle, (int(time.time())), "dump", "dump", 0, 1))
 		dbSerRec.commit()
 		cCursor.close()
 		return True
@@ -6486,15 +6486,18 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def resultsEpisodes(self, data):
 		self.episodes_list = []
 
-		raw = re.findall('<div class="l(?: ts)?" id="ep_[0-9]+">.*?<span class="epg_st".*?title="Staffel">(.*?)</span>.*?(?:<span class="epg_ep" title="Episode">(.*?)</span>.*?)?<span class="epl4(.*?)".*?>.*?<a href="(.*?)">(.*?)(?:<span class="otitel">(.*?)</span>)?</a>.*?</div>', data, re.S)
-		#('1', ['2'], [' tv'], '/episode/368700/arrow-die-rueckkehr', 'Die Rückkehr ', '(Pilot)')
+		raw = re.findall('<div class="l(?: ts)?" id="ep_[0-9]+">.*?(?:<span class="epg_st".*?title="Staffel">(.*?)</span>.*?)?(?:<span class="epg_ep" title="Episode">(.*?)</span>.*?)?<span class="epl4(.*?)".*?>.*?<a href="(.*?)">(.*?)(?:<span class="otitel">(.*?)</span>)?</a>.*?</div>', data, re.S)
+		#(['1'], ['2'], [' tv'], '/episode/368700/arrow-die-rueckkehr', 'Die Rückkehr ', '(Pilot)')
 
 		if raw:
 			for season,episode,tv,info_url,title,otitle in raw:
 				# Umlaute umwandeln
 				title = iso8859_Decode(title.strip())
 				otitle = iso8859_Decode(otitle.strip())
-				season = iso8859_Decode(season)
+				if not season:
+					season = "0"
+				else:
+					season = iso8859_Decode(season)
 				self.episodes_list.append([season, episode, tv, info_url, title, otitle])
 
 		self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list))
@@ -6582,7 +6585,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				dbSerRec.commit()
 				cCursor.close()
 			else:
-				addToAddedList(self.serien_name, self.episodes_list[sindex][1], self.episodes_list[sindex][1], self.episodes_list[sindex][0])
+				addToAddedList(self.serien_name, self.episodes_list[sindex][1], self.episodes_list[sindex][1], self.episodes_list[sindex][0], self.episodes_list[sindex][4])
 
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list))
 
@@ -9455,7 +9458,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if self.aToEpisode == None or self.aFromEpisode == None or self.aStaffel == None or self.aToEpisode == "":
 			return
 		else:
-			if addToAddedList(self.aSerie, self.aFromEpisode, self.aToEpisode, self.aStaffel):
+			if addToAddedList(self.aSerie, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump"):
 				self.readAdded()
 
 	def keyOK(self):
