@@ -3299,6 +3299,7 @@ class serienRecCheckForRecording():
 		raw = c1.findall(data)
 		raw2 = c2.findall(data)
 		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
+		raw.sort(key=lambda t : time.strptime("%s %s" % (t[1],t[2]),"%d.%m %H.%M"))
 
 		global termineCache
 		termineCache.update({serien_name:raw})
