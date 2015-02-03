@@ -22,7 +22,6 @@ class WebChannels(object):
 	def	request(self):
 		print "[SerienRecorder] request webpage.."
 		url = "http://www.wunschliste.de/updates/stationen"
-		#getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
 		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
