@@ -10593,7 +10593,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 		if rating:
 			infoText += (" und eine Bewertung von %s / 5.0 Sternen" % rating[0])
 
-		infoText += "\n\n";
+		infoText += "\n\n"
 		# Get description and episode info
 		#info = re.findall('<div class="form"><a href=".*?">(.*?)</a>(.*?)</div>.*?<p class="mb4"></p>(.*?)<div class="newsliste mb4">', data, re.S)
 		info = re.findall('<div class="form"><a href=".*?">(.*?)</a>(.*?)</div>.*?<p class="mb4"></p>(.*?)<div style="text-align:center;" class="mt4 mb4">', data, re.S)
@@ -12384,7 +12384,7 @@ def autostart(reason, **kwargs):
 		dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 		
 		if initDB():
-			if config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
+			if config.plugins.serienRec.autochecktype.value in ("1", "2") or config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
 				print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
 				serienRecCheckForRecording(session, False)
 			else:
