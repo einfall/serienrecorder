@@ -5382,7 +5382,7 @@ class serienRecMarker(Screen, HelpableScreen):
 
 	def keyBlue(self):
 		if self.modus == "config":
-			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = (_("Serien Titel eingeben:")), text = "")
+			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
 
 	def wSearch(self, serien_name):
 		if serien_name:
@@ -5451,7 +5451,7 @@ class serienRecMarker(Screen, HelpableScreen):
 			self['popup_list'].hide()
 			self['popup_bg'].hide()
 			if (self.staffel_liste[0][1] == 0) and (self.staffel_liste[1][1] == 0) and (self.staffel_liste[4][1] == 1):		# nicht ('Manuell' oder 'Alle') und '00'
-				self.session.openWithCallback(self.selectEpisode, NTIVirtualKeyBoard, title = (_("Episode eingeben ab der Timer erstellt werden sollen:")), text = str(self.AbEpisode))
+				self.session.openWithCallback(self.selectEpisode, NTIVirtualKeyBoard, title = _("Episode eingeben ab der Timer erstellt werden sollen:"), text = str(self.AbEpisode))
 			else:
 				self.insertStaffelMarker()
 		elif self.modus == "popup_list2":
@@ -5722,7 +5722,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self.close()
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = (_("Serien Titel eingeben:")), text = "")
+			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
 
 	def wSearch(self, serien_name):
 		if serien_name:
@@ -8772,7 +8772,7 @@ class SerienRecFileList(Screen, HelpableScreen):
 		self.close(self.fullpath)
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = (_("Verzeichnis-Name eingeben:")), text = "")
+		self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Verzeichnis-Name eingeben:"))
 
 	def wSearch(self, Path_name):
 		if Path_name:
@@ -9437,13 +9437,13 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self.aStaffel = aStaffel
 		if self.aStaffel == None or self.aStaffel == "":
 			return
-		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = (_("von Episode:")), text = "")
+		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = _("von Episode:"))
 	
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
 		if self.aFromEpisode == None or self.aFromEpisode == "":
 			return
-		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = (_("bis Episode:")), text = "")
+		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = _("bis Episode:"))
 	
 	def answerToEpisode(self, aToEpisode):
 		self.aToEpisode = aToEpisode
@@ -9487,7 +9487,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.aStaffel = 0
 			self.aFromEpisode = 0
 			self.aToEpisode = 0
-			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = (_("%s: Staffel eingeben:") % self.aSerie), text = "")
+			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = _("%s: Staffel eingeben:") % self.aSerie)
 
 	def keyRed(self):
 		check = self['config'].getCurrent()
@@ -10244,13 +10244,13 @@ class serienRecWishlist(Screen, HelpableScreen):
 		self.aStaffel = aStaffel
 		if self.aStaffel == None or self.aStaffel == "":
 			return
-		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = (_("von Episode:")), text = "")
+		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = _("von Episode:"))
 	
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
 		if self.aFromEpisode == None or self.aFromEpisode == "":
 			return
-		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = (_("bis Episode:")), text = "")
+		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = _("bis Episode:"))
 	
 	def answerToEpisode(self, aToEpisode):
 		self.aToEpisode = aToEpisode
@@ -10310,7 +10310,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 			self.aStaffel = 0
 			self.aFromEpisode = 0
 			self.aToEpisode = 0
-			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = (_("%s: Staffel eingeben:") % self.aSerie), text = "")
+			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = _("%s: Staffel eingeben:") % self.aSerie)
 
 	def keyRed(self):
 		check = self['config'].getCurrent()
@@ -12384,7 +12384,7 @@ def autostart(reason, **kwargs):
 		dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 		
 		if initDB():
-			if config.plugins.serienRec.autochecktype.value in ("1", "2") or config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
+			if config.plugins.serienRec.autochecktype.value in ("1", "2") and (config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value):
 				print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
 				serienRecCheckForRecording(session, False)
 			else:
