@@ -9,6 +9,8 @@ try:
 except ImportError as ie:
 	from urllib.parse import unquote
 
+from SerienRecorderHelpers import *
+
 import json
 
 API_VERSION = "1.0"
@@ -117,7 +119,7 @@ class ApiGetMarkerResource(ApiBaseResource):
 		results = getMarker()
 		if results:
 			for marker in results:
-				(serie, url, staffeln, sender, AbEpisode, AnzahlAufnahmen) = marker
+				(serie, url, staffeln, sender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = marker
 				data.append( {
 						'serie': serie,
 						'url': url,
@@ -177,9 +179,8 @@ class ApiSearchEventsResource(ApiBackgroundingResource):
 
 class ApiStbChannelsResource(ApiBaseResource):
 	def render(self, req):
-		from SerienRecorder import buildSTBchannellist
 		data = []
-		results = buildSTBchannellist()
+		results = STBHelpers.buildSTBChannelList()
 		if results:
 			for channel in results:
 				(servicename, serviceref) = channel

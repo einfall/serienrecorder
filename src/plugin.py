@@ -6,6 +6,7 @@ import SerienRecorder
 import SearchEvents
 import SearchSerie
 import SerienRecorderResource
+import SerienRecorderHelpers
 import WebChannels
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
@@ -17,7 +18,7 @@ def SRstart(session, **kwargs):
 	#else:	
 	#	reload(SerienRecorder)
 		
-	for file_name in (('SerienRecorder', SerienRecorder), ('SearchEvents', SearchEvents), ('SearchSerie', SearchSerie), ('SerienRecorderResource', SerienRecorderResource), ('WebChannels', WebChannels)):
+	for file_name in (('SerienRecorder', SerienRecorder), ('SearchEvents', SearchEvents), ('SearchSerie', SearchSerie), ('SerienRecorderResource', SerienRecorderResource), ('WebChannels', WebChannels), ('SerienRecorderHelpers', SerienRecorderHelpers)):
 		if fileExists(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0])):
 			if (int(os.path.getmtime(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0]))) < int(os.path.getmtime(os.path.join(serienRecMainPath, "%s.py" % file_name[0])))):
 				reload(file_name[1])

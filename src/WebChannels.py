@@ -12,7 +12,7 @@ from urllib2 import urlopen, Request, URLError
 
 from Components.config import config
 
-from SerienRecorder import getUserAgent
+from SerienRecorderHelpers import *
 
 class WebChannels(object):
 	def __init__(self, user_callback=None, user_errback=None):
@@ -22,6 +22,7 @@ class WebChannels(object):
 	def	request(self):
 		print "[SerienRecorder] request webpage.."
 		url = "http://www.wunschliste.de/updates/stationen"
+		#getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
 		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
@@ -42,13 +43,12 @@ class WebChannels(object):
 			self.user_errback(error)
 
 	def __callback(self, data):
-		from SerienRecorder import iso8859_Decode
 		stations = re.findall('<option value=".*?>(.*?)</option>', data, re.S)
 		if stations:
 			web_chlist = []
 			for station in stations:
 				if station != 'alle':
-					station = iso8859_Decode(station)
+					station = decodeISO8859_1(station, True)
 					web_chlist.append((station.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').replace('&#x1f512;','')))
 
 		if (self.user_callback):

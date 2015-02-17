@@ -11,7 +11,7 @@ import socket
 from urllib import urlencode
 from urllib2 import urlopen, Request, URLError
 
-from SerienRecorder import getUserAgent
+from SerienRecorderHelpers import *
 
 
 class SearchEvents(object):
@@ -48,7 +48,6 @@ class SearchEvents(object):
 			self.user_errback(error)
 
 	def __callback(self, data, useCache=False):
-		from SerienRecorder import iso8859_Decode
 		sendetermine_list = []
 
 		if useCache:
@@ -75,10 +74,10 @@ class SearchEvents(object):
 		
 			for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
 				# umlaute umwandeln
-				sender = iso8859_Decode(sender)
+				sender = decodeISO8859_1(sender, True)
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
-				title = iso8859_Decode(title)
-				staffel = iso8859_Decode(staffel)
+				title = decodeISO8859_1(title, True)
+				staffel = decodeISO8859_1(staffel, True)
 
 				sendetermine_list.append([self.serien_name, sender, datum, startzeit, endzeit, staffel, str(episode).zfill(2), title, "0"])
 

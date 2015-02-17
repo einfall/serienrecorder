@@ -10,8 +10,7 @@ import socket
 from urllib import urlencode
 from urllib2 import urlopen, Request, URLError
 
-from SerienRecorder import getUserAgent
-
+from SerienRecorderHelpers import *
 
 class SearchSerie(object):
 	def __init__(self, serien_name, user_callback=None, user_errback=None):
@@ -22,6 +21,7 @@ class SearchSerie(object):
 	def	request(self):
 		print "[SerienRecorder] request ' %s '" % self.serien_name
 		url = "http://www.wunschliste.de/ajax/search_dropdown.pl?%s" % urlencode( { 'q': re.sub("[^a-zA-Z0-9-*]", " ", self.serien_name) } )
+		#getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
 		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
@@ -42,7 +42,6 @@ class SearchSerie(object):
 			self.user_errback(error)
 
 	def __callback(self, data):
-		from SerienRecorder import iso8859_Decode
 		serienlist = []
 		count_lines = len(data.splitlines())
 		if int(count_lines) >= 1:
@@ -51,7 +50,7 @@ class SearchSerie(object):
 				if len(infos) == 4:
 					(name_Serie, year_Serie, id_Serie, unknown) = infos
 					# encode utf-8
-					name_Serie = iso8859_Decode(name_Serie)
+					name_Serie = decodeISO8859_1(name_Serie, True)
 					raw = re.findall('(.*?)(\[%s\])?\Z' % self.serien_name, name_Serie, re.I | re.S)
 					if raw:
 						(name_Serie, x) = raw
