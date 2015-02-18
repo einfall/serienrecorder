@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from __init__ import _
 
 import datetime, time
@@ -15,7 +15,7 @@ from SerienRecorderHelpers import *
 
 
 class SearchEvents(object):
-	def __init__(self, serien_name, serien_id, termineCache={}, user_callback=None, user_errback=None):
+	def __init__(self, serien_name, serien_id, termineCache, user_callback=None, user_errback=None):
 		self.serien_name = serien_name
 		self.serie_url = "http://www.wunschliste.de/epg_print.pl?s=%s" % str(serien_id)
 		self.termineCache = termineCache
