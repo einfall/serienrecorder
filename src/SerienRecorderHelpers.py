@@ -1,4 +1,4 @@
-# This file contain some helper functions
+﻿# This file contain some helper functions
 # which called from other SerienRecorder modules
 from __init__ import _
 

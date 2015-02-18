@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 import os
