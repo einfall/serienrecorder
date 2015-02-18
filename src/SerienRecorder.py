@@ -2480,19 +2480,12 @@ class serienRecCheckForRecording():
 			autoCheckFinished = True
 
 			# in den deep-standby fahren.
-			if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
-				if config.plugins.serienRec.DSBTimeout.value > 0:
-					try:
-						self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
-					except:
-						self.gotoDeepStandby(True)
-				else:
-					self.gotoDeepStandby(True)
+			self.askForDSB()
 			return
 		
 		
 		# suche nach neuen Serien, Covern und Planer-Cache
-		if ((config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value)) or ((not self.manuell) and config.plugins.serienRec.autoSearchForCovers.value) or ((not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value):
+		if ((config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value)) or ((not self.manuell) and config.plugins.serienRec.autoSearchForCovers.value) or ((not self.manuell) and (config.plugins.serienRec.firstscreen.value == "0") and config.plugins.serienRec.planerCacheEnabled.value):
 			self.startCheck2()
 		else:
 			#if not self.manuell:
@@ -2501,6 +2494,7 @@ class serienRecCheckForRecording():
 			self.startCheck3()
 
 	def startCheck2(self):
+		writeLog(_("\nLaden der SerienPlaner-Daten gestartet ..."), True)
 		if (not self.manuell) and config.plugins.serienRec.autoSearchForCovers.value:	
 			cTmp = dbTmp.cursor()
 			cTmp.execute("DELETE FROM GefundeneSerien")
@@ -2518,9 +2512,9 @@ class serienRecCheckForRecording():
 		c1 = re.compile('s_regional\[.*?\]=(.*?);\ns_paytv\[.*?\]=(.*?);\ns_neu\[.*?\]=(.*?);\ns_prime\[.*?\]=(.*?);.*?<td rowspan="3" class="zeit">(.*?) Uhr</td>.*?<a href="(/serie/.*?)" class=".*?">(.*?)</a>.*?href="http://www.wunschliste.de/kalender.pl\?s=(.*?)\&.*?alt="(.*?)".*?<tr><td rowspan="2"></td><td>(.*?)<a href=".*?" target="_new">(.*?)</a>', re.S)
 		c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
 		c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
-		downloads = [ds.run(self.readWebpageForNewStaffel, "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))).addCallback(self.parseWebpageForNewStaffel,daypage,c1,c2,c3).addErrback(self.dataError) for daypage in range(int(config.plugins.serienRec.checkfordays.value))]
+		downloads = [ds.run(self.readWebpageForNewStaffel, "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))).addCallback(self.parseWebpageForNewStaffel,daypage,c1,c2,c3).addErrback(self.dataErrorNewStaffel) for daypage in range(int(config.plugins.serienRec.checkfordays.value))]
 		
-		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.checkError)
+		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.dataErrorNewStaffel)
 		
 	def readWebpageForNewStaffel(self, url):
 		print "[Serien Recorder] call %s" % url
@@ -2789,6 +2783,8 @@ class serienRecCheckForRecording():
 				
 			dbSerRec.commit()
 			cCursor.close()
+
+			writeLog(_("... Laden der SerienPlaner-Daten beendet\n"), True)
 		return result
 
 	def adjustEPGtimes(self, current_time):
@@ -3088,7 +3084,16 @@ class serienRecCheckForRecording():
 		raw = c1.findall(data)
 		raw2 = c2.findall(data)
 		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
-		raw.sort(key=lambda t : time.strptime("%s %s" % (t[1],t[2]),"%d.%m %H.%M"))
+		#raw.sort(key=lambda t : time.strptime("%s %s" % (t[1],t[2]),"%d.%m %H.%M"))
+		def y(l):
+			(day, month) = l[1].split('.')
+			(start_hour, start_min) = l[2].split('.')
+			now = datetime.datetime.now()
+			if int(month) < now.month:
+				return time.mktime((int(now.year) + 1, int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
+			else:
+				return time.mktime((int(now.year), int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
+		raw.sort(key=y)
 
 		global termineCache
 		termineCache.update({serien_name:raw})
@@ -3350,6 +3355,10 @@ class serienRecCheckForRecording():
 		autoCheckFinished = True
 
 		# in den deep-standby fahren.
+		self.askForDSB()
+		return result
+
+	def askForDSB(self):
 		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
 			if config.plugins.serienRec.DSBTimeout.value > 0:
 				try:
@@ -3358,10 +3367,9 @@ class serienRecCheckForRecording():
 					self.gotoDeepStandby(True)
 			else:
 				self.gotoDeepStandby(True)
-		return result
 				
 	def gotoDeepStandby(self, answer):
-		if answer:
+		if answer and not Screens.Standby.inStandby:
 			if config.plugins.serienRec.afterAutocheck.value == "2":
 				for each in self.MessageList:
 					Notifications.RemovePopup(each[3])
@@ -3370,7 +3378,7 @@ class serienRecCheckForRecording():
 				writeLog(_("[Serien Recorder] gehe in Deep-Standby"))
 				#self.session.open(Screens.Standby.TryQuitMainloop, 1)
 				Notifications.AddNotification(Screens.Standby.TryQuitMainloop, 1)
-			elif not Screens.Standby.inStandby:
+			else:
 				print "[Serien Recorder] gehe in Standby"
 				writeLog(_("[Serien Recorder] gehe in Standby"))
 				Notifications.AddNotification(Screens.Standby.Standby)
@@ -3799,18 +3807,12 @@ class serienRecCheckForRecording():
 		global autoCheckFinished
 		autoCheckFinished = True
 		
-		# in den deep-standby fahren.
-		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
-			if config.plugins.serienRec.DSBTimeout.value > 0:
-				self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
-			else:
-				self.gotoDeepStandby(True)
-		# No close in this class will raise exception
-		#self.close()
-		
-	def checkError(self, error):
-		print "[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)" % error
-		writeLog(_("[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)") % error, True)
+		self.askForDSB()
+		self.close()
+
+	def dataErrorNewStaffel(self, error):
+		print "[Serien Recorder] Wunschliste (SerienPlaner) Timeout.. webseite down ?! (%s)" % error
+		writeLog(_("[Serien Recorder] Wunschliste (SerienPlaner) Timeout.. webseite down ?! (%s)") % error, True)
 		
 		if config.plugins.serienRec.longLogFileName.value:
 			shutil.copy(logFile, logFileSave)
@@ -3818,17 +3820,8 @@ class serienRecCheckForRecording():
 		global autoCheckFinished
 		autoCheckFinished = True
 		
-		# in den deep-standby fahren.
-		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
-			if config.plugins.serienRec.DSBTimeout.value > 0:
-				try:
-					self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
-				except:
-					self.gotoDeepStandby(True)
-			else:
-				self.gotoDeepStandby(True)
-		# No close in this class - will raise exception
-		#self.close()
+		#self.askForDSB()
+		self.close()
 
 class serienRecTimer(Screen, HelpableScreen):
 	def __init__(self, session):
@@ -4729,7 +4722,8 @@ class serienRecMarker(Screen, HelpableScreen):
 			id = "/%s" %  id[0]
 		getCover(self, serien_name, id)
 
-	def readSerienMarker(self):
+	def readSerienMarker(self, SelectSerie=None):
+		if SelectSerie: self.SelectSerie = SelectSerie
 		markerList = []
 		numberOfDeactivatedSeries = 0
 		cCursor = dbSerRec.cursor()
@@ -5511,7 +5505,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			self['title'].setText(_("Serie '- %s -' zum Serien Marker hinzugefügt.") % Serie)
 			self['title'].instance.setForegroundColor(parseColor("green"))
 			if config.plugins.serienRec.openMarkerScreen.value:
-				self.session.open(serienRecMarker, Serie)
+				self.close(Serie)
 		else:
 			self['title'].setText(_("Serie '- %s -' existiert bereits im Serien Marker.") % Serie)
 			self['title'].instance.setForegroundColor(parseColor("red"))
