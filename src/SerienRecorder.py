@@ -388,7 +388,7 @@ def getCover(self, serien_name, id):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif id:
 		url = "http://www.wunschliste.de%s/links" % id
-		getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+		getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
 
 def getCoverDataError(error, self, serien_nameCover):
 	if self is not None: 
@@ -404,6 +404,7 @@ def getCoverDataError(error, self, serien_nameCover):
 	print error
 
 def getImdblink(data, self, serien_nameCover):
+	data = processDownloadedData(data)
 	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 	if ilink:
 		#getPage(ilink[0], timeout=20, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
@@ -1903,7 +1904,26 @@ def testWebConnection():
 		conn.close()
 	return False
 
+def processDownloadedData(data):
+	from gzip import GzipFile
+	try:
+		from cStringIO import StringIO
+	except:
+		from StringIO import StringIO
 
+	#writeLog(_("[Serien Recorder] Downloaded data size = %d bytes") % (len(data)))
+	compressedstream = StringIO(data)
+	gzipper = GzipFile(fileobj=compressedstream)
+	try:
+		data = gzipper.read()
+	except:
+		data = data
+	finally:
+		gzipper.close()
+		compressedstream.close()
+
+	#writeLog(_("[Serien Recorder] Uncompressed data size = %d bytes") % (len(data)))
+	return data
 
 
 class serienRecBaseScreen():
@@ -2517,9 +2537,10 @@ class serienRecCheckForRecording():
 		
 	def readWebpageForNewStaffel(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'})
 		
 	def parseWebpageForNewStaffel(self, data, daypage, c1, c2, c3):
+		data = processDownloadedData(data)
 		daylist = [[],[],[],[]]
 
 		# read channels
@@ -3075,9 +3096,10 @@ class serienRecCheckForRecording():
 		
 	def download(self, url):
 		print "[Serien Recorder] call %s" % url
-		return getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'})
+		return getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'})
 
 	def parseWebpage(self, data, c1, c2, serien_name, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
+		data = processDownloadedData(data)
 		self.count_url += 1
 
 		raw = c1.findall(data)
@@ -6269,9 +6291,10 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self['title'].setText(_("Suche Episoden ' %s '") % self.serien_name)
 		print self.serie_url
 
-		getPage("%s/episoden" % self.serie_url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
+		getPage("%s/episoden" % self.serie_url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.resultsEpisodes).addErrback(self.dataError)
 
 	def resultsEpisodes(self, data):
+		data = processDownloadedData(data)
 		self.episodes_list = []
 
 		raw = re.findall('<div class="l(?: ts)?" id="ep_[0-9]+">.*?(?:<span class="epg_st".*?title="Staffel">(.*?)</span>.*?)?(?:<span class="epg_ep" title="Episode">(.*?)</span>.*?)?<span class="epl4(.*?)".*?>.*?<a href="(.*?)">(.*?)(?:<span class="otitel">(.*?)</span>)?</a>.*?</div>', data, re.S)
@@ -6691,6 +6714,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			]
 
 	def keyOK(self):
+		global runAutocheckAtExit
 		if self.modus == "list":
 			self.modus = "popup_list"
 			self['popup_list'].show()
@@ -6767,7 +6791,6 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				else:
 					cCursor.execute(sql, (stbSender, stbRef, altstbSender, altstbRef, 0, chlistSender.lower()))
 				self.changesMade = True
-				global runAutocheckAtExit
 				runAutocheckAtExit = True
 				dbSerRec.commit()
 				cCursor.close()
@@ -6798,7 +6821,6 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			else:
 				cCursor.execute(sql, (stbSender, stbRef, 0, chlistSender.lower()))
 			self.changesMade = True
-			global runAutocheckAtExit
 			runAutocheckAtExit = True
 			dbSerRec.commit()
 			cCursor.close()
@@ -6806,6 +6828,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self.showChannels()
 				
 	def keyRed(self):
+		global runAutocheckAtExit
 		if self['list'].getCurrent() == None:
 			print "[Serien Recorder] Channel-List leer."
 			return
@@ -6834,7 +6857,6 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 					self['title'].setText("")
 					self['title'].setText(_("Sender '- %s -' wurde deaktiviert.") % webSender)
 				self.changesMade = True
-				global runAutocheckAtExit
 				runAutocheckAtExit = True
 				dbSerRec.commit()
 				
@@ -10448,12 +10470,13 @@ class serienRecShowInfo(Screen, HelpableScreen):
 				self.getData()
 				
 	def getData(self):
-		getPage(self.serieUrl, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.parseData).addErrback(self.dataError)
 		if config.plugins.serienRec.showCover.value:
 			serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 			showCover(serien_nameCover, self, serien_nameCover)
 
 	def parseData(self, data):
+		data = processDownloadedData(data)
 		infoText = ""
 		# Get fancount
 		fancount = re.findall('<span id="fancount">(.*?)</span>', data, re.S)
@@ -10655,12 +10678,13 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 				self.getData()
 
 	def getData(self):
-		getPage(self.serieUrl, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		getPage(self.serieUrl, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.parseData).addErrback(self.dataError)
 		if config.plugins.serienRec.showCover.value:
 			serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, self.serieName)
 			showCover(serien_nameCover, self, serien_nameCover)
 
 	def parseData(self, data):
+		data = processDownloadedData(data)
 		infoText = ""
 		#info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?<p class="clear mb4"></p>.(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="small credits">(.*?)</p>(.*?))?<div class="clear"></div>', data, re.S)
 		info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?<p class="clear mb4"></p>.(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="credits">(.*?)</p>(.*?))?<div class="clear"></div>', data, re.S)
@@ -11169,10 +11193,11 @@ class serienRecMain(Screen, HelpableScreen):
 		serien_id = self['config'].getCurrent()[0][14]
 		url = "http://www.wunschliste.de/%s/links" % serien_id
 		print url
-		getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getImdblink2).addErrback(self.dataError)
+		getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.getImdblink2).addErrback(self.dataError)
 			
 	def getImdblink2(self, data):
-		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S) 
+		data = processDownloadedData(data)
+		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 		if ilink:
 			print ilink
 			serien_name = self['config'].getCurrent()[0][6]
@@ -11392,13 +11417,13 @@ class serienRecMain(Screen, HelpableScreen):
 			c1 = re.compile('s_regional\[.*?\]=(.*?);\ns_paytv\[.*?\]=(.*?);\ns_neu\[.*?\]=(.*?);\ns_prime\[.*?\]=(.*?);.*?<td rowspan="3" class="zeit">(.*?) Uhr</td>.*?<a href="(/serie/.*?)" class=".*?">(.*?)</a>.*?href="http://www.wunschliste.de/kalender.pl\?s=(.*?)\&.*?alt="(.*?)".*?<tr><td rowspan="2"></td><td>(.*?)<a href=".*?" target="_new">(.*?)</a>', re.S)
 			c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
 			c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
-
-			getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
+			getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError)
 
 	def parseWebpage(self, data, c1, c2, c3, useCache=False):
 		if useCache:
 			(head_datum, self.daylist) = data
 		else:
+			data = processDownloadedData(data)
 			self.daylist = [[],[],[],[]]
 			self.ErrorMsg = "start reading from Wunschliste.de"
 			head_datum = re.findall('<li class="datum">(.*?)</li>', data, re.S)
@@ -11421,11 +11446,22 @@ class serienRecMain(Screen, HelpableScreen):
 				raw.append(tuple(each))
 					
 			if raw:
-				for regional,paytv,neu,prime,time,url,serien_name,serien_id,sender,staffel,episode,title in raw:
+				#build unique sender list
+				senderList = []
+				for regional,paytv,neu,prime,transmissionTime,url,serien_name,serien_id,sender,staffel,episode,title in raw:
+					sender = decodeISO8859_1(sender, True)
+					sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
+
+					if not sender in senderList:
+						senderList.append(sender.lower())
+
+				checkedSenderList = self.checkSenderList(senderList)
+
+				for regional,paytv,neu,prime,transmissionTime,url,serien_name,serien_id,sender,staffel,episode,title in raw:
 					aufnahme = False
 					serieAdded = False
-					start_h = time[:+2]
-					start_m = time[+3:]
+					start_h = transmissionTime[:+2]
+					start_m = transmissionTime[+3:]
 					start_time = TimeHelpers.getUnixTimeWithDayOffset(start_h, start_m, self.page)
 					
 					# encode utf-8
@@ -11435,34 +11471,24 @@ class serienRecMain(Screen, HelpableScreen):
 					title = decodeISO8859_1(title, True)
 					staffel = decodeISO8859_1(staffel, True)
 					self.ErrorMsg = "%s - S%sE%s - %s (%s)" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title, sender)
-					
-					cSender_list = self.checkSender(sender)
-					
-					if self.checkTimer(serien_name, start_time, sender):
-						aufnahme = True
-					else:
-						##############################
-						#
-						# try to get eventID (eit) from epgCache
-						#
-						if config.plugins.serienRec.eventid.value and config.plugins.serienRec.intensiveTimersuche.value:
-							if len(cSender_list) != 0:
-								(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
 
-								(margin_before, margin_after) = getMargins(serien_name, webChannel)
-								
-								# event_matches = STBHelpers.getEPGEvent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-								event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_time)+(int(margin_before) * 60))
-								if event_matches and len(event_matches) > 0:
-									for event_entry in event_matches:
-										print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
-										start_time_eit = int(event_entry[3])
-										if self.checkTimer(serien_name, start_time_eit, sender):
-											aufnahme = True
-											break
+					# Wenn der Sender nicht zugeordnet ist, muss auch nicht nach Timern gesucht werden
+					if sender in checkedSenderList:
+						cSender_list = checkedSenderList[sender]
+						if self.checkTimer(serien_name, start_time, sender):
+							aufnahme = True
+						else:
+							##############################
+							#
+							# try to get eventID (eit) from epgCache
+							#
+							if config.plugins.serienRec.eventid.value and config.plugins.serienRec.intensiveTimersuche.value:
+								if len(cSender_list) != 0:
+									(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
+									(margin_before, margin_after) = getMargins(serien_name, webChannel)
 
-								if not aufnahme and (stbRef != altstbRef):
-									event_matches = STBHelpers.getEPGEvent(['RITBDSE',(altstbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], altstbRef, serien_name, int(start_time)+(int(margin_before) * 60))
+									# event_matches = STBHelpers.getEPGEvent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
+									event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_time)+(int(margin_before) * 60))
 									if event_matches and len(event_matches) > 0:
 										for event_entry in event_matches:
 											print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
@@ -11470,6 +11496,16 @@ class serienRecMain(Screen, HelpableScreen):
 											if self.checkTimer(serien_name, start_time_eit, sender):
 												aufnahme = True
 												break
+
+									if not aufnahme and (stbRef != altstbRef):
+										event_matches = STBHelpers.getEPGEvent(['RITBDSE',(altstbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], altstbRef, serien_name, int(start_time)+(int(margin_before) * 60))
+										if event_matches and len(event_matches) > 0:
+											for event_entry in event_matches:
+												print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+												start_time_eit = int(event_entry[3])
+												if self.checkTimer(serien_name, start_time_eit, sender):
+													aufnahme = True
+													break
 
 					if self.checkMarker(serien_name):
 						serieAdded = True
@@ -11497,15 +11533,15 @@ class serienRecMain(Screen, HelpableScreen):
 							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False) > 0 and True or False
 							
 					title = "%s - %s" % (seasonEpisodeString, title)
-					self.daylist[0].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+					self.daylist[0].append((regional,paytv,neu,prime,transmissionTime,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 					if int(neu) == 1:
-						self.daylist[1].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+						self.daylist[1].append((regional,paytv,neu,prime,transmissionTime,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 					if len(cSender_list) != 0:
 						(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = cSender_list[0]
 						if int(status) == 1:
-							self.daylist[2].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+							self.daylist[2].append((regional,paytv,neu,prime,transmissionTime,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 					if re.search('01', episode, re.S):
-						self.daylist[3].append((regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
+						self.daylist[3].append((regional,paytv,neu,prime,transmissionTime,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 
 			print "[Serien Recorder] Es wurden %s Serie(n) gefunden" % len(self.daylist[int(config.plugins.serienRec.screenmode.value)])
 			
@@ -11536,9 +11572,9 @@ class serienRecMain(Screen, HelpableScreen):
 			self['title'].instance.setForegroundColor(parseColor("white"))
 			print "[Serien Recorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
 			self.chooseMenuList.setList(map(self.buildList, self.daylist[int(config.plugins.serienRec.screenmode.value)]))
-			
+
 	def buildList(self, entry):
-		(regional,paytv,neu,prime,time,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id) = entry
+		(regional,paytv,neu,prime,transmissionTime,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id) = entry
 		
 		imageNone = "%simages/black.png" % serienRecMainPath
 		imageNeu = "%simages/neu.png" % serienRecMainPath
@@ -11553,7 +11589,7 @@ class serienRecMain(Screen, HelpableScreen):
 				if int(episode) == 1:
 					setFarbe = colorRed
 
-		if int(neu) == 0:					
+		if int(neu) == 0:
 			imageNeu = imageNone
 			
 		if bereits_vorhanden:
@@ -11572,7 +11608,7 @@ class serienRecMain(Screen, HelpableScreen):
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330, 7, 30, 22, loadPNG(imageNeu)),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330, 30, 30, 22, loadPNG(imageHDDTimer)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 100, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, colorYellow, colorYellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 100, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, colorYellow, colorYellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 365, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
 				(eListboxPythonMultiContent.TYPE_TEXT, 365, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
 				]
@@ -11581,7 +11617,7 @@ class serienRecMain(Screen, HelpableScreen):
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7, 30, 22, loadPNG(imageNeu)),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 30, 30, 22, loadPNG(imageHDDTimer)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 280, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, time, colorYellow, colorYellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, colorYellow, colorYellow),
 				(eListboxPythonMultiContent.TYPE_TEXT, 340, 3, 520, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
 				(eListboxPythonMultiContent.TYPE_TEXT, 340, 29, 520, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
 				]
@@ -11786,12 +11822,12 @@ class serienRecMain(Screen, HelpableScreen):
 			cCursor.close()
 			return False
 
-	def checkSender(self, mSender):
-		fSender = []
+	def checkSenderList(self, senderList):
+		fSender = dict()
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (mSender.lower(),))
-		row = cCursor.fetchone()
-		if row:
+		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel) IN (%s)" % ("?," * len(senderList))[:-1], senderList)
+		cSenderList = cCursor.fetchall()
+		for row in cSenderList:
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = row
 			if altstbChannel == "":
 				altstbChannel = stbChannel
@@ -11799,7 +11835,7 @@ class serienRecMain(Screen, HelpableScreen):
 			elif stbChannel == "":
 				stbChannel = altstbChannel
 				stbRef = altstbRef
-			fSender.append((webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status))
+			fSender[webChannel] = [(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status)]
 		cCursor.close()
 		return fSender
 
