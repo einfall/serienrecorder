@@ -1877,7 +1877,28 @@ def readPlanerData():
 			if time.strptime(key, '%d.%m.%Y') < heute: l.append(key)
 		for key in l:
 			del dayCache[key]
-
+			
+		optimizePlanerData()
+		
+def optimizePlanerData():
+	if time.strftime('%H.%M', datetime.datetime.now().timetuple()) < '01.00':
+		t_jetzt = datetime.datetime.now().timetuple()
+	else:
+		t_jetzt = (datetime.datetime.now() - datetime.timedelta(0,3600)).timetuple()
+	jetzt = time.strftime('%H.%M', t_jetzt)
+	heute = time.strftime('%d.%m.%Y', t_jetzt)
+	global dayCache
+	if dayCache[heute]:
+		for a in dayCache[heute][1]:
+			l = []
+			for b in a:
+				if b[4] < jetzt: 
+					l.append(b)
+				else:
+					break
+			for b in l:		
+				a.remove(b)
+		
 def readTermineData():
 	global termineCache
 	termineCache.clear()
@@ -11155,9 +11176,12 @@ class serienRecMain(Screen, HelpableScreen):
 		self.daylist = [[],[],[],[]]
 		
 		global dayCache
-		global termineCache
-		if not len(dayCache):
+		if len(dayCache):
+			optimizePlanerData()
+		else:
 			readPlanerData()
+			
+		global termineCache
 		if not len(termineCache):
 			readTermineData()
 		
@@ -11671,9 +11695,12 @@ class serienRecMain(Screen, HelpableScreen):
 			imageHDDTimer = imageNone
 		
 		if config.plugins.serienRec.showPicons.value:
-			self.picloader = PicLoader(80, 40)
-			picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, sender))
-			self.picloader.destroy()
+			if config.plugins.serienRec.piconPath.value == "Original":
+				self.picloader = PicLoader(80, 40)
+				picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, sender))
+				self.picloader.destroy()
+			else:
+				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, sender))
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 00, 5, 80, 40, picon),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330, 7, 30, 22, loadPNG(imageNeu)),
