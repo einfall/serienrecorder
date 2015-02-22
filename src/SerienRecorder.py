@@ -1888,17 +1888,20 @@ def optimizePlanerData():
 	jetzt = time.strftime('%H.%M', t_jetzt)
 	heute = time.strftime('%d.%m.%Y', t_jetzt)
 	global dayCache
-	if dayCache[heute]:
-		for a in dayCache[heute][1]:
-			l = []
-			for b in a:
-				if b[4] < jetzt: 
-					l.append(b)
-				else:
-					break
-			for b in l:		
-				a.remove(b)
-		
+	if heute in dayCache:
+		try:
+			for a in dayCache[heute][1]:
+				l = []
+				for b in a:
+					if b[4] < jetzt: 
+						l.append(b)
+					else:
+						break
+				for b in l:		
+					a.remove(b)
+		except:
+			pass
+
 def readTermineData():
 	global termineCache
 	termineCache.clear()
