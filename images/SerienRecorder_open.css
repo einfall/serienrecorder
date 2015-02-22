@@ -1,0 +1,127 @@
+/* Absatzformate */
+.pstandard { font-family: Verdana, helvetica, arial, sans-serif; font-size: 13px; color: #000000 }
+.pkastenueberschrift { color: #ffffff; font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px; font-weight: bold; text-align:left; padding: 4px }
+.pkastentext { color: #000000; font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px; text-align:left; padding: 4px }
+ul.gp { list-style-image: url(gp.gif); text-align: left }
+ul.gp2 { list-style-image: url(gp2.gif); text-align: left; margin-left:-23px }
+ul.gpeg { list-style-image: url(eg.gif); text-align: left }
+ul.eg { list-style-image: url(eg.gif); text-align: left; margin-left:-40px }
+ol { list-style-type: decimal }
+.bildbox { background-color: #ffffff; padding-left:10px; margin-left:2px; margin-top:10px; margin-bottom:10px; border-style:solid; border-width:1px; }
+
+.listing { background-color: #ffffff; padding-left:10px; margin-left:2px; margin-top:10px; margin-bottom:10px; border-style:solid; border-width:1px; }
+
+.eclipse { display: block; float:left; margin-right: 12px; }
+
+/* Zeichenformate */
+.cfett { font-weight: bold }
+.cfettu { font-weight: bold; text-decoration: underline }
+.clisting { font-family: "Courier New", courier, monospace }
+.clistingu { font-family: "Courier New", courier, monospace; text-decoration: underline }
+.clistingk { font-family: "Courier New", courier, monospace; font-style: italic }
+.ckursiv { font-style: italic }
+.ckursivu { font-style: italic; text-decoration: underline }
+.pfussnote { color:#333333; font-size:11px; background-color:#cccccc }
+.inlinefussnote { color:#666666; font-size:11px; background-color:#eeeeee }
+
+/* Tabelle */
+.hinweis { margin: 10px; background-color: #cccce1; font-family: Verdana, helvetica, arial, sans-serif; font-size:13px; text-align:left }
+.tbody { margin: 10px; background-color: #cccce1; font-family: Verdana, helvetica, arial, sans-serif; font-size:13px; text-align:left }
+.tabunter { caption-side:bottom; padding:2px; margin-left:2px; margin-right:2px }
+th { background-color: #666699; color:#ffffff }
+td { font-family: Verdana, helvetica, arial, sans-serif; font-size:13px; text-align:left }
+
+.buchtitel {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 16px; font-weight: bold; color: #000000}
+.untertitel {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 14px; line-height: 22px; font-style: normal; color: #000000}
+.autor {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 11px; font-style: normal; font-weight: normal; color: #000000}
+body {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 13px; color: #000000; letter-spacing: normal; vertical-align: baseline; word-spacing: normal; white-space: normal}
+.inhalt_t2 {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 10px; font-style: normal; font-weight: normal; color: #000000; list-style-type: square}
+.inhalt_t1 {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 18px; font-style: normal; font-weight: bold}
+.t1 {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 18px; font-style: normal; font-weight: bold; color: #000000}
+.t2 {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 16px; font-style: normal; font-weight: bold; color: #000000}
+.t3 {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 14px; font-style: normal; font-weight: bold; color: #000000}
+.t4 {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 13px; font-style: normal; font-weight: bold; color: #000000}
+.t5 {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px; font-style: normal; font-weight: bold; color: #000000}
+.mygp {  list-style-type: square; left: 5px; clip:  rect(   ); font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px; list-style-image: url(pfeil_rechts5.gif)}
+.anleser {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px; font-style: italic; color: #000000; text-align: left}
+p {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 13px; color: #000000}
+.standard {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 13px; color: #000000}
+.bStandard {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 13px; color: #000000; background-color: #dddddd}
+.wwwlink {  font-weight: bold}
+.hinweistext {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px}
+.tastenkappe {  font-weight: bold}
+.kapitalchen {  font-variant: small-caps}
+.tabunter {
+	font-family: Verdana, helvetica, arial, sans-serif;
+	font-size: 11px;
+	text-align: left;
+	background-color: #dddddd;
+}
+pre { font-family: "Courier New", courier, monospace; font-size: 12px; text-align: left}
+td.nav1{color: #ffffff;	font-family: helvetica, arial, sans-serif;	font-size:10px; background : #666699;}
+td.nav2{color: #000066;	font-family: helvetica, arial, sans-serif;	font-size:10px;	background : #cccce1;}
+a {color: #000066; font-size: 13px;
+	font-family: Verdana, Helvetica, Arial, sans-serif; text-decoration: none }
+a.kap {color: #000066; font-size: 15px; font-weight: bold;
+	font-family: helvetica, arial, sans-serif; text-decoration: none }
+a.nav {color: white; font-size: 13px;
+	font-weight:bold; font-family: Verdana, helvetica, arial, sans-serif; text-decoration: none }
+a.navh { color: #cc6600; font-size: 12px; font-weight:bold; font-family: Verdana, helvetica, arial, sans-serif; text-decoration: none }
+a.navh2 { color: #cc6600; font-size: 13px; font-weight:bold; font-family: Verdana, helvetica, arial, sans-serif; text-decoration: none }
+a.navh3 { color: #ff9933; font-size: 13px; font-weight:bold; font-family: Verdana, helvetica, arial, sans-serif; text-decoration: none }
+.navi {color: #000066; font-size: 15px; font-weight: bold;
+	font-family: Verdana,  helvetica, arial, sans-serif; text-decoration: none }
+.navii {color: #000066; font-size: 13px; font-weight: bold; font-family: Verdana,  helvetica, arial, sans-serif; text-decoration: none }
+.naviii {color: #000066; font-size: 13px; font-family: Verdana,  helvetica, arial, sans-serif; text-decoration: none }
+a.kaph { color: #cc6600; font-size: 15px; font-weight:bold; font-family: helvetica, arial, sans-serif; text-decoration: none }
+a.navs {color: 000066; font-size: 13px; font-family: helvetica, arial, sans-serif; text-decoration: none}
+a.navnav {color: #000066; font-size: 11px; font-family: Verdana, helvetica, arial, sans-serif; text-decoration: none}
+a.navnavh {color: #cc6600; font-size: 11px; font-family: Verdana, helvetica, arial, sans-serif; text-decoration: none}
+a:hover {color: #cc6600; text-decoration: none;}
+a:hover.nav, a:hover.navs, a:hover.navh  {color: #ff9933; text-decoration: none;}
+body { color: #003; font-size: 10pt; font-family: helvetica, arial, sans-serif; background: white url(back_blau_weiss.gif) repeat-y }
+.tabellenkopf {
+	background-color : #666699;
+	color : White;
+}
+.tabellentext {
+	background-color : #cccce1;
+}
+.hinweisicon {
+	background-color : #eeeeee;
+}
+.hinweistext {
+	background-color : #cccce1;
+}
+.bild {
+	background-color : #ffffff;
+}
+.listing {
+	font-family : "Courier New", Courier, monospace;
+	font-size : 12px;
+	color : #000033;
+}
+.kap {color: #000066; font-size: 13px;
+	font-family: helvetica, arial, sans-serif; text-decoration: none }
+.T1IVZ {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px; font-style: normal; font-weight: bold; color: #000000}
+.T2IVZ {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px; font-style: normal; font-weight: bold; color: #000000}
+.T3IVZ {  font-family: Verdana, helvetica, arial, sans-serif; font-size: 12px; font-style: normal; font-weight: bold; color: #000000}
+.tbl1{color: #ffffff;font-family: helvetica, arial, sans-serif;font-size:13px;background : #ffffff;border-style:solid;border-width:2px;border-color:#000066;border-left-style:solid;border-left-width:2px;border-left-color:#000066;border-top-style:solid;border-top-width:0px;border-top-color:#000066;}
+.tbl2{color: #ffffff;font-family: helvetica, arial, sans-serif;font-size:13px;background : #000066;}
+.tbl3{color: #ffffff;font-family: helvetica, arial, sans-serif;font-size:11px;background : #ffffff;}
+.start {
+    color: #000000;
+    font-family: arial, helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    background: #f6f6f6;
+    background-color: #f6f6f6;
+    border: 1px solid #c0c0c0;
+    padding: 4px;
+    vertical-align: middle;
+}
+.box {
+	border: 2px solid #000066;
+	padding: 3px 3px 3px 3px;
+}
+dd {padding: 0; margin: 0}
