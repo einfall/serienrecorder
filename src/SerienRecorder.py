@@ -9717,9 +9717,12 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+", %d.%m.%Y", time.localtime(int(UTCTime)))
 
 		if config.plugins.serienRec.showPicons.value:
-			self.picloader = PicLoader(80, 40)
-			picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
-			self.picloader.destroy()
+			if config.plugins.serienRec.piconPath.value == "Original":
+				self.picloader = PicLoader(80, 40)
+				picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
+				self.picloader.destroy()
+			else:
+				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80, 40, picon),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340, 15, 30, 30, loadPNG(imageFound)),
