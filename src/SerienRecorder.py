@@ -801,6 +801,17 @@ def checkAlreadyAdded(serie, staffel, episode, title = None, searchOnlyActiveTim
 	cCursor.close()
 	return Anzahl
 
+def getAlreadyAdded(serie, searchOnlyActiveTimers = False):
+	cCursor = dbSerRec.cursor()
+	if searchOnlyActiveTimers:
+		cCursor.execute("SELECT Staffel, Episode, Titel FROM AngelegteTimer WHERE LOWER(Serie)=? AND TimerAktiviert=1", (serie.lower(),))
+	else:
+		cCursor.execute("SELECT Staffel, Episode, Titel FROM AngelegteTimer WHERE LOWER(Serie)=?", (serie.lower(),))
+
+	rows = cCursor.fetchall()
+	cCursor.close()
+	return rows
+
 def getDirname(serien_name, staffel):
 	if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
 		seasonsubdirfillchar = ' '
@@ -6241,6 +6252,11 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.serien_name = serien_name
 		self.serie_url = serie_url
 		self.serien_cover = serien_cover
+		self.addedEpisodes = getAlreadyAdded(self.serien_name)
+		self.episodes_list = []
+		self.aStaffel = None
+		self.aFromEpisode = None
+		self.aToEpisode = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("Informationen zur ausgewählten Episode anzeigen")),
@@ -6344,7 +6360,6 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def resultsEpisodes(self, data):
 		data = processDownloadedData(data)
-		self.episodes_list = []
 
 		raw = re.findall('<div class="l(?: ts)?" id="ep_[0-9]+">.*?(?:<span class="epg_st".*?title="Staffel">(.*?)</span>.*?)?(?:<span class="epg_ep" title="Episode">(.*?)</span>.*?)?<span class="epl4(.*?)".*?>.*?<a href="(.*?)">(.*?)(?:<span class="otitel">(.*?)</span>)?</a>.*?</div>', data, re.S)
 		#(['1'], ['2'], [' tv'], '/episode/368700/arrow-die-rueckkehr', 'Die Rückkehr ', '(Pilot)')
@@ -6404,13 +6419,16 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def isAlreadyAdded(self, season, episode, title=None):
 		result = False
-		if str(episode).isdigit():
-			if int(episode) == 0:
-				if checkAlreadyAdded(self.serien_name, season, episode, title) > 0: result = True
-			else:
-				if checkAlreadyAdded(self.serien_name, season, episode) > 0: result = True
+		if not title:
+			for addedEpisode in self.addedEpisodes:
+				if episode in addedEpisode and season in addedEpisode:
+					result = True
+					break
 		else:
-			if checkAlreadyAdded(self.serien_name, season, episode) > 0: result = True
+			for addedEpisode in self.addedEpisodes:
+				if episode in addedEpisode and season in addedEpisode and title in addedEpisode:
+					result = True
+					break
 
 		return result
 
@@ -6419,7 +6437,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		check = self['config'].getCurrent()
-		if check == None:
+		if not check:
 			return
 
 		sindex = self['config'].getSelectedIndex()
@@ -6432,7 +6450,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		check = self['config'].getCurrent()
-		if check == None:
+		if not check:
 			return
 
 		sindex = self['config'].getSelectedIndex()
@@ -6447,6 +6465,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				addToAddedList(self.serien_name, self.episodes_list[sindex][1], self.episodes_list[sindex][1], self.episodes_list[sindex][0], self.episodes_list[sindex][4])
 
+			self.addedEpisodes = getAlreadyAdded(self.serien_name)
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list))
 
 	def keyYellow(self):
@@ -6454,7 +6473,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		check = self['config'].getCurrent()
-		if check == None:
+		if not check:
 			return
 
 		sindex = self['config'].getSelectedIndex()
@@ -6464,13 +6483,13 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def answerStaffel(self, aStaffel):
 		self.aStaffel = aStaffel
-		if self.aStaffel == None or self.aStaffel == "":
+		if not self.aStaffel or self.aStaffel == "":
 			return
 		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = _("von Episode:"))
 	
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
-		if self.aFromEpisode == None or self.aFromEpisode == "":
+		if not self.aFromEpisode or self.aFromEpisode == "":
 			return
 		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = _("bis Episode:"))
 	
@@ -6479,7 +6498,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.aToEpisode == "": 
 			self.aToEpisode = self.aFromEpisode
 			
-		if self.aToEpisode == None: # or self.aFromEpisode == None or self.aStaffel == None:
+		if not self.aToEpisode: # or self.aFromEpisode == None or self.aStaffel == None:
 			return
 		else:
 			print "[Serien Recorder] Staffel: %s" % self.aStaffel
