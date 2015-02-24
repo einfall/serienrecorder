@@ -5931,9 +5931,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				# check 2 (im added file)
 				if str(episode).isdigit():
 					if int(episode) == 0:
-						bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, str(int(episode)), title)
+						bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, episode, title)
 					else:
-						bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, str(int(episode)))
+						bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, episode)
 				else:
 					bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, episode)
 					
@@ -5997,10 +5997,10 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					# check anzahl auf hdd und added
 					if str(episode).isdigit():
 						if int(episode) == 0:
-							bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, str(int(episode)), title, searchOnlyActiveTimers = True)
+							bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, episode, title, searchOnlyActiveTimers = True)
 							bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False, title)
 						else:
-							bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, str(int(episode)), searchOnlyActiveTimers = True)
+							bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, episode, searchOnlyActiveTimers = True)
 							bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False)
 					else:
 						bereits_vorhanden = checkAlreadyAdded(serien_name, staffel, episode, searchOnlyActiveTimers = True)
