@@ -804,9 +804,9 @@ def checkAlreadyAdded(serie, staffel, episode, title = None, searchOnlyActiveTim
 def getAlreadyAdded(serie, searchOnlyActiveTimers = False):
 	cCursor = dbSerRec.cursor()
 	if searchOnlyActiveTimers:
-		cCursor.execute("SELECT Staffel, Episode, Titel FROM AngelegteTimer WHERE LOWER(Serie)=? AND TimerAktiviert=1", (serie.lower(),))
+		cCursor.execute("SELECT Staffel, Episode, Titel FROM AngelegteTimer WHERE LOWER(Serie)=? AND TimerAktiviert=1 ORDER BY Staffel, Episode", (serie.lower(),))
 	else:
-		cCursor.execute("SELECT Staffel, Episode, Titel FROM AngelegteTimer WHERE LOWER(Serie)=?", (serie.lower(),))
+		cCursor.execute("SELECT Staffel, Episode, Titel FROM AngelegteTimer WHERE LOWER(Serie)=? ORDER BY Staffel, Episode", (serie.lower(),))
 
 	rows = cCursor.fetchall()
 	cCursor.close()
@@ -6281,9 +6281,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		}, -1)
 		self.helpList[0][2].sort()
 
-		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
-			"displayHelp"      : self.showHelp,
-			"displayHelp_long" : self.showManual,
+		self["helpActions"] = ActionMap(["SerienRecorderActions", ], {
+			"displayHelp"       : self.showHelp,
+			"displayHelp_long"  : self.showManual,
 		}, 0)
 
 		self.setupSkin()
@@ -6340,13 +6340,13 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
-	def setupClose(self, result):
+	def setupClose(self, result, operation):
 		super(self.__class__, self).setupClose(result, self.searchEpisodes)
 
-	def youtubeSearch(self):
+	def youtubeSearch(self, searchWord):
 		super(self.__class__, self).youtubeSearch(self.serien_name)
 
-	def WikipediaSearch(self):
+	def WikipediaSearch(self, searchWord):
 		super(self.__class__, self).WikipediaSearch(self.serien_name)
 
 	def searchEpisodes(self):
@@ -6421,12 +6421,12 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		result = False
 		if not title:
 			for addedEpisode in self.addedEpisodes:
-				if episode in addedEpisode and season in addedEpisode:
+				if addedEpisode[0] == season and addedEpisode[1] == episode:
 					result = True
 					break
 		else:
 			for addedEpisode in self.addedEpisodes:
-				if episode in addedEpisode and season in addedEpisode and title in addedEpisode:
+				if addedEpisode[0] == season and addedEpisode[1] == episode and addedEpisode[2] == title:
 					result = True
 					break
 
