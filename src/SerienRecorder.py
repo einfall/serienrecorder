@@ -7534,7 +7534,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			else:
 				self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
 			if config.plugins.serienRec.planerCacheEnabled.value:
-				self.list.append(getConfigListEntry(_("    X Tage im Vorraus speichern:"), config.plugins.serienRec.planerCacheSize))
+				self.list.append(getConfigListEntry(_("    X Tage im Voraus speichern:"), config.plugins.serienRec.planerCacheSize))
 			self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		#if config.plugins.serienRec.updateInterval.value == 24:
 		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
@@ -7818,7 +7818,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		    config.plugins.serienRec.autochecktype :           (_("Bei 'manuell' wird kein automatischer Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
 		                                                        "Bei 'zur gewählten Uhrzeit' wird der automatische Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
 		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer)."), "1.3_Die_globalen_Einstellungen"),
-		    config.plugins.serienRec.planerCacheSize :         (_("Es werden nur, für die eingestellte Anzahl Tage, Daten im Vorraus heruntergeladen und gespeichert."), "Daten_speichern"),
+		    config.plugins.serienRec.planerCacheSize :         (_("Es werden nur, für die eingestellte Anzahl Tage, Daten im Voraus heruntergeladen und gespeichert."), "Daten_speichern"),
 		}			
 				
 		# if config.plugins.serienRec.updateInterval.value == 0:
