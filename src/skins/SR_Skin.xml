@@ -1,8 +1,8 @@
 <screen name="SerienRecorder3.0" position="center,center" size="1280,720" title="Serien Recorder">
 	<ePixmap position="0,0" size="1280,720" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/bg.png" />
 	<widget name="title" position="50,50" size="820,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
-	<widget name="headline" position="50,10" size="820,40" foregroundColor="red" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="center" />
-	<widget name="version" position="850,10" size="400,55" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
+	<widget name="headline" position="50,20" size="820,40" foregroundColor="red" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="center" />
+	<widget name="version" position="850,20" size="400,40" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="right" />
 	<widget source="global.CurrentTime" render="Label" position="850,50" size="400,55" font="Regular;26" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
 		<convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
 	</widget>

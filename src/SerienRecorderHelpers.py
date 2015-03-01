@@ -1,5 +1,7 @@
 ﻿# This file contain some helper functions
 # which called from other SerienRecorder modules
+# -*- coding: utf-8 -*-
+
 from __init__ import _
 
 from Components.config import config
@@ -62,6 +64,27 @@ def getUserAgent():
 	today = datetime.date.today()
 	random.seed(today.toordinal())
 	return userAgents[random.randint(0, 8)]
+
+def processDownloadedData(data):
+	from gzip import GzipFile
+	try:
+		from cStringIO import StringIO
+	except:
+		from StringIO import StringIO
+
+	#writeLog(_("[Serien Recorder] Downloaded data size = %d bytes") % (len(data)))
+	compressedstream = StringIO(data)
+	gzipper = GzipFile(fileobj=compressedstream)
+	try:
+		data = gzipper.read()
+	except:
+		data = data
+	finally:
+		gzipper.close()
+		compressedstream.close()
+
+	#writeLog(_("[Serien Recorder] Uncompressed data size = %d bytes") % (len(data)))
+	return data
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
