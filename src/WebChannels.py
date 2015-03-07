@@ -23,12 +23,12 @@ class WebChannels(object):
 		print "[SerienRecorder] request webpage.."
 		url = "http://www.wunschliste.de/updates/stationen"
 		#getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
-		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
+		getPage(url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
 		print "[SerienRecorder] request_and_return webpage.."
 		url = "http://www.wunschliste.de/updates/stationen"
-		req = Request(url, headers={'Content-Type':'application/x-www-form-urlencoded'})
+		req = Request(url, headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'})
 		try:
 			data = urlopen(req).read()
 		except URLError as e:
@@ -43,6 +43,7 @@ class WebChannels(object):
 			self.user_errback(error)
 
 	def __callback(self, data):
+		data = processDownloadedData(data)
 		stations = re.findall('<option value=".*?>(.*?)</option>', data, re.S)
 		if stations:
 			web_chlist = []
