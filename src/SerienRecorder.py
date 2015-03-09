@@ -1159,6 +1159,7 @@ def initDB():
 						writeLog(_("[Serien Recorder] Datenbankversion nicht kompatibel: SerienRecorder Version muss mindestens %s sein.") % dbValue)
 						Notifications.AddPopup(_("[Serien Recorder]\nFehler:\nDie Datenbank ist mit dieser SerienRecorder Version nicht kompatibel.\nAktualisieren Sie mindestens auf Version %s!") % dbValue, MessageBox.TYPE_INFO, timeout=10)
 						dbIncompatible = True
+		cCursor.close()
 
 		# Database incompatible - do cleanup
 		if dbIncompatible:
@@ -3450,7 +3451,7 @@ class serienRecCheckForRecording():
 		writeLog(_("\n---------' Erstelle Timer%s '-------------------------------------------------------------------------------\n") % optionalText, True)
 			
 		cTmp = dbTmp.cursor()
-		cTmp.execute("SELECT * FROM (SELECT SerieName, Staffel, Episode, Title, COUNT(*) AS Anzahl FROM GefundeneFolgen GROUP BY SerieName, Staffel, Episode, Title) ORDER BY Anzahl")
+		cTmp.execute("SELECT * FROM (SELECT SerieName, Staffel, Episode, Title, COUNT(*) AS Anzahl FROM GefundeneFolgen WHERE AnzahlAufnahmen>? GROUP BY SerieName, Staffel, Episode, Title) ORDER BY Anzahl", (NoOfRecords,))
 		for row in cTmp:
 			(serien_name, staffel, episode, title, anzahl) = row
 
@@ -3544,6 +3545,7 @@ class serienRecCheckForRecording():
 	def searchTimer2(self, serien_name, staffel, episode, title, optionalText, usedChannel, dirname):				
 		# prepare postprocessing for forced recordings
 		forceRecordings = []
+		forceRecordings_W = []
 		self.konflikt = ""
 
 		TimerDone = False
@@ -3659,7 +3661,7 @@ class serienRecCheckForRecording():
 						# backup timer data for post processing
 						show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
 						writeLogFilter("timeRange", _("[Serien Recorder] ' %s ' - Backup Timer -> %s") % (label_serie, show_start))
-						forceRecordings.append((title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel))
+						forceRecordings_W.append((title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel))
 						continue
 
 			##############################
@@ -3682,6 +3684,24 @@ class serienRecCheckForRecording():
 		### end of for loop
 		cTimer.close()
 		
+		if not TimerDone:
+			# post processing for forced recordings
+			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel in forceRecordings_W:
+				show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
+				# programmiere Timer (Wiederholung)
+				if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, optionalText, vomMerkzettel):
+					cAdded = dbTmp.cursor()
+					if str(episode).isdigit():
+						if int(episode) == 0:
+							cAdded.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND StartTime=? AND LOWER(ServiceRef)=?", (serien_name.lower(), str(staffel).lower(), episode.lower(), title.lower(), start_unixtime, stbRef.lower()))
+						else:
+							cAdded.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartTime=? AND LOWER(ServiceRef)=?", (serien_name.lower(), str(staffel).lower(), episode.lower(), start_unixtime, stbRef.lower()))
+					else:
+						cAdded.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartTime=? AND LOWER(ServiceRef)=?", (serien_name.lower(), str(staffel).lower(), episode.lower(), start_unixtime, stbRef.lower()))
+					cAdded.close()
+					TimerDone = True
+					break
+					
 		if not TimerDone:
 			# post processing for forced recordings
 			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel in forceRecordings:
