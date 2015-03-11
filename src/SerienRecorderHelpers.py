@@ -169,7 +169,8 @@ class STBHelpers:
 	def buildSTBChannelList(cls, BouquetName=None):
 		serien_chlist = None
 		serien_chlist = []
-		print "[SerienRecorder] read STV Channellist.."
+		mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
+		print "[SerienRecorder] read STB Channellist.."
 		tvbouquets = cls.getTVBouquets()
 		print "[SerienRecorder] found %s bouquet: %s" % (len(tvbouquets), tvbouquets)
 
@@ -178,14 +179,18 @@ class STBHelpers:
 				bouquetlist = []
 				bouquetlist = cls.getServiceList(bouquet[0])
 				for (serviceref, servicename) in bouquetlist:
-					serien_chlist.append((servicename, serviceref))
+					playable = not (eServiceReference(serviceref).flags & mask)
+					if playable:
+						serien_chlist.append((servicename, serviceref))
 		else:
 			for bouquet in tvbouquets:
 				if bouquet[1] == BouquetName:
 					bouquetlist = []
 					bouquetlist = cls.getServiceList(bouquet[0])
 					for (serviceref, servicename) in bouquetlist:
-						serien_chlist.append((servicename, serviceref))
+						playable = not (eServiceReference(serviceref).flags & mask)
+						if playable:
+							serien_chlist.append((servicename, serviceref))
 					break
 		return serien_chlist
 

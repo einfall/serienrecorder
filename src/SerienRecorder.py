@@ -1038,16 +1038,24 @@ def addToWishlist(seriesName, fromEpisode, toEpisode, season):
 		return False
 
 def addToAddedList(seriesName, fromEpisode, toEpisode, season, episodeTitle):
-	if int(fromEpisode) != 0 or int(toEpisode) != 0:
+	# Es gibt Episodennummern die nicht nur aus Zahlen bestehen, z.B. 14a
+	# um solche Folgen in die Datenbank zu bringen wird hier eine Unterscheidung gemacht.
+	if fromEpisode == toEpisode:
 		cCursor = dbSerRec.cursor()
-		for i in range(int(fromEpisode), int(toEpisode)+1):
-			print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(seriesName), str(season), str(i))
-			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (seriesName, season, str(i).zfill(2), episodeTitle, (int(time.time())), "", "", 0, 1))
+		cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (seriesName, season, str(fromEpisode).zfill(2), episodeTitle, (int(time.time())), "", "", 0, 1))
 		dbSerRec.commit()
 		cCursor.close()
-		return True
 	else:
-		return False
+		if int(fromEpisode) != 0 or int(toEpisode) != 0:
+			cCursor = dbSerRec.cursor()
+			for i in range(int(fromEpisode), int(toEpisode)+1):
+				print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(seriesName), str(season), str(i))
+				cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (seriesName, season, str(i).zfill(2), episodeTitle, (int(time.time())), "", "", 0, 1))
+			dbSerRec.commit()
+			cCursor.close()
+			return True
+		else:
+			return False
 
 def initDB():
 	global dbSerRec
@@ -3907,6 +3915,7 @@ class serienRecTimer(Screen, HelpableScreen):
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
+		self.WochenTag = [_("Mo"), _("Di"), _("Mi"), _("Do"), _("Fr"), _("Sa"), _("So")]
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("Liste der aufgenommenen Folgen bearbeiten")),
@@ -3954,7 +3963,7 @@ class serienRecTimer(Screen, HelpableScreen):
 
 		self['text_red'].setText(_("Entferne Timer"))
 		if config.plugins.serienRec.recordListView.value == 0:
-			self['text_green'].setText(_("Zeige neuste Timer zuerst"))
+			self['text_green'].setText(_("Zeige neueste Timer zuerst"))
 		elif config.plugins.serienRec.recordListView.value == 1:
 			self['text_green'].setText(_("Zeige früheste Timer zuerst"))
 		self['text_ok'].setText(_("Liste bearbeiten"))
@@ -4098,7 +4107,7 @@ class serienRecTimer(Screen, HelpableScreen):
 	def viewChange(self):
 		if config.plugins.serienRec.recordListView.value == 1:
 			config.plugins.serienRec.recordListView.value = 0
-			self['text_green'].setText(_("Zeige neuste Timer zuerst"))
+			self['text_green'].setText(_("Zeige neueste Timer zuerst"))
 		else:
 			config.plugins.serienRec.recordListView.value = 1
 			self['text_green'].setText(_("Zeige früheste Timer zuerst"))
@@ -4148,8 +4157,7 @@ class serienRecTimer(Screen, HelpableScreen):
 
 	def buildList(self, entry):
 		(serie, staffel, episode, title, start_time, webChannel, foundIcon, eit, activeTimer) = entry
-		WochenTag=[_("Mo"), _("Di"), _("Mi"), _("Do"), _("Fr"), _("Sa"), _("So")]
-		xtime = time.strftime(WochenTag[time.localtime(int(start_time)).tm_wday]+", %d.%m.%Y - %H:%M", time.localtime(int(start_time)))
+		xtime = time.strftime(self.WochenTag[time.localtime(int(start_time)).tm_wday]+", %d.%m.%Y - %H:%M", time.localtime(int(start_time)))
 		xtitle = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title)
 
 		if int(foundIcon) == 1:
@@ -6447,6 +6455,10 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 					season = "0"
 				else:
 					season = decodeCP1252(season, True)
+				if not episode:
+					episode = "0"
+				else:
+					episode = decodeCP1252(episode, True)
 				current_episodes_list.append([season, episode, tv, info_url, title, otitle])
 
 		self.episodes_list_cache.append(current_episodes_list)
