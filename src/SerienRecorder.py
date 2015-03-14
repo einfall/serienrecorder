@@ -250,7 +250,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.0-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.0"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -6544,7 +6544,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		sindex = self['config'].getSelectedIndex()
-		if len(self.episodes_list_cache) > self.page:
+		if len(self.episodes_list_cache) >= self.page:
 			if len(self.episodes_list_cache[self.page]) != 0:
 				if self.episodes_list_cache[self.page][sindex][3]:
 					self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.episodes_list_cache[self.page][sindex][4], "http://www.wunschliste.de/%s" % self.episodes_list_cache[self.page][sindex][3])
@@ -6558,14 +6558,14 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		sindex = self['config'].getSelectedIndex()
-		if len(self.episodes_list_cache) > self.page:
+		if len(self.episodes_list_cache) >= self.page:
 			current_episodes_list = self.episodes_list_cache[self.page]
 			if len(current_episodes_list) != 0:
 				isAlreadyAdded = self.isAlreadyAdded(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][4])
 
 				if isAlreadyAdded:
 					cCursor = dbSerRec.cursor()
-					cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=?)", (self.serien_name.lower(), current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][4].lower(), "dump"))
+					cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=?)", (self.serien_name.lower(), current_episodes_list[sindex][0], str(current_episodes_list[sindex][1]).zfill(2), current_episodes_list[sindex][4].lower(), "dump"))
 					dbSerRec.commit()
 					cCursor.close()
 				else:
@@ -6583,7 +6583,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		sindex = self['config'].getSelectedIndex()
-		if len(self.episodes_list_cache) > self.page:
+		if len(self.episodes_list_cache) >= self.page:
 			if len(self.episodes_list_cache[self.page]) != 0:
 				if addToWishlist(self.serien_name, self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][0]):
 					self.session.open(MessageBox, _("Die Episode wurde zum Merkzettel hinzugefügt"), MessageBox.TYPE_INFO, timeout = 10)
