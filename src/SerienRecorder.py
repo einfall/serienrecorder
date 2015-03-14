@@ -6315,7 +6315,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.serie_url = serie_url
 		self.serien_cover = serien_cover
 		self.addedEpisodes = getAlreadyAdded(self.serien_name)
-		self.episodes_list_cache = [[]]
+		#self.episodes_list_cache = [[]]
+		self.episodes_list_cache = {}
 		self.aStaffel = None
 		self.aFromEpisode = None
 		self.aToEpisode = None
@@ -6452,16 +6453,16 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				title = decodeCP1252(title.strip(), True)
 				otitle = decodeCP1252(otitle.strip(), True)
 				if not season:
-					season = "0"
+					season = "00"
 				else:
 					season = decodeCP1252(season, True)
 				if not episode:
-					episode = "0"
+					episode = "00"
 				else:
 					episode = decodeCP1252(episode, True)
 				current_episodes_list.append([season, episode, tv, info_url, title, otitle])
 
-		self.episodes_list_cache.append(current_episodes_list)
+		self.episodes_list_cache[self.page] = current_episodes_list
 		numberOfEpisodes = str(len(current_episodes_list))
 		numberOfEpisodesMatch = re.search('<div id="eplist"><h2>.*?(\d+).*?<', data, re.S)
 		if numberOfEpisodesMatch and numberOfEpisodesMatch.group(1):
