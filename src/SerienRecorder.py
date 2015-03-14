@@ -6421,7 +6421,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		super(self.__class__, self).WikipediaSearch(self.serien_name)
 
 	def searchEpisodes(self):
-		if len(self.episodes_list_cache) > self.page:
+		if self.page in self.episodes_list_cache:
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 		else:
 			self.loading = True
@@ -6544,7 +6544,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		sindex = self['config'].getSelectedIndex()
-		if len(self.episodes_list_cache) >= self.page:
+		#if len(self.episodes_list_cache) >= self.page:
+		if self.page in self.episodes_list_cache:
 			if len(self.episodes_list_cache[self.page]) != 0:
 				if self.episodes_list_cache[self.page][sindex][3]:
 					self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.episodes_list_cache[self.page][sindex][4], "http://www.wunschliste.de/%s" % self.episodes_list_cache[self.page][sindex][3])
@@ -6558,7 +6559,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		sindex = self['config'].getSelectedIndex()
-		if len(self.episodes_list_cache) >= self.page:
+		#if len(self.episodes_list_cache) >= self.page:
+		if self.page in self.episodes_list_cache:
 			current_episodes_list = self.episodes_list_cache[self.page]
 			if len(current_episodes_list) != 0:
 				isAlreadyAdded = self.isAlreadyAdded(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][4])
@@ -6583,7 +6585,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		sindex = self['config'].getSelectedIndex()
-		if len(self.episodes_list_cache) >= self.page:
+		#if len(self.episodes_list_cache) >= self.page:
+		if self.page in self.episodes_list_cache:
 			if len(self.episodes_list_cache[self.page]) != 0:
 				if addToWishlist(self.serien_name, self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][0]):
 					self.session.open(MessageBox, _("Die Episode wurde zum Merkzettel hinzugefügt"), MessageBox.TYPE_INFO, timeout = 10)
