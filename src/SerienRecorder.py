@@ -6411,7 +6411,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
-	def setupClose(self, result, operation):
+	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result, self.searchEpisodes)
 
 	def youtubeSearch(self, searchWord):
