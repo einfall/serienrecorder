@@ -114,12 +114,12 @@ def SelectSkin():
 		except:
 			pass
 
-	elif config.plugins.serienRec.SkinType.value in ("", "Skin2", "AtileHD"):
+	elif config.plugins.serienRec.SkinType.value in ("", "Skin2", "AtileHD", "Black Box"):
 		skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
 		skin = skin.replace("//", "/")
-		if config.plugins.serienRec.SkinType.value in ("Skin2", ):
+		if config.plugins.serienRec.SkinType.value in ("Skin2", "Black Box"):
 			showAllButtons = True
-		if config.plugins.serienRec.SkinType.value in ("Skin2", "AtileHD"):
+		if config.plugins.serienRec.SkinType.value in ("Skin2", "AtileHD", "Black Box"):
 			buttonText_na = ""
 	else:
 		if fileExists("%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)):
@@ -133,11 +133,11 @@ def ReadConfigFile():
 	config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
 	config.plugins.serienRec.coverPath = ConfigText(default = serienRecCoverPath, fixed_size=False, visible_width=80)
 	
-	choices = [("Skinpart", _("Skinpart")), ("", _("SerienRecorder 1")), ("Skin2", _("SerienRecorder 2")), ("AtileHD", _("AtileHD"))]
+	choices = [("Skinpart", _("Skinpart")), ("", _("SerienRecorder 1")), ("Skin2", _("SerienRecorder 2")), ("AtileHD", _("AtileHD")), ("Black Box", _("Black Box"))]
 	try:
 		t = list(os.walk("%sskins" % serienRecMainPath))
 		for x in t[0][1]:
-			if x not in ("Skin2", "AtileHD"):
+			if x not in ("Skin2", "AtileHD", "Black Box"):
 				choices.append((x, x))
 	except:
 		pass
@@ -4534,7 +4534,8 @@ class serienRecMarker(Screen, HelpableScreen):
 				"red_long" : (self.keyRedLong, _("ausgewählten Serien-Marker löschen")),
 				"green"    : (self.keyGreen, _("zur Senderauswahl")),
 				"yellow"   : (self.keyYellow, _("Sendetermine für ausgewählte Serien anzeigen")),
-				"blue"	   : (self.keyBlue, _("Serie manuell suchen")),
+				"blue"	   : (self.keyBlue, _("Ansicht Timer-Liste öffnen")),
+				"blue_long": (self.keyBlueLong, _("Serie manuell suchen")),
 				"info"	   : (self.keyCheck, _("Suchlauf für Timer starten")),
 				"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
 				"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
@@ -4561,7 +4562,8 @@ class serienRecMarker(Screen, HelpableScreen):
 				"red_long" : (self.keyRedLong, _("ausgewählten Serien-Marker löschen")),
 				"green"    : (self.keyGreen, _("zur Senderauswahl")),
 				"yellow"   : (self.keyYellow, _("Sendetermine für ausgewählte Serien anzeigen")),
-				"blue"	   : (self.keyBlue, _("Serie manuell suchen")),
+				"blue"	   : (self.keyBlue, _("Ansicht Timer-Liste öffnen")),
+				"blue_long": (self.keyBlueLong, _("Serie manuell suchen")),
 				"info"	   : (self.keyCheck, _("Suchlauf für Timer starten")),
 				"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
 				"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
@@ -4607,18 +4609,19 @@ class serienRecMarker(Screen, HelpableScreen):
 		self['text_green'].setText(_("Sender auswählen."))
 		self['text_ok'].setText(_("Staffel(n) auswählen."))
 		self['text_yellow'].setText(_("Sendetermine"))
-		self['text_blue'].setText(_("Serie suchen"))
 		self.num_bt_text[0][1] = _("Episoden-Liste")
 		self.num_bt_text[2][2] = _("Timer suchen")
 
 		if longButtonText:
 			self.num_bt_text[4][2] = _("Setup Serie (lang: global)")
 			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
+			self['text_blue'].setText(_("Timer-Liste (lang: Serie suchen)"))
 			if not showMainScreen:
 				self.num_bt_text[0][2] = _("Exit (lang: Serienplaner)")
 		else:
 			self.num_bt_text[4][2] = _("Setup Serie/global")
 			self['text_red'].setText(_("(De)aktivieren/Löschen"))
+			self['text_blue'].setText(_("Timer-Liste/Serie suchen"))
 			if not showMainScreen:
 				self.num_bt_text[0][2] = _("Exit/Serienplaner")
 
@@ -5266,9 +5269,13 @@ class serienRecMarker(Screen, HelpableScreen):
 		cCursor.close()
 		self.readSerienMarker()
 
-	def keyBlue(self):
+	def keyBlueLong(self):
 		if self.modus == "config":
 			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
+
+	def keyBlue(self):
+		if self.modus == "config":
+			self.session.openWithCallback(self.readSerienMarker, serienRecTimer)
 
 	def wSearch(self, serien_name):
 		if serien_name:
@@ -5681,6 +5688,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			"red"	: (self.keyRed, _("zurück zur Serien-Marker-Ansicht")),
 			"green" : (self.keyGreen, _("Timer für aktivierte Sendetermine erstellen")),
 			"yellow": (self.keyYellow, _("umschalten Filter (aktive Sender) aktiviert/deaktiviert")),
+			"blue"	: (self.keyBlue, _("Ansicht Timer-Liste öffnen")),
 			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
@@ -5726,6 +5734,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		else:
 			self['text_yellow'].setText(_("Filter einschalten"))
 			self.title_txt = _("alle")
+		self['text_blue'].setText(_("Timer-Liste"))
 
 		self.displayTimer = None
 		if showAllButtons:
@@ -5760,6 +5769,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			self['bt_green'].show()
 			self['bt_ok'].show()
 			self['bt_yellow'].show()
+			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
@@ -5769,6 +5779,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			self['text_green'].show()
 			self['text_ok'].show()
 			self['text_yellow'].show()
+			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
 			self['text_2'].show()
@@ -5854,7 +5865,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			if result[1]:
 				self.searchEvents()
 
-	def searchEvents(self):
+	def searchEvents(self, result=None):
 		global termineCache
 		if self.serien_name in termineCache:
 			self['title'].setText(_("Lade ' %s '") % self.serien_name)
@@ -6290,6 +6301,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		global termineCache
 		SearchEvents(self.serien_name, serien_id, termineCache, self.resultsEvents).request()
 		
+	def keyBlue(self):
+		self.session.openWithCallback(self.searchEvents, serienRecTimer)
+
 	def __onClose(self):
 		if self.displayTimer:
 			self.displayTimer.stop()
@@ -7663,7 +7677,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
 			self.list.append(getConfigListEntry(_("Skin:"), config.plugins.serienRec.SkinType))
 			global showAllButtons
-			if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD"):
+			if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD", "Black Box"):
 				self.list.append(getConfigListEntry(_("    werden bei diesem Skin immer ALLE Tasten angezeigt:"), config.plugins.serienRec.showAllButtons))
 				showAllButtons = config.plugins.serienRec.showAllButtons.value
 			elif config.plugins.serienRec.SkinType.value in ("", "AtileHD"):

@@ -1,4 +1,4 @@
-<keymap>
+﻿<keymap>
 	<map context="SerienRecorderActions">
 		<key id="\x0a" mapto="ok" flags="m" />
 		<key id="KEY_OK" mapto="ok" flags="m" />
@@ -23,7 +23,8 @@
 		<key id="KEY_GREEN" mapto="green" flags="m" />
 
 		<key id="KEY_F4" mapto="blue" flags="mr" />
-		<key id="KEY_BLUE" mapto="blue" flags="m" />
+		<key id="KEY_BLUE" mapto="blue" flags="b" />
+		<key id="KEY_BLUE" mapto="blue_long" flags="l" />
 
 		<key id="KEY_LEFT" mapto="left" flags="mr" />
 		<key id="KEY_LEFT" mapto="left" flags="m" />

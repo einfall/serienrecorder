@@ -1,4 +1,4 @@
-<screen name="SerienRecorder3.0" position="center,center" size="1280,720" title="Serien Recorder">
+﻿<screen name="SerienRecorder3.0" position="center,center" size="1280,720" title="Serien Recorder">
 	<eLabel position="0,0" size="1280,720" zPosition="-15" backgroundColor="#20000000" />
 	<eLabel position=" 55,100" size="860,60" zPosition="-10" backgroundColor="#20606060" />
 	<eLabel position="55,165" size="860,450" zPosition="-10" backgroundColor="#20606060" />
@@ -62,5 +62,5 @@
 	<widget name="text_red" position="70,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#20b81c46" transparent="1" />
 	<widget name="text_green" position="365,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#20009f3c" transparent="1" />
 	<widget name="text_yellow" position="660,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#209ca81b" transparent="1" />
-	<widget name="text_blue" position="955,635" size="260,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#202673ec" transparent="1" />
+	<widget name="text_blue" position="940,635" size="290,25" zPosition="1" font="Regular;20" halign="center" foregroundColor="#00ffffff" backgroundColor="#202673ec" transparent="1" />
 </screen>
