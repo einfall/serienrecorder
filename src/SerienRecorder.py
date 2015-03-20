@@ -384,7 +384,7 @@ def getCover(self, serien_name, serien_id):
 		try:
 			shutil.os.mkdir(config.plugins.serienRec.coverPath.value)
 		except:
-			Notifications.AddPopup(_("[Serien Recorder]\nCover Pfad (%s) kann nicht angelegt werden.\n\nÜberprüfen Sie den Pfad und die Rechte!") % (config.plugins.serienRec.CoverPath.value), MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] checkFileAccess")
+			Notifications.AddPopup(_("[Serien Recorder]\nCover Pfad (%s) kann nicht angelegt werden.\n\nÜberprüfen Sie den Pfad und die Rechte!") % config.plugins.serienRec.coverPath.value, MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] checkFileAccess")
 	if fileExists(serien_nameCover):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif serien_id:
