@@ -4881,12 +4881,12 @@ class serienRecMarker(Screen, HelpableScreen):
 			elif AnzahlAufnahmen < 1:
 				AnzahlAufnahmen = 1
 
-			if not Vorlaufzeit:
+			if Vorlaufzeit is None:
 				Vorlaufzeit = config.plugins.serienRec.margin_before.value
 			elif Vorlaufzeit < 0:
 				Vorlaufzeit = 0
 
-			if not Nachlaufzeit:
+			if Nachlaufzeit is None:
 				Nachlaufzeit = config.plugins.serienRec.margin_after.value
 			elif Nachlaufzeit < 0:
 				Nachlaufzeit = 0
@@ -6467,7 +6467,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				title = decodeCP1252(title.strip(), True)
 				otitle = decodeCP1252(otitle.strip(), True)
 				if not season:
-					season = "00"
+					season = "0"
 				else:
 					season = decodeCP1252(season, True)
 				if not episode:
@@ -6538,12 +6538,13 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			title = None
 		if not title:
 			for addedEpisode in self.addedEpisodes:
-				if addedEpisode[0] == season and addedEpisode[1] == episode:
+				str().zfill(2)
+				if str(addedEpisode[0]).zfill(2) == str(season).zfill(2) and str(addedEpisode[1]).zfill(2) == str(episode).zfill(2):
 					result = True
 					break
 		else:
 			for addedEpisode in self.addedEpisodes:
-				if addedEpisode[0] == season and addedEpisode[1] == episode and addedEpisode[2] == title:
+				if str(addedEpisode[0]).zfill(2) == str(season).zfill(2) and str(addedEpisode[1]).zfill(2) == str(episode).zfill(2) and addedEpisode[2] == title:
 					result = True
 					break
 
@@ -6581,7 +6582,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 				if isAlreadyAdded:
 					cCursor = dbSerRec.cursor()
-					cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=?)", (self.serien_name.lower(), current_episodes_list[sindex][0], str(current_episodes_list[sindex][1]).zfill(2), current_episodes_list[sindex][4].lower(), "dump"))
+					cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND Staffel=? AND Episode=? AND (LOWER(Titel)=? OR Titel=?)", (self.serien_name.lower(), current_episodes_list[sindex][0], str(current_episodes_list[sindex][1]).zfill(2), current_episodes_list[sindex][4].lower(), "dump"))
 					dbSerRec.commit()
 					cCursor.close()
 				else:
