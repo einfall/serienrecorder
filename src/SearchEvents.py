@@ -45,7 +45,7 @@ class SearchEvents(object):
 	def __errback(self, error):
 		print error
 		if (self.user_errback):
-			self.user_errback(error)
+			self.user_errback(error, self.serie_url)
 
 	def __callback(self, data, useCache=False):
 		sendetermine_list = []
