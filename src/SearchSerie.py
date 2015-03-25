@@ -49,7 +49,8 @@ class SearchSerie(object):
 				raw = re.findall('\+\+\+\t(.*?)\t%s\Z' % self.serien_name, line, re.I | re.S)
 				if raw:
 					(more, ) = raw
-					serienlist.append(("... %s%s'%s'" % (more, _(" weitere Ergebnisse für "), self.serien_name), "", ""))
+					if more.isdigit(): 
+						serienlist.append(("... %s%s'%s'" % (more, _(" weitere Ergebnisse für "), self.serien_name), "", ""))
 				else:
 					infos = line.split('|',3)
 					if len(infos) == 4:

@@ -374,6 +374,7 @@ def writeErrorLog(text):
 			open(ErrorLogFile, 'w').close()
 
 		writeLogFile = open(ErrorLogFile, "a")
+		writeLogFile.write("%s: %s\n----------------------------------------------------------\n\n" % (time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime()), text))
 		writeLogFile.close()
 
 def getUrl(url):
