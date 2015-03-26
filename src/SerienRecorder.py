@@ -5315,13 +5315,13 @@ class serienRecMarker(Screen, HelpableScreen):
 		cCursor.close()
 		self.readSerienMarker()
 
-	def keyBlueLong(self):
-		if self.modus == "config":
-			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
-
 	def keyBlue(self):
 		if self.modus == "config":
 			self.session.openWithCallback(self.readSerienMarker, serienRecTimer)
+
+	def keyBlueLong(self):
+		if self.modus == "config":
+			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
 
 	def wSearch(self, serien_name):
 		if serien_name:
@@ -5621,6 +5621,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			]
 
 	def keyOK(self):
+		self.serien_name = ""
 		if self.loading:
 			return
 
@@ -5659,7 +5660,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self.close()
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
+		self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"), text = self.serien_name)
 
 	def wSearch(self, serien_name):
 		if serien_name:
