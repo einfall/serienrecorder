@@ -6209,6 +6209,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				eit, end_unixtime_eit, start_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_stbRef)
 				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
+				konflikt = None
+
 				# versuche timer anzulegen
 				if checkTuner(start_unixtime_eit, end_unixtime_eit, timer_stbRef):
 					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
@@ -6229,20 +6231,29 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit, timer_altstbRef):
 						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
 						if result["result"]:
+							konflikt = None
 							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit):
 								self.countTimer += 1
 								TimerOK = True
 						else:
 							konflikt = result["message"]
-							writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, konflikt), True)
-							result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
-							if result["result"]:
-								if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, False):
-									self.countTimer += 1
-									TimerOK = True
 					else:
 						print "[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit)
 						writeLog(_("[Serien Recorder] Tuner belegt: %s %s") % (label_serie, startzeit), True)
+
+				if (not TimerOK) and (konflikt):
+					writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, konflikt), True)
+					dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
+
+					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True, dirname, vpsSettings, None, recordfile=".ts")
+					if result["result"]:
+						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, False):
+							self.countTimer += 1
+							TimerOK = True
+						cCursor = dbSerRec.cursor()
+						cCursor.execute("INSERT OR IGNORE INTO TimerKonflikte (Message, StartZeitstempel, webChannel) VALUES (?, ?, ?)", (dbMessage, int(start_unixtime_eit), webChannel))
+						cCursor.close()
+
 			return TimerOK
 			
 	def keyOK(self):
