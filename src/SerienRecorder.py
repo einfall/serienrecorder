@@ -2073,7 +2073,7 @@ class serienRecBaseScreen():
 	def recSetup(self):
 		self.session.openWithCallback(self.setupClose, serienRecSetup)
 
-	def setupClose(self, result, operation):
+	def setupClose(self, result):
 		if not result[2]:
 			self.close()
 		else:
@@ -2084,7 +2084,7 @@ class serienRecBaseScreen():
 					serienRecCheckForRecording(self.session, False)
 
 			if result[1]:
-				operation()
+				self.showChannels()
 
 	def keyLeft(self):
 		self[self.modus].pageUp()
@@ -3467,7 +3467,7 @@ class serienRecCheckForRecording():
 		return result
 
 	def askForDSB(self):
-		if (config.plugins.serienRec.updateInterval.value == 24) and config.plugins.serienRec.wakeUpDSB.value and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
+		if (config.plugins.serienRec.updateInterval.value == 24) and (config.plugins.serienRec.wakeUpDSB.value or (config.plugins.serienRec.autochecktype.value == "2" and config.plugins.epgrefresh.afterevent.value)) and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
 			if config.plugins.serienRec.DSBTimeout.value > 0:
 				try:
 					self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
