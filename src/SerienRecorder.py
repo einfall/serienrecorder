@@ -2251,7 +2251,8 @@ class serienRecAddTimer():
 
 			timer.repeated = 0
 
-			if VPSPluginAvailable:
+			# If eit = 0 the VPS plugin won't work properly for this timer, so we have to disable VPS in this case.
+			if VPSPluginAvailable and eit is not 0:
 				timer.vpsplugin_enabled = vpsSettings[0]
 				timer.vpsplugin_overwrite = timer.vpsplugin_enabled and (not vpsSettings[1])
 
