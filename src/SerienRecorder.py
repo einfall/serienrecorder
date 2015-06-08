@@ -70,7 +70,7 @@ colorBlue   = 0x0064c7
 colorYellow = 0xbab329
 colorWhite  = 0xffffff
 
-WebTimeout = 20
+WebTimeout = 5
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
@@ -382,6 +382,31 @@ def getUrl(url):
 	res = urllib2.urlopen(req)
 	finalurl = res.geturl()
 	return finalurl
+
+def retry(times, func, *args, **kwargs):
+	"""retry a defer function
+
+	@param times: how many times to retry
+	@param func: defer function
+	"""
+	errorList = []
+	deferred = defer.Deferred()
+	def run():
+		#writeLog(_("[Serien Recorder] Versuche Webseite abzurufen..."), True)
+		d = func(*args, **kwargs)
+		d.addCallbacks(deferred.callback, error)
+	def error(error):
+		errorList.append(error)
+		# Retry
+		if len(errorList) < times:
+			writeLog(_("[Serien Recorder] Fehler beim Abrufen der Webseite, versuche erneut..."), True)
+			run()
+		# Fail
+		else:
+			writeLog(_("[Serien Recorder] Abrufen der Webseite auch nach mehreren Versuchen nicht möglich!"), True)
+			deferred.errback(errorList)
+	run()
+	return deferred
 
 def getCover(self, serien_name, serien_id):
 	if not config.plugins.serienRec.showCover.value:
@@ -2612,7 +2637,7 @@ class serienRecCheckForRecording():
 		c1 = re.compile('s_regional\[.*?\]=(.*?);\ns_paytv\[.*?\]=(.*?);\ns_neu\[.*?\]=(.*?);\ns_prime\[.*?\]=(.*?);.*?<td rowspan="3" class="zeit">(.*?) Uhr</td>.*?<a href="(/serie/.*?)" class=".*?">(.*?)</a>.*?href="http://www.wunschliste.de/kalender.pl\?s=(.*?)\&.*?alt="(.*?)".*?<tr><td rowspan="2"></td><td>(.*?)<a href=".*?" target="_new">(.*?)</a>', re.S)
 		c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
 		c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
-		downloads = [ds.run(self.readWebpageForNewStaffel, "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))).addCallback(self.parseWebpageForNewStaffel,daypage,c1,c2,c3).addErrback(self.dataErrorNewStaffel,"http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))) for daypage in range(int(config.plugins.serienRec.planerCacheSize.value))]
+		downloads = [retry(5, ds.run, self.readWebpageForNewStaffel, "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))).addCallback(self.parseWebpageForNewStaffel,daypage,c1,c2,c3).addErrback(self.dataErrorNewStaffel,"http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(daypage))) for daypage in range(int(config.plugins.serienRec.planerCacheSize.value))]
 		
 		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.dataErrorNewStaffel)
 		
@@ -3174,7 +3199,7 @@ class serienRecCheckForRecording():
 			if SerieEnabled:
 				# Download only if series is enabled
 				self.countActivatedSeries += 1
-				downloads.append(ds.run(self.download, SerieUrl).addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,excludedWeekdays).addErrback(self.dataError,SerieUrl))
+				downloads.append(retry(5, ds.run, self.download, SerieUrl).addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,excludedWeekdays).addErrback(self.dataError,SerieUrl))
 
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
@@ -10889,6 +10914,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 		self.episodeTitle = episodeTitle
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"red"   : (self.keyCancel, _("zurück zur vorherigen Ansicht")),
 			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
 			"left"  : (self.pageUp, _("zur vorherigen Seite blättern")),
 			"right" : (self.pageDown, _("zur nächsten Seite blättern")),
@@ -11428,6 +11454,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self.modus = "list"
 		self.loading = True
 		self.daylist = [[],[],[],[]]
+		self.displayTimer = None
 		
 		global dayCache
 		if len(dayCache):
@@ -11472,7 +11499,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self.num_bt_text[2][0] = _("neu laden")
 		self.num_bt_text[2][2] = _("Timer suchen")
 		
-		self.displayTimer = None
+
 		if showAllButtons:
 			Skin1_Settings(self)
 		else:
@@ -12265,7 +12292,8 @@ class serienRecMain(Screen, HelpableScreen):
 	def keyCancel(self):
 		if self.modus == "list":
 			try:
-				self.displyTimer.stop()
+				self.displayTimer.stop()
+				self.displayTimer = None
 			except:
 				pass
 
