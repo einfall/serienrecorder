@@ -254,7 +254,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.2"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.3b"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -2679,11 +2679,11 @@ class serienRecCheckForRecording():
 		if raw:
 			for regional,paytv,neu,prime,time,url,serien_name,serien_id,sender,staffel,episode,title in raw:
 				# encode utf-8
-				serien_name = decodeISO8859_1(serien_name, True)
-				sender = decodeISO8859_1(sender, True)
+				serien_name = doReplaces(serien_name)
+				sender = doReplaces(sender)
 				sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
-				title = decodeISO8859_1(title, True)
-				staffel = decodeISO8859_1(staffel, True)
+				title = doReplaces(title)
+				staffel = doReplaces(staffel)
 				
 				if (not self.manuell) and config.plugins.serienRec.autoSearchForCovers.value:
 					cTmp = dbTmp.cursor()
@@ -6555,16 +6555,16 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if raw:
 			for season,episode,tv,info_url,title,otitle in raw:
 				# Umlaute umwandeln
-				title = decodeCP1252(title.strip(), True)
-				otitle = decodeCP1252(otitle.strip(), True)
+				title = doReplaces(title.strip())
+				otitle = doReplaces(otitle.strip())
 				if not season:
 					season = "0"
 				else:
-					season = decodeCP1252(season, True)
+					season = doReplaces(season)
 				if not episode:
 					episode = "00"
 				else:
-					episode = decodeCP1252(episode, True)
+					episode = doReplaces(episode)
 				current_episodes_list.append([season, episode, tv, info_url, title, otitle])
 
 		self.episodes_list_cache[self.page] = current_episodes_list
@@ -10878,8 +10878,6 @@ class serienRecShowInfo(Screen, HelpableScreen):
 			beschreibung = re.sub('<!--(.*\n)*?(.*)-->', '', seriesInfo, re.S)
 			beschreibung = re.sub('<.*?>', '', beschreibung)
 			beschreibung = re.sub('\n{3,}', '\n\n', beschreibung)
-			beschreibung = unicode(beschreibung, 'cp1252')
-			beschreibung = beschreibung.encode('utf-8')
 			beschreibung = beschreibung.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
 			infoText += (str(beschreibung).replace('Cast & Crew\n','Cast & Crew:\n'))
 
@@ -11083,8 +11081,6 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 					cast = re.sub('<(?:a|span).*?>.*?</(?:a|span)>', '', cast)
 					infoText += cast
 
-		infoText = unicode(infoText, 'cp1252')
-		infoText = infoText.encode('utf-8')
 		infoText = infoText.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
 
 		self['info'].setText(infoText)
@@ -11826,7 +11822,7 @@ class serienRecMain(Screen, HelpableScreen):
 				#build unique sender list
 				senderList = []
 				for regional,paytv,neu,prime,transmissionTime,url,serien_name,serien_id,sender,staffel,episode,title in raw:
-					sender = decodeISO8859_1(sender, True)
+					sender = doReplaces(sender)
 					sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
 
 					if not sender in senderList:
@@ -11841,11 +11837,11 @@ class serienRecMain(Screen, HelpableScreen):
 					start_time = TimeHelpers.getUnixTimeWithDayOffset(start_h, start_m, self.page)
 					
 					# encode utf-8
-					serien_name = decodeISO8859_1(serien_name, True)
-					sender = decodeISO8859_1(sender, True)
+					serien_name = doReplaces(serien_name)
+					sender = doReplaces(sender)
 					sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
-					title = decodeISO8859_1(title, True)
-					staffel = decodeISO8859_1(staffel, True)
+					title = doReplaces(title)
+					staffel = doReplaces(staffel)
 					self.ErrorMsg = "%s - S%sE%s - %s (%s)" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title, sender)
 
 					# Wenn der Sender nicht zugeordnet ist, muss auch nicht nach Timern gesucht werden

@@ -48,7 +48,13 @@ def decodeCP1252(txt, doReplaces=False):
 		txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
 	return txt
 
-	
+def doReplaces(txt):
+	if doReplaces:
+		txt = txt.replace('...','').replace('..','').replace(':','')
+		# &apos;, &quot;, &amp;, &lt;, and &gt;
+		txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
+	return txt
+
 def getUserAgent():
 	userAgents = [
 		"Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; de) Presto/2.9.168 Version/11.52",

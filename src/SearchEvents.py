@@ -28,7 +28,7 @@ class SearchEvents(object):
 		else:
 			print "[SerienRecorder] suche ' %s '" % self.serien_name
 			print self.serie_url
-			getPage(self.serie_url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback)
+			getPage(self.serie_url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
 		print "[SerienRecorder] suche dates"
@@ -48,6 +48,8 @@ class SearchEvents(object):
 			self.user_errback(error, self.serie_url)
 
 	def __callback(self, data, useCache=False):
+		if not useCache:
+			data = processDownloadedData(data)
 		sendetermine_list = []
 
 		if useCache:
