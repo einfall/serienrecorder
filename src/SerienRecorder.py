@@ -59,8 +59,13 @@ from enigma import eEPGCache, iServiceInformation
 
 from Tools import Notifications
 
-import sqlite3, httplib, json
+import sqlite3, httplib
 import cPickle as pickle
+
+try:
+	import simplejson as json
+except ImportError:
+	import json
 
 from SerienRecorderHelpers import *
 
@@ -70,7 +75,7 @@ colorBlue   = 0x0064c7
 colorYellow = 0xbab329
 colorWhite  = 0xffffff
 
-WebTimeout = 5
+WebTimeout = 10
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
@@ -254,7 +259,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.3-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.4-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -447,22 +452,20 @@ def getCoverDataError(error, self, serien_nameCover):
 
 def getImdblink(data, self, serien_nameCover):
 	data = processDownloadedData(data)
-	ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
-	if ilink:
-		#getPage(ilink[0], timeout=20, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
-		getPage(ilink[0], timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+	imdbID = re.findall('<a href="http://www.imdb.com/title/(.*?)/.*?"', data, re.S)
+	if imdbID:
+		omdbURL = "http://www.omdbapi.com/?i=%s" % imdbID[0]
+		getPage(omdbURL, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
 	else:
 		print "[Serien Recorder] es wurde kein imdb-link für ein cover gefunden."
 		
 def loadImdbCover(data, self, serien_nameCover):
-	imageLink_raw = re.findall('<link rel="image_src" href="http://ia.media-imdb.com/(.*?)"', data, re.S)
-	if imageLink_raw:
-		print imageLink_raw
-		extra_imdb_convert = "@._V1_SX320.jpg"
-		aufgeteilt = imageLink_raw[0].split('._V1._')
-		imdb_url = "http://ia.media-imdb.com/%s._V1._SX420_SY420_.jpg" % aufgeteilt[0]
-		print imdb_url
-		downloadPage(imdb_url, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
+	data = processDownloadedData(data)
+	parsed_json = json.loads(data)
+	posterURL = str(parsed_json['Poster'])
+	if posterURL:
+		print posterURL
+		downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
 	
 def showCover(data, self, serien_nameCover, force_show=True):
 	if self is not None: 
