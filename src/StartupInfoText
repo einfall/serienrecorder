@@ -46,53 +46,29 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.1.0:
+CHANGE-LOG v3.1.4:
 Neue Funktionen:
-    - Zusätzlicher Timername auswählbar (SnnEmm - <Episodentitel>)
-    - Anzeige eines Info-Textes (z.B. Tipps, ChangeLog, etc.) bei SR-Start.
-    - Episoden-Titel wird jetzt in der Timer-Übersicht (Taste 1) auch angezeigt.
-    - Erweiterung der Episoden-Liste: 
-      In der Episodenliste (Taste 5) können einzelne Episoden jetzt zur Wunschliste, bzw. in die Timer-Übersicht eingefügt werden
-    - Es wird jetzt das NTIVirtualKeyBoard verwendet (falls von der Box unterstützt)
-    - Zusätzliche Option bei "Aktion bei neuer Staffel": 
-      Es kann jetzt auch "Nur Suchen" bei "Aktion bei neuer Staffel" gewählt werden. Dann werden neue Serien- und Staffelstarts gesucht und mit können mit Taste 3 angezeigt werden, es wird aber keine Benachrichtigung angezeigt, stattdessen wird ein Hinweis angezeigt, wenn "Benachrichtigung bei Suchlauf-Ende" eingeschaltet ist.
-    - Internet-Verbindung wird vor dem Auto-Check überprüft.
-    - VPS ist jetzt pro Serien-Marker konfigurierbar
-    - Wochentage können pro Serien-Marker für die Timererstellung ausgeschlossen werden
-    - Der Autockeck wird zu einer zufälligen Zeit zwischen der eingestellten Uhrzeit und eingestellte Uhrzeit + 15 Minuten durchgeführt (Kann in den Einstellungen abgeschaltet werden).
-    - Daten werden komprimiert von Wunschliste.de geladen - dadurch wird erheblich Bandbreite gespart, etwa 1/8 der Datenmenge.
-    - "Timer-Übersicht" wird (nach Quittieren einer Meldung) auf die Episoden-Liste umgeleitet. Nur in der Timer-Liste bleibt die Funktion(Taste OK) erhalten als "Liste bearbeiten"
-    - Episoden-Liste unterstützt jetzt mehrere Seiten: 
-      Wenn es für eine Serie mehr als 1000 Folgen gibt, teilt Wunschliste die Ergebnisse in mehrere Seiten auf, dies wird jetzt auch vom SerienRecorder unterstützt. Die richtige Anzahl Folgen wird angezeigt, außerdem kann man über die Bouquet Tasten die Seiten wechseln, mit der Besonderheit, dass man von Seite 1 mit "Bouquet runter" direkt zur letzten Seite springen kann. Die Ergebnisse werden zwischengespeichert, sodass sie während einer Sitzung nur einmal heruntergeladen werden.
-    - Es kann jetzt eingestellt werden wie groß der SerienPlaner Cache sein soll, d.h. wie viele Tage im Voraus die Planerdaten beim Auto-Check heruntergeladen und gespeichert werden sollen.
-    - Die Sendetermine-Liste wird jetzt wesentlich schneller geöffnet. Zusätzlich greift die Option "Suche Aufnahme auf HDD" jetzt auch in diesem Dialog. Wenn die Option in den Einstellungen auf "Nein" steht, dann werden auch in der Sendetermine Liste keine HDD Symbole mehr angezeigt.
+    - Fehler beim Lesen vom web werden in eine separate Datei im Log-Verzeichnis geschrieben, wenn die entsprechende Option im globalen Setup aktiviert ist.
+    - Verbesserte Anzeige bei der Serien-Suche, falls es mehr Treffer gibt als angezeigt.
+    - Beim Auto-Check wird jetzt bis zu 5 mal versucht die Webseite abzurufen, falls es zu einem Fehler gekommen ist. Es wird eine entsprechende Zeile im Log ausgegeben wenn weitere Abrufversuche nötig waren.
+    - Optimiertes Laden der Cover (sollte jetzt doppelt so schnell gehen)
 
 Bugfixes:
-    - Löschen von Timern
-    - Manuell aktivierter Timer wird in der db aktualisiert
-    - Timererstellung: Bei aktivierter Optimierung "Zeitspanne für Timersuche einschränken" wurden KEINE Timer für Episoden ohne Staffelangabe erstellt.
-    - Episoden-Liste zeigt jetzt auch Episoden an für die es keine Staffel gibt
-    - Bei einem Fehler bei Download der Serienplaner-Daten fuhr die Box in DSB, ohne die Sendetermine abzufragen und Timer zu erstellen.
-    - Beim Suchen nach Serien (blaue Taste) wurde jedes mal eine neue Instanz der serienRecMarker erstellt.
-    - Sortierung der Sendetermine im AutoCheck: Berücksichtigung des Jahreswechsels.
-    - Auto-Check Timer nicht starten wenn Auto-Check auf manuell gestellt ist.
-    - Deaktivierte Serien-Marker werden jetzt beim Auto-Check korrekt behandelt und nicht mehr bei Wunschliste abgerufen
-    - Es wurden falsche Timer erstellt (für Termine ausserhalb der erlaubten Uhrzeit), selbst wenn es passende Wiederholungen gab.
+    - Greenscreen bei EXIT Setup in Episodenliste
+    - GS bei Notification (falsche Großschreibung)
+    - Episoden werden wieder korrekt markiert und lassen sich hinzufügen und löschen
+    - Die Cache-Files für Planerdaten und Sendetermine wurden nicht gelesen.
+    - Herunterfahren der Box im Zusammenhang mit EPGRefresh 
+    - Der Episoden-Informationen Screen kann jetzt wie beschrieben auch mit der roten Taste verlassen werden
+    - Anpassung an geändertes Encoding der Wunschliste Webseite 
 
 Änderungen:
-    - Behandlung von deaktivierten Timern:
-      1. Beim AutoCheck wird versucht, Timer zu aktivieren, wenn der Konflikt nicht mehr vorhanden ist.
-      2. Wird ein neuer Termin gefunden, dann wird für diesen Termin ein Timer erstellt. Der deaktivierte Timer wird bei der Anzahl der bereits erstellten Timer NICHT berücksichtigt.
-    - Default-Zeit für Auto-Update von 06:00 auf 08:00 geändert
-    - Text für Log-Eintrag bei bei falscher EPGRefresh-Version auf "EPGRefresh (v2.1.1 or higher) not installed!" geändert
-    - Verbesserte Fehlerbehandlung in einigen Funktionen
-    - Verbesserte Anzeige aktivierte/deaktivierte Serien-Marker im Serien-Marker Dialog und im Log
-    - Optimierung des Serien-Planer Caches
-    - Optimiertes Laden der Picons
-    - Optimiertes Laden der Episoden-Liste
-    - Optimierungen an der Datenbank - beim Starten wird die Datenbank analysiert um Abfragen schneller ausführen zu können.
-    - Optimierungen am Serien-Marker Screen - Anzahl der möglichen Datenbankzugriffe wurde durch ein JOIN reduziert.
-    - Datenbank wird jetzt auf Kompatibilität überprüft
+    - Die blaue Taste öffnet jetzt auch in der SerienMarker-Ansicht die Timer-Liste. Die Funktion "Serie suchen" wird durch langen Tastendruck auf die blaue Taste gestartet.
+    - Vor- und Nachlaufzeiten im Serien-Marker werden auch dann korrekt angezeigt wenn sie für den Marker auf 0 gesetzt sind.
+    - Suchbegriff für Serien-Suche wird für Verfeinerung beibehalten
+    - Manuelle Timer werden auch deaktiviert angelegt
+    - Falls für die Sendung kein EIT ermittelt werden konnte, kommt das VPS Plugin durcheinander und nimmt u.U. die Sendung gar nicht auf. Deswegen wird in diesem Fall VPS für diesen Timer abgeschaltet.
+    - Timeout auf 10 Sekunden herabgesetzt, damit die Wartezeit bei den Fehlversuchen nicht zu lange wird.
 	
 	
 	
