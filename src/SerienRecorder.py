@@ -400,15 +400,15 @@ def retry(times, func, *args, **kwargs):
 		#writeLog(_("[Serien Recorder] Versuche Webseite abzurufen..."), True)
 		d = func(*args, **kwargs)
 		d.addCallbacks(deferred.callback, error)
-	def error(error):
-		errorList.append(error)
+	def error(retryError):
+		errorList.append(retryError)
 		# Retry
 		if len(errorList) < times:
-			writeLog(_("[Serien Recorder] Fehler beim Abrufen der Webseite, versuche erneut..."), True)
+			writeLog(_("[Serien Recorder] Fehler beim Abrufen von ' %s ', versuche es noch %d mal...") % (args[1], times - len(errorList)), True)
 			run()
 		# Fail
 		else:
-			writeLog(_("[Serien Recorder] Abrufen der Webseite auch nach mehreren Versuchen nicht möglich!"), True)
+			writeLog(_("[Serien Recorder] Abrufen von ' %s ' auch nach mehreren Versuchen nicht möglich!") % args[1], True)
 			deferred.errback(errorList)
 	run()
 	return deferred
@@ -11059,8 +11059,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 	def parseData(self, data):
 		data = processDownloadedData(data)
 		infoText = ""
-		#info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?<p class="clear mb4"></p>.(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="small credits">(.*?)</p>(.*?))?<div class="clear"></div>', data, re.S)
-		info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?<p class="clear mb4"></p>.(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="credits">(.*?)</p>(.*?))?<div class="clear"></div>', data, re.S)
+		info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?(?:<p class="clear mb4"></p>.)+(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="credits">(.*?)</p>(.*?))?<div class="clear mb8"></div>', data, re.S)
 		if info:
 			for transmission,otransmission,ranking,description,credit,cast in info:
 				if transmission:
