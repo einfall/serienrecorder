@@ -259,7 +259,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.5-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.6-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -297,8 +297,9 @@ serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePat
 #dbTmp = sqlite3.connect("%sSR_Tmp.db" % config.plugins.serienRec.databasePath.value)
 dbTmp = sqlite3.connect(":memory:")
 dbTmp.text_factory = lambda x: str(x.decode("utf-8"))
-dbSerRec = sqlite3.connect(serienRecDataBase)
-dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
+dbSerRec = None
+#dbSerRec = sqlite3.connect(serienRecDataBase)
+# dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 
 autoCheckFinished = False
 refreshTimer = None
@@ -1104,15 +1105,14 @@ def addToAddedList(seriesName, fromEpisode, toEpisode, season, episodeTitle):
 def initDB():
 	global dbSerRec
 	
-	if not os.path.exists(serienRecDataBase):
-		try:
-			dbSerRec = sqlite3.connect(serienRecDataBase)
-			dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
-		except:
-			writeLog(_("[Serien Recorder] Fehler beim Initialisieren der Datenbank"))
-			Notifications.AddPopup(_("[Serien Recorder]\nFehler:\nDatenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!"), MessageBox.TYPE_INFO, timeout=10)
-			return False
-	
+	try:
+		dbSerRec = sqlite3.connect(serienRecDataBase)
+		dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
+	except:
+		writeLog(_("[Serien Recorder] Fehler beim Initialisieren der Datenbank"))
+		Notifications.AddPopup(_("[Serien Recorder]\nDatenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!"), MessageBox.TYPE_INFO, timeout=10)
+		return False
+
 	if os.path.getsize(serienRecDataBase) == 0:
 		cCursor = dbSerRec.cursor()
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS dbInfo (Key TEXT NOT NULL UNIQUE, 
@@ -1209,7 +1209,7 @@ def initDB():
 						break
 					elif dbValue > config.plugins.serienRec.dbversion.value:
 						writeLog(_("[Serien Recorder] Datenbankversion nicht kompatibel: SerienRecorder Version muss mindestens %s sein.") % dbValue)
-						Notifications.AddPopup(_("[Serien Recorder]\nFehler:\nDie Datenbank ist mit dieser SerienRecorder Version nicht kompatibel.\nAktualisieren Sie mindestens auf Version %s!") % dbValue, MessageBox.TYPE_INFO, timeout=10)
+						Notifications.AddPopup(_("[Serien Recorder]\nDie Datenbank ist mit dieser SerienRecorder Version nicht kompatibel.\nAktualisieren Sie mindestens auf Version %s!") % dbValue, MessageBox.TYPE_INFO, timeout=10)
 						dbIncompatible = True
 		cCursor.close()
 
@@ -2603,7 +2603,7 @@ class serienRecCheckForRecording():
 
 			if config.plugins.serienRec.longLogFileName.value:
 				shutil.copy(logFile, logFileSave)
-			
+
 			global autoCheckFinished
 			autoCheckFinished = True
 
@@ -3504,17 +3504,23 @@ class serienRecCheckForRecording():
 					self.gotoDeepStandby(True)
 			else:
 				self.gotoDeepStandby(True)
-				
-	def gotoDeepStandby(self, answer):
-		if answer and not Screens.Standby.inStandby:
-			if config.plugins.serienRec.afterAutocheck.value == "2":
-				for each in self.MessageList:
-					Notifications.RemovePopup(each[3])
 
-				print "[Serien Recorder] gehe in Deep-Standby"
-				writeLog(_("[Serien Recorder] gehe in Deep-Standby"))
-				#self.session.open(Screens.Standby.TryQuitMainloop, 1)
-				Notifications.AddNotification(Screens.Standby.TryQuitMainloop, 1)
+	def gotoDeepStandby(self, answer):
+		if answer:
+			if config.plugins.serienRec.afterAutocheck.value == "2":
+				if not NavigationInstance.instance.RecordTimer.isRecording():
+					for each in self.MessageList:
+						Notifications.RemovePopup(each[3])
+
+					print "[Serien Recorder] gehe in Deep-Standby"
+					writeLog(_("[Serien Recorder] gehe in Deep-Standby"))
+					if Screens.Standby.inStandby:
+						RecordTimerEntry.TryQuitMainloop()
+					else:
+						Notifications.AddNotificationWithID("Shutdown", Screens.Standby.TryQuitMainloop, 1)
+				else:
+					print "[Serien Recorder] Eine laufenden Aufnahme verhindert den Deep-Standby"
+					writeLog(_("[Serien Recorder] Eine laufenden Aufnahme verhindert den Deep-Standby"))
 			else:
 				print "[Serien Recorder] gehe in Standby"
 				writeLog(_("[Serien Recorder] gehe in Standby"))
@@ -8216,8 +8222,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.close((True, self.setupModified, True))
 		else:		
 			global dbSerRec
-			f = dbSerRec.text_factory
-			dbSerRec.close()
+			if dbSerRec is not None:
+				dbSerRec.close()
 			if not os.path.exists("%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value):
 				self.session.openWithCallback(self.callDbChangedMsg, MessageBox, _("Im ausgewählten Verzeichnis existiert noch keine Datenbank.\nSoll die bestehende Datenbank kopiert werden?"), MessageBox.TYPE_YESNO, default = True)
 			else:
@@ -8230,11 +8236,16 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 	def callDbChangedMsg(self, answer):
 		global serienRecDataBase
 		if answer:
-			shutil.copyfile(serienRecDataBase, "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value)
-			serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
-			global dbSerRec
-			dbSerRec = sqlite3.connect(serienRecDataBase)
-			dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
+			try:
+				shutil.copyfile(serienRecDataBase, "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value)
+				serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
+				global dbSerRec
+				dbSerRec = sqlite3.connect(serienRecDataBase)
+				dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
+			except:
+				writeLog(_("[Serien Recorder] Fehler beim Kopieren der Datenbank"))
+				Notifications.AddPopup(_("[Serien Recorder]\nDatenbank konnte nicht kopiert werden.\nDer alte Datenbankpfad wird wiederhergestellt!"), MessageBox.TYPE_INFO, timeout=10)
+				serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
 		else:
 			serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
 		
@@ -12679,10 +12690,7 @@ def autostart(reason, **kwargs):
 		session = kwargs["session"]
 		color_print = "\033[93m"
 		color_end = "\33[0m"
-		
-		dbSerRec = sqlite3.connect(serienRecDataBase)
-		dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
-		
+
 		if initDB():
 			if config.plugins.serienRec.autochecktype.value in ("1", "2") and (config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value):
 				print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
