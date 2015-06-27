@@ -259,7 +259,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.6-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.7-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -2340,6 +2340,7 @@ class serienRecCheckForRecording():
 		
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
+		writeLog(_("\n---------' %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
 
 		cCursor.execute("SELECT * FROM SerienMarker")
 		row = cCursor.fetchone()
@@ -8563,7 +8564,10 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 	def ok(self):
 		ConfigListScreen.keyOK(self)
 		if self["config"].instance.getCurrentIndex() == 0:
-			start_dir = self.savetopath.value
+			if not self.savetopath.value:
+				start_dir = config.plugins.serienRec.savetopath.value
+			else:
+				start_dir = self.savetopath.value
 			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, _("Aufnahme-Verzeichnis auswählen"))
 
 	def selectedMediaFile(self, res):
