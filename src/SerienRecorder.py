@@ -176,7 +176,12 @@ def ReadConfigFile():
 	config.plugins.serienRec.AutoBackup = ConfigYesNo(default = False)
 	config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.eventid = ConfigYesNo(default = True)
-	config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit")), ("2", _("nach EPGRefresh"))], default = "1")
+	# Remove EPGRefresh action for VU+ Boxes
+	try:
+		from Tools.HardwareInfoVu import HardwareInfoVu
+		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit"))], default = "1")
+	except:
+		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit")), ("2", _("nach EPGRefresh"))], default = "1")
 	config.plugins.serienRec.update = ConfigYesNo(default = False)
 	config.plugins.serienRec.updateInterval = ConfigInteger(0, (0,24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
@@ -259,7 +264,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.7-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.8-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -306,6 +311,8 @@ refreshTimer = None
 refreshTimerConnection = None
 coverToShow = None
 runAutocheckAtExit = False
+startTimer = None
+startTimerConnection = None
 
 dayCache = {}
 termineCache = {}
@@ -2426,12 +2433,7 @@ class serienRecCheckForRecording():
 			print "%sSerien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
 		elif not self.manuell and config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
-			acttime = (lt[3] * 60 + lt[4])
-			deltime = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
-			if acttime < deltime:
-				deltatime = deltime - acttime
-			else:
-				deltatime = abs(1440 - acttime + deltime)
+			deltatime = self.getNextAutoCheckTimer(lt)
 			refreshTimer = eTimer()
 			if isDreamboxOS:
 				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
@@ -2439,9 +2441,9 @@ class serienRecCheckForRecording():
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
-			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value)), self.color_end)
+			print "%s[Serien Recorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
-			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Minuten") % str(deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value)), True)
+			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 		elif not self.manuell and config.plugins.serienRec.autochecktype.value == "2":
 			try:
 				from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
@@ -2456,6 +2458,15 @@ class serienRecCheckForRecording():
 			runAutocheckAtExit = False
 			self.startCheck(True)
 
+	def getNextAutoCheckTimer(self, lt):
+		acttime = (lt[3] * 60 + lt[4])
+		deltime = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
+		if acttime < deltime:
+			deltatime = deltime - acttime
+		else:
+			deltatime = abs(1440 - acttime + deltime)
+		return deltatime
+
 	def startCheck(self, amanuell=False):
 		self.manuell = amanuell
 		print "%s[Serien Recorder] settings:%s" % (self.color_print, self.color_end)
@@ -2465,6 +2476,7 @@ class serienRecCheckForRecording():
 
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
+		writeLog(_("\n---------' %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
 
 		global logFile
 		global logFileSave
@@ -2497,22 +2509,18 @@ class serienRecCheckForRecording():
 			print "%s[Serien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
 		elif config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
-			acttime = (lt[3] * 60 + lt[4])
-			deltime = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
-			if acttime < deltime:
-				deltatime = deltime - acttime
-			else:
-				deltatime = abs(1440 - acttime + deltime)
+			deltatime = self.getNextAutoCheckTimer(lt)
 			refreshTimer = eTimer()
 			if isDreamboxOS:
 				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
 			else:
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
+
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
-			print "%s[Serien Recorder] Verbleibende Zeit: %s Minuten%s" % (self.color_print, str(deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value)), self.color_end)
+			print "%s[Serien Recorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
-			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Minuten") % str(deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value)), True)
+			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if config.plugins.serienRec.AutoBackup.value:
 			BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
@@ -2599,8 +2607,8 @@ class serienRecCheckForRecording():
 			# Statistik
 			self.speedEndTime = time.clock()
 			speedTime = (self.speedEndTime - self.speedStartTime)
-			writeLog(_("---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------") % str(speedTime), True)
-			print "---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime)
+			writeLog(_("---------' AutoCheckTimer Beendet ( Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------") % str(speedTime), True)
+			print "---------' AutoCheckTimer Beendet ( Ausführungsdauer: %s Sek.)'----------------------------------------------------------------------------" % str(speedTime)
 
 			if config.plugins.serienRec.longLogFileName.value:
 				shutil.copy(logFile, logFileSave)
@@ -2919,18 +2927,33 @@ class serienRecCheckForRecording():
 	def adjustEPGtimes(self, current_time):
 		cTimer = dbSerRec.cursor()
 		cCursor = dbSerRec.cursor()
+		cCursorTmp = dbTmp.cursor()
 
 		writeLog(_("\n---------' Aktualisiere Timer '-------------------------------------------------------------------------------\n"), True)
-		
+
 		##############################
 		#
 		# try to get eventID (eit) from epgCache
 		#
 		if config.plugins.serienRec.eventid.value:
-			cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>? AND EventID=0", (current_time, ))
+			cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>?", (current_time, ))
 			for row in cCursor:
 				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
-						
+
+				refreshTitle = False
+				new_serien_title = serien_title
+				cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
+				tmpRow = cCursorTmp.fetchone()
+				if tmpRow:
+					(new_serien_name, new_staffel, new_episode, new_serien_title) = tmpRow
+					#writeLog(_("[Serien Recorder] Neuer Folgenname: ' [%s] %s -> %s '") % (serien_name, serien_title, new_serien_title))
+					if new_serien_title != serien_title:
+						refreshTitle = True
+
+				# Skip if nothing to change
+				if eit > 0 and refreshTitle == False:
+					continue
+
 				(margin_before, margin_after) = getMargins(serien_name, webChannel)
 		
 				# event_matches = STBHelpers.getEPGEvent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
@@ -2951,17 +2974,41 @@ class serienRecCheckForRecording():
 							# suche in aktivierten Timern
 							for timer in recordHandler.timer_list:
 								if timer and timer.service_ref:
-									#if (timer.begin == int(serien_time)) and (timer.eit != eit):
-									if (timer.begin == int(serien_time)) and (timer.eit == 0) and (str(timer.service_ref).lower() == stbRef.lower()):
+									if config.plugins.serienRec.TimerName.value == "0":
+										timer_name = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+									elif config.plugins.serienRec.TimerName.value == "2":
+										timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+									else:
+										timer_name = serien_name
+
+									timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+
+									if (timer.begin == int(serien_time)) and ((timer.eit == 0) or ((timer.name != timer_name) or (timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
 										timer.begin = start_unixtime
 										timer.end = end_unixtime
 										timer.eit = eit
+
+										#remember old timer name and description
+										old_timername = timer.name
+										old_timerdescription = timer.description
+
+										timer.name = timer_name
+										timer.description = timer_description
+
 										NavigationInstance.instance.RecordTimer.timeChanged(timer)
-										sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=0"
-										cTimer.execute(sql, (start_unixtime, eit, serien_time, stbRef.lower()))
+										NavigationInstance.instance.RecordTimer.saveTimer()
+										sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=0"
+										cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
 										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 										old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-										writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
+										if int(start_unixtime) != int(serien_time):
+											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
+										elif eit != 0:
+											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> Event ID wurde hinzugefügt @ %s") % (title, webChannel), True)
+										elif old_timername != timer_name:
+											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timername, timer_name, webChannel), True)
+										elif old_timername != timer_name:
+											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timerdescription, timer_description, webChannel), True)
 										self.countTimerUpdate += 1
 										timerFound = True
 										break
@@ -2969,17 +3016,42 @@ class serienRecCheckForRecording():
 								# suche in deaktivierten Timern
 								for timer in recordHandler.processed_timers:
 									if timer and timer.service_ref:
+										if config.plugins.serienRec.TimerName.value == "0":
+											timer_name = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+										elif config.plugins.serienRec.TimerName.value == "2":
+											timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+										else:
+											timer_name = serien_name
+
+										timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+
 										#if (timer.begin == int(serien_time)) and (timer.eit != eit):
-										if (timer.begin == int(serien_time)) and (timer.eit == 0) and (str(timer.service_ref).lower() == stbRef.lower()):
+										if (timer.begin == int(serien_time)) and ((timer.eit == 0) or ((timer.name != timer_name) or (timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
 											timer.begin = start_unixtime
 											timer.end = end_unixtime
 											timer.eit = eit
+
+											#remember old timer name and description
+											old_timername = timer.name
+											old_timerdescription = timer.description
+
+											timer.name = timer_name
+											timer.description = timer_description
+
 											NavigationInstance.instance.RecordTimer.timeChanged(timer)
-											sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=0"
-											cTimer.execute(sql, (start_unixtime, eit, serien_time, stbRef.lower()))
+											NavigationInstance.instance.RecordTimer.saveTimer()
+											sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=0"
+											cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
 											show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 											old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
+											if int(start_unixtime) != int(serien_time):
+												writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
+											elif eit != 0:
+												writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> Event ID wurde hinzugefügt @ %s") % (title, webChannel), True)
+											elif old_timername != timer_name:
+												writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timername, timer_name, webChannel), True)
+											elif old_timername != timer_name:
+												writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timerdescription, timer_description, webChannel), True)
 											self.countTimerUpdate += 1
 											timerFound = True
 											break
@@ -3476,8 +3548,8 @@ class serienRecCheckForRecording():
 		if self.countTimerFromWishlist > 0:
 			writeLog(_("[Serien Recorder] %s Timer vom Merkzettel wurde(n) erstellt!") % str(self.countTimerFromWishlist), True)
 			print "[Serien Recorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist)
-		writeLog(_("---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------") % str(speedTime), True)
-		print "---------' AutoCheckTimer Beendet ( took: %s sec.)'---------------------------------------------------------------------------------------" % str(speedTime)
+		writeLog(_("---------' AutoCheckTimer Beendet ( Ausführungsdauer: %s Sek.)'---------------------------------------------------------------------------") % str(speedTime), True)
+		print "---------' AutoCheckTimer Beendet ( Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------------" % str(speedTime)
 		if (config.plugins.serienRec.showNotification.value in ("2", "3")) and (not self.manuell):
 			statisticMessage = _("Serien vorgemerkt: %s/%s\nTimer erstellt: %s\nTimer aktualisiert: %s\nTimer mit Konflikten: %s\nTimer vom Merkzettel: %s") % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate), str(self.countNotActiveTimer), str(self.countTimerFromWishlist))
 			newSeasonOrEpisodeMessage = _("")
@@ -3491,6 +3563,10 @@ class serienRecCheckForRecording():
 		
 		global autoCheckFinished
 		autoCheckFinished = True
+
+		lt = time.localtime()
+		deltatime = self.getNextAutoCheckTimer(lt)
+		writeLog(_("\n[Serien Recorder] Verbleibende Zeit bis zum nächsten Auto-Check: %s Stunden") % str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		# in den deep-standby fahren.
 		self.askForDSB()
@@ -5762,6 +5838,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		self.serie_url = serie_url
 		self.serien_cover = serien_cover
 		self.skin = None
+		self.serien_id = 0
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("umschalten ausgewählter Sendetermin aktiviert/deaktiviert")),
@@ -5791,8 +5868,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			"displayHelp_long" : self.showManual,
 		}, 0)
 
-		self.FilterEnabled = True
-		self.title_txt = _("gefiltert")
+		self.FilterMode = 1
+		self.title_txt = _("aktive Sender")
 		
 		self.changesMade = False
 		
@@ -5813,9 +5890,12 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_ok'].setText(_("Auswahl"))
-		if self.FilterEnabled:
+		if self.FilterMode is 1:
+			self['text_yellow'].setText(_("Filter umschalten"))
+			self.title_txt = _("aktive Sender")
+		elif self.FilterMode is 2:
 			self['text_yellow'].setText(_("Filter ausschalten"))
-			self.title_txt = _("gefiltert")
+			self.title_txt = _("Marker Sender")
 		else:
 			self['text_yellow'].setText(_("Filter einschalten"))
 			self.title_txt = _("alle")
@@ -5964,11 +6044,11 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			showCover(self.serien_cover, self, self.serien_cover)
 			
 		raw = re.findall(".*?(\d+)", self.serie_url)
-		serien_id = raw[0]
-		print serien_id
+		self.serien_id = raw[0]
+		print self.serien_id
 		
 		from SearchEvents import SearchEvents
-		SearchEvents(self.serien_name, serien_id, termineCache, self.resultsEvents, self.dataError).request()
+		SearchEvents(self.serien_name, self.serien_id, termineCache, self.resultsEvents, self.dataError).request()
 
 	def resultsEvents(self, sendetermine_list):
 		self.sendetermine_list = []
@@ -5981,7 +6061,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		marginList = {}
 
 		for serien_name,sender,datum,startzeit,endzeit,staffel,episode,title,status in sendetermine_list:
-			if self.FilterEnabled:
+			if self.FilterMode > 0:
 				# filter sender
 				if not sender in channelList:
 					channelList[sender] = self.checkSender(sender)
@@ -6323,7 +6403,15 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 	def checkSender(self, mSender):
 		fSender = []
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (mSender.lower(),))
+		cCursor.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url LIKE ?", ('%'+self.serien_id,))
+		row = cCursor.fetchone()
+		if row:
+			(alleSender, id) = row
+
+		if alleSender == 1 or self.FilterMode == 1:
+			cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (mSender.lower(),))
+		else:
+			cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels, SenderAuswahl WHERE LOWER(WebChannel)=? AND LOWER(SenderAuswahl.ErlaubterSender)=? AND SenderAuswahl.ID=?", (mSender.lower(),mSender.lower(),id))
 		row = cCursor.fetchone()
 		if row:
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = row
@@ -6376,14 +6464,18 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		self.loading = True
 		self.chooseMenuList.setList(map(self.buildList_termine, self.sendetermine_list))
 
-		if self.FilterEnabled:
-			self.FilterEnabled = False
+		if self.FilterMode is 0:
+			self.FilterMode = 1
+			self['text_yellow'].setText(_("Filter umschalten"))
+			self.title_txt = _("aktive Sender")
+		elif self.FilterMode is 1:
+			self.FilterMode = 2
+			self['text_yellow'].setText(_("Filter ausschalten"))
+			self.title_txt = _("Marker Sender")
+		else:
+			self.FilterMode = 0
 			self['text_yellow'].setText(_("Filter einschalten"))
 			self.title_txt = _("alle")
-		else:
-			self.FilterEnabled = True
-			self['text_yellow'].setText(_("Filter ausschalten"))
-			self.title_txt = _("gefiltert")
 			
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche ' %s '") % self.serien_name)
@@ -7740,7 +7832,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				self.list.append(getConfigListEntry(_("Sendetermine beim automatischen Suchlauf speichern:"), config.plugins.serienRec.planerCacheEnabled))
 			if config.plugins.serienRec.planerCacheEnabled.value:
 				self.list.append(getConfigListEntry(_("    X Tage im Voraus speichern:"), config.plugins.serienRec.planerCacheSize))
-			self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
+			if not isDreamboxOS:
+				self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		#if config.plugins.serienRec.updateInterval.value == 24:
 		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
@@ -8023,7 +8116,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.showAllButtons :          (_("Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt."), "1.3_Die_globalen_Einstellungen"),
 		    config.plugins.serienRec.autochecktype :           (_("Bei 'manuell' wird kein automatischer Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
 		                                                        "Bei 'zur gewählten Uhrzeit' wird der automatische Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
-		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer)."), "1.3_Die_globalen_Einstellungen"),
+		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer) - nicht verfügbar auf VU+ Boxen."), "1.3_Die_globalen_Einstellungen"),
 		    config.plugins.serienRec.planerCacheSize :         (_("Es werden nur, für die eingestellte Anzahl Tage, Daten im Voraus heruntergeladen und gespeichert."), "Daten_speichern"),
 			config.plugins.serienRec.writeErrorLog:			   (_("Bei 'ja' werden Verbindungs- und Lade-Fehler in einer eigenen Datei protokolliert."), "Das_Log"),
 		}			
@@ -12678,9 +12771,9 @@ def getNextWakeup():
 		# überprüfe ob die aktuelle zeit größer ist als der clock-timer + 1 day.
 		if int(current_time) > int(begin):
 			print color_print+"[Serien Recorder] WakeUp-Timer + 1 day."+color_end
-			begin = begin + 86400
+			begin += 86400
 		# 5 min. bevor der Clock-Check anfängt wecken.
-		begin = begin - 300
+		begin -= 300
 
 		wakeupUhrzeit = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(begin)))
 		print color_print+"[Serien Recorder] Deep-Standby WakeUp um %s" % wakeupUhrzeit +color_end
@@ -12695,10 +12788,25 @@ def autostart(reason, **kwargs):
 		color_print = "\033[93m"
 		color_end = "\33[0m"
 
+		global startTimer
+		global startTimerConnection
+		lt = time.localtime()
+		uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
+		writeLog(_("\nSerienRecorder Start: %s") % uhrzeit, True)
+
+		def startAutoCheckTimer():
+			serienRecCheckForRecording(session, False)
+
 		if initDB():
 			if config.plugins.serienRec.autochecktype.value in ("1", "2") and (config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value):
 				print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
-				serienRecCheckForRecording(session, False)
+				startTimer = eTimer()
+				if isDreamboxOS:
+					startTimerConnection = startTimer.timeout.connect(startAutoCheckTimer)
+				else:
+					startTimer.callback.append(startAutoCheckTimer)
+				startTimer.start(60 * 1000, True)
+				#serienRecCheckForRecording(session, False)
 			else:
 				print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
 
