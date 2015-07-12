@@ -173,6 +173,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.justplay = ConfigYesNo(default = False)
 	config.plugins.serienRec.justremind = ConfigYesNo(default = False)
 	config.plugins.serienRec.zapbeforerecord = ConfigYesNo(default = False)
+	config.plugins.serienRec.afterEvent = ConfigSelection(choices = [("0", _("nichts")), ("1", _("in Standby gehen")), ("2", _("in Deep-Standby gehen")), ("3", _("automatisch"))], default="3")
 	config.plugins.serienRec.AutoBackup = ConfigYesNo(default = False)
 	config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.eventid = ConfigYesNo(default = True)
@@ -264,7 +265,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.8-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.9-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -2065,9 +2066,6 @@ class serienRecBaseScreen():
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -2267,6 +2265,7 @@ class serienRecAddTimer():
 					justplay = config.plugins.serienRec.justplay.value,
 					zapbeforerecord = config.plugins.serienRec.zapbeforerecord.value,
 					justremind = config.plugins.serienRec.justremind.value,
+					afterEvent = int(config.plugins.serienRec.afterEvent.value),
 					dirname = dirname)
 			except Exception:
 				sys.exc_clear()
@@ -2280,7 +2279,7 @@ class serienRecAddTimer():
 					eit,
 					disabled,
 					config.plugins.serienRec.justplay.value | config.plugins.serienRec.justremind.value,
-					AFTEREVENT.AUTO,
+					afterEvent = int(config.plugins.serienRec.afterEvent.value),
 					dirname = dirname,
 					tags = None)
 
@@ -4093,7 +4092,6 @@ class serienRecTimer(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
@@ -4186,9 +4184,6 @@ class serienRecTimer(Screen, HelpableScreen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -4491,7 +4486,6 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
 			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
@@ -4578,9 +4572,6 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Webbrowser")
 			
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -4693,7 +4684,6 @@ class serienRecMarker(Screen, HelpableScreen):
 				"green"    : (self.keyGreen, _("zur Senderauswahl")),
 				"yellow"   : (self.keyYellow, _("Sendetermine für ausgewählte Serien anzeigen")),
 				"blue"	   : (self.keyBlue, _("Ansicht Timer-Liste öffnen")),
-				"blue_long": (self.keyBlueLong, _("Serie manuell suchen")),
 				"info"	   : (self.keyCheck, _("Suchlauf für Timer starten")),
 				"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
 				"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
@@ -4705,7 +4695,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 				"cancel_long" : (self.keyExit, _("zurück zur Serienplaner-Ansicht")),
 				"0"		   : (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-				"1"		   : (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+				"1"		   : (self.searchSeries, _("Serie manuell suchen")),
 				"3"		   : (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 				"4"		   : (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			    "5"		   : (self.episodeList, _("Episoden der ausgewählten Serie anzeigen")),
@@ -4721,7 +4711,6 @@ class serienRecMarker(Screen, HelpableScreen):
 				"green"    : (self.keyGreen, _("zur Senderauswahl")),
 				"yellow"   : (self.keyYellow, _("Sendetermine für ausgewählte Serien anzeigen")),
 				"blue"	   : (self.keyBlue, _("Ansicht Timer-Liste öffnen")),
-				"blue_long": (self.keyBlueLong, _("Serie manuell suchen")),
 				"info"	   : (self.keyCheck, _("Suchlauf für Timer starten")),
 				"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
 				"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
@@ -4733,7 +4722,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 				"cancel_long" : (self.keyExit, _("zurück zur Serienplaner-Ansicht")),
 				"0"		   : (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-				"1"		   : (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
+				"1"		   : (self.searchSeries, _("Serie manuell suchen")),
 				"3"		   : (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 				"4"		   : (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			    "5"		   : (self.episodeList, _("Episoden der ausgewählten Serie anzeigen")),
@@ -4767,19 +4756,20 @@ class serienRecMarker(Screen, HelpableScreen):
 		self['text_green'].setText(_("Sender auswählen."))
 		self['text_ok'].setText(_("Staffel(n) auswählen."))
 		self['text_yellow'].setText(_("Sendetermine"))
+		self.num_bt_text[1][0] = _("Serie suchen")
 		self.num_bt_text[0][1] = _("Episoden-Liste")
 		self.num_bt_text[2][2] = _("Timer suchen")
 
 		if longButtonText:
 			self.num_bt_text[4][2] = _("Setup Serie (lang: global)")
 			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
-			self['text_blue'].setText(_("Timer-Liste (lang: Serie suchen)"))
+			self['text_blue'].setText(_("Timer-Liste"))
 			if not showMainScreen:
 				self.num_bt_text[0][2] = _("Exit (lang: Serienplaner)")
 		else:
 			self.num_bt_text[4][2] = _("Setup Serie/global")
 			self['text_red'].setText(_("(De)aktivieren/Löschen"))
-			self['text_blue'].setText(_("Timer-Liste/Serie suchen"))
+			self['text_blue'].setText(_("Timer-Liste"))
 			if not showMainScreen:
 				self.num_bt_text[0][2] = _("Exit/Serienplaner")
 
@@ -4863,9 +4853,6 @@ class serienRecMarker(Screen, HelpableScreen):
 		
 	def showProposalDB(self):
 		self.session.openWithCallback(self.SetupFinished, serienRecShowSeasonBegins)
-
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
 
 	def serieInfo(self):
 		if self.loading:
@@ -5431,7 +5418,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		if self.modus == "config":
 			self.session.openWithCallback(self.readSerienMarker, serienRecTimer)
 
-	def keyBlueLong(self):
+	def searchSeries(self):
 		if self.modus == "config":
 			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
 
@@ -5537,7 +5524,6 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
@@ -5619,9 +5605,6 @@ class serienRecAddSerie(Screen, HelpableScreen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -5855,7 +5838,6 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
@@ -5957,9 +5939,6 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -6549,7 +6528,6 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
@@ -6885,7 +6863,6 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zum ausgewählten Sender auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zum ausgewählten Sender auf Wikipedia suchen")),
 			"0"		   : (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		   : (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		   : (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 			"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
@@ -7013,9 +6990,6 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
-
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
 
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
@@ -7846,6 +7820,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.list.append(getConfigListEntry(_("---------  TIMER:  --------------------------------------------------------------------------------------------")))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("Timer-Art:"), self.kindOfTimer))
+			self.list.append(getConfigListEntry(_("Nach dem Event:"), config.plugins.serienRec.afterEvent))
 		self.list.append(getConfigListEntry(_("Timervorlauf (in Min.):"), config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry(_("Timernachlauf (in Min.):"), config.plugins.serienRec.margin_after))
 		if config.plugins.serienRec.setupType.value == "1":
@@ -8034,11 +8009,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.tuner :                   (_("Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten."), "Anzahl_der_Tuner"),
 			config.plugins.serienRec.ActionOnNew :             (_("Wird eine neue Staffel oder Serie gefunden (d.h. Folge 1), wird die hier eingestellt Aktion ausgeführt:\n"
 			                                                    "  - 'keine': es erfolgt keine weitere Aktion.\n"
-																"  - 'nur Benachrichtigung': Es wird eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
-																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.\n"
+																"  - 'nur Benachrichtigung': Wurde eine neue Serie oder Staffel gefunden wirde eine Nachricht eingeblendet.\n"
 																"  - 'nur Marker anlegen': Es wird automatisch ein neuer Serienmarker für die gefundene Serie angelegt.\n"
-																"  - 'Benachrichtigung und Marker anlegen': Es wird sowohl ein neuer Serienmarker angelegt, als auch eine Nachricht auf dem Bildschirm eingeblendet, die auf den Staffel-/Serienstart hinweist. "
-																"Diese Nachricht bleibt solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) wird.\n"
+																"  - 'Benachrichtigung und Marker anlegen': Es wird sowohl ein neuer Serienmarker angelegt, als auch eine Nachricht eingeblendet.\n"
 																"  - 'Nur Suche': Es wird nur eine Suche durchgeführt, die Ergebnisse können über Taste 3 abgerufen werden."), "Aktion_bei_neuer_Staffel"),
 			config.plugins.serienRec.ActionOnNewManuell :      (_("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht."), "Aktion_bei_neuer_Staffel"),
 			config.plugins.serienRec.deleteOlderThan :         (_("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
@@ -8057,6 +8030,11 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 																"  - 'umschalten': Es wird ein Timer erstellt, bei dem nur auf den aufzunehmenden Sender umgeschaltet wird. Es erfolgt KEINE Aufnahme\n"
 																"  - 'umschalten und aufnehmen': Es wird ein Timer erstellt, bei dem vor der Aufnahme auf den aufzunehmenden Sender umgeschaltet wird\n"
 																"  - 'Erinnerung': Es wird ein Timer erstellt, bei dem lediglich eine Erinnerungs-Nachricht auf dem Bildschirm eingeblendet wird. Es wird weder umgeschaltet, noch erfolgt eine Aufnahme"), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.afterEvent :              (_("Es kann ausgewählt werden, was nach dem Event passieren soll. Die Auswahlmöglichkeiten sind:\n"
+			                                                    "  - 'nichts': Die STB bleibt im aktuellen Zustand.\n"
+																"  - 'in Standby gehen': Die STB geht in den Standby\n"
+																"  - 'in Deep-Standby gehen': Die STB geht in den Deep-Standby\n"
+																"  - 'automatisch': Die STB entscheidet automatisch (Standardwert)"), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.margin_before :           (_("Die Vorlaufzeit für Aufnahmen in Minuten.\n"
 			                                                    "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem tatsächlichen Beginn der Sendung"), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.margin_after :            (_("Die Nachlaufzeit für Aufnahmen in Minuten.\n"
@@ -8192,6 +8170,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.setupType.save()
 		config.plugins.serienRec.savetopath.save()
 		config.plugins.serienRec.justplay.save()
+		config.plugins.serienRec.afterEvent.save()
 		config.plugins.serienRec.seriensubdir.save()
 		config.plugins.serienRec.seasonsubdir.save()
 		config.plugins.serienRec.seasonsubdirnumerlength.save()
@@ -9184,10 +9163,10 @@ class serienRecReadLog(Screen, HelpableScreen):
 			"up"    : (self.keyUp, _("eine Zeile nach oben")),
 			"down"  : (self.keyDown, _("eine Zeile nach unten")),
 			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"red"   : (self.keyRed, _("zurück zur vorherigen Ansicht")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -9262,9 +9241,6 @@ class serienRecReadLog(Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -9349,6 +9325,9 @@ class serienRecReadLog(Screen, HelpableScreen):
 	def keyCancel(self):
 		self.close()
 
+	def keyRed(self):
+		self.close()
+
 class serienRecShowConflicts(Screen, HelpableScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
@@ -9365,7 +9344,6 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 			"blue"	: (self.keyBlue, _("alle Einträge aus der Liste endgültig löschen")),
 			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
 		}, -1)
@@ -9443,9 +9421,6 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -9586,7 +9561,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self.addedlist_tmp = []
 		self.dbData = []
 		self.modus = "config"
-		
+
 		if skip:
 			self.onShown.append(self.functionWillBeDeleted)
 		else:
@@ -9607,7 +9582,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 
 	def callHelpAction(self, *args):
 		HelpableScreen.callHelpAction(self, *args)
-		
+
 	def setSkinProperties(self):
 		setSkinProperties(self)
 
@@ -9626,18 +9601,18 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
-		
+
 			self.displayTimer = eTimer()
 			if isDreamboxOS:
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-			
+
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
-		
+
 		#normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
@@ -9664,7 +9639,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self['bt_text'].show()
 			self['bt_info'].show()
 			self['bt_menu'].show()
-			
+
 			self['text_red'].show()
 			self['text_green'].show()
 			self['text_ok'].show()
@@ -9677,10 +9652,10 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
-		
+
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
-		
+
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -9708,7 +9683,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
-		
+
 	def showWishlist(self):
 		self.session.open(serienRecWishlist)
 
@@ -9755,7 +9730,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.session.open(Browser, True, SR_OperatingManual)
 		else:
 			self.session.open(serienRecPluginNotInstalledScreen, "Webbrowser")
-			
+
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
 
@@ -9765,7 +9740,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 	def setupClose(self, result):
 		if not result[2]:
 			self.close()
-		else:	
+		else:
 			if result[0]:
 				if config.plugins.serienRec.update.value:
 					serienRecCheckForRecording(self.session, False)
@@ -9774,7 +9749,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 
 			if result[1]:
 				self.readAdded()
-				
+
 	def readAdded(self):
 		self.addedlist = []
 		cCursor = dbSerRec.cursor()
@@ -9784,7 +9759,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			zeile = "%s - S%sE%s - %s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2), title)
 			self.addedlist.append((zeile.replace(" - dump", " - %s" % _("(Manuell hinzugefügt !!)")), Serie, Staffel, Episode, title, start_time, webChannel))
 		cCursor.close()
-		
+
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText(_("Diese Episoden werden nicht mehr aufgenommen !"))
 		self.addedlist_tmp = self.addedlist[:]
@@ -9792,7 +9767,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.addedlist_tmp.sort()
 		self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
 		self.getCover()
-			
+
 	def buildList(self, entry):
 		(zeile, Serie, Staffel, Episode, title, start_time, webChannel) = entry
 		return [entry,
@@ -9810,25 +9785,25 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if self.aStaffel == None or self.aStaffel == "":
 			return
 		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = _("von Episode:"))
-	
+
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
 		if self.aFromEpisode == None or self.aFromEpisode == "":
 			return
 		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = _("bis Episode:"))
-	
+
 	def answerToEpisode(self, aToEpisode):
 		self.aToEpisode = aToEpisode
-		if self.aToEpisode == "": 
+		if self.aToEpisode == "":
 			self.aToEpisode = self.aFromEpisode
-			
+
 		if self.aToEpisode == None: # or self.aFromEpisode == None or self.aStaffel == None:
 			return
 		else:
 			print "[Serien Recorder] Staffel: %s" % self.aStaffel
 			print "[Serien Recorder] von Episode: %s" % self.aFromEpisode
 			print "[Serien Recorder] bis Episode: %s" % self.aToEpisode
-		
+
 			if addToAddedList(self.aSerie, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump"):
 				self.readAdded()
 
@@ -9877,7 +9852,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.addedlist.remove(zeile)
 			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
 			self.delAdded = True;
-			
+
 	def keyGreen(self):
 		if self.delAdded:
 			cCursor = dbSerRec.cursor()
@@ -9885,7 +9860,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			dbSerRec.commit()
 			cCursor.close()
 		self.close()
-			
+
 	def keyYellow(self):
 		if len(self.addedlist_tmp) != 0:
 			if config.plugins.serienRec.addedListSorted.value:
@@ -9898,10 +9873,10 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 				config.plugins.serienRec.addedListSorted.setValue(True)
 			config.plugins.serienRec.addedListSorted.save()
 			configfile.save()
-			
+
 			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
 			self.getCover()
-		
+
 	def getCover(self):
 		if self.modus == "config":
 			check = self['config'].getCurrent()
@@ -9925,7 +9900,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			if serien_id:
 				serien_id = "/%s" % serien_id[0]
 		getCover(self, serien_name, serien_id)
-			
+
 	def keyLeft(self):
 		self[self.modus].pageUp()
 		self.getCover()
@@ -9951,7 +9926,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if answer:
 			self.keyGreen()
 		self.close()
-			
+
 	def keyCancel(self):
 		if self.delAdded:
 			self.session.openWithCallback(self.callDeleteMsg, MessageBox, _("Sollen die Änderungen gespeichert werden?"), MessageBox.TYPE_YESNO, default = True)
@@ -9979,7 +9954,6 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
@@ -10131,9 +10105,6 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def serieInfo(self):
 		check = self['config'].getCurrent()
 		if check == None:
@@ -10390,7 +10361,6 @@ class serienRecWishlist(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
@@ -10495,9 +10465,6 @@ class serienRecWishlist(Screen, HelpableScreen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -10825,7 +10792,6 @@ class serienRecShowInfo(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
@@ -10897,9 +10863,6 @@ class serienRecShowInfo(Screen, HelpableScreen):
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -11033,7 +10996,6 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
@@ -11104,9 +11066,6 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
-
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
 
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
@@ -11228,7 +11187,6 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
 			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
@@ -11307,9 +11265,6 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 		self.session.open(serienRecReadLog)
 		self.close()
 		
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
-
 	def showProposalDB(self):
 		self.session.open(serienRecShowSeasonBegins)
 
@@ -11497,7 +11452,6 @@ class serienRecMain(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"1"		: (self.modifyAddedFile, _("Liste der aufgenommenen Folgen bearbeiten")),
 			"2"		: (self.reloadSerienplaner, _("Serienplaner neu laden")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
@@ -11703,9 +11657,6 @@ class serienRecMain(Screen, HelpableScreen):
 		
 	def readLogFile(self):
 		self.session.open(serienRecReadLog)
-
-	def modifyAddedFile(self):
-		self.session.open(serienRecModifyAdded)
 
 	def showProposalDB(self):
 		self.session.openWithCallback(self.readWebpage, serienRecShowSeasonBegins)
