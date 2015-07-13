@@ -149,6 +149,20 @@ class TimeHelpers:
 					return True
 		return False
 
+	@classmethod
+	def td2HHMMstr(cls, td):
+		# Convert timedelta objects to a HH:MM string with (+/-) sign
+		if td < datetime.timedelta(seconds=0):
+			sign='-'
+			td = -td
+		else:
+			sign = ''
+
+		tdhours, rem = divmod(td.total_seconds(), 3600)
+		tdminutes, rem = divmod(rem, 60)
+		tdstr = '{}{:}:{:02d}'.format(sign, int(tdhours), int(tdminutes))
+		return tdstr
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # STBHelpers - STB related helper functions

@@ -265,7 +265,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.9-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.10-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -2440,9 +2440,9 @@ class serienRecCheckForRecording():
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
-			print "%s[Serien Recorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
+			print "%s[Serien Recorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
-			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 		elif not self.manuell and config.plugins.serienRec.autochecktype.value == "2":
 			try:
 				from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
@@ -2517,9 +2517,9 @@ class serienRecCheckForRecording():
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
 
 			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
-			print "%s[Serien Recorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
+			print "%s[Serien Recorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
-			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if config.plugins.serienRec.AutoBackup.value:
 			BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
@@ -3565,7 +3565,7 @@ class serienRecCheckForRecording():
 
 		lt = time.localtime()
 		deltatime = self.getNextAutoCheckTimer(lt)
-		writeLog(_("\n[Serien Recorder] Verbleibende Zeit bis zum nächsten Auto-Check: %s Stunden") % str(datetime.timedelta(0, deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+		writeLog(_("\n[Serien Recorder] Verbleibende Zeit bis zum nächsten Auto-Check: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		# in den deep-standby fahren.
 		self.askForDSB()
@@ -4076,6 +4076,7 @@ class serienRecTimer(Screen, HelpableScreen):
 		self.session = session
 		self.picload = ePicLoad()
 		self.WochenTag = [_("Mo"), _("Di"), _("Mi"), _("Do"), _("Fr"), _("Sa"), _("So")]
+		self.ErrorMsg = "unbekannt"
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("Liste der aufgenommenen Folgen bearbeiten")),
@@ -4447,6 +4448,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
 				serien_id = "/%s" % serien_id[0]
+		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 			
 	def keyLeft(self):
@@ -4674,6 +4676,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		self.session = session
 		self.picload = ePicLoad()
 		self.SelectSerie = SelectSerie
+		self.ErrorMsg = "unbekannt"
 		
 		if not showMainScreen:
 			self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
@@ -4962,6 +4965,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', self['config'].getCurrent()[0][1])
 		if serien_id:
 			serien_id = "/%s" %  serien_id[0]
+		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
 	def readSerienMarker(self, SelectSerie=None):
@@ -5248,7 +5252,7 @@ class serienRecMarker(Screen, HelpableScreen):
 			serien_name = self['config'].getCurrent()[0][0]
 			serien_url = self['config'].getCurrent()[0][1]
 			
-			print "teestt"
+			#print "teestt"
 			#serien_url = getUrl(serien_url.replace('epg_print.pl?s=',''))
 			print serien_url
 			#self.session.open(serienRecSendeTermine, serien_name, serien_url, self.serien_nameCover)
@@ -5510,6 +5514,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self.session = session
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
+		self.ErrorMsg = "unbekannt"
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("Marker für ausgewählte Serie hinzufügen")),
@@ -5792,6 +5797,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 
 		serien_name = self['config'].getCurrent()[0][0]
 		serien_id = "/%s" % self['config'].getCurrent()[0][2]
+		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
 	def __onClose(self):
@@ -6382,8 +6388,10 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 	def checkSender(self, mSender):
 		fSender = []
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url LIKE ?", ('%'+self.serien_id,))
+		cCursor.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url LIKE ?", ('%' + self.serien_id, ))
 		row = cCursor.fetchone()
+		alleSender = 1
+		id = 0
 		if row:
 			(alleSender, id) = row
 
@@ -9527,6 +9535,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
+		self.ErrorMsg = "unbekannt"
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("für die ausgewählte Serien neue Einträge hinzufügen")),
@@ -9899,6 +9908,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
 				serien_id = "/%s" % serien_id[0]
+		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
 	def keyLeft(self):
@@ -9939,6 +9949,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
+		self.ErrorMsg = "unbekannt"
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("Marker für die ausgewählte Serie hinzufügen")),
@@ -10181,6 +10192,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', self['config'].getCurrent()[0][5])
 		if serien_id:
 			serien_id = "/%s" % serien_id[0]
+		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
 	def keyRed(self):
@@ -10345,6 +10357,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
+		self.ErrorMsg = "unbekannt"
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("für die ausgewählte Serien neue Einträge hinzufügen")),
@@ -10739,6 +10752,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
 				serien_id = "/%s" % serien_id[0]
+		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 			
 	def keyLeft(self):
@@ -11181,6 +11195,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 		self.serien_id = serien_id
+		self.ErrorMsg = "unbekannt"
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("ausgewähltes Video abspielen")),
@@ -11342,6 +11357,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 			self.session.open(MoviePlayer, sref)
 
 	def getCover(self):
+		self.ErrorMsg = "'getCover()'"
 		getCover(self, self.serien_name, "/%s" % self.serien_id)
 
 	def __onClose(self):
@@ -11433,6 +11449,7 @@ class serienRecMain(Screen, HelpableScreen):
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
+		self.ErrorMsg = "unbekannt"
 		
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("Marker für die ausgewählte Serie hinzufügen")),
@@ -12133,6 +12150,7 @@ class serienRecMain(Screen, HelpableScreen):
 
 		serien_name = self['config'].getCurrent()[0][6]
 		serien_id = self['config'].getCurrent()[0][5]
+		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 		
 	def keyRed(self):
