@@ -265,7 +265,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.10-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.11-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -426,8 +426,9 @@ def getCover(self, serien_name, serien_id):
 	if not config.plugins.serienRec.showCover.value:
 		return
 		
-	serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
-	
+	serien_nameCover = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)
+	png_serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
+
 	if self is not None: 
 		self['cover'].hide()
 		global coverToShow
@@ -438,6 +439,11 @@ def getCover(self, serien_name, serien_id):
 			shutil.os.mkdir(config.plugins.serienRec.coverPath.value)
 		except:
 			Notifications.AddPopup(_("[Serien Recorder]\nCover Pfad (%s) kann nicht angelegt werden.\n\nÜberprüfen Sie den Pfad und die Rechte!") % config.plugins.serienRec.coverPath.value, MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] checkFileAccess")
+
+	# Change PNG cover file extension to correct file extension JPG
+	if fileExists(png_serien_nameCover):
+		os.rename(png_serien_nameCover, serien_nameCover)
+
 	if fileExists(serien_nameCover):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif serien_id:
@@ -907,14 +913,20 @@ def getDirname(serien_name, staffel):
 def CreateDirectory(serien_name, staffel):
 	(dirname, dirname_serie) = getDirname(serien_name, staffel)
 	if not fileExists(dirname):
-		print "[Serien Recorder] erstelle Subdir %s" % dirname
-		writeLog(_("[Serien Recorder] erstelle Subdir: ' %s '") % dirname)
+		print "[Serien Recorder] Erstelle Verzeichnis %s" % dirname
+		writeLog(_("[Serien Recorder] Erstelle Verzeichnis: ' %s '") % dirname)
 		os.makedirs(dirname)
 	if fileExists(dirname):
-		if fileExists("%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname_serie, serien_name)):
-			shutil.copy("%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname_serie, serien_name))
-		if fileExists("%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname, serien_name)):
-			shutil.copy("%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, serien_name))
+		if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname_serie, serien_name)):
+			shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname_serie, serien_name))
+		if config.plugins.serienRec.seasonsubdir.value:
+			if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
+				seasonsubdirfillchar = ' '
+			else:
+				seasonsubdirfillchar = config.plugins.serienRec.seasonsubdirfillchar.value
+			season_dirname = "Season %s" % (str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar), )
+			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname, season_dirname)):
+				shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, season_dirname))
 
 
 
@@ -2339,36 +2351,13 @@ class serienRecCheckForRecording():
 		global logFile
 		logFile = "%slog" % (config.plugins.serienRec.LogFilePath.value)
 		checkFileAccess()
-		
-		self.daypage = 0
-		global dbSerRec
-		cCursor = dbSerRec.cursor()
-		
+
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 		writeLog(_("\n---------' %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
 
-		cCursor.execute("SELECT * FROM SerienMarker")
-		row = cCursor.fetchone()
-		if not row:
-			writeLog(_("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
-			print "[Serien Recorder] check: Tabelle SerienMarker leer."
-			writeLog(_("[Serien Recorder] check: Tabelle SerienMarker leer."), True)
-			writeLog(_("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"), True)
-			cCursor.close()
-			return
+		self.daypage = 0
 
-		cCursor.execute("SELECT * FROM Channels")
-		row = cCursor.fetchone()
-		if not row:
-			writeLog(_("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
-			print "[Serien Recorder] check: Tabelle Channels leer."
-			writeLog(_("[Serien Recorder] check: Tabelle Channels leer."), True)
-			writeLog(_("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"), True)
-			cCursor.close()
-			return
-		cCursor.close()
-		
 		global refreshTimer
 		if refreshTimer:
 			refreshTimer.stop()
@@ -2475,7 +2464,6 @@ class serienRecCheckForRecording():
 
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
-		writeLog(_("\n---------' %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
 
 		global logFile
 		global logFileSave
@@ -2483,7 +2471,39 @@ class serienRecCheckForRecording():
 		checkFileAccess()
 		if config.plugins.serienRec.longLogFileName.value:
 			logFileSave = "%slog_%s%s%s%s%s" % (config.plugins.serienRec.LogFilePath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
-		
+
+		writeLog(_("\n---------' %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
+
+		if not self.manuell:
+			if not initDB():
+				self.askForDSB()
+				return
+
+		cCursor = dbSerRec.cursor()
+
+		cCursor.execute("SELECT * FROM SerienMarker")
+		row = cCursor.fetchone()
+		if not row:
+			writeLog(_("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
+			print "[Serien Recorder] check: Tabelle SerienMarker leer."
+			writeLog(_("[Serien Recorder] check: Tabelle SerienMarker leer."), True)
+			writeLog(_("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"), True)
+			cCursor.close()
+			self.askForDSB()
+			return
+
+		cCursor.execute("SELECT * FROM Channels")
+		row = cCursor.fetchone()
+		if not row:
+			writeLog(_("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
+			print "[Serien Recorder] check: Tabelle Channels leer."
+			writeLog(_("[Serien Recorder] check: Tabelle Channels leer."), True)
+			writeLog(_("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"), True)
+			cCursor.close()
+			self.askForDSB()
+			return
+		cCursor.close()
+
 		global refreshTimer
 		global refreshTimerConnection
 		global isDreamboxOS
@@ -3572,14 +3592,16 @@ class serienRecCheckForRecording():
 		return result
 
 	def askForDSB(self):
-		if (config.plugins.serienRec.updateInterval.value == 24) and (config.plugins.serienRec.wakeUpDSB.value or (config.plugins.serienRec.autochecktype.value == "2" and config.plugins.epgrefresh.afterevent.value)) and int(config.plugins.serienRec.afterAutocheck.value) and not self.manuell:
-			if config.plugins.serienRec.DSBTimeout.value > 0:
-				try:
-					self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
-				except:
+		if (not self.manuell):
+			dbSerRec.close()
+			if (config.plugins.serienRec.updateInterval.value == 24) and (config.plugins.serienRec.wakeUpDSB.value or config.plugins.serienRec.autochecktype.value == "2") and int(config.plugins.serienRec.afterAutocheck.value):
+				if config.plugins.serienRec.DSBTimeout.value > 0:
+					try:
+						self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+					except:
+						self.gotoDeepStandby(True)
+				else:
 					self.gotoDeepStandby(True)
-			else:
-				self.gotoDeepStandby(True)
 
 	def gotoDeepStandby(self, answer):
 		if answer:
@@ -7770,10 +7792,11 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.list.append(getConfigListEntry(_("Umfang der Einstellungen:"), config.plugins.serienRec.setupType))
 		self.list.append(getConfigListEntry(_("Speicherort der Aufnahmen:"), config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry(_("Serien-Verzeichnis anlegen:"), config.plugins.serienRec.seriensubdir))
-		self.list.append(getConfigListEntry(_("Staffel-Verzeichnis anlegen:"), config.plugins.serienRec.seasonsubdir))
-		if config.plugins.serienRec.seasonsubdir.value:
-			self.list.append(getConfigListEntry(_("    Mindestlänge der Staffelnummer im Verzeichnisnamen:"), config.plugins.serienRec.seasonsubdirnumerlength))
-			self.list.append(getConfigListEntry(_("    Füllzeichen für Staffelnummer im Verzeichnisnamen:"), config.plugins.serienRec.seasonsubdirfillchar))
+		if config.plugins.serienRec.seriensubdir.value:
+			self.list.append(getConfigListEntry(_("Staffel-Verzeichnis anlegen:"), config.plugins.serienRec.seasonsubdir))
+			if config.plugins.serienRec.seasonsubdir.value:
+				self.list.append(getConfigListEntry(_("    Mindestlänge der Staffelnummer im Verzeichnisnamen:"), config.plugins.serienRec.seasonsubdirnumerlength))
+				self.list.append(getConfigListEntry(_("    Füllzeichen für Staffelnummer im Verzeichnisnamen:"), config.plugins.serienRec.seasonsubdirfillchar))
 		#self.list.append(getConfigListEntry(_("Anzahl gleichzeitiger Web-Anfragen:"), config.plugins.serienRec.maxWebRequests))
 		self.list.append(getConfigListEntry(_("Automatisches Plugin-Update:"), config.plugins.serienRec.Autoupdate))
 		if config.plugins.serienRec.setupType.value == "1":
@@ -7797,7 +7820,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("Früheste Zeit für Timer:"), config.plugins.serienRec.globalFromTime))
 			self.list.append(getConfigListEntry(_("Späteste Zeit für Timer:"), config.plugins.serienRec.globalToTime))
-			self.list.append(getConfigListEntry(_("Versuche die Eventid vom EPGCACHE zu holen:"), config.plugins.serienRec.eventid))
+			self.list.append(getConfigListEntry(_("Versuche Timer aus dem EPG zu aktualisieren:"), config.plugins.serienRec.eventid))
 			self.list.append(getConfigListEntry(_("Immer aufnehmen wenn keine Wiederholung gefunden wird:"), config.plugins.serienRec.forceRecording))
 			if config.plugins.serienRec.forceRecording.value:
 				self.list.append(getConfigListEntry(_("    maximal X Tage auf Wiederholung warten:"), config.plugins.serienRec.TimeSpanForRegularTimer))
@@ -7817,8 +7840,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			if not isDreamboxOS:
 				self.list.append(getConfigListEntry(_("nach Änderungen Suchlauf beim Beenden starten:"), config.plugins.serienRec.runAutocheckAtExit))
 		#if config.plugins.serienRec.updateInterval.value == 24:
-		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
+		if config.plugins.serienRec.autochecktype.value == "1":
 			self.list.append(getConfigListEntry(_("Aus Deep-StandBy aufwecken:"), config.plugins.serienRec.wakeUpDSB))
+		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
 			self.list.append(getConfigListEntry(_("Aktion nach dem automatischen Suchlauf:"), config.plugins.serienRec.afterAutocheck))
 			if config.plugins.serienRec.setupType.value == "1":
 				if int(config.plugins.serienRec.afterAutocheck.value):
@@ -8004,7 +8028,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.globalToTime :            (_("Die Uhrzeit, bis wann Aufnahmen erlaubt sind.\n"
 						                                        "Die erlaubte Zeitspanne endet um %s:%s Uhr.") % (str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Spaeteste_Zeit"),
 			config.plugins.serienRec.eventid :                 (_("Bei 'ja' wird beim Anlegen eines Timers versucht die Anfangs- und Endzeiten vom EPG zu holen. "
-			                                                    "Außerdem erfolgt bei jedem Timer-Suchlauf ein Abgleich der Anfangs- und Endzeiten aller Timer mit den EPG-Daten."), "Hole_EventID"),
+			                                                    "Außerdem erfolgt bei jedem Timer-Suchlauf ein Abgleich der Anfangs- und Endzeiten aller Timer mit den EPG-Daten.\n"
+			                                                      "Diese Funktion muss aktiviert sein, wenn VPS benutzt werden soll."), "Hole_EventID"),
 			config.plugins.serienRec.forceRecording :          (_("Bei 'ja' werden auch Timer für Folgen erstellt, die ausserhalb der erlaubten Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, "
 			                                                    "falls KEINE Wiederholung innerhalb der erlaubten Zeitspanne gefunden wird. Wird eine passende Wiederholung zu einem späteren Zeitpunkt gefunden, dann wird der Timer für diese Wiederholung erstellt.\n"
 			                                                    "Bei 'nein' werden ausschließlich Timer für jene Folgen erstellt, die innerhalb der erlaubten Zeitspanne liegen.") % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2), str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Immer_aufnehmen"),
@@ -8173,7 +8198,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.MainBouquet.value = None
 			config.plugins.serienRec.AlternativeBouquet.value = None
 			config.plugins.serienRec.useAlternativeChannel.value = False
-		
+
+		if not config.plugins.serienRec.seriensubdir.value:
+			config.plugins.serienRec.seasonsubdir.value = False
+
+		if config.plugins.serienRec.autochecktype.value != "1":
+			config.plugins.serienRec.wakeUpDSB.value = False
+
 		config.plugins.serienRec.BoxID.save()
 		config.plugins.serienRec.setupType.save()
 		config.plugins.serienRec.savetopath.save()
@@ -12363,6 +12394,7 @@ class serienRecMain(Screen, HelpableScreen):
 		if self.displayTimer:
 			self.displayTimer.stop()
 			self.displayTimer = None
+		dbSerRec.close()
 
 	def keyCancel(self):
 		if self.modus == "list":
@@ -12730,7 +12762,7 @@ def getNextWakeup():
 	color_print = "\033[93m"
 	color_end = "\33[0m"
 
-	if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.timeUpdate.value:
+	if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.timeUpdate.value and config.plugins.serienRec.autochecktype.value == "1":
 		print color_print+"[Serien Recorder] Deep-Standby WakeUp: AN" +color_end
 		now = time.localtime()
 		current_time = int(time.time())
@@ -12766,18 +12798,18 @@ def autostart(reason, **kwargs):
 		def startAutoCheckTimer():
 			serienRecCheckForRecording(session, False)
 
-		if initDB():
-			if config.plugins.serienRec.autochecktype.value in ("1", "2") and (config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value):
-				print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
-				startTimer = eTimer()
-				if isDreamboxOS:
-					startTimerConnection = startTimer.timeout.connect(startAutoCheckTimer)
-				else:
-					startTimer.callback.append(startAutoCheckTimer)
-				startTimer.start(60 * 1000, True)
-				#serienRecCheckForRecording(session, False)
+		#if initDB():
+		if config.plugins.serienRec.autochecktype.value in ("1", "2") and (config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value):
+			print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
+			startTimer = eTimer()
+			if isDreamboxOS:
+				startTimerConnection = startTimer.timeout.connect(startAutoCheckTimer)
 			else:
-				print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
+				startTimer.callback.append(startAutoCheckTimer)
+			startTimer.start(60 * 1000, True)
+			#serienRecCheckForRecording(session, False)
+		else:
+			print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
 
 		#API
 		from SerienRecorderResource import addWebInterfaceForDreamMultimedia
