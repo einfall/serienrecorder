@@ -95,6 +95,15 @@ skinName = "SerienRecorder3.0"
 skin = "%sskins/SR_Skin.xml" % serienRecMainPath
 default_skinName = skinName
 default_skin = skin
+skinFactor = 1
+
+# Check if is Full HD 1920x1080
+DESKTOP_WIDTH = getDesktop(0).size().width()
+if DESKTOP_WIDTH > 1280:
+	skinFactor = 1.5
+else:
+	skinFactor = 1
+print "[SerienRecorder] Skinfactor: %s" % skinFactor
 
 def SelectSkin():
 	global showAllButtons
@@ -265,7 +274,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.11-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.12-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -2057,7 +2066,7 @@ class serienRecBaseScreen():
 
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(50)
+		self.chooseMenuList.l.setItemHeight(int(50*skinFactor))
 		self[self.modus] = self.chooseMenuList
 
 	def setSkinProperties(self):
@@ -2355,7 +2364,6 @@ class serienRecCheckForRecording():
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 		writeLog(_("\n---------' %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
-
 		self.daypage = 0
 
 		global refreshTimer
@@ -2595,6 +2603,7 @@ class serienRecCheckForRecording():
 		if config.plugins.serienRec.writeLogVersion.value:
 			writeLog("STB Type: %s\nImage: %s" % (STBHelpers.getSTBType(), STBHelpers.getImageVersionString()), True)
 		writeLog("SR Version: %s" % config.plugins.serienRec.showversion.value, True)
+		writeLog("Skin Auflösung: %s x %s" % (str(getDesktop(0).size().width()), str(getDesktop(0).size().height())), True)
 
 		sMsg = "\nDEBUG Filter: "
 		if config.plugins.serienRec.writeLogChannels.value:
@@ -2955,28 +2964,34 @@ class serienRecCheckForRecording():
 		# try to get eventID (eit) from epgCache
 		#
 		if config.plugins.serienRec.eventid.value:
+			writeLog(_("[Serien Recorder] << Suche im EPG anhand der Uhrzeit"), True)
 			cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>?", (current_time, ))
 			for row in cCursor:
 				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
 
 				refreshTitle = False
 				new_serien_title = serien_title
-				cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
+				cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
 				tmpRow = cCursorTmp.fetchone()
 				if tmpRow:
-					(new_serien_name, new_staffel, new_episode, new_serien_title) = tmpRow
+					(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = tmpRow
 					#writeLog(_("[Serien Recorder] Neuer Folgenname: ' [%s] %s -> %s '") % (serien_name, serien_title, new_serien_title))
 					if new_serien_title != serien_title:
 						refreshTitle = True
 
 				# Skip if nothing to change
-				if eit > 0 and refreshTitle == False:
-					continue
+				#if eit > 0 and refreshTitle == False:
+				#	continue
 
 				(margin_before, margin_after) = getMargins(serien_name, webChannel)
 		
 				# event_matches = STBHelpers.getEPGEvent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 				event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(serien_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(serien_time)+(int(margin_before) * 60))
+				new_event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(new_serien_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(new_serien_time)+(int(margin_before) * 60))
+				if new_event_matches and len(new_event_matches) > 0 and (not event_matches or (event_matches and len(event_matches) == 0)):
+					# Old event not found but new one with different start time
+					event_matches = new_event_matches
+
 				if event_matches and len(event_matches) > 0:
 					title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 					(dirname, dirname_serie) = getDirname(serien_name, staffel)
@@ -3002,7 +3017,7 @@ class serienRecCheckForRecording():
 
 									timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
 
-									if (timer.begin == int(serien_time)) and ((timer.eit == 0) or ((timer.name != timer_name) or (timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
+									if (timer.begin == int(serien_time)) and ((timer.eit == 0) or ((int(serien_time) != int(new_serien_time)) or (timer.name != timer_name) or (timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
 										timer.begin = start_unixtime
 										timer.end = end_unixtime
 										timer.eit = eit
@@ -3031,6 +3046,7 @@ class serienRecCheckForRecording():
 										self.countTimerUpdate += 1
 										timerFound = True
 										break
+
 							if not timerFound:
 								# suche in deaktivierten Timern
 								for timer in recordHandler.processed_timers:
@@ -3045,7 +3061,7 @@ class serienRecCheckForRecording():
 										timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
 
 										#if (timer.begin == int(serien_time)) and (timer.eit != eit):
-										if (timer.begin == int(serien_time)) and ((timer.eit == 0) or ((timer.name != timer_name) or (timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
+										if (timer.begin == int(serien_time)) and ((timer.eit == 0) or ((int(serien_time) != int(new_serien_time)) or (timer.name != timer_name) or (timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
 											timer.begin = start_unixtime
 											timer.end = end_unixtime
 											timer.eit = eit
@@ -3076,22 +3092,37 @@ class serienRecCheckForRecording():
 											break
 						except Exception:				
 							print "[Serien Recorder] Modifying enigma2 Timer failed:", title, serien_time
+						if timerFound == False:
+							writeLog(_("[Serien Recorder] ' %s ' - Timer muss nicht aktualisiert werden @ %s") % (title, webChannel), True)
 						break
 						
-		dbSerRec.commit()
-					
+			dbSerRec.commit()
+			writeLog(_("[Serien Recorder] >> Suche im EPG nach der Uhrzeit"), True)
+
+		writeLog(_("[Serien Recorder] >> Suche im EPG nach der EventID"), True)
 		cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>? AND EventID>0", (current_time, ))
 		for row in cCursor:
 			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
+
+			#refreshTitle = False
+			#new_serien_title = serien_title
+			#cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
+			#tmpRow = cCursorTmp.fetchone()
+			#if tmpRow:
+			#	(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = tmpRow
+			#	#writeLog(_("[Serien Recorder] Neuer Folgenname: ' [%s] %s -> %s '") % (serien_name, serien_title, new_serien_title))
+			#	if new_serien_title != serien_title:
+			#		refreshTitle = True
 
 			(margin_before, margin_after) = getMargins(serien_name, webChannel)
 
 			epgmatches = []
 			epgcache = eEPGCache.getInstance()
 			allevents = epgcache.lookupEvent(['IBD',(stbRef, 2, eit, -1)]) or []
-
+			#writeLog(_("[Serien Recorder] EIT = '%s' -> %s") % (serien_name, str(eit)), True)
 			for eventid, begin, duration in allevents:
 				if int(eventid) == int(eit):
+					#writeLog(_("[Serien Recorder] EIT found"), True)
 					if int(begin) != (int(serien_time) + (int(margin_before) * 60)):
 						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 						(dirname, dirname_serie) = getDirname(serien_name, staffel)
@@ -3100,7 +3131,7 @@ class serienRecCheckForRecording():
 						start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
 						end_unixtime = int(begin) + int(duration)
 						end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
-						
+
 						print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
 						recordHandler = NavigationInstance.instance.RecordTimer
 						try:
@@ -3137,11 +3168,13 @@ class serienRecCheckForRecording():
 											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
 											self.countTimerUpdate += 1
 											break
-						except Exception:				
+						except Exception:
 							print "[Serien Recorder] Modifying enigma2 Timer failed:", title, serien_time
 					break
-					
+
 		dbSerRec.commit()
+		writeLog(_("[Serien Recorder] << Suche im EPG nach der EventID"), True)
+
 		cCursor.close()
 		cTimer.close()
 
@@ -4054,6 +4087,28 @@ class serienRecCheckForRecording():
 			#cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit))
 			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
 			writeLogFilter("timerDebug", _("[Serien Recorder] Timer angelegt: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+
+			# Event-Programmierung auflösen -> 01/1x02/1x03
+			if '/' in str(episode):
+				writeLogFilter("timerDebug", _("[Serien Recorder] Event-Programmierung gefunden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+				splitedSeasonEpisodeList = []
+				episode = str(staffel) + 'x' + str(episode)
+				seasonEpisodeList = episode.split('/')
+				for seasonEpisode in seasonEpisodeList:
+					splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
+
+				useTitles = True
+				splitedTitleList = title.split('/')
+				if len(splitedTitleList) != len(splitedSeasonEpisodeList):
+					useTitles = False
+
+				for idx,entry in enumerate(splitedSeasonEpisodeList):
+					title = "dump"
+					if useTitles:
+						title = splitedTitleList[idx]
+					addToAddedList(serien_name, entry[1], entry[1], entry[0], title)
+					writeLogFilter("timerDebug", _("[Serien Recorder] Episode wird nicht mehr aufgenommen: %s S%sE%s - %s") % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
+
 		dbSerRec.commit()
 		cCursor.close()
 		
@@ -4172,7 +4227,7 @@ class serienRecTimer(Screen, HelpableScreen):
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(50)
+		self.chooseMenuList.l.setItemHeight(int(50*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
@@ -4350,11 +4405,11 @@ class serienRecTimer(Screen, HelpableScreen):
 			SerieColor = colorRed
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8, 32, 32, loadPNG(imageFound)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel, SerieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 250, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), colorYellow)
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8 * skinFactor, 32, 32, loadPNG(imageFound)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel, SerieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 250 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), colorYellow)
 			]
 
 	def keyOK(self):
@@ -4564,9 +4619,9 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		if config.plugins.serienRec.logWrapAround.value:
-			self.chooseMenuList.l.setItemHeight(70)
+			self.chooseMenuList.l.setItemHeight(int(70*skinFactor))
 		else:
-			self.chooseMenuList.l.setItemHeight(25)
+			self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
@@ -4665,9 +4720,9 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 	def buildList(self, entry):
 		(zeile) = entry
 		if config.plugins.serienRec.logWrapAround.value:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850, 65, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850 * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
 		else:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850, 20, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850 * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
 		
 	def pageUp(self):
 		self['config'].pageUp()
@@ -4819,14 +4874,14 @@ class serienRecMarker(Screen, HelpableScreen):
 		#normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(70)
+		self.chooseMenuList.l.setItemHeight(int(70*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList_popup.l.setItemHeight(25)
+		self.chooseMenuList_popup.l.setItemHeight(int(25*skinFactor))
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
@@ -5096,11 +5151,11 @@ class serienRecMarker(Screen, HelpableScreen):
 			SerieColor = colorRed
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Staffel: %s") % staffeln),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Sender (%s): %s") % (SenderText, sendern)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49, 350, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Wdh./Vorl./Nachl.: %s / %s / %s") % (int(AnzahlAufnahmen) - 1, int(Vorlaufzeit), int(Nachlaufzeit))),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400, 49, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Dir: %s") % AufnahmeVerzeichnis)
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Staffel: %s") % staffeln),
+			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Sender (%s): %s") % (SenderText, sendern)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Wdh./Vorl./Nachl.: %s / %s / %s") % (int(AnzahlAufnahmen) - 1, int(Vorlaufzeit), int(Nachlaufzeit))),
+			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 49 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Dir: %s") % AufnahmeVerzeichnis)
 			]
 
 	def keyCheck(self):
@@ -5218,8 +5273,8 @@ class serienRecMarker(Screen, HelpableScreen):
 			imageMode = "%simages/plus.png" % serienRecMainPath
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 4, 30, 17, loadPNG(imageMode)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 50, 0, 500, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(staffel).zfill(2))
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7 * skinFactor, 30, 17, loadPNG(imageMode)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(staffel).zfill(2))
 			]
 
 	def keyGreen(self):
@@ -5601,7 +5656,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(25)
+		self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
@@ -5729,7 +5784,8 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self.serienlist = serienlist
 		self.chooseMenuList.setList(map(self.buildList, self.serienlist))
 		#self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(len(self.serienlist))))
-		self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(sum([1 if x[0].find(_(" weitere Ergebnisse für ")) == -1 else int(x[0].replace("...", "").strip().split(" ", 1)[0]) for x in serienlist]))))
+		#self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(sum([1 if x[0].find(_(" weitere Ergebnisse für ")) == -1 else int(x[0].replace("...", "").strip().split(" ", 1)[0]) for x in serienlist]))))
+		self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(sum([1 if x[2] != "-1" else int(x[1]) for x in serienlist]))))
 		self['title'].instance.setForegroundColor(parseColor("white"))
 		self.loading = False
 		self.getCover()
@@ -5737,13 +5793,16 @@ class serienRecAddSerie(Screen, HelpableScreen):
 	def buildList(self, entry):
 		(name_Serie, year_Serie, id_Serie) = entry
 
+		# weitere Ergebnisse Eintrag
+		if id_Serie == "-1":
+			year_Serie = ""
+
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 350, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name_Serie),
-			(eListboxPythonMultiContent.TYPE_TEXT, 450, 0, 350, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, year_Serie)
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name_Serie),
+			(eListboxPythonMultiContent.TYPE_TEXT, 450 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, year_Serie)
 			]
 
 	def keyOK(self):
-		self.serien_name = ""
 		if self.loading:
 			return
 
@@ -5757,6 +5816,11 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		Id = self['config'].getCurrent()[0][2]
 		print Serie, Year, Id
 
+		if Id == "-1":
+			self.keyBlue()
+			return
+
+		self.serien_name = ""
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (Serie.lower(),))
 		row = cCursor.fetchone()	
@@ -5930,7 +5994,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(50)
+		self.chooseMenuList.l.setItemHeight(int(50*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
@@ -6158,12 +6222,12 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			leftImage = imagePlus
 			
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15, 16, 16, loadPNG(leftImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), colorYellow),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 450, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), colorYellow),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, loadPNG(rightImage))
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16, 16, loadPNG(leftImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), colorYellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), colorYellow),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750 * skinFactor, 1 * skinFactor, 48, 48, loadPNG(rightImage))
 			]
 
 	def isAlreadyAdded(self, season, episode, title=None):
@@ -6718,12 +6782,12 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			color = colorRed
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15, 16, 16, loadPNG(leftImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 100, 48, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % (seasonEpisodeString), color),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 150, 17, 48, 48, loadPNG(middleImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 200, 3, 550, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title),
-			(eListboxPythonMultiContent.TYPE_TEXT, 200, 29, 550, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle.strip(), colorYellow),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750, 1, 48, 48, loadPNG(rightImage))
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16, 16, loadPNG(leftImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 100 * skinFactor, 48 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % (seasonEpisodeString), color),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 150 * skinFactor, 17 * skinFactor, 48, 48, loadPNG(middleImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title),
+			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle.strip(), colorYellow),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750 * skinFactor, 1 * skinFactor, 48, 48, loadPNG(rightImage))
 			]
 
 	def showPages(self):
@@ -6964,21 +7028,21 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		# normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(25)
+		self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
 		self['list'] = self.chooseMenuList
 		self['list'].show()
 		
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList_popup.l.setItemHeight(25)
+		self.chooseMenuList_popup.l.setItemHeight(int(25*skinFactor))
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
 		# popup2
 		self.chooseMenuList_popup2 = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup2.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList_popup2.l.setItemHeight(25)
+		self.chooseMenuList_popup2.l.setItemHeight(int(25*skinFactor))
 		self['popup_list2'] = self.chooseMenuList_popup2
 		self['popup_list2'].hide()
 
@@ -7151,16 +7215,16 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			imageStatus = "%simages/plus.png" % serienRecMainPath
 			
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 8, 16, 16, loadPNG(imageStatus)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 35, 3, 300, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 350, 3, 250, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, stbSender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 600, 3, 250, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, altstbSender, colorYellow)
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 7 * skinFactor, 16, 16, loadPNG(imageStatus)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 300 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
+			(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 0, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, stbSender),
+			(eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, altstbSender, colorYellow)
 			]
 
 	def buildList_popup(self, entry):
 		(servicename,serviceref) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 250, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, servicename)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 1, 250 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, servicename)
 			]
 
 	def keyOK(self):
@@ -7499,6 +7563,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		InitSkin(self)
 		
 		self['config'] = ConfigList([])
+		#self['config'].list.setItemHeight(22) funktioniert nicht
 		self['config'].show()
 
 		self['title'].setText(_("Serien Recorder - Einstellungen:"))
@@ -8027,7 +8092,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 							                                    "Die erlaubte Zeitspanne beginnt um %s:%s Uhr.") % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2)), "Frueheste_Zeit"),
 			config.plugins.serienRec.globalToTime :            (_("Die Uhrzeit, bis wann Aufnahmen erlaubt sind.\n"
 						                                        "Die erlaubte Zeitspanne endet um %s:%s Uhr.") % (str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Spaeteste_Zeit"),
-			config.plugins.serienRec.eventid :                 (_("Bei 'ja' wird beim Anlegen eines Timers versucht die Anfangs- und Endzeiten vom EPG zu holen. "
+			config.plugins.serienRec.eventid :                 (_("Bei 'ja' wird versucht die Sendung anhand der Anfangs- und Endzeiten im EPG zu finden. "
 			                                                    "Außerdem erfolgt bei jedem Timer-Suchlauf ein Abgleich der Anfangs- und Endzeiten aller Timer mit den EPG-Daten.\n"
 			                                                      "Diese Funktion muss aktiviert sein, wenn VPS benutzt werden soll."), "Hole_EventID"),
 			config.plugins.serienRec.forceRecording :          (_("Bei 'ja' werden auch Timer für Folgen erstellt, die ausserhalb der erlaubten Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, "
@@ -9256,9 +9321,9 @@ class serienRecReadLog(Screen, HelpableScreen):
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		if config.plugins.serienRec.logWrapAround.value:
-			self.chooseMenuList.l.setItemHeight(70)
+			self.chooseMenuList.l.setItemHeight(int(70*skinFactor))
 		else:
-			self.chooseMenuList.l.setItemHeight(25)
+			self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
@@ -9340,9 +9405,9 @@ class serienRecReadLog(Screen, HelpableScreen):
 	def buildList(self, entry):
 		(zeile) = entry
 		if config.plugins.serienRec.logWrapAround.value:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850, 65, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850 * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
 		else:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850, 20, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, 850 * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
 		
 	def keyLeft(self):
 		self['config'].pageUp()
@@ -9433,7 +9498,7 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(25)
+		self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
@@ -9513,7 +9578,7 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 					
 	def buildList(self, entry):
 		(zeile) = entry
-		return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850, 20, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
+		return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850 * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
 		
 	def keyLeft(self):
 		self['config'].pageUp()
@@ -9656,14 +9721,14 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		#normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(25)
+		self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList_popup.l.setItemHeight(25)
+		self.chooseMenuList_popup.l.setItemHeight(int(25*skinFactor))
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
@@ -9811,13 +9876,13 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 	def buildList(self, entry):
 		(zeile, Serie, Staffel, Episode, title, start_time, webChannel) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
+			(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
 			]
 
 	def buildList_popup(self, entry):
 		(Serie,) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
 			]
 
 	def answerStaffel(self, aStaffel):
@@ -10053,7 +10118,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(50)
+		self.chooseMenuList.l.setItemHeight(int(50*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
@@ -10122,26 +10187,26 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 
 		if config.plugins.serienRec.showPicons.value:
 			if config.plugins.serienRec.piconPath.value == "Original":
-				self.picloader = PicLoader(80, 40)
+				self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
 				picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 				self.picloader.destroy()
 			else:
 				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80, 40, picon),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340, 15, 30, 30, loadPNG(imageFound)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 110, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 110, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow, colorYellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 375, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 375, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, colorYellow, colorYellow)
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80 * skinFactor, 40 * skinFactor, picon),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30, 30, loadPNG(imageFound)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow, colorYellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, colorYellow, colorYellow)
 				]
 		else:
 			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15, 30, 30, loadPNG(imageFound)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50, 29, 200, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow, colorYellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, colorYellow, colorYellow)
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30, 30, loadPNG(imageFound)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow, colorYellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, colorYellow, colorYellow)
 				]
 
 	def readLogFile(self):
@@ -10465,14 +10530,14 @@ class serienRecWishlist(Screen, HelpableScreen):
 		# normal
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(25)
+		self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList_popup.l.setItemHeight(25)
+		self.chooseMenuList_popup.l.setItemHeight(int(25*skinFactor))
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
@@ -10617,13 +10682,13 @@ class serienRecWishlist(Screen, HelpableScreen):
 	def buildList(self, entry):
 		(zeile, Serie, Staffel, Episode) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
+			(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
 			]
 
 	def buildList_popup(self, entry):
 		(Serie,) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560, 25, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
 			]
 
 	def answerStaffel(self, aStaffel):
@@ -11282,7 +11347,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 		
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(50)
+		self.chooseMenuList.l.setItemHeight(int(50*skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
@@ -11369,7 +11434,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 		#picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 		#self.picloader.destroy()
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 750, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_id)
+			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 750 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_id)
 			]
 
 	def keyOK(self):
@@ -11627,14 +11692,14 @@ class serienRecMain(Screen, HelpableScreen):
 
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(50)
+		self.chooseMenuList.l.setItemHeight(int(50 * skinFactor))
 		self['config'] = self.chooseMenuList
 		self['config'].show()
 
 		# popup
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList_popup.l.setItemHeight(30)
+		self.chooseMenuList_popup.l.setItemHeight(int(30 * skinFactor))
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
@@ -12083,28 +12148,28 @@ class serienRecMain(Screen, HelpableScreen):
 		
 		if config.plugins.serienRec.showPicons.value:
 			if config.plugins.serienRec.piconPath.value == "Original":
-				self.picloader = PicLoader(80, 40)
+				self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
 				picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, sender))
 				self.picloader.destroy()
 			else:
 				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, sender))
 			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 00, 5, 80, 40, picon),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330, 7, 30, 22, loadPNG(imageNeu)),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330, 30, 30, 22, loadPNG(imageHDDTimer)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100, 3, 200, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, colorYellow, colorYellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 365, 3, 500, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 365, 29, 500, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5 * skinFactor, 80 * skinFactor, 40 * skinFactor, picon),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 7 * skinFactor, 30, 22, loadPNG(imageNeu)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 30 * skinFactor, 30, 22, loadPNG(imageHDDTimer)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, colorYellow, colorYellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
 				]
 		else:
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7, 30, 22, loadPNG(imageNeu)),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 30, 30, 22, loadPNG(imageHDDTimer)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 280, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 40, 29, 150, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, colorYellow, colorYellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 340, 3, 520, 26, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 340, 29, 520, 18, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 30 * skinFactor, 30, 22, loadPNG(imageHDDTimer)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 280 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, colorYellow, colorYellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
+				(eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 29 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
 				]
 
 	def keyOK(self):
@@ -12280,7 +12345,7 @@ class serienRecMain(Screen, HelpableScreen):
 		(mode, planer_id, name) = entry
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 800, 30, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 800 * skinFactor, 30 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name)
 			]
 
 	def isChannelsListEmpty(self):
