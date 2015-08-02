@@ -11,6 +11,7 @@ from Components.AVSwitch import AVSwitch
 from Screens.InfoBar import MoviePlayer
 from Components.PluginComponent import plugins
 from Components.Button import Button
+from Components.VideoWindow import VideoWindow
 from Screens.Screen import Screen
 from Plugins.Plugin import PluginDescriptor
 from twisted.web.client import getPage
@@ -174,6 +175,7 @@ def ReadConfigFile():
 	
 	#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 	config.plugins.serienRec.BoxID = ConfigSelectionNumber(1, 16, 1, default = 1)
+	config.plugins.serienRec.activateNewOnThisSTBOnly = ConfigYesNo(default = False)
 	config.plugins.serienRec.setupType = ConfigSelection(choices = [("0", _("einfach")), ("1", _("Experte"))], default = "0")
 	config.plugins.serienRec.seriensubdir = ConfigYesNo(default = False)
 	config.plugins.serienRec.seasonsubdir = ConfigYesNo(default = False)
@@ -269,12 +271,13 @@ def ReadConfigFile():
 	else:
 		config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices = choices)
 	config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default = False)
+	config.plugins.serienRec.splitEventTimer = ConfigYesNo(default = True)
 
 	config.plugins.serienRec.firstscreen = ConfigSelection(choices = [("0","SerienPlaner"), ("1", "SerienMarker")], default="0")
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.12-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.13-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -630,6 +633,8 @@ def InitSkin(self):
 	self['path'].hide()
 	self['config'] = MenuList([])
 	self['config'].hide()
+	self['log'] = MenuList([])
+	self['log'].hide()
 	self['list'] = MenuList([])
 	self['list'].hide()
 	self['popup_list'] = MenuList([])
@@ -646,6 +651,8 @@ def InitSkin(self):
 	self['config_information_text'].hide()
 	self['info'] = ScrollLabel()
 	self['info'].hide()
+	desktopSize = getDesktop(0).size()
+	self["video"] = VideoWindow(decoder=0, fb_width=desktopSize.width(), fb_height=desktopSize.height())
 
 	self['title'] = Label("")
 	self['version'] = Label(_("Serien Recorder v%s") % config.plugins.serienRec.showversion.value)
@@ -2921,7 +2928,11 @@ class serienRecCheckForRecording():
 						cTmp.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, ?, 0, -1)", (Serie, Url, Staffel))
 						ID = cTmp.lastrowid
 						cTmp.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
-						cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
+						erlaubteSTB = 0xFFFF
+						if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
+							erlaubteSTB = 0
+							erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+						cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
 						writeLog(_("[Serien Recorder] Neuer Marker für '%s' wurde angelegt") % Serie, True)
 					
 				cCursor.execute("SELECT Serie, MAX(Staffel), Sender, Url FROM NeuerStaffelbeginn WHERE CreationFlag=1 GROUP BY Serie")
@@ -2934,7 +2945,11 @@ class serienRecCheckForRecording():
 							cTmp.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, 0, -1, 1)", (Serie, Url, Staffel))
 							ID = cTmp.lastrowid
 							cTmp.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
-							cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
+							erlaubteSTB = 0xFFFF
+							if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
+								erlaubteSTB = 0
+								erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+							cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
 						else:
 							cTmp.execute("UPDATE OR IGNORE SerienMarker SET TimerForSpecials=1 WHERE LOWER(Serie)=?", (Serie.lower(),))
 						writeLog(_("[Serien Recorder] Neuer Marker für '%s' wurde angelegt") % Serie, True)
@@ -2964,7 +2979,7 @@ class serienRecCheckForRecording():
 		# try to get eventID (eit) from epgCache
 		#
 		if config.plugins.serienRec.eventid.value:
-			writeLog(_("[Serien Recorder] << Suche im EPG anhand der Uhrzeit"), True)
+			#writeLog(_("[Serien Recorder] << Suche im EPG anhand der Uhrzeit"), True)
 			cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>?", (current_time, ))
 			for row in cCursor:
 				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
@@ -2979,6 +2994,8 @@ class serienRecCheckForRecording():
 					#writeLog(_("[Serien Recorder] Neuer Folgenname: ' [%s] %s -> %s '") % (serien_name, serien_title, new_serien_title))
 					if new_serien_title != serien_title:
 						refreshTitle = True
+				else:
+					continue
 
 				# Skip if nothing to change
 				#if eit > 0 and refreshTitle == False:
@@ -2989,7 +3006,7 @@ class serienRecCheckForRecording():
 				# event_matches = STBHelpers.getEPGEvent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 				event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(serien_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(serien_time)+(int(margin_before) * 60))
 				new_event_matches = None
-				if new_serien_time != 0:
+				if new_serien_time != 0 and eit > 0:
 					new_event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(new_serien_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(new_serien_time)+(int(margin_before) * 60))
 				if new_event_matches and len(new_event_matches) > 0 and (not event_matches or (event_matches and len(event_matches) == 0)):
 					# Old event not found but new one with different start time
@@ -3009,177 +3026,156 @@ class serienRecCheckForRecording():
 						try:
 							timerFound = False
 							# suche in aktivierten Timern
-							for timer in recordHandler.timer_list:
-								if timer and timer.service_ref:
-									if config.plugins.serienRec.TimerName.value == "0":
-										timer_name = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
-									elif config.plugins.serienRec.TimerName.value == "2":
-										timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
-									else:
-										timer_name = serien_name
-
-									timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
-
-									if (timer.begin == int(serien_time)) and ((timer.eit == 0) or ((int(serien_time) != int(new_serien_time)) or (timer.name != timer_name) or (timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
-										timer.begin = start_unixtime
-										timer.end = end_unixtime
-										timer.eit = eit
-
-										#remember old timer name and description
-										old_timername = timer.name
-										old_timerdescription = timer.description
-
-										timer.name = timer_name
-										timer.description = timer_description
-
-										NavigationInstance.instance.RecordTimer.timeChanged(timer)
-										NavigationInstance.instance.RecordTimer.saveTimer()
-										sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=0"
-										cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
-										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
-										old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-										if int(start_unixtime) != int(serien_time):
-											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
-										elif eit != 0:
-											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> Event ID wurde hinzugefügt @ %s") % (title, webChannel), True)
-										elif old_timername != timer_name:
-											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timername, timer_name, webChannel), True)
-										elif old_timername != timer_name:
-											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timerdescription, timer_description, webChannel), True)
-										self.countTimerUpdate += 1
-										timerFound = True
-										break
+							timerFound = self.updateTimer(cTimer, recordHandler.timer_list, eit, end_unixtime, episode, new_serien_time,
+							                              new_serien_title, serien_name, serien_time,
+							                              staffel, start_unixtime, stbRef, title,
+							                              webChannel)
 
 							if not timerFound:
 								# suche in deaktivierten Timern
-								for timer in recordHandler.processed_timers:
-									if timer and timer.service_ref:
-										if config.plugins.serienRec.TimerName.value == "0":
-											timer_name = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
-										elif config.plugins.serienRec.TimerName.value == "2":
-											timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
-										else:
-											timer_name = serien_name
-
-										timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
-
-										#if (timer.begin == int(serien_time)) and (timer.eit != eit):
-										if (timer.begin == int(serien_time)) and ((timer.eit == 0) or ((int(serien_time) != int(new_serien_time)) or (timer.name != timer_name) or (timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
-											timer.begin = start_unixtime
-											timer.end = end_unixtime
-											timer.eit = eit
-
-											#remember old timer name and description
-											old_timername = timer.name
-											old_timerdescription = timer.description
-
-											timer.name = timer_name
-											timer.description = timer_description
-
-											NavigationInstance.instance.RecordTimer.timeChanged(timer)
-											NavigationInstance.instance.RecordTimer.saveTimer()
-											sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=0"
-											cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
-											show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
-											old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-											if int(start_unixtime) != int(serien_time):
-												writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
-											elif eit != 0:
-												writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> Event ID wurde hinzugefügt @ %s") % (title, webChannel), True)
-											elif old_timername != timer_name:
-												writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timername, timer_name, webChannel), True)
-											elif old_timername != timer_name:
-												writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timerdescription, timer_description, webChannel), True)
-											self.countTimerUpdate += 1
-											timerFound = True
-											break
-						except Exception:				
+								timerFound = self.updateTimer(cTimer, recordHandler.processed_timers, eit, end_unixtime, episode, new_serien_time,
+							                              new_serien_title, serien_name, serien_time,
+							                              staffel, start_unixtime, stbRef, title,
+							                              webChannel)
+						except Exception:
 							print "[Serien Recorder] Modifying enigma2 Timer failed:", title, serien_time
 						if timerFound == False:
 							writeLog(_("[Serien Recorder] ' %s ' - Timer muss nicht aktualisiert werden @ %s") % (title, webChannel), True)
 						break
 						
 			dbSerRec.commit()
-			writeLog(_("[Serien Recorder] >> Suche im EPG nach der Uhrzeit"), True)
+			#writeLog(_("[Serien Recorder] >> Suche im EPG nach der Uhrzeit"), True)
 
-		writeLog(_("[Serien Recorder] >> Suche im EPG nach der EventID"), True)
-		cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>? AND EventID>0", (current_time, ))
-		for row in cCursor:
-			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
-
-			#refreshTitle = False
-			#new_serien_title = serien_title
-			#cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
-			#tmpRow = cCursorTmp.fetchone()
-			#if tmpRow:
-			#	(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = tmpRow
-			#	#writeLog(_("[Serien Recorder] Neuer Folgenname: ' [%s] %s -> %s '") % (serien_name, serien_title, new_serien_title))
-			#	if new_serien_title != serien_title:
-			#		refreshTitle = True
-
-			(margin_before, margin_after) = getMargins(serien_name, webChannel)
-
-			epgmatches = []
-			epgcache = eEPGCache.getInstance()
-			allevents = epgcache.lookupEvent(['IBD',(stbRef, 2, eit, -1)]) or []
-			#writeLog(_("[Serien Recorder] EIT = '%s' -> %s") % (serien_name, str(eit)), True)
-			for eventid, begin, duration in allevents:
-				if int(eventid) == int(eit):
-					#writeLog(_("[Serien Recorder] EIT found"), True)
-					if int(begin) != (int(serien_time) + (int(margin_before) * 60)):
-						title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-						(dirname, dirname_serie) = getDirname(serien_name, staffel)
-						writeLog(_("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '") % (title, dirname))
-						start_unixtime = int(begin)
-						start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
-						end_unixtime = int(begin) + int(duration)
-						end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
-
-						print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
-						recordHandler = NavigationInstance.instance.RecordTimer
-						try:
-							timerFound = False
-							# suche in aktivierten Timern
-							for timer in recordHandler.timer_list:
-								if timer and timer.service_ref:
-									#if timer.eit == eit:
-									if (timer.begin == int(serien_time)) and (timer.eit == eit) and (str(timer.service_ref).lower() == stbRef.lower()):
-										timer.begin = start_unixtime
-										timer.end = end_unixtime
-										NavigationInstance.instance.RecordTimer.timeChanged(timer)
-										sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=?"
-										cTimer.execute(sql, (start_unixtime, serien_time, stbRef.lower(), eit))
-										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
-										old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-										writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
-										self.countTimerUpdate += 1
-										timerFound = True
-										break
-							if not timerFound:
-								# suche in deaktivierten Timern
-								for timer in recordHandler.processed_timers:
-									if timer and timer.service_ref:
-										#if timer.eit == eit:
-										if (timer.begin == int(serien_time)) and (timer.eit == eit) and (str(timer.service_ref).lower() == stbRef.lower()):
-											timer.begin = start_unixtime
-											timer.end = end_unixtime
-											NavigationInstance.instance.RecordTimer.timeChanged(timer)
-											sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=?"
-											cTimer.execute(sql, (start_unixtime, serien_time, stbRef.lower(), eit))
-											show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
-											old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-											writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
-											self.countTimerUpdate += 1
-											break
-						except Exception:
-							print "[Serien Recorder] Modifying enigma2 Timer failed:", title, serien_time
-					break
-
-		dbSerRec.commit()
-		writeLog(_("[Serien Recorder] << Suche im EPG nach der EventID"), True)
+		# writeLog(_("[Serien Recorder] >> Suche im EPG nach der EventID"), True)
+		# cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>? AND EventID>0", (current_time, ))
+		# for row in cCursor:
+		# 	(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
+		#
+		# 	#refreshTitle = False
+		# 	#new_serien_title = serien_title
+		# 	#cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
+		# 	#tmpRow = cCursorTmp.fetchone()
+		# 	#if tmpRow:
+		# 	#	(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = tmpRow
+		# 	#	#writeLog(_("[Serien Recorder] Neuer Folgenname: ' [%s] %s -> %s '") % (serien_name, serien_title, new_serien_title))
+		# 	#	if new_serien_title != serien_title:
+		# 	#		refreshTitle = True
+		#
+		# 	(margin_before, margin_after) = getMargins(serien_name, webChannel)
+		#
+		# 	epgmatches = []
+		# 	epgcache = eEPGCache.getInstance()
+		# 	allevents = epgcache.lookupEvent(['IBD',(stbRef, 2, eit, -1)]) or []
+		# 	#writeLog(_("[Serien Recorder] EIT = '%s' -> %s") % (serien_name, str(eit)), True)
+		# 	for eventid, begin, duration in allevents:
+		# 		if int(eventid) == int(eit):
+		# 			#writeLog(_("[Serien Recorder] EIT found"), True)
+		# 			if int(begin) != (int(serien_time) + (int(margin_before) * 60)):
+		# 				title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+		# 				(dirname, dirname_serie) = getDirname(serien_name, staffel)
+		# 				writeLog(_("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '") % (title, dirname))
+		# 				start_unixtime = int(begin)
+		# 				start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+		# 				end_unixtime = int(begin) + int(duration)
+		# 				end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
+		#
+		# 				print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
+		# 				recordHandler = NavigationInstance.instance.RecordTimer
+		# 				try:
+		# 					timerFound = False
+		# 					# suche in aktivierten Timern
+		# 					for timer in recordHandler.timer_list:
+		# 						if timer and timer.service_ref:
+		# 							#if timer.eit == eit:
+		# 							if (timer.begin == int(serien_time)) and (timer.eit == eit) and (str(timer.service_ref).lower() == stbRef.lower()):
+		# 								timer.begin = start_unixtime
+		# 								timer.end = end_unixtime
+		# 								NavigationInstance.instance.RecordTimer.timeChanged(timer)
+		# 								sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=?"
+		# 								cTimer.execute(sql, (start_unixtime, serien_time, stbRef.lower(), eit))
+		# 								show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
+		# 								old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
+		# 								writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
+		# 								self.countTimerUpdate += 1
+		# 								timerFound = True
+		# 								break
+		# 					if not timerFound:
+		# 						# suche in deaktivierten Timern
+		# 						for timer in recordHandler.processed_timers:
+		# 							if timer and timer.service_ref:
+		# 								#if timer.eit == eit:
+		# 								if (timer.begin == int(serien_time)) and (timer.eit == eit) and (str(timer.service_ref).lower() == stbRef.lower()):
+		# 									timer.begin = start_unixtime
+		# 									timer.end = end_unixtime
+		# 									NavigationInstance.instance.RecordTimer.timeChanged(timer)
+		# 									sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=?"
+		# 									cTimer.execute(sql, (start_unixtime, serien_time, stbRef.lower(), eit))
+		# 									show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
+		# 									old_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
+		# 									writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, show_start, webChannel), True)
+		# 									self.countTimerUpdate += 1
+		# 									break
+		# 				except Exception:
+		# 					print "[Serien Recorder] Modifying enigma2 Timer failed:", title, serien_time
+		# 			break
+		#
+		# dbSerRec.commit()
+		# writeLog(_("[Serien Recorder] << Suche im EPG nach der EventID"), True)
 
 		cCursor.close()
 		cTimer.close()
+
+	def updateTimer(self, timer_list, cTimer, eit, end_unixtime, episode, new_serien_time, new_serien_title, serien_name, serien_time, staffel, start_unixtime, stbRef, title, webChannel):
+		timerFound = False
+		for timer in timer_list:
+			if timer and timer.service_ref:
+				if config.plugins.serienRec.TimerName.value == "0":
+					timer_name = "%s - S%sE%s - %s" % (
+					serien_name, str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+				elif config.plugins.serienRec.TimerName.value == "2":
+					timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+				else:
+					timer_name = serien_name
+
+				timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+
+				if (timer.begin == int(serien_time)) and ((timer.eit == 0) or (
+						(int(serien_time) != int(new_serien_time)) or (timer.name != timer_name) or (
+					timer.description != timer_description))) and (str(timer.service_ref).lower() == stbRef.lower()):
+					timer.begin = start_unixtime
+					timer.end = end_unixtime
+					timer.eit = eit
+
+					# remember old timer name and description
+					old_timername = timer.name
+					old_timerdescription = timer.description
+
+					timer.name = timer_name
+					timer.description = timer_description
+
+					NavigationInstance.instance.RecordTimer.timeChanged(timer)
+					NavigationInstance.instance.RecordTimer.saveTimer()
+					sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=? AND EventID=0"
+					cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
+					show_start = time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime(int(start_unixtime)))
+					old_start = time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime(int(serien_time)))
+					if int(start_unixtime) != int(serien_time):
+						writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (
+						title, old_start, show_start, webChannel), True)
+					elif eit != 0:
+						writeLog(_(
+							"[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> Event ID wurde hinzugefügt @ %s") % (
+						         title, webChannel), True)
+					elif old_timername != timer_name:
+						writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (
+						title, old_timername, timer_name, webChannel), True)
+					elif old_timername != timer_name:
+						writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktualisiert -> von %s -> auf %s @ %s") % (
+						title, old_timerdescription, timer_description, webChannel), True)
+					self.countTimerUpdate += 1
+					timerFound = True
+					break
+		return timerFound
 
 	def activateTimer(self):
 		# versuche deaktivierte Timer zu aktivieren oder auf anderer Box zu erstellen
@@ -4017,6 +4013,10 @@ class serienRecCheckForRecording():
 					cCursor.close()
 					self.enableDirectoryCreation = True
 					return True
+				else:
+					self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
+					print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
+					writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, result["message"]), True)
 		else:
 			print "[Serien Recorder] Tuner belegt %s %s" % (label_serie, show_start)
 			writeLog(_("[Serien Recorder] Tuner belegt: %s %s") % (label_serie, show_start), True)
@@ -4091,26 +4091,27 @@ class serienRecCheckForRecording():
 			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
 			writeLogFilter("timerDebug", _("[Serien Recorder] Timer angelegt: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
 
-			# Event-Programmierung auflösen -> 01/1x02/1x03
-			if '/' in str(episode):
-				writeLogFilter("timerDebug", _("[Serien Recorder] Event-Programmierung gefunden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
-				splitedSeasonEpisodeList = []
-				episode = str(staffel) + 'x' + str(episode)
-				seasonEpisodeList = episode.split('/')
-				for seasonEpisode in seasonEpisodeList:
-					splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
+			if config.plugins.serienRec.splitEventTimer.value:
+				# Event-Programmierung auflösen -> 01/1x02/1x03
+				if '/' in str(episode):
+					writeLogFilter("timerDebug", _("[Serien Recorder] Event-Programmierung gefunden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+					splitedSeasonEpisodeList = []
+					episode = str(staffel) + 'x' + str(episode)
+					seasonEpisodeList = episode.split('/')
+					for seasonEpisode in seasonEpisodeList:
+						splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
 
-				useTitles = True
-				splitedTitleList = title.split('/')
-				if len(splitedTitleList) != len(splitedSeasonEpisodeList):
-					useTitles = False
+					useTitles = True
+					splitedTitleList = title.split('/')
+					if len(splitedTitleList) != len(splitedSeasonEpisodeList):
+						useTitles = False
 
-				for idx,entry in enumerate(splitedSeasonEpisodeList):
-					title = "dump"
-					if useTitles:
-						title = splitedTitleList[idx]
-					addToAddedList(serien_name, entry[1], entry[1], entry[0], title)
-					writeLogFilter("timerDebug", _("[Serien Recorder] Episode wird nicht mehr aufgenommen: %s S%sE%s - %s") % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
+					for idx,entry in enumerate(splitedSeasonEpisodeList):
+						title = "dump"
+						if useTitles:
+							title = splitedTitleList[idx]
+						addToAddedList(serien_name, entry[1], entry[1], entry[0], title)
+						writeLogFilter("timerDebug", _("[Serien Recorder] Episode wird nicht mehr aufgenommen: %s S%sE%s - %s") % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
 
 		dbSerRec.commit()
 		cCursor.close()
@@ -5833,7 +5834,11 @@ class serienRecAddSerie(Screen, HelpableScreen):
 				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (Serie, Url))
 			else:
 				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, -2, 1, 1, -1, 0, -1, 0)", (Serie, Url))
-			cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, 0xFFFF))
+			erlaubteSTB = 0xFFFF
+			if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
+				erlaubteSTB = 0
+				erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+			cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
 			dbSerRec.commit()
 			cCursor.close()
 			self['title'].setText(_("Serie '- %s -' zum Serien Marker hinzugefügt.") % Serie)
@@ -6402,7 +6407,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				konflikt = None
 
 				# versuche timer anzulegen
-				if checkTuner(start_unixtime_eit, end_unixtime_eit, timer_stbRef):
+				#if checkTuner(start_unixtime_eit, end_unixtime_eit, timer_stbRef):
+				if True:
 					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, False, dirname, vpsSettings, None, recordfile=".ts")
 					if result["result"]:
 						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit):
@@ -6418,8 +6424,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					# try to get eventID (eit) from epgCache
 					alt_eit, alt_end_unixtime_eit, alt_start_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_altstbRef)
 					# versuche timer anzulegen
-					if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit, timer_altstbRef):
-						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
+					#if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit, timer_altstbRef):
+					if True:
+					 	result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), alt_eit, False, dirname, vpsSettings, None, recordfile=".ts")
 						if result["result"]:
 							konflikt = None
 							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit):
@@ -6651,7 +6658,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_green'].setText(_("(De)aktivieren"))
 		self['text_ok'].setText(_("Beschreibung"))
-		self['text_yellow'].setText(_("Auf die Wunschliste"))
+		self['text_yellow'].setText(_("Auf den Merkzettel"))
 		self['text_blue'].setText(_("Manuell hinzufügen"))
 
 		self['headline'].instance.setHAlign(2)
@@ -6817,6 +6824,20 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		return result
 
+	def removeFromDB(self, season, episode, title=None):
+		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
+		if seasonEpisodeString != "S00E00":
+			title = None
+
+		cCursor = dbSerRec.cursor()
+		if not title:
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=?", (self.serien_name.lower(), season.lower(), str(episode).zfill(2).lower()))
+		else:
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=? OR Titel='')", (self.serien_name.lower(), current_episodes_list[sindex][0].lower(), str(current_episodes_list[sindex][1]).zfill(2).lower(), current_episodes_list[sindex][4].lower(), "dump"))
+
+		dbSerRec.commit()
+		cCursor.close()
+
 	def keyOK(self):
 		if self.loading:
 			return
@@ -6848,10 +6869,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				isAlreadyAdded = self.isAlreadyAdded(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][4])
 
 				if isAlreadyAdded:
-					cCursor = dbSerRec.cursor()
-					cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=?)", (self.serien_name.lower(), current_episodes_list[sindex][0].lower(), str(current_episodes_list[sindex][1]).zfill(2).lower(), current_episodes_list[sindex][4].lower(), "dump"))
-					dbSerRec.commit()
-					cCursor.close()
+					self.removeFromDB(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][4])
 				else:
 					addToAddedList(self.serien_name, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][4])
 
@@ -7857,6 +7875,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.list.append(getConfigListEntry(_("---------  SYSTEM:  -------------------------------------------------------------------------------------------")))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("ID der Box:"), config.plugins.serienRec.BoxID))
+			self.list.append(getConfigListEntry(_("Neue Serien-Marker nur auf dieser Box aktivieren:"), config.plugins.serienRec.activateNewOnThisSTBOnly))
 		self.list.append(getConfigListEntry(_("Umfang der Einstellungen:"), config.plugins.serienRec.setupType))
 		self.list.append(getConfigListEntry(_("Speicherort der Aufnahmen:"), config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry(_("Serien-Verzeichnis anlegen:"), config.plugins.serienRec.seriensubdir))
@@ -7926,6 +7945,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("Timername:"), config.plugins.serienRec.TimerName))
 			self.list.append(getConfigListEntry(_("Manuelle Timer immer erstellen:"), config.plugins.serienRec.forceManualRecording))
+			self.list.append(getConfigListEntry(_("Event-Programmierungen auflösen:"), config.plugins.serienRec.splitEventTimer))
+
 		tvbouquets = STBHelpers.getTVBouquets()
 		if len(tvbouquets) < 2:
 			config.plugins.serienRec.selectBouquets.value = False
@@ -8071,6 +8092,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.BoxID :                   (_("Die ID (Nummer) der STB. Läuft der SerienRecorder auf mehreren Boxen, die alle auf die selbe Datenbank (im Netzwerk) zugreifen, "
 			                                                    "können einzelne Marker über diese ID für jede Box einzeln aktiviert oder deaktiviert werden. Timer werden dann nur auf den Boxen erstellt, "
 																"für die der Marker aktiviert ist."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.activateNewOnThisSTBOnly: (_("Bei 'ja' werden neue Serien-Marker nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.setupType :               (_("Hier kann die Komplexität des Einstellungs-Menüs eingestellt werden."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.savetopath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen gespeichert werden."), "Speicherort_der_Aufnahme"),
 			config.plugins.serienRec.seriensubdir :            (_("Bei 'ja' wird für jede Serien ein eigenes Unterverzeichnis (z.B.\n'%s<Serien_Name>/') für die Aufnahmen erstellt.") % config.plugins.serienRec.savetopath.value, "Serien_Verzeichnis_anlegen"),
@@ -8144,6 +8166,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			                                                    "In diesem Fall wird der Timer NICHT angelegt, und es erfolgt ein entsprechender Eintrag im log.\n"
 			                                                    "Bei 'ja' wird beim manuellen Anlegen von Timern in 'Sendetermine' die Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen vorhanden sind, "
 			                                                    "ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, soferne nicht ein Konflikt mit anderen Timern besteht."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.splitEventTimer :          (_("Bei 'ja' wird versucht die einzelnen Episoden einer Event-Programmierung (S01E01/1x02/1x03) zu erkennen. "
+			                                                    "In diesem Fall wird zwar weiterhin nur ein Timer angelegt, aber die einzelnen Folgen werden in der Datenbank als 'bereits aufgenommen' markiert."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.TimerName :               (_("Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
 																"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.selectBouquets :          (_("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Channel-Zuordnung verwendet werden.\n"
@@ -8274,6 +8298,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.wakeUpDSB.value = False
 
 		config.plugins.serienRec.BoxID.save()
+		config.plugins.serienRec.activateNewOnThisSTBOnly.save()
 		config.plugins.serienRec.setupType.save()
 		config.plugins.serienRec.savetopath.save()
 		config.plugins.serienRec.justplay.save()
@@ -8355,6 +8380,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		else:
 			config.plugins.serienRec.bouquetList.value = ""
 		config.plugins.serienRec.bouquetList.save()
+		config.plugins.serienRec.splitEventTimer.save()
 		config.plugins.serienRec.justplay.value = bool(int(self.kindOfTimer.value) & (1 << self.__C_JUSTPLAY__))
 		config.plugins.serienRec.zapbeforerecord.value = bool(int(self.kindOfTimer.value) & (1 << self.__C_ZAPBEFORERECORD__))
 		config.plugins.serienRec.justremind.value = bool(int(self.kindOfTimer.value) & (1 << self.__C_JUSTREMIND__))
@@ -9327,8 +9353,10 @@ class serienRecReadLog(Screen, HelpableScreen):
 			self.chooseMenuList.l.setItemHeight(int(70*skinFactor))
 		else:
 			self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
-		self['config'] = self.chooseMenuList
-		self['config'].show()
+		self['log'] = self.chooseMenuList
+		self['log'].show()
+		self['video'].hide()
+		self['cover'].hide()
 
 		self['title'].setText(_("Lese LogFile: (%s)") % logFile)
 
@@ -9403,26 +9431,26 @@ class serienRecReadLog(Screen, HelpableScreen):
 			if config.plugins.serienRec.logScrollLast.value:
 				count = len(self.logliste)
 				if count != 0:
-					self['config'].moveToIndex(int(count-1))
+					self['log'].moveToIndex(int(count-1))
 
 	def buildList(self, entry):
 		(zeile) = entry
 		if config.plugins.serienRec.logWrapAround.value:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850 * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 1240 * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
 		else:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, 850 * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, 1240 * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
 		
 	def keyLeft(self):
-		self['config'].pageUp()
+		self['log'].pageUp()
 
 	def keyRight(self):
-		self['config'].pageDown()
+		self['log'].pageDown()
 
 	def keyDown(self):
-		self['config'].down()
+		self['log'].down()
 
 	def keyUp(self):
-		self['config'].up()
+		self['log'].up()
 
 	def __onClose(self):
 		if self.displayTimer:
@@ -10360,7 +10388,11 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 							cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, ?, -1, 1)", (Serie, Url, AbStaffel, AlleSender))
 							ID = cCursor.lastrowid
 						cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
-					cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
+					erlaubteSTB = 0xFFFF
+					if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
+						erlaubteSTB = 0
+						erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+					cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
 					dbSerRec.commit()
 					cCursor.close()
 
@@ -12022,6 +12054,7 @@ class serienRecMain(Screen, HelpableScreen):
 					self.ErrorMsg = "%s - S%sE%s - %s (%s)" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title, sender)
 
 					# Wenn der Sender nicht zugeordnet ist, muss auch nicht nach Timern gesucht werden
+					cSender_list = []
 					if sender in checkedSenderList:
 						cSender_list = checkedSenderList[sender]
 						if self.checkTimer(serien_name, start_time, sender):
@@ -12203,7 +12236,11 @@ class serienRecMain(Screen, HelpableScreen):
 					ID = cCursor.lastrowid
 					cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?,?)", (ID, staffel))
 					cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?,?)", (ID, sender))
-				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
+				erlaubteSTB = 0xFFFF
+				if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
+					erlaubteSTB = 0
+					erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
 				dbSerRec.commit()
 				cCursor.close()
 				self['title'].setText(_("Serie '- %s -' zum Serien Marker hinzugefügt.") % serien_name)
