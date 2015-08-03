@@ -277,7 +277,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.13-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.14-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -4785,6 +4785,7 @@ class serienRecMarker(Screen, HelpableScreen):
 			    "5"		   : (self.episodeList, _("Episoden der ausgewählten Serie anzeigen")),
 				"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 				"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+				"9"		   : (self.disableAll, _("Alle Serien-Marker für diese Box-ID deaktivieren")),
 			}, -1)
 		else:
 			self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
@@ -4812,6 +4813,7 @@ class serienRecMarker(Screen, HelpableScreen):
 			    "5"		   : (self.episodeList, _("Episoden der ausgewählten Serie anzeigen")),
 				"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
 				"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+				"9"		   : (self.disableAll, _("Alle Serien-Marker für diese Box-ID deaktivieren")),
 			}, -1)
 		self.helpList[0][2].sort()
 		
@@ -4843,6 +4845,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		self.num_bt_text[1][0] = _("Serie suchen")
 		self.num_bt_text[0][1] = _("Episoden-Liste")
 		self.num_bt_text[2][2] = _("Timer suchen")
+		self.num_bt_text[4][1] = _("Alle deaktivieren")
 
 		if longButtonText:
 			self.num_bt_text[4][2] = _("Setup Serie (lang: global)")
@@ -5339,6 +5342,18 @@ class serienRecMarker(Screen, HelpableScreen):
 			#self.session.open(serienRecSendeTermine, serien_name, serien_url, self.serien_nameCover)
 			self.session.openWithCallback(self.callTimerAdded, serienRecSendeTermine, serien_name, serien_url, self.serien_nameCover)
 
+	def callDisableAll(self, answer):
+		if answer:
+			self.selected_serien_name = self['config'].getCurrent()[0][0]
+			cCursor = dbSerRec.cursor()
+			mask = (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+			cCursor.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=ErlaubteSTB &(~?)", (mask,))
+			dbSerRec.commit()
+			self.readSerienMarker()
+			cCursor.close()
+		else:
+			return
+
 	def callSaveMsg(self, answer):
 		if answer:
 			self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
@@ -5402,6 +5417,15 @@ class serienRecMarker(Screen, HelpableScreen):
 					else:
 						self.session.openWithCallback(self.callDelMsg, MessageBox, _("Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?") % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 				cCursor.close()
+
+	def disableAll(self):
+		if self.modus == "config":
+			check = self['config'].getCurrent()
+			if check == None:
+				print "[Serien Recorder] Serien Marker leer."
+				return
+			else:
+				self.session.openWithCallback(self.callDisableAll, MessageBox, _("Wollen Sie alle Serien-Marker für diese Box deaktivieren?"), MessageBox.TYPE_YESNO, default = False)
 
 	def insertStaffelMarker(self):
 		print self.select_serie
@@ -9435,10 +9459,14 @@ class serienRecReadLog(Screen, HelpableScreen):
 
 	def buildList(self, entry):
 		(zeile) = entry
+		width = 850
+		if config.plugins.serienRec.SkinType.value == "":
+			width = 1240
+
 		if config.plugins.serienRec.logWrapAround.value:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 1240 * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, width * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
 		else:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, 1240 * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
 		
 	def keyLeft(self):
 		self['log'].pageUp()

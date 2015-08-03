@@ -4,6 +4,7 @@
 	<widget name="title" font="Regular;24" position="55,10" size="860,30" valign="center" halign="center" transparent="1" />
 	<widget name="headline" font="Regular;24" position="55,40" size="860,30" valign="center" halign="center" transparent="1" />
 	<widget name="config" position="60,80" size="850,582" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel70_1200.png" />
+	<widget name="log" position="60,80" size="850,582" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel70_1200.png" />
 	<widget name="popup_bg" position="920,10" size="310,320" backgroundColor="#000000" transparent="1" zPosition="5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/popup_bg.png" />
 	<widget name="popup_list" position="920,10" size="310,320" backgroundColor="#00181d20" zPosition="10" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel25_1200.png" />
 	<widget name="cover" position="980,10" size="200,200" transparent="0" alphatest="blend" />

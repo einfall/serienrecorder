@@ -19,6 +19,7 @@
 	<widget name="headline" font="Regular;24" position="55,130" size="860,30" foregroundColor="#00eaff00" backgroundColor="#20606060" valign="center" halign="center" transparent="1" />
 	<widget name="version" font="Regular; 35" position="70,47" size="950,43" foregroundColor="#00ffffff" backgroundColor="#004e4e4e" transparent="1" />
 	<widget name="config" position="60,170" size="850,440" scrollbarMode="showOnDemand" enableWrapAround="1" backgroundColor="#20606060" transparent="1" />
+	<widget name="log" position="60,170" size="850,440" scrollbarMode="showOnDemand" enableWrapAround="1" backgroundColor="#20606060" transparent="1" />
 	<widget name="popup_bg" position="920,100" size="310,320" backgroundColor="#20606060" transparent="0" zPosition="5" />
 	<widget name="popup_list" position="920,100" size="310,320" backgroundColor="#20606060" zPosition="10" scrollbarMode="showOnDemand" transparent="0" />
 	<widget name="cover" position="920,100" size="310,320" backgroundColor="#20606060" transparent="1" alphatest="blend" />
