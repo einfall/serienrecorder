@@ -277,7 +277,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.14-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.15-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -6855,9 +6855,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		cCursor = dbSerRec.cursor()
 		if not title:
-			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=?", (self.serien_name.lower(), season.lower(), str(episode).zfill(2).lower()))
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (self.serien_name.lower(), season.lower(), str(episode).zfill(2).lower()))
 		else:
-			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=? OR Titel='')", (self.serien_name.lower(), current_episodes_list[sindex][0].lower(), str(current_episodes_list[sindex][1]).zfill(2).lower(), current_episodes_list[sindex][4].lower(), "dump"))
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=? OR Titel='')", (self.serien_name.lower(), season.lower(), str(episode).zfill(2).lower(), title.lower(), "dump"))
 
 		dbSerRec.commit()
 		cCursor.close()

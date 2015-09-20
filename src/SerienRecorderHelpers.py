@@ -13,7 +13,7 @@ from Screens.ChannelSelection import service_types_tv
 
 from Tools.Directories import fileExists
 
-import datetime, random, os, re, urllib2
+import datetime, random, os, re, urllib2, sys
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -57,15 +57,15 @@ def doReplaces(txt):
 
 def getUserAgent():
 	userAgents = [
-		"Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; de) Presto/2.9.168 Version/11.52",
-	    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20120101 Firefox/29.0",
-	    "Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0",
-	    "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)",
-	    "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)",
-	    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
-	    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.67 Safari/537.36",
-	    "Mozilla/5.0 (compatible; Konqueror/4.5; FreeBSD) KHTML/4.5.4 (like Gecko)",
-	    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0"
+		"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
+	    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36",
+	    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1",
+	    "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko",
+	    "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+	    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A",
+	    "Mozilla/5.0 (Android 4.4; Tablet; rv:41.0) Gecko/41.0 Firefox/41.0",
+	    "Mozilla/5.0 (Macintosh; Intel Mac OS X x.y; rv:10.0) Gecko/20100101 Firefox/10.0",
+	    "Mozilla/5.0 (compatible, MSIE 11, Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko"
 	]
 	today = datetime.date.today()
 	random.seed(today.toordinal())
@@ -158,9 +158,18 @@ class TimeHelpers:
 		else:
 			sign = ''
 
-		tdhours, rem = divmod(td.total_seconds(), 3600)
+		if sys.version_info < (2, 7):
+			def tts(timedelta):
+				return (timedelta.microseconds + 0.0 + (timedelta.seconds + timedelta.days * 24 * 3600) * 10 ** 6) / 10 ** 6
+			tdstr_s = '{0}{1:}:{2:02d}'
+		else:
+			def tts(timedelta):
+				return timedelta.total_seconds()
+			tdstr_s = '{}{:}:{:02d}'
+
+		tdhours, rem = divmod(tts(td), 3600)
 		tdminutes, rem = divmod(rem, 60)
-		tdstr = '{}{:}:{:02d}'.format(sign, int(tdhours), int(tdminutes))
+		tdstr = tdstr_s.format(sign, int(tdhours), int(tdminutes))
 		return tdstr
 
 # ----------------------------------------------------------------------------------------------------------------------
