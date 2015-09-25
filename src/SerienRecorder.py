@@ -235,7 +235,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
 	config.plugins.serienRec.autoSearchForCovers = ConfigYesNo(default = False)
 	config.plugins.serienRec.planerCacheEnabled = ConfigYesNo(default = True)
-	config.plugins.serienRec.planerCacheSize = ConfigInteger((int(config.plugins.serienRec.checkfordays.value)), (1,14))
+	config.plugins.serienRec.planerCacheSize = ConfigInteger((int(config.plugins.serienRec.checkfordays.value)), (1,4))
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 	config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
@@ -277,7 +277,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="031"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.15-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.1.16-beta"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screeplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -2657,13 +2657,13 @@ class serienRecCheckForRecording():
 		
 		
 		# suche nach neuen Serien, Covern und Planer-Cache
-		if ((config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value)) or ((not self.manuell) and config.plugins.serienRec.autoSearchForCovers.value) or ((not self.manuell) and (config.plugins.serienRec.firstscreen.value == "0") and config.plugins.serienRec.planerCacheEnabled.value):
-			self.startCheck2()
-		else:
+		# if ((config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value)) or ((not self.manuell) and config.plugins.serienRec.autoSearchForCovers.value) or ((not self.manuell) and (config.plugins.serienRec.firstscreen.value == "0") and config.plugins.serienRec.planerCacheEnabled.value):
+		# 	self.startCheck2()
+		# else:
 			#if not self.manuell:
 			#	global dayCache
 			#	dayCache.clear()
-			self.startCheck3()
+		self.startCheck3()
 
 	def startCheck2(self):
 		writeLog(_("\nLaden der SerienPlaner-Daten gestartet ..."), True)
@@ -8321,6 +8321,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.autochecktype.value != "1":
 			config.plugins.serienRec.wakeUpDSB.value = False
 
+		if config.plugins.serienRec.planerCacheSize.value > 4:
+			config.plugins.serienRec.planerCacheSize.value = 4
+
 		config.plugins.serienRec.BoxID.save()
 		config.plugins.serienRec.activateNewOnThisSTBOnly.save()
 		config.plugins.serienRec.setupType.save()
@@ -11628,7 +11631,7 @@ class serienRecMain(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"2"		: (self.reloadSerienplaner, _("Serienplaner neu laden")),
+			#"2"		: (self.reloadSerienplaner, _("Serienplaner neu laden")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
@@ -11692,11 +11695,11 @@ class serienRecMain(Screen, HelpableScreen):
 		self.daylist = [[],[],[],[]]
 		self.displayTimer = None
 		
-		global dayCache
-		if len(dayCache):
-			optimizePlanerData()
-		else:
-			readPlanerData()
+		# global dayCache
+		# if len(dayCache):
+		# 	optimizePlanerData()
+		# else:
+		# 	readPlanerData()
 			
 		global termineCache
 		if not len(termineCache):
@@ -11732,7 +11735,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self['text_ok'].setText(_("Marker hinzufügen"))
 		self['text_yellow'].setText(_("Serien Marker"))
 		self['text_blue'].setText(_("Timer-Liste"))
-		self.num_bt_text[2][0] = _("neu laden")
+		#self.num_bt_text[2][0] = _("neu laden")
 		self.num_bt_text[2][2] = _("Timer suchen")
 		
 
@@ -11766,7 +11769,8 @@ class serienRecMain(Screen, HelpableScreen):
 		self['popup_list'] = self.chooseMenuList_popup
 		self['popup_list'].hide()
 
-		self['title'].setText(_("Lade infos from Web..."))
+		#self['title'].setText(_("Lade infos from Web..."))
+		self['title'].setText(_("Ansicht in dieser Version nicht verfügbar"))
 
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
@@ -11790,7 +11794,7 @@ class serienRecMain(Screen, HelpableScreen):
 			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
-			self['text_2'].show()
+			#self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
 		
@@ -11996,38 +12000,38 @@ class serienRecMain(Screen, HelpableScreen):
 		else:
 			if config.plugins.serienRec.firstscreen.value == "1":
 				self.session.openWithCallback(self.readWebpage, serienRecMarker)
-			else:
-				self.readWebpage(False)
+			#else:
+			#	self.readWebpage(False)
 
 	def readWebpage(self, answer=True):
 		if (not showMainScreen) and (not UpdateAvailable):
 			self.keyCancel()
 			self.close()
 
-		self.loading = True
+		#self.loading = True
 			
-		global dayCache
-		if answer:
-			dayCache.clear()
+		#global dayCache
+		#if answer:
+		#	dayCache.clear()
 			
-		self.setHeadline()
+		#self.setHeadline()
 		self['title'].instance.setForegroundColor(parseColor("white"))
 
-		lt = datetime.datetime.now()
-		lt += datetime.timedelta(days=self.page)
-		key = time.strftime('%d.%m.%Y', lt.timetuple())
-		if key in dayCache:
-			self['title'].setText(_("Lade Infos vom Speicher..."))
-			self.parseWebpage(dayCache[key], None, None, None, True)
-		else:
-			self['title'].setText(_("Lade Infos vom Web..."))
-			url = "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(self.page))
-			print url
-
-			c1 = re.compile('s_regional\[.*?\]=(.*?);\ns_paytv\[.*?\]=(.*?);\ns_neu\[.*?\]=(.*?);\ns_prime\[.*?\]=(.*?);.*?<td rowspan="3" class="zeit">(.*?) Uhr</td>.*?<a href="(/serie/.*?)" class=".*?">(.*?)</a>.*?href="http://www.wunschliste.de/kalender.pl\?s=(.*?)\&.*?alt="(.*?)".*?<tr><td rowspan="2"></td><td>(.*?)<a href=".*?" target="_new">(.*?)</a>', re.S)
-			c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
-			c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
-			getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError,url)
+		# lt = datetime.datetime.now()
+		# lt += datetime.timedelta(days=self.page)
+		# key = time.strftime('%d.%m.%Y', lt.timetuple())
+		# if key in dayCache:
+		# 	self['title'].setText(_("Lade Infos vom Speicher..."))
+		# 	self.parseWebpage(dayCache[key], None, None, None, True)
+		# else:
+		# 	self['title'].setText(_("Lade Infos vom Web..."))
+		# 	url = "http://www.wunschliste.de/serienplaner/%s/%s" % (str(config.plugins.serienRec.screeplaner.value), str(self.page))
+		# 	print url
+		#
+		# 	c1 = re.compile('s_regional\[.*?\]=(.*?);\ns_paytv\[.*?\]=(.*?);\ns_neu\[.*?\]=(.*?);\ns_prime\[.*?\]=(.*?);.*?<td rowspan="3" class="zeit">(.*?) Uhr</td>.*?<a href="(/serie/.*?)" class=".*?">(.*?)</a>.*?href="http://www.wunschliste.de/kalender.pl\?s=(.*?)\&.*?alt="(.*?)".*?<tr><td rowspan="2"></td><td>(.*?)<a href=".*?" target="_new">(.*?)</a>', re.S)
+		# 	c2 = re.compile('<span class="epg_st.*?title="Staffel.*?>(.*?)</span>', re.S)
+		# 	c3 = re.compile('<span class="epg_ep.*?title="Episode.*?>(.*?)</span>', re.S)
+		# 	getPage(url, timeout=WebTimeout, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.parseWebpage, c1, c2, c3).addErrback(self.dataError,url)
 
 	def parseWebpage(self, data, c1, c2, c3, useCache=False):
 		if useCache:
