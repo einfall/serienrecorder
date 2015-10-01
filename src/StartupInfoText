@@ -46,30 +46,57 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.1.4:
+CHANGE-LOG v3.1.16:
+
+Wunschliste hat in der letzten Woche Maßnahmen ergriffen den SerienRecorder am Abrufen bestimmter Funktionen zu hindern. Aus diesem Grunde habe ich entschieden, die Funktionen rund um die Serien-Planer Daten zu deaktivieren - bis eine nachhaltige Lösung gefunden ist.
+
 Neue Funktionen:
-    - Fehler beim Lesen vom web werden in eine separate Datei im Log-Verzeichnis geschrieben, wenn die entsprechende Option im globalen Setup aktiviert ist.
-    - Verbesserte Anzeige bei der Serien-Suche, falls es mehr Treffer gibt als angezeigt.
-    - Beim Auto-Check wird jetzt bis zu 5 mal versucht die Webseite abzurufen, falls es zu einem Fehler gekommen ist. Es wird eine entsprechende Zeile im Log ausgegeben wenn weitere Abrufversuche nötig waren.
-    - Optimiertes Laden der Cover (sollte jetzt doppelt so schnell gehen)
+    - Das SerienRecorder Setup Plugin lässt sich jetzt auch dann starten wenn der Pfad zur Datenbank nicht gefunden wurde.
+    - Zusätzliche Ausgabe der aktuellen Uhrzeit beim Auto-Check Timer Eintrag
+    - Es wird jetzt nach dem Start des Plugins 1 Minute gewartet, bis der Auto-Check Timer gestartet wird, dass soll sicherstellen, dass die Uhrzeit zu diesem Zeitpunkt bereits korrekt ist.
+    - Timername und -beschreibung werden jetzt beim Aktualisieren von Timern ebenfalls aktualisiert (im Moment noch ohne Option zum an-/abschalten).
+    - Zusätzlicher Filter bei den Sendeterminen. Es können jetzt nur die Termine gezeigt werden die auf Sendern laufen die für den Serien Marker ausgewählten wurden.
+    - In den Einstellungen kann jetzt festgelegt werden wie die Option "Nach dem Event" im Timer gesetzt werden soll. Das Standardverhalten "automatisch" ist voreingestellt.
+    - Der Code wurde für Full HD Skins angepasst, es funktioniert aber wohl noch nicht in allen Ansichten richtig (Danke an schomi)
+    - Es wird jetzt beim Auto-Check zusätzlich zur bisherigen STB Info auch die Auflösung des verwendeten Skins ausgegeben
+    - Es wird jetzt eine zusätzliche Suche im EPG durchgeführt die eine Sendung auch dann findet, wenn sich die Startzeit stark verändert hat (z.B. von 20:15 Uhr auf 22:15 Uhr) - dann wird der Timer korrekt aktualisiert
+    - Event-Programmierungen (also S01E01/1x02/1x03) werden jetzt beim Anlegen eines Timers erkannt und die einzelnen Folgen werden ebenfalls in die Datenbank aufgenommen
+    - Neue Option in den Einstellungen "Neue Serien-Marker nur auf dieser Box aktivieren" um bei mehreren Boxen den Serien-Marker nur auf einer Box zu aktivieren
+    - Neue Option in den Einstellungen "Event-Programmierungen auflösen" damit lässt sich die Funktion die in der letzten Version eingeführt wurde, abschalten
+    - Wird über den SerienRecorder ein Timer manuell angelegt und die Option "Manuelle Timer immer anlegen" ist aktiv wird nicht mehr die Anzahl der Tuner überprüft
+    - Neue Funktion in der Serien-Marker Ansicht: Taste "9" deaktiviert jetzt alle Serien-Marker für die aktive Box-ID
+    - Serien-Planer Ansicht ab sofort nicht mehr verfügbar
+    - Serien-Planer Daten werden nicht mehr geladen.
 
 Bugfixes:
-    - Greenscreen bei EXIT Setup in Episodenliste
-    - GS bei Notification (falsche Großschreibung)
-    - Episoden werden wieder korrekt markiert und lassen sich hinzufügen und löschen
-    - Die Cache-Files für Planerdaten und Sendetermine wurden nicht gelesen.
-    - Herunterfahren der Box im Zusammenhang mit EPGRefresh 
-    - Der Episoden-Informationen Screen kann jetzt wie beschrieben auch mit der roten Taste verlassen werden
-    - Anpassung an geändertes Encoding der Wunschliste Webseite 
+    - Die Log-Ansicht kann jetzt auch wie beschrieben mit der roten Taste verlassen werden.
+    - Möglicher GS beim Öffnen der Sendetermine entschärft
+    - Mögliche Exception wenn Cover nicht geladen werden können
+    - Cover werden jetzt umbenannt wenn sie noch die Endung .png haben (korrekt ist .jpg)
+    - SerienRecorder Datenbank wird ab jetzt nur dann geöffnet wenn sie wirklich benötigt und nach Benutzung wieder geschlossen
+    - Die Suche nach Serien akzeptiert jetzt (wieder) Umlaute im Suchbegriff    
+    - Der Eintrag "n weitere Ergebnisse für x" in den Suchergebnissen kann nicht mehr als SerienMarker hinzugefügt werden
+    - Das Aktivieren/Deaktivieren von Episoden in der Episoden-Liste sollte jetzt auch in Sonderfällen funktionieren (wenn z.B. der Name der Episode auf Wunschliste geändert wurde)
+    - Kein Crash mehr beim Entfernen über Episodenliste
+    - Inkompatibilität mit älteren Dreamboxen (bzw. Boxen mit älterer Python Version) behoben
 
 Änderungen:
-    - Die blaue Taste öffnet jetzt auch in der SerienMarker-Ansicht die Timer-Liste. Die Funktion "Serie suchen" wird durch langen Tastendruck auf die blaue Taste gestartet.
-    - Vor- und Nachlaufzeiten im Serien-Marker werden auch dann korrekt angezeigt wenn sie für den Marker auf 0 gesetzt sind.
-    - Suchbegriff für Serien-Suche wird für Verfeinerung beibehalten
-    - Manuelle Timer werden auch deaktiviert angelegt
-    - Falls für die Sendung kein EIT ermittelt werden konnte, kommt das VPS Plugin durcheinander und nimmt u.U. die Sendung gar nicht auf. Deswegen wird in diesem Fall VPS für diesen Timer abgeschaltet.
-    - Timeout auf 10 Sekunden herabgesetzt, damit die Wartezeit bei den Fehlversuchen nicht zu lange wird.
-	
+    - Das Initialisieren der SerienRecorder Datenbank wurde verbessert, kann die Datenbank beim Starten der Box oder des SerienRecorders nicht initialisiert werden, kommt eine entsprechende Meldung und das Starten des SerienRecorders wird kontrolliert beendet. So wird der SerienRecorder auch dann korrekt geladen, wenn die Datenbank nicht im Zugriff ist (Pfad zur Datenbank nicht mehr vorhanden oder erreichbar).
+    - Das Verhalten des SerienRecorders, falls er die Box in den Standby/Deepstandby schicken soll, wurde verändert. Der SerienRecorder schickt die Box jetzt auch dann in den DeepStandby wenn sie vorher im Standby war. Außerdem wird vor dem Herunterfahren noch überprüft ob eine Aufnahme läuft.
+    - Das Aufnahmeverzeichnis im SerienMarker Setup startet jetzt beim Auswählen im Aufnameverzeichnis das im globalen Setup eingestellt ist.
+    - Ausgabe der verbleibende Zeit bis zum nächsten Auto-Check im Log wurde verbessert und erweitert.
+    - Auf VU+ Boxen ist die Option den Auto-Check nach dem EPGRefresh zu starten ausgeblendet, denn das dafür nötige EPGRefresh Plugin ist für die VU+ Boxen nicht verfügbar.
+    - Für die neuen Dreamboxen mit DreamOS ist die Option "nach Änderungen Suchlauf beim Beenden starten" nicht mehr verfügbar, da sie zu einem GS führte.
+    - Die Tastenbelegung für "Serie suchen" ist jetzt geändert (vorher lange blaue Taste in der SerienMarker Ansicht -> jetzt Taste 1) - die alte Belegung hat bei einigen Usern Probleme verursacht.
+    - Formatierung der verbleibenden Zeit bis zum nächsten Auto-Check verbessert
+    - Cover im Staffel-Ordner heißen jetzt wie der Ordner (z.B. Season 1.jpg) für Kompatibilität mit EMC
+    - In den Einstellungen ist die Option "Staffel-Verzeichnis anlegen" nur noch dann sichtbar, wenn auch "Serien-Verzeichnis anlegen" eingeschaltet ist
+    - In den Einstellungen ist die Option "Aus Deep-Standby aufwecken" nur noch dann sichtbar, wenn die Option "Automatischen Suchlauf ausführen" auf "zur gewählten Uhrzeit" eingestellt ist.
+    - In den Einstellungen ist die Option "Versuche Eventid aus dem EPGCACHE zu holen" in "Versuche Timer aus dem EPG zu aktualisieren" umbenannt
+    - Automatische Bereinigung alter "fehlerhafter" Einstellungen beim Speichern der Einstellungen
+    - Aktualisieren der Timer optimiert:
+    - Können bei einem Konflikt auch keine deaktivierten Timer angelegt werden, wird im Log jetzt die enigma2 Fehlermeldung ausgegeben, wieso der Timer nicht angelegt werden konnte
+    - Log-Ausgabe Ansicht verbreitert, sodass man das Log jetzt komplett lesen kann, nur beim Skin "SerienRecorder 1" ist das Log in voller Bildschirmbreite sichtbar	
 	
 	
 Viel Spass mit dem SerienRecorder!
