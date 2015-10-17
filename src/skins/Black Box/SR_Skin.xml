@@ -6,6 +6,7 @@
 
 	<!-- Marker-/Planer-Listen -->
 	<widget name="config" position="450,170" size="830,428" foregroundColor="#00ffffff" backgroundColor="#00181d20" scrollbarMode="showAlways" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Black Box/images/sel70_1200.png" />
+	<widget name="menu_list" position="450,170" size="830,428" foregroundColor="#00ffffff" backgroundColor="#00181d20" scrollbarMode="showAlways" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Black Box/images/sel70_1200.png" />
 
 	<!-- Log-Listen -->
 	<widget name="log" position="450,170" size="830,428" foregroundColor="#00ffffff" backgroundColor="#00181d20" scrollbarMode="showAlways" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Black Box/images/sel70_1200.png" />

@@ -28,12 +28,12 @@ class SearchEvents(object):
 		else:
 			print "[SerienRecorder] suche ' %s '" % self.serien_name
 			print self.serie_url
-			getPage(self.serie_url, agent=getUserAgent(), headers={'Content-Type':'application/x-www-form-urlencoded', 'Accept-Encoding':'gzip'}).addCallback(self.__callback).addErrback(self.__errback)
+			getPage(getURLWithProxy(self.serie_url), agent=getUserAgent(), headers=getHeaders()).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
 		print "[SerienRecorder] suche dates"
 		print self.serie_url
-		req = Request(self.serie_url, headers={'Content-Type':'application/x-www-form-urlencoded'})
+		req = Request(getURLWithProxy(self.serie_url), headers={})
 		try:
 			data = urlopen(req).read()
 		except URLError as e:

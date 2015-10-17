@@ -1,6 +1,7 @@
-﻿# This file contain some helper functions
+﻿# coding=utf-8
+
+# This file contain some helper functions
 # which called from other SerienRecorder modules
-# -*- coding: utf-8 -*-
 
 from __init__ import _
 
@@ -13,13 +14,17 @@ from Screens.ChannelSelection import service_types_tv
 
 from Tools.Directories import fileExists
 
-import datetime, random, os, re, urllib2, sys
+import datetime, os, re, urllib2, sys, time
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # Common functions
 #
 # ----------------------------------------------------------------------------------------------------------------------
+
+# Useragent
+userAgent = ''
+WebTimeout = 10
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -29,6 +34,24 @@ except ImportError as ie:
 	isDreamboxOS = False
 else:
 	isDreamboxOS = True
+
+def writeTestLog(text):
+	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
+		open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", 'w').close()
+
+	writeLogFile = open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", "a")
+	writeLogFile.write('%s\n' % (text))
+	writeLogFile.close()
+
+def writeErrorLog(text):
+	if config.plugins.serienRec.writeErrorLog.value:
+		ErrorLogFile = "%sErrorLog" % config.plugins.serienRec.LogFilePath.value
+		if not fileExists(ErrorLogFile):
+			open(ErrorLogFile, 'w').close()
+
+		writeLogFile = open(ErrorLogFile, "a")
+		writeLogFile.write("%s: %s\n----------------------------------------------------------\n\n" % (time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime()), text))
+		writeLogFile.close()
 
 def decodeISO8859_1(txt, doReplaces=False):
 	txt = unicode(txt, 'ISO-8859-1')
@@ -56,40 +79,62 @@ def doReplaces(txt):
 	return txt
 
 def getUserAgent():
-	userAgents = [
-		"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
-	    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36",
-	    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1",
-	    "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko",
-	    "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-	    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A",
-	    "Mozilla/5.0 (Android 4.4; Tablet; rv:41.0) Gecko/41.0 Firefox/41.0",
-	    "Mozilla/5.0 (Macintosh; Intel Mac OS X x.y; rv:10.0) Gecko/20100101 Firefox/10.0",
-	    "Mozilla/5.0 (compatible, MSIE 11, Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko"
-	]
-	today = datetime.date.today()
-	random.seed(today.toordinal())
-	return userAgents[random.randint(0, 8)]
+	# userAgents = [
+	# 	"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
+	#     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36",
+	#     "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1",
+	#     "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko",
+	#     "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+	#     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A",
+	#     "Mozilla/5.0 (Android 4.4; Tablet; rv:41.0) Gecko/41.0 Firefox/41.0",
+	#     "Mozilla/5.0 (Macintosh; Intel Mac OS X x.y; rv:10.0) Gecko/20100101 Firefox/10.0",
+	#     "Mozilla/5.0 (compatible, MSIE 11, Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko"
+	# ]
+	# today = datetime.date.today()
+	# random.seed(today.toordinal())
+	# return userAgents[random.randint(0, 8)]
+	# global userAgent
+	# if not userAgent:
+	# 	userAgent = UserAgent().ie
+	# return userAgent.encode('utf-8')
+	return "Enigma2-SerienRecorder"
+
+def getHeaders(referer = None):
+	if not referer:
+		referer = 'http://www.wunschliste.de/main'
+	headers = {
+		# 'Accept': 'text/html, application/xhtml+xml, image/jxr, */*',
+		# 'Accept-Encoding': 'gzip',
+		# 'Accept-Language': 'de-DE,de;q=0.5',
+		# 'Referer': referer,
+		# 'Connection': 'Keep-Alive',
+		# 'Host': 'www.wunschliste.de',
+		# 'DNT': '1',
+	}
+	return headers
+
+def getURLWithProxy(url):
+	return "http://serienrecorder.lima-city.de/proxy.php?url=%s" % url
 
 def processDownloadedData(data):
-	from gzip import GzipFile
-	try:
-		from cStringIO import StringIO
-	except:
-		from StringIO import StringIO
-
-	#writeLog(_("[Serien Recorder] Downloaded data size = %d bytes") % (len(data)))
-	compressedstream = StringIO(data)
-	gzipper = GzipFile(fileobj=compressedstream)
-	try:
-		data = gzipper.read()
-	except:
-		data = data
-	finally:
-		gzipper.close()
-		compressedstream.close()
-
-	#writeLog(_("[Serien Recorder] Uncompressed data size = %d bytes") % (len(data)))
+	# from gzip import GzipFile
+	# try:
+	# 	from cStringIO import StringIO
+	# except:
+	# 	from StringIO import StringIO
+	#
+	# #writeLog(_("[Serien Recorder] Downloaded data size = %d bytes") % (len(data)))
+	# compressedstream = StringIO(data)
+	# gzipper = GzipFile(fileobj=compressedstream)
+	# try:
+	# 	data = gzipper.read()
+	# except:
+	# 	data = data
+	# finally:
+	# 	gzipper.close()
+	# 	compressedstream.close()
+	#
+	# #writeLog(_("[Serien Recorder] Uncompressed data size = %d bytes") % (len(data)))
 	return data
 
 # ----------------------------------------------------------------------------------------------------------------------
