@@ -135,10 +135,10 @@ def SelectSkin():
 			writeErrorLog("   SelectSkin(): Error")
 			pass
 
-	elif config.plugins.serienRec.SkinType.value in ("", "Skin2", "AtileHD", "Black Box"):
+	elif config.plugins.serienRec.SkinType.value in ("", "Skin2", "AtileHD", "StyleFHD", "Black Box"):
 		skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
 		skin = skin.replace("//", "/")
-		if config.plugins.serienRec.SkinType.value in ("Skin2", "Black Box"):
+		if config.plugins.serienRec.SkinType.value in ("Skin2", "StyleFHD", "Black Box"):
 			showAllButtons = True
 		if config.plugins.serienRec.SkinType.value in ("Skin2", "AtileHD", "Black Box"):
 			buttonText_na = ""
@@ -154,11 +154,11 @@ def ReadConfigFile():
 	config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
 	config.plugins.serienRec.coverPath = ConfigText(default = serienRecCoverPath, fixed_size=False, visible_width=80)
 	
-	choices = [("Skinpart", _("Skinpart")), ("", _("SerienRecorder 1")), ("Skin2", _("SerienRecorder 2")), ("AtileHD", _("AtileHD")), ("Black Box", _("Black Box"))]
+	choices = [("Skinpart", _("Skinpart")), ("", _("SerienRecorder 1")), ("Skin2", _("SerienRecorder 2")), ("AtileHD", _("AtileHD")), ("StyleFHD", _("StyleFHD")), ("Black Box", _("Black Box"))]
 	try:
 		t = list(os.walk("%sskins" % serienRecMainPath))
 		for x in t[0][1]:
-			if x not in ("Skin2", "AtileHD", "Black Box"):
+			if x not in ("Skin2", "AtileHD", "StyleFHD", "Black Box"):
 				choices.append((x, x))
 	except:
 		writeErrorLog("   ReadConfigFile(): Error creating Skin-List")
@@ -282,7 +282,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="032"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.2-beta"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.2"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screenplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -987,7 +987,7 @@ def getTags(serien_name):
 	data = cCursor.fetchone()
 	if data:
 		(tagString,) = data
-		if tagString is not None:
+		if tagString is not None and len(tagString) > 0:
 			tags = pickle.loads(tagString)
 	cCursor.close()
 	return tags
@@ -2601,6 +2601,7 @@ class serienRecCheckForRecording():
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
 			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
+		global dbSerRec
 		if config.plugins.serienRec.AutoBackup.value:
 			BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
 			if not os.path.exists(BackupPath):
@@ -2609,7 +2610,6 @@ class serienRecCheckForRecording():
 				except:
 					pass
 			if os.path.isdir(BackupPath):
-				global dbSerRec
 				if fileExists(serienRecDataBase):
 					f = dbSerRec.text_factory
 					dbSerRec.close()
@@ -5670,6 +5670,9 @@ class serienRecMarker(Screen, HelpableScreen):
 			self['popup_bg'].hide()
 			self.insertSenderMarker()
 		else:
+			#if not showMainScreen:
+				#self.hide()
+				#self.session.openWithCallback(self.readSerienMarker, ShowSplashScreen, config.plugins.serienRec.showversion.value)
 			if config.plugins.serienRec.refreshViews.value:
 				self.close(self.changesMade)
 			else:
@@ -8059,7 +8062,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry(_("---------  GUI:  ----------------------------------------------------------------------------------------------")))
 			self.list.append(getConfigListEntry(_("Skin:"), config.plugins.serienRec.SkinType))
 			global showAllButtons
-			if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD", "Black Box"):
+			if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD", "StyleFHD", "Black Box"):
 				self.list.append(getConfigListEntry(_("    werden bei diesem Skin immer ALLE Tasten angezeigt:"), config.plugins.serienRec.showAllButtons))
 				showAllButtons = config.plugins.serienRec.showAllButtons.value
 			elif config.plugins.serienRec.SkinType.value in ("", "AtileHD"):
@@ -12612,7 +12615,7 @@ class serienRecMain(Screen, HelpableScreen):
 				singleTimer.start(10000, True)
 			
 			#self.hide()
-			#self.showAbout()
+			#self.showSplashScreen()
 			self.close()
 		elif self.modus == "popup":
 			self['popup_list'].hide()

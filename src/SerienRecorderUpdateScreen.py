@@ -35,7 +35,7 @@ class checkGitHubUpdate:
 	def checkForUpdate(self):
 		global UpdateAvailable
 		UpdateAvailable = False
-		conn = httplib.HTTPSConnection("api.github.com", timeout=WebTimeout, port=443)
+		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
 		try:
 			conn.request(url="/repos/einfall/serienrecorder/tags", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
 			data = conn.getresponse()

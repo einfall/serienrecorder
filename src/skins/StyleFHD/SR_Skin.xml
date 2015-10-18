@@ -1,0 +1,74 @@
+﻿	<screen name="SerienRecorder" position="0,0" size="1980,1080" title="Serien Recorder" backgroundColor="#ffffffff">
+		<eLabel position="0,0" size="1830,1080" zPosition="-15" backgroundColor="#10ffffff" />
+		<eLabel position=" 55,100" size="1810,870" zPosition="-10" backgroundColor="#102e2e2e" />
+		<eLabel position="55,1025" size="290, 5" zPosition="-10" backgroundColor="#10b81c46" />
+		<eLabel position="350,1025" size="290, 5" zPosition="-10" backgroundColor="#10009f3c" />
+		<eLabel position="645,1025" size="290, 5" zPosition="-10" backgroundColor="#109ca81b" />
+		<eLabel position="940,1025" size="290, 5" zPosition="-10" backgroundColor="#102673ec" />
+		<widget name="text_red" position="70,970" size="260,50" zPosition="1" font="Regular;18" halign="left" valign="center" foregroundColor="#00666666" backgroundColor="#10ffffff" transparent="1" />
+		<widget name="text_green" position="365,970" size="260,50" zPosition="1" font="Regular;18" halign="left" valign="center" foregroundColor="#00666666" backgroundColor="#10ffffff" transparent="1" />
+		<widget name="text_yellow" position="660,970" size="260,50" zPosition="1" font="Regular;18" halign="left" valign="center" foregroundColor="#00666666" backgroundColor="#10ffffff" transparent="1" />
+		<widget name="text_blue" position="955,970" size="260,50" zPosition="1" font="Regular;18" halign="left" valign="center" foregroundColor="#00666666" backgroundColor="#10ffffff" transparent="1" />
+		
+		<!-- Titel + Version -->
+		<widget name="version" position="70,50" size="870,43" font="Regular;28" foregroundColor="#00666666" backgroundColor="#10ffffff" transparent="1" />
+		<!-- Subtitel -->
+		<widget name="title" position="70,105" size="1200,35" font="Regular;21" foregroundColor="#0061b5f8" backgroundColor="#102e2e2e" transparent="1" zPosition="5" />
+		<!-- Serienherkunft -->
+		<widget name="headline" position="70,140" size="1200,35" font="Regular;21" foregroundColor="#0061b5f8" backgroundColor="#102e2e2e" valign="center" transparent="1" />		
+		
+		<widget name="cover" position="1300,105" size="250,250" backgroundColor="#102e2e2e" transparent="1" alphatest="blend" />
+		<widget name="info" position="70,145" size="1200,815" font="Regular;20" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="path" position="70,105" size="1200,65" font="Regular;20" foregroundColor="#0061b5f8" backgroundColor="#102e2e2e" valign="top" transparent="1" />
+
+		<!-- Serienliste -->
+		<widget name="config" position="70,190" size="1200,770" itemHeight="35" font="Regular;20" secondfont="Regular;19" scrollbarMode="showOnDemand" enableWrapAround="1" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="menu_list" position="70,190" size="1200,755" enableWrapAround="1" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="log" position="70,190" size="1200,755" enableWrapAround="1" backgroundColor="#102e2e2e" transparent="1" />
+		
+		<!-- Anzeige-Modus -->
+		<widget name="popup_bg" position="70,175" size="1200,770" backgroundColor="#102e2e2e" transparent="0" zPosition="5" />
+		<widget name="popup_list" position="70,175" size="1200,770" itemHeight="35" backgroundColor="#102e2e2e" zPosition="10" scrollbarMode="showOnDemand"  transparent="0" />
+
+		<!-- Channels -->
+		<widget name="Web_Channel" position="100,135" size="250,30" zPosition="10" font="Regular; 20" foregroundColor="#0061b5f8" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="STB_Channel" position="410,135" size="250,30" zPosition="10" font="Regular; 20" foregroundColor="#0061b5f8" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="alt_STB_Channel" position="720,135" size="250,30" zPosition="10" font="Regular; 20" foregroundColor="#0061b5f8" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="list" position="70,175" size="1200,770" itemHeight="35" backgroundColor="#102e2e2e" zPosition="5" scrollbarMode="showOnDemand" transparent="0" />
+		<widget name="popup_list2" position="70,175" size="1200,770" itemHeight="35" backgroundColor="#10111111" zPosition="11" scrollbarMode="showOnDemand" transparent="0" />
+
+		<!-- Config -->
+		<widget name="config_information" position="1300,115" size="560,250" zPosition="3" foregroundColor="#0061b5f8" backgroundColor="#ffffffff" />
+		<widget name="config_information_text" position="1300,115" size="560,250" zPosition="5" font="Regular;18" halign="left" foregroundColor="#0061b5f8" backgroundColor="#102e2e2e" transparent="0" />
+
+		<widget name="bt_menu" position="1300,370" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_menu.png" alphatest="on" />
+		<widget name="text_menu" position="1340,370" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_ok" position="1300,410" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_ok.png" alphatest="on" />
+		<widget name="text_ok" position="1340,410" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_0" position="1300,450" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_0.png" alphatest="on" />
+		<widget name="text_0" position="1340,450" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_1" position="1300,490" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_1.png" alphatest="on" />
+		<widget name="text_1" position="1340,490" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_2" position="1300,530" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_2.png" alphatest="on" />
+		<widget name="text_2" position="1340,530" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_3" position="1300,570" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_3.png" alphatest="on" />
+		<widget name="text_3" position="1340,570" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_4" position="1300,610" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_4.png" alphatest="on" />
+		<widget name="text_4" position="1340,610" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_5" position="1300,650" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_5.png" alphatest="on" />
+		<widget name="text_5" position="1340,650" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_6" position="1300,690" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_6.png" alphatest="on" />
+		<widget name="text_6" position="1340,690" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_7" position="1300,730" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_7.png" alphatest="on" />
+		<widget name="text_7" position="1340,730" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_8" position="1300,770" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_8.png" alphatest="on" />
+		<widget name="text_8" position="1340,770" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_9" position="1300,810" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_9.png" alphatest="on" />
+		<widget name="text_9" position="1340,810" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_text" position="1300,850" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_text.png" alphatest="on" />
+		<widget name="text_text" position="1340,850" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_epg" position="1300,890" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_epg.png" alphatest="on" />
+		<widget name="text_epg" position="1340,890" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="bt_info" position="1300,930" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_help.png" alphatest="on" />
+		<widget name="text_info" position="1340,930" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
+	</screen>

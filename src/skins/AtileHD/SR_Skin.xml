@@ -36,7 +36,7 @@
 	<widget name="config_information_text" position="920,100" size="310,320" zPosition="5" font="Regular;18" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="0" />
 
 	<widget name="info" position="60,170" size="850,440" font="Regular;24" backgroundColor="#20606060" transparent="1" zPosition="1" />
-	<widget name="path" position="70,47" size="950,43" font="Regular;20" foregroundColor="#00ffffff" backgroundColor="#20606060" valign="center" halign="left" transparent="1" />
+	<widget name="path" position="70,110" size="950,43" font="Regular;20" foregroundColor="#00ffffff" backgroundColor="#20606060" valign="center" halign="left" transparent="1" />
 
 	<widget name="bt_ok" position="930,435" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/AtileHD/images/key_ok.png" alphatest="on" />
 	<widget name="text_ok" position="965,435" size="260,25" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#20606060" transparent="1" />
