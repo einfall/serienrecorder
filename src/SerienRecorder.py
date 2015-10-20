@@ -244,7 +244,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 	config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
-	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 5, 1, default = 0)
+	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 10, 1, default = 0)
 	config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default = True)
 	config.plugins.serienRec.breakTimersuche = ConfigYesNo(default = False)
 	config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
@@ -282,7 +282,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="032"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.2"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.2.1"))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screenplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -716,13 +716,33 @@ def updateMenuKeys(self):
 		self['bt_2'].hide()
 		self['bt_3'].hide()
 		self['bt_4'].hide()
+		self['bt_5'].show()
+		self['bt_6'].show()
+		self['bt_7'].show()
+		self['bt_8'].show()
+		self['bt_9'].show()
+		self['bt_exit'].hide()
+		self['bt_text'].hide()
+		self['bt_epg'].hide()
+		self['bt_info'].hide()
+		self['bt_menu'].hide()
 	elif self.displayMode == 1:
 		self.displayMode = 2
+		self['bt_0'].show()
+		self['bt_1'].show()
+		self['bt_2'].show()
+		self['bt_3'].show()
+		self['bt_4'].show()
 		self['bt_5'].hide()
 		self['bt_6'].hide()
 		self['bt_7'].hide()
 		self['bt_8'].hide()
 		self['bt_9'].hide()
+		self['bt_exit'].show()
+		self['bt_text'].show()
+		self['bt_epg'].show()
+		self['bt_info'].show()
+		self['bt_menu'].show()
 	else:
 		self.displayMode = 0
 		self['bt_0'].show()
@@ -735,6 +755,11 @@ def updateMenuKeys(self):
 		self['bt_7'].show()
 		self['bt_8'].show()
 		self['bt_9'].show()
+		self['bt_exit'].hide()
+		self['bt_text'].hide()
+		self['bt_epg'].hide()
+		self['bt_info'].hide()
+		self['bt_menu'].hide()
 	self['text_0'].setText(self.num_bt_text[0][self.displayMode])
 	self['text_1'].setText(self.num_bt_text[1][self.displayMode])
 	self['text_2'].setText(self.num_bt_text[2][self.displayMode])
@@ -8670,7 +8695,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.excludeSunday = ConfigYesNo(default = False)
 
 		# tags
-		if tags is None:
+		if tags is None or len(tags) == 0:
 			self.serienmarker_tags = []
 		else:
 			self.serienmarker_tags = pickle.loads(tags)
