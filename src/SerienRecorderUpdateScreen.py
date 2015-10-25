@@ -118,6 +118,7 @@ class SerienRecorderUpdateScreen(Screen):
 		self.fileSize = 5 * 1024
 		self.downloadDone = False
 		self.container = eConsoleAppContainer()
+		self.appClosed_conn = None
 
 		self['srlog'] = Label()
 
@@ -193,13 +194,13 @@ class SerienRecorderUpdateScreen(Screen):
 
 		if fileExists(self.file_name):
 			self['srlog'].setText(_("Starte Update, bitte warten..."))
-
-			self.container.appClosed.append(self.finishedPluginUpdate)
 			self.container.stdoutAvail.append(self.srlog)
 
 			if isDreamboxOS:
+				self.appClosed_conn = self.container.appClosed.connect(self.finishedPluginUpdate)
 				self.container.execute("apt-get update && dpkg -i %s && apt-get -f install" % str(self.file_name))
 			else:
+				self.container.appClosed.append(self.finishedPluginUpdate)
 				self.container.execute("opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.file_name))
 		else:
 			self.downloadError()
