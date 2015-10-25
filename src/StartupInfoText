@@ -46,18 +46,19 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.2:
+CHANGE-LOG v3.2.2:
 
-Diese Version bezieht die Daten jetzt mit freundlicher Genehmigung von Wunschliste
+Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
 
-Neue Funktionen:
-    - Abrufen der Daten über Proxy
-    - Verbesserte Unterstützung für FullHD Skins
-    - Verbesserung der Behandlung von Event-Programmierungen
-    - Einem Serien-Marker können jetzt Tags zugewiesen werden, die dann dem Timer mitgegeben werden
-
+Änderungen:
+    - Die Farben sind jetzt nicht mehr im Plugin definiert, sondern werden aus dem Skin der Box übernommen
+    - Unterstützung für UHD Skins
+	
 Bugfixes:
-    - Diverse Bugfixes und Refaktorierungen
+    - Kein Crash mehr beim Öffnen der Serien-Marker Einstellungen
+    - Kleinere Skinprobleme behoben
+    - Cover werden wieder geladen
+    - Auto-Update Probleme auf Boxen mit DreamOS behoben
 
 	
 Viel Spass mit dem SerienRecorder!

@@ -32,7 +32,7 @@ from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
 import Screens.Standby
 
-from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter, eConsoleAppContainer
+from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter
 from Tools.Directories import pathExists, fileExists, SCOPE_SKIN_IMAGE, resolveFilename
 import sys, os, base64, re, time, shutil, datetime, codecs, urllib, urllib2, random
 from twisted.web import client, error as weberror
@@ -65,6 +65,7 @@ from Tools import Notifications
 
 import sqlite3, httplib
 import cPickle as pickle
+import xmlrpclib
 
 try:
 	import simplejson as json
@@ -76,12 +77,6 @@ from SerienRecorderSplashScreen import *
 from SerienRecorderStartupInfoScreen import *
 from SerienRecorderUpdateScreen import *
 from SerienRecorderAboutScreen import *
-
-colorRed    = 0xf23d21
-colorGreen  = 0x389416
-colorBlue   = 0x0064c7
-colorYellow = 0xbab329
-colorWhite  = 0xffffff
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
@@ -103,9 +98,11 @@ default_skinName = skinName
 default_skin = skin
 skinFactor = 1
 
-# Check if is Full HD 1920x1080
+# Check if is Full HD / UHD
 DESKTOP_WIDTH = getDesktop(0).size().width()
-if DESKTOP_WIDTH > 1280:
+if DESKTOP_WIDTH > 1920:
+	skinFactor = 3.0	
+elif DESKTOP_WIDTH > 1280:
 	skinFactor = 1.5
 else:
 	skinFactor = 1
@@ -244,7 +241,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1,9))
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default = True)
 	config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
-	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 10, 1, default = 0)
+	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 35, 1, default = 0)
 	config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default = True)
 	config.plugins.serienRec.breakTimersuche = ConfigYesNo(default = False)
 	config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
@@ -282,7 +279,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="032"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default="3.2.1"))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default=SRVERSION))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screenplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -302,6 +299,8 @@ def ReadConfigFile():
 	config.plugins.serienRec.updateInterval.save()
 	config.plugins.serienRec.autoSearchForCovers.setValue(False)
 	config.plugins.serienRec.autoSearchForCovers.save()
+	if config.plugins.serienRec.planerCacheSize.value > 4:
+		config.plugins.serienRec.planerCacheSize.value = 4
 	configfile.save()
 
 	SelectSkin()
@@ -445,16 +444,23 @@ def getCover(self, serien_name, serien_id):
 	if fileExists(png_serien_nameCover):
 		os.rename(png_serien_nameCover, serien_nameCover)
 
+	writeLog(_("Cached cover path: %s") % serien_nameCover, True)
 	if fileExists(serien_nameCover):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif serien_id:
-		url = "http://www.wunschliste.de%s/links" % serien_id
-		getPage(getURLWithProxy(url), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+		server = xmlrpclib.ServerProxy('http://serienrecorder.lima-city.de/cache.php', verbose=False)
+		posterURL = server.sp.cache.getCoverURL(int(serien_id), serien_name)
+		if posterURL:
+			downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
+
+		# url = "http://www.wunschliste.de%s/links" % serien_id
+		# writeLog(_("Wunschliste URL: %s") % url, True)
+		# getPage(getURLWithProxy(url), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
 
 def getCoverDataError(error, self, serien_nameCover):
 	if self is not None: 
 		#self['title'].setText(_("Cover-Suche auf 'Wunschliste.de' erfolglos"))
-		#self['title'].instance.setForegroundColor(parseColor("white"))
+		#self['title'].instance.setForegroundColor(parseColor("foreground"))
 		writeLog(_("[Serien Recorder] Fehler bei: %s (%s)") % (self.ErrorMsg, serien_nameCover), True)
 		writeErrorLog("   getCover(): %s\n   Serie: %s\n   %s" % (error, serien_nameCover, self.ErrorMsg))
 		print "[Serien Recorder] Fehler bei: %s" % self.ErrorMsg
@@ -466,22 +472,24 @@ def getCoverDataError(error, self, serien_nameCover):
 	writeLog(_("      %s") % str(error), True)
 	print error
 
-def getImdblink(data, self, serien_nameCover):
-	data = processDownloadedData(data)
-	imdbID = re.findall('<a href="http://www.imdb.com/title/(.*?)/.*?"', data, re.S)
-	if imdbID:
-		omdbURL = "http://www.omdbapi.com/?i=%s" % imdbID[0]
-		getPage(omdbURL, timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
-	else:
-		print "[Serien Recorder] es wurde kein imdb-link für ein cover gefunden."
-		
-def loadImdbCover(data, self, serien_nameCover):
-	data = processDownloadedData(data)
-	parsed_json = json.loads(data)
-	posterURL = str(parsed_json['Poster'])
-	if posterURL:
-		print posterURL
-		downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
+# def getImdblink(data, self, serien_nameCover):
+# 	data = processDownloadedData(data)
+# 	imdbID = re.findall('href="http://www.imdb.com/title/(.*?)/.*?"', data, re.S)
+# 	if imdbID:
+# 		omdbURL = "http://www.omdbapi.com/?i=%s" % imdbID[0]
+# 		writeLog(_("OMDB URL: %s") % omdbURL, True)
+# 		getPage(omdbURL, timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
+# 	else:
+# 		print "[Serien Recorder] es wurde kein imdb-link für ein cover gefunden."
+#
+# def loadImdbCover(data, self, serien_nameCover):
+# 	data = processDownloadedData(data)
+# 	parsed_json = json.loads(data)
+# 	posterURL = str(parsed_json['Poster'])
+# 	if posterURL:
+# 		print posterURL
+# 		writeLog(_("Post URL: %s") % posterURL, True)
+# 		downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
 	
 def showCover(data, self, serien_nameCover, force_show=True):
 	if self is not None: 
@@ -505,7 +513,7 @@ def showCover(data, self, serien_nameCover, force_show=True):
 
 			if self.picLoaderResult == 0:
 				ptr = self.picload.getData()
-				if ptr != None:
+				if ptr is not None:
 					self['cover'].instance.setPixmap(ptr)
 					self['cover'].show()
 		else:
@@ -708,7 +716,7 @@ def Skin1_Settings(self):
 	self['text_info'].setText(self.num_bt_text[3][2])
 	self['text_menu'].setText(self.num_bt_text[4][2])
 		
-def updateMenuKeys(self):	
+def updateMenuKeys(self):
 	if self.displayMode == 0:
 		self.displayMode = 1
 		self['bt_0'].hide()
@@ -728,11 +736,11 @@ def updateMenuKeys(self):
 		self['bt_menu'].hide()
 	elif self.displayMode == 1:
 		self.displayMode = 2
-		self['bt_0'].show()
-		self['bt_1'].show()
-		self['bt_2'].show()
-		self['bt_3'].show()
-		self['bt_4'].show()
+		self['bt_0'].hide()
+		self['bt_1'].hide()
+		self['bt_2'].hide()
+		self['bt_3'].hide()
+		self['bt_4'].hide()
 		self['bt_5'].hide()
 		self['bt_6'].hide()
 		self['bt_7'].hide()
@@ -750,11 +758,11 @@ def updateMenuKeys(self):
 		self['bt_2'].show()
 		self['bt_3'].show()
 		self['bt_4'].show()
-		self['bt_5'].show()
-		self['bt_6'].show()
-		self['bt_7'].show()
-		self['bt_8'].show()
-		self['bt_9'].show()
+		self['bt_5'].hide()
+		self['bt_6'].hide()
+		self['bt_7'].hide()
+		self['bt_8'].hide()
+		self['bt_9'].hide()
 		self['bt_exit'].hide()
 		self['bt_text'].hide()
 		self['bt_epg'].hide()
@@ -767,18 +775,28 @@ def updateMenuKeys(self):
 	self['text_4'].setText(self.num_bt_text[4][self.displayMode])
 
 def writeLog(text, forceWrite=False):
+	global logFile
 	if config.plugins.serienRec.writeLog.value or forceWrite:
 		if not fileExists(logFile):
-			open(logFile, 'w').close()
+			try:
+				open(logFile, 'w').close()
+			except (IOError, OSError) as e:
+				logFile = "%slog" % serienRecMainPath
+				open(logFile, 'w').close()
 
 		writeLogFile = open(logFile, "a")
 		writeLogFile.write('%s\n' % (text))
 		writeLogFile.close()
 
 def writeLogFilter(type, text, forceWrite=False):
+	global logFile
 	if config.plugins.serienRec.writeLog.value or forceWrite:
 		if not fileExists(logFile):
-			open(logFile, 'w').close()
+			try:
+				open(logFile, 'w').close()
+			except (IOError, OSError) as e:
+				logFile = "%slog" % serienRecMainPath
+				open(logFile, 'w').close()
 
 		writeLogFile = open(logFile, "a")
 		if (type == "channels" and config.plugins.serienRec.writeLogChannels.value) or \
@@ -2231,7 +2249,7 @@ class serienRecBaseScreen():
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				serien_id = "/%s" % serien_id[0]
+				serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
 		writeLog(_("[Serien Recorder] serienRecShowEpisodeInfo(): ID: %s  Serie: %s" % (str(serien_id), serienName)))
 		getCover(self, serienName, serien_id)
@@ -3566,7 +3584,7 @@ class serienRecCheckForRecording():
 				(Serie, Url) = row
 				serien_id = re.findall('epg_print.pl\?s=([0-9]+)', Url)
 				if serien_id:
-					serien_id = "/%s" %  serien_id[0]
+					serien_id = serien_id[0]
 				getCover(None, Serie, serien_id)
 			cCursor.close()
 			
@@ -3574,8 +3592,6 @@ class serienRecCheckForRecording():
 			cTmp.execute("SELECT SerieName, ID FROM GefundeneSerien ORDER BY SerieName")
 			for row in cTmp:
 				(Serie, serien_id) = row
-				if serien_id:
-					serien_id = "/%s" %  serien_id
 				getCover(None, Serie, serien_id)
 				cAdded = dbTmp.cursor()
 				cAdded.execute("DELETE FROM GefundeneSerien WHERE LOWER(SerieName)=?", (Serie.lower(),))
@@ -4462,7 +4478,7 @@ class serienRecTimer(Screen, HelpableScreen):
 		cCursor.close()
 		
 		if showTitle:			
-			self['title'].instance.setForegroundColor(parseColor("white"))
+			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			if self.filter:
 				self['title'].setText(_("TimerList: %s Timer sind vorhanden.") % len(timerList))
 			else:
@@ -4477,7 +4493,7 @@ class serienRecTimer(Screen, HelpableScreen):
 		self.chooseMenuList.setList(map(self.buildList, timerList))
 		if len(timerList) == 0:
 			if showTitle:			
-				self['title'].instance.setForegroundColor(parseColor("white"))
+				self['title'].instance.setForegroundColor(parseColor("foreground"))
 				self['title'].setText(_("Serien Timer - 0 Serien in der Aufnahmeliste."))
 
 		self.getCover()
@@ -4493,16 +4509,16 @@ class serienRecTimer(Screen, HelpableScreen):
 			imageFound = "%simages/black.png" % serienRecMainPath
 
 		if activeTimer:
-			SerieColor = colorWhite
+			SerieColor = parseColor('foreground').argb()
 		else:
-			SerieColor = colorRed
+			SerieColor = parseColor('red').argb()
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8 * skinFactor, 32, 32, loadPNG(imageFound)),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8 * skinFactor, 32 * skinFactor, 32 * skinFactor, loadPNG(imageFound)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel, SerieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 250 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 250 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb()),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), colorYellow)
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), parseColor('yellow').argb())
 			]
 
 	def keyOK(self):
@@ -4617,7 +4633,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				serien_id = "/%s" % serien_id[0]
+				serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 			
@@ -5129,14 +5145,14 @@ class serienRecMarker(Screen, HelpableScreen):
 			return
 		
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		self.serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
 		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', self['menu_list'].getCurrent()[0][1])
 		if serien_id:
-			serien_id = "/%s" %  serien_id[0]
+			serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
@@ -5241,9 +5257,9 @@ class serienRecMarker(Screen, HelpableScreen):
 				SenderText = _("%s, Std.") % SenderText
 
 		if SerieAktiviert:
-			SerieColor = colorYellow
+			SerieColor = parseColor('yellow').argb()
 		else:
-			SerieColor = colorRed
+			SerieColor = parseColor('red').argb()
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
@@ -5368,8 +5384,8 @@ class serienRecMarker(Screen, HelpableScreen):
 			imageMode = "%simages/plus.png" % serienRecMainPath
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7 * skinFactor, 30, 17, loadPNG(imageMode)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(staffel).zfill(2))
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7 * skinFactor, 30 * skinFactor, 17 * skinFactor, loadPNG(imageMode)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 0, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(staffel).zfill(2))
 			]
 
 	def keyGreen(self):
@@ -5894,7 +5910,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 	def searchSerie(self):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText(_("Suche nach ' %s '") % self.serien_name)
-		self['title'].instance.setForegroundColor(parseColor("white"))
+		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
 		from SearchSerie import SearchSerie
 		SearchSerie(self.serien_name, self.results, self.dataError).request()
@@ -5905,7 +5921,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		#self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(len(self.serienlist))))
 		#self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(sum([1 if x[0].find(_(" weitere Ergebnisse für ")) == -1 else int(x[0].replace("...", "").strip().split(" ", 1)[0]) for x in serienlist]))))
 		self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(sum([1 if x[2] != "-1" else int(x[1]) for x in serienlist]))))
-		self['title'].instance.setForegroundColor(parseColor("white"))
+		self['title'].instance.setForegroundColor(parseColor("foreground"))
 		self.loading = False
 		self.getCover()
 
@@ -5976,7 +5992,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			print serien_name
 			self.chooseMenuList.setList(map(self.buildList, []))
 			self['title'].setText("")
-			self['title'].instance.setForegroundColor(parseColor("white"))
+			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.serien_name = serien_name
 			self.searchSerie()
 
@@ -6005,7 +6021,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
-		serien_id = "/%s" % self['menu_list'].getCurrent()[0][2]
+		serien_id = self['menu_list'].getCurrent()[0][2]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
@@ -6015,7 +6031,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			self.displayTimer = None
 
 	def keyCancel(self):
-		self['title'].instance.setForegroundColor(parseColor("white"))
+		self['title'].instance.setForegroundColor(parseColor("foreground"))
 		self.close()
 
 	def dataError(self, error, url=None):
@@ -6345,12 +6361,12 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			leftImage = imagePlus
 			
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16, 16, loadPNG(leftImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), colorYellow),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), parseColor('yellow').argb()),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), colorYellow),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750 * skinFactor, 1 * skinFactor, 48, 48, loadPNG(rightImage))
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), parseColor('yellow').argb()),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750 * skinFactor, 1 * skinFactor, 48 * skinFactor, 48 * skinFactor, loadPNG(rightImage))
 			]
 
 	def isAlreadyAdded(self, season, episode, title=None):
@@ -6780,7 +6796,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_blue'].setText(_("Manuell hinzufügen"))
 
 		self['headline'].instance.setHAlign(2)
-		self['headline'].instance.setForegroundColor(parseColor('#00ffffff'))
+		self['headline'].instance.setForegroundColor(parseColor('foreground'))
 		self['headline'].instance.setFont(parseFont("Regular;20", ((1,1),(1,1))))
 
 		super(self.__class__, self).setSkinProperties()
@@ -6907,17 +6923,17 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if not otitle:
 			otitle = ("(%s)" % title)
 
-		color = colorYellow
+		color = parseColor('yellow').argb()
 		if not str(season).isdigit():
-			color = colorRed
+			color = parseColor('red').argb()
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16, 16, loadPNG(leftImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 100 * skinFactor, 48 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % (seasonEpisodeString), color),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 150 * skinFactor, 17 * skinFactor, 48, 48, loadPNG(middleImage)),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 100 * skinFactor, 48 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % (seasonEpisodeString), color),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 150 * skinFactor, 17 * skinFactor, 48 * skinFactor, 48 * skinFactor, loadPNG(middleImage)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title),
-			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle.strip(), colorYellow),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750 * skinFactor, 1 * skinFactor, 48, 48, loadPNG(rightImage))
+			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle.strip(), parseColor('yellow').argb()),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750 * skinFactor, 1 * skinFactor, 48 * skinFactor, 48 * skinFactor, loadPNG(rightImage))
 			]
 
 	def showPages(self):
@@ -7356,10 +7372,10 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			imageStatus = "%simages/plus.png" % serienRecMainPath
 			
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 7 * skinFactor, 16, 16, loadPNG(imageStatus)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 300 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 7 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imageStatus)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 0, 300 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
 			(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 0, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, stbSender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, altstbSender, colorYellow)
+			(eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, altstbSender, parseColor('yellow').argb())
 			]
 
 	def buildList_popup(self, entry):
@@ -7516,7 +7532,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				dbSerRec.commit()
 				
 			cCursor.close()	
-			self['title'].instance.setForegroundColor(parseColor("white"))
+			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.showChannels()
 
 	def keyGreen(self):
@@ -10198,7 +10214,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				serien_id = "/%s" % serien_id[0]
+				serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
@@ -10372,9 +10388,9 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 			imageFound = "%simages/black.png" % serienRecMainPath
 		
 		if CreationFlag == 2:
-			setFarbe = colorRed
+			setFarbe = parseColor('red').argb()
 		else:
-			setFarbe = colorWhite
+			setFarbe = parseColor('foreground').argb()
 			
 		Staffel = "S%sE01" % str(Staffel).zfill(2)
 		WochenTag=[_("Mo"), _("Di"), _("Mi"), _("Do"), _("Fr"), _("Sa"), _("So")]
@@ -10389,19 +10405,19 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80 * skinFactor, 40 * skinFactor, picon),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30, 30, loadPNG(imageFound)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(imageFound)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow, colorYellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb(), parseColor('yellow').argb()),
 				(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, colorYellow, colorYellow)
+				(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, parseColor('yellow').argb(), parseColor('yellow').argb())
 				]
 		else:
 			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30, 30, loadPNG(imageFound)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(imageFound)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, colorYellow, colorYellow),
+				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb(), parseColor('yellow').argb()),
 				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, colorYellow, colorYellow)
+				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, parseColor('yellow').argb(), parseColor('yellow').argb())
 				]
 
 	def readLogFile(self):
@@ -10482,7 +10498,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', self['menu_list'].getCurrent()[0][5])
 		if serien_id:
-			serien_id = "/%s" % serien_id[0]
+			serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
@@ -11046,7 +11062,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				serien_id = "/%s" % serien_id[0]
+				serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 			
@@ -11220,7 +11236,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				serien_id = "/%s" % serien_id[0]
+				serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, self.serieName, serien_id)
 
@@ -11499,7 +11515,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				serien_id = "/%s" % serien_id[0]
+				serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, self.serieName, serien_id)
 
@@ -11678,7 +11694,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 
 	def getCover(self):
 		self.ErrorMsg = "'getCover()'"
-		getCover(self, self.serien_name, "/%s" % self.serien_id)
+		getCover(self, self.serien_name, self.serien_id)
 
 	def __onClose(self):
 		if self.displayTimer:
@@ -11916,7 +11932,7 @@ class serienRecMain(Screen, HelpableScreen):
 		if not initDB():
 			self.close()
 		self['title'].setText(_("File-Import erfolgreich ausgeführt"))
-		self['title'].instance.setForegroundColor(parseColor("white"))
+		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
 	def reloadSerienplaner(self):
 		lt = datetime.datetime.now()
@@ -12105,7 +12121,7 @@ class serienRecMain(Screen, HelpableScreen):
 			dayCache.clear()
 			
 		self.setHeadline()
-		self['title'].instance.setForegroundColor(parseColor("white"))
+		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
 		lt = datetime.datetime.now()
 		lt += datetime.timedelta(days=self.page)
@@ -12263,10 +12279,10 @@ class serienRecMain(Screen, HelpableScreen):
 		if len(self.daylist[int(config.plugins.serienRec.screenmode.value)]) != 0:
 			if head_datum:
 				self['title'].setText(_("Es wurden für - %s - %s Serie(n) gefunden.") % (head_datum[0], len(self.daylist[int(config.plugins.serienRec.screenmode.value)])))
-				self['title'].instance.setForegroundColor(parseColor("white"))
+				self['title'].instance.setForegroundColor(parseColor("foreground"))
 			else:
 				self['title'].setText(_("Es wurden für heute %s Serie(n) gefunden.") % len(self.daylist[int(config.plugins.serienRec.screenmode.value)]))
-				self['title'].instance.setForegroundColor(parseColor("white"))
+				self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.chooseMenuList.setList(map(self.buildList, self.daylist[int(config.plugins.serienRec.screenmode.value)]))
 			self.ErrorMsg = "'getCover()'"
 			self.getCover()
@@ -12274,7 +12290,7 @@ class serienRecMain(Screen, HelpableScreen):
 			if int(self.page) < 1 and not int(self.page) == 0:
 				self.page -= 1
 			self['title'].setText(_("Es wurden für heute %s Serie(n) gefunden.") % len(self.daylist[int(config.plugins.serienRec.screenmode.value)]))
-			self['title'].instance.setForegroundColor(parseColor("white"))
+			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			print "[Serien Recorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
 			self.chooseMenuList.setList(map(self.buildList, self.daylist[int(config.plugins.serienRec.screenmode.value)]))
 
@@ -12287,12 +12303,14 @@ class serienRecMain(Screen, HelpableScreen):
 		imageHDD = "%simages/hdd_24x24.png" % serienRecMainPath
 		
 		if serieAdded:
-			setFarbe = colorGreen
+			seriesColor = parseColor('green').argb()
 		else:
-			setFarbe = colorWhite
+			seriesColor = parseColor('foreground').argb()
 			if str(episode).isdigit():
 				if int(episode) == 1:
-					setFarbe = colorRed
+					seriesColor = parseColor('red').argb()
+		titleColor = timeColor = parseColor('yellow').argb()
+
 
 		if int(neu) == 0:
 			imageNeu = imageNone
@@ -12313,21 +12331,21 @@ class serienRecMain(Screen, HelpableScreen):
 				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, sender))
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5 * skinFactor, 80 * skinFactor, 40 * skinFactor, picon),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 7 * skinFactor, 30, 22, loadPNG(imageNeu)),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 30 * skinFactor, 30, 22, loadPNG(imageHDDTimer)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 7 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageNeu)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 30 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDDTimer)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, colorYellow, colorYellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
+				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, timeColor, timeColor),
+				(eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, seriesColor, seriesColor),
+				(eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, titleColor, titleColor)
 				]
 		else:
 			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7, 30, 22, loadPNG(imageNeu)),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 30 * skinFactor, 30, 22, loadPNG(imageHDDTimer)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 280 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, colorYellow, colorYellow),
-				(eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 29 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, colorYellow, colorYellow)
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7, 30 * skinFactor, 22 * skinFactor, loadPNG(imageNeu)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 30 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDDTimer)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 280 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, timeColor, timeColor),
+				(eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, seriesColor, seriesColor),
+				(eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 29 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, titleColor, titleColor)
 				]
 
 	def keyOK(self):
@@ -12403,11 +12421,11 @@ class serienRecMain(Screen, HelpableScreen):
 			return
 		
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][6]
-		serien_id = self['menu_list'].getCurrent()[0][5]
+		serien_id = self['menu_list'].getCurrent()[0][14]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 		
@@ -12650,7 +12668,7 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def dataError(self, error, url):
 		self['title'].setText(_("Suche auf 'Wunschliste.de' erfolglos"))
-		self['title'].instance.setForegroundColor(parseColor("white"))
+		self['title'].instance.setForegroundColor(parseColor("foreground"))
 		writeLog(_("[Serien Recorder] Fehler bei: %s") % self.ErrorMsg, True)
 		writeLog(_("      %s") % error, True)
 		writeErrorLog("   serienRecMain(): %s\n   %s\n   Url: %s" % (error, self.ErrorMsg, url))

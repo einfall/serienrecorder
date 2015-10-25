@@ -17,9 +17,9 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 	DESKTOP_HEIGHT      = getDesktop(0).size().height()
 
 	skin = """
-		<screen name="SerienRecorderAbout" position="%d,%d" size="650,350" title="%s" >
-			<widget name="pluginInfo" position="5,5" size="640,340" valign="center" halign="center" zPosition="5" transparent="1" foregroundColor="white" font="Regular;18"/>
-		</screen>""" % ((DESKTOP_WIDTH - 650) / 2, (DESKTOP_HEIGHT - 350) / 2, _("Über SerienRecorder"))
+		<screen name="SerienRecorderAbout" position="%d,%d" size="650,400" title="%s" >
+			<widget name="pluginInfo" position="5,5" size="640,390" valign="center" halign="center" zPosition="5" transparent="1" foregroundColor="white" font="Regular;18"/>
+		</screen>""" % ((DESKTOP_WIDTH - 650) / 2, (DESKTOP_HEIGHT - 400) / 2, _("Über SerienRecorder"))
 
 	def __init__(self,session):
 		self.session = session
