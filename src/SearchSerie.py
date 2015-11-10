@@ -59,7 +59,7 @@ class SearchSerie(object):
 					if len(infos) == 4:
 						(name_Serie, year_Serie, id_Serie, unknown) = infos
 						# encode utf-8
-						name_Serie = decodeISO8859_1(name_Serie, True)
+						#name_Serie = decodeISO8859_1(name_Serie, True)
 						raw = re.findall('(.*?)(\[%s\])?\Z' % self.serien_name.encode('utf-8'), name_Serie, re.I | re.S)
 						if raw:
 							(name_Serie, x) = raw

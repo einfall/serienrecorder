@@ -189,6 +189,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.afterEvent = ConfigSelection(choices = [("0", _("nichts")), ("1", _("in Standby gehen")), ("2", _("in Deep-Standby gehen")), ("3", _("automatisch"))], default="3")
 	config.plugins.serienRec.AutoBackup = ConfigYesNo(default = False)
 	config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(14, (0,999))
 	config.plugins.serienRec.eventid = ConfigYesNo(default = True)
 	# Remove EPGRefresh action for VU+ Boxes
 	try:
@@ -197,7 +198,7 @@ def ReadConfigFile():
 	except:
 		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit")), ("2", _("nach EPGRefresh"))], default = "1")
 	config.plugins.serienRec.update = ConfigYesNo(default = False)
-	config.plugins.serienRec.updateInterval = ConfigInteger(0, (0,24))
+	config.plugins.serienRec.updateInterval = ConfigInteger(24, (0,24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
 	config.plugins.serienRec.deltime = ConfigClock(default = (2*3600)+time.timezone)
 	config.plugins.serienRec.maxDelayForAutocheck = ConfigInteger(15, (0,60))
@@ -294,7 +295,7 @@ def ReadConfigFile():
 	if config.plugins.serienRec.autochecktype.value == "0":
 		config.plugins.serienRec.updateInterval.setValue(0)
 	else:
-		if int(config.plugins.serienRec.updateInterval.value) > 0:
+		if int(config.plugins.serienRec.updateInterval.value) != 0:
 			config.plugins.serienRec.updateInterval.setValue(24)
 	config.plugins.serienRec.updateInterval.save()
 	config.plugins.serienRec.autoSearchForCovers.setValue(False)
@@ -444,15 +445,17 @@ def getCover(self, serien_name, serien_id):
 	if fileExists(png_serien_nameCover):
 		os.rename(png_serien_nameCover, serien_nameCover)
 
-	writeLog(_("Cached cover path: %s") % serien_nameCover, True)
+	#writeLog(_("Cached cover path: %s") % serien_nameCover, True)
 	if fileExists(serien_nameCover):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif serien_id:
-		server = xmlrpclib.ServerProxy('http://serienrecorder.lima-city.de/cache.php', verbose=False)
-		posterURL = server.sp.cache.getCoverURL(int(serien_id), serien_name)
-		if posterURL:
-			downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
-
+		try:
+			server = xmlrpclib.ServerProxy('http://serienrecorder.lima-city.de/cache.php', verbose=False)
+			posterURL = server.sp.cache.getCoverURL(int(serien_id), serien_name)
+			if posterURL:
+				downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
+		except:
+			getCoverDataError("failed", self, serien_nameCover)
 		# url = "http://www.wunschliste.de%s/links" % serien_id
 		# writeLog(_("Wunschliste URL: %s") % url, True)
 		# getPage(getURLWithProxy(url), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(getImdblink, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
@@ -1556,7 +1559,7 @@ def updateDB():
 	config.plugins.serienRec.globalFromTime.save()
 	config.plugins.serienRec.globalToTime.save()
 	configfile.save()
-	
+
 	dbSerRec = sqlite3.connect(serienRecDataBase)
 	dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 	
@@ -2646,6 +2649,15 @@ class serienRecCheckForRecording():
 
 		global dbSerRec
 		if config.plugins.serienRec.AutoBackup.value:
+			# Remove old backups
+			writeLog(_("[Serien Recorder] Entferne alte Backup-Dateien und erzeuge neues Backup."), True)
+			now = time.time()
+			for root, dirs, files in os.walk(config.plugins.serienRec.BackupPath.value, topdown=False):
+				for name in dirs:
+					if os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
+						shutil.rmtree(os.path.join(root, name), True)
+						writeLog(_("[Serien Recorder] Removed folder: %s") % os.path.join(root, name), True)
+
 			BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
 			if not os.path.exists(BackupPath):
 				try:
@@ -3652,7 +3664,7 @@ class serienRecCheckForRecording():
 		return result
 
 	def askForDSB(self):
-		if (not self.manuell):
+		if not self.manuell:
 			dbSerRec.close()
 			if (config.plugins.serienRec.updateInterval.value == 24) and (config.plugins.serienRec.wakeUpDSB.value or config.plugins.serienRec.autochecktype.value == "2") and int(config.plugins.serienRec.afterAutocheck.value):
 				if config.plugins.serienRec.DSBTimeout.value > 0:
@@ -3875,22 +3887,7 @@ class serienRecCheckForRecording():
 			if config.plugins.serienRec.splitEventTimer.value != "0" and '/' in str(episode):
 			# Event-Programmierung auflösen -> 01/1x02/1x03
 				writeLogFilter("timerDebug", _("[Serien Recorder] Event-Programmierung gefunden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
-				splitedSeasonEpisodeList = []
-				if 'x' in str(episode):
-					episode = str(staffel) + 'x' + str(episode)
-					seasonEpisodeList = episode.split('/')
-					for seasonEpisode in seasonEpisodeList:
-						splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
-				else:
-					seasonEpisodeList = episode.split('/')
-					for seasonEpisode in seasonEpisodeList:
-						seasonEpisode = str(staffel) + 'x' + str(seasonEpisode)
-						splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
-
-				useTitles = True
-				splitedTitleList = title.split('/')
-				if len(splitedTitleList) != len(splitedSeasonEpisodeList):
-					useTitles = False
+				splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
 
 				alreadyExistsCount = 0
 				for idx,entry in enumerate(splitedSeasonEpisodeList):
@@ -3898,11 +3895,7 @@ class serienRecCheckForRecording():
 					if useTitles:
 						title = splitedTitleList[idx]
 					alreadyExists = checkAlreadyAdded(serien_name, entry[0], entry[1], title, False)
-					if config.plugins.serienRec.splitEventTimer.value == "1" and not alreadyExists:
-						# Event aufnehmen und nicht vorhandene Einzelfolge als bereits aufgenommen markieren
-						addToAddedList(serien_name, entry[1], entry[1], entry[0], title)
-						writeLogFilter("timerDebug", _("[Serien Recorder] Episode wird nicht mehr aufgenommen: %s S%sE%s - %s") % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
-					else:
+					if alreadyExists:
 						alreadyExistsCount += 1
 
 				if len(splitedSeasonEpisodeList) == alreadyExistsCount:
@@ -4012,7 +4005,7 @@ class serienRecCheckForRecording():
 
 		if not TimerDone:
 			# post processing event recordings
-			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel in forceRecordings:
+			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel in eventRecordings:
 				if self.shouldCreateEventTimer(serien_name, staffel, episode, title):
 					show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
 					writeLog(_("[Serien Recorder] ' %s ' - Einzelepisoden nicht gefunden! -> %s") % (label_serie, show_start), True)
@@ -4022,7 +4015,25 @@ class serienRecCheckForRecording():
 						#break
 
 		return TimerDone
-		
+
+	def splitEvent(self, episode, staffel, title):
+		splitedSeasonEpisodeList = []
+		if 'x' in str(episode):
+			episode = str(staffel) + 'x' + str(episode)
+			seasonEpisodeList = episode.split('/')
+			for seasonEpisode in seasonEpisodeList:
+				splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
+		else:
+			seasonEpisodeList = episode.split('/')
+			for seasonEpisode in seasonEpisodeList:
+				seasonEpisode = str(staffel) + 'x' + str(seasonEpisode)
+				splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
+		useTitles = True
+		splitedTitleList = title.split('/')
+		if len(splitedTitleList) != len(splitedSeasonEpisodeList):
+			useTitles = False
+		return splitedSeasonEpisodeList, splitedTitleList, useTitles
+
 	def doTimer(self, current_time, future_time, title, staffel, episode, label_serie, start_unixtime, end_unixtime, stbRef, eit, dirname, serien_name, webChannel, stbChannel, check_SeasonEpisode, optionalText = '', vomMerkzettel = False, tryDisabled = False):
 		##############################
 		#
@@ -4071,6 +4082,20 @@ class serienRecCheckForRecording():
 					cCursor.close()
 				else:
 					writeLog(_("[Serien Recorder] ' %s ' - Timer wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+					# Event-Programmierung verarbeiten
+					if config.plugins.serienRec.splitEventTimer.value == "1" and '/' in str(episode):
+						splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
+
+						for idx,entry in enumerate(splitedSeasonEpisodeList):
+							title = "dump"
+							if useTitles:
+								title = splitedTitleList[idx]
+							alreadyExists = checkAlreadyAdded(serien_name, entry[0], entry[1], title, False)
+							if not alreadyExists:
+								# Nicht vorhandene Einzelfolgen als bereits aufgenommen markieren
+								addToAddedList(serien_name, entry[1], entry[1], entry[0], title)
+								writeLogFilter("timerDebug", _("[Serien Recorder] Einzelepisode wird nicht mehr aufgenommen: %s S%sE%s - %s") % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
+
 				self.enableDirectoryCreation = True
 				return True
 			elif not tryDisabled:
@@ -4604,6 +4629,8 @@ class serienRecTimer(Screen, HelpableScreen):
 			cCursor = dbSerRec.cursor()
 			cCursor.execute("DELETE FROM AngelegteTimer WHERE StartZeitstempel<?", (int(time.time()), ))
 			dbSerRec.commit()
+			cCursor.execute("VACUUM")
+			dbSerRec.commit()
 			cCursor.close()
 		
 			self.readTimer(False)
@@ -4730,8 +4757,8 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 			self.chooseMenuList.l.setItemHeight(int(70*skinFactor))
 		else:
 			self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
-		self['menu_list'] = self.chooseMenuList
-		self['menu_list'].show()
+		self['log'] = self.chooseMenuList
+		self['log'].show()
 
 		self['title'].setText(_("Suche nach neuen Timern läuft."))
 
@@ -4820,7 +4847,6 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 				count = len(self.logliste)
 				if count != 0:
 					self['config'].moveToIndex(int(count-1))
-			autoCheckFinished = False
 		else:
 			self.points += " ."
 			self['title'].setText(_('Suche nach neuen Timern läuft.%s') % self.points)
@@ -4833,10 +4859,10 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850 * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
 		
 	def pageUp(self):
-		self['menu_list'].pageUp()
+		self['log'].pageUp()
 
 	def pageDown(self):
-		self['menu_list'].pageDown()
+		self['log'].pageDown()
 		
 	def __onClose(self):
 		print "[Serien Recorder] update log reader stopped."
@@ -4849,7 +4875,9 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 			self.displayTimer = None
 
 	def keyCancel(self):
-		self.close(self.manuell and config.plugins.serienRec.refreshViews.value)
+		global autoCheckFinished
+		if autoCheckFinished:
+			self.close(self.manuell and config.plugins.serienRec.refreshViews.value)
 
 		
 #---------------------------------- Marker Functions ------------------------------------------
@@ -6903,8 +6931,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
 
-		imageMinus = "%simages/minus.png" % serienRecMainPath
-		imagePlus = "%simages/plus.png" % serienRecMainPath
+		imageMinus = "%simages/green_dot.png" % serienRecMainPath
+		imagePlus = "%simages/red_dot.png" % serienRecMainPath
 		imageNone = "%simages/black.png" % serienRecMainPath
 		imageTV = "%simages/tv.png" % serienRecMainPath
 
@@ -7945,6 +7973,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 													  config.plugins.serienRec.seasonsubdirnumerlength,
 													  config.plugins.serienRec.coverPath,
 													  config.plugins.serienRec.BackupPath,
+													  config.plugins.serienRec.deleteBackupFilesOlderThan,
 													  config.plugins.serienRec.updateType,
 													  #config.plugins.serienRec.updateInterval,
 													  config.plugins.serienRec.deltime,
@@ -7982,6 +8011,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 													  config.plugins.serienRec.seasonsubdirnumerlength,
 													  config.plugins.serienRec.coverPath,
 													  config.plugins.serienRec.BackupPath,
+													  config.plugins.serienRec.deleteBackupFilesOlderThan,
 													  config.plugins.serienRec.updateType,
 													  #config.plugins.serienRec.updateInterval,
 													  config.plugins.serienRec.deltime,
@@ -8025,6 +8055,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry(_("Erstelle Backup vor Suchlauf:"), config.plugins.serienRec.AutoBackup))
 			if config.plugins.serienRec.AutoBackup.value:
 				self.list.append(getConfigListEntry(_("    Speicherort für Backup:"), config.plugins.serienRec.BackupPath))
+				self.list.append(getConfigListEntry(_("    Backup-Dateien löschen die älter als x Tage sind:"), config.plugins.serienRec.deleteBackupFilesOlderThan))
 
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------")))
@@ -8132,10 +8163,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry(_("---------  LOG:  ----------------------------------------------------------------------------------------------")))
 		if config.plugins.serienRec.setupType.value == "1":
-			self.list.append(getConfigListEntry(_("Speicherort für LogFile:"), config.plugins.serienRec.LogFilePath))
-			self.list.append(getConfigListEntry(_("LogFile-Name mit Datum/Uhrzeit:"), config.plugins.serienRec.longLogFileName))
+			self.list.append(getConfigListEntry(_("Speicherort für Log-Datei:"), config.plugins.serienRec.LogFilePath))
+			self.list.append(getConfigListEntry(_("Log-Dateiname mit Datum/Uhrzeit:"), config.plugins.serienRec.longLogFileName))
 			if config.plugins.serienRec.longLogFileName.value:
-				self.list.append(getConfigListEntry(_("    Log-Files löschen die älter sind als X Tage:"), config.plugins.serienRec.deleteLogFilesOlderThan))
+				self.list.append(getConfigListEntry(_("    Log-Dateien löschen die älter als x Tage sind:"), config.plugins.serienRec.deleteLogFilesOlderThan))
 		self.list.append(getConfigListEntry(_("DEBUG LOG aktivieren:"), config.plugins.serienRec.writeLog))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(_("DEBUG LOG - STB Informationen:"), config.plugins.serienRec.writeLogVersion))
@@ -8241,6 +8272,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.databasePath :            (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird."), "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              (_("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
 			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/').") % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.deleteBackupFilesOlderThan: (_("Backup-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.coverPath :               (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Cover gespeichert werden."), "Speicherort_der_Cover"),
 			config.plugins.serienRec.BackupPath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert werden."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.checkfordays :            (_("Es werden nur Timer für Folgen erstellt, die innerhalb der nächsten hier eingestellten Anzahl von Tagen ausgestrahlt werden \n"
@@ -8326,11 +8358,11 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			                                                    "Bei 'nein' erfolgt die Aktualisierung erst, wenn die Anzeige erneut geöffnet wird."), "Sofortige_Aktualisierung"),
 			config.plugins.serienRec.defaultStaffel :          (_("Auswahl, ob bei neuen Markern die Staffeln manuell eingegeben werden, oder 'Alle' ausgewählt wird."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.openMarkerScreen :        (_("Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können."), "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.LogFilePath :             (_("Das Verzeichnis auswählen und/oder erstellen, in dem die log-Dateien gespeichert werden."), "Das_Log"),
-			config.plugins.serienRec.longLogFileName :         (_("Bei 'nein' wird bei jedem Timer-Suchlauf die log-Datei neu erzeugt.\n"
-			                                                    "Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet "
+			config.plugins.serienRec.LogFilePath :             (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Log-Dateien gespeichert werden."), "Das_Log"),
+			config.plugins.serienRec.longLogFileName :         (_("Bei 'nein' wird bei jedem Timer-Suchlauf die Log-Datei neu erzeugt.\n"
+			                                                    "Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte Log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet "
 																"(z.B.\n%slog_%s%s%s%s%s") % (config.plugins.serienRec.LogFilePath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "Das_Log"),
-			config.plugins.serienRec.deleteLogFilesOlderThan : (_("log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."), "Das_Log"),
+			config.plugins.serienRec.deleteLogFilesOlderThan : (_("Log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."), "Das_Log"),
 			config.plugins.serienRec.writeLog :                (_("Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des Timer-Suchlaufs.\n"
 			                                                    "Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern."), "Das_Log"),
 			config.plugins.serienRec.writeLogVersion :         (_("Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten."), "Das_Log"),
@@ -8448,6 +8480,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.updateInterval.save()
 		config.plugins.serienRec.checkfordays.save()
 		config.plugins.serienRec.AutoBackup.save()
+		config.plugins.serienRec.deleteBackupFilesOlderThan.save()
 		config.plugins.serienRec.coverPath.save()
 		config.plugins.serienRec.BackupPath.save()
 		config.plugins.serienRec.maxWebRequests.save()
@@ -11670,9 +11703,6 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 	def buildList(self, entry):
 		(serien_id, image) = entry
 
-		#self.picloader = PicLoader(250, 150)
-		#picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
-		#self.picloader.destroy()
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 50, 3, 750 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_id)
 			]
@@ -11907,17 +11937,13 @@ class serienRecMain(Screen, HelpableScreen):
 		updateMenuKeys(self)
 		
 	def test(self):
-		# check = self['menu_list'].getCurrent()
-		# if check == None:
-		# 	return
+		now = time.time()
+		for root, dirs, files in os.walk(config.plugins.serienRec.BackupPath.value, topdown=False):
+			for name in dirs:
+				writeLog(_("%s -> %s") % (os.path.join(root, name), str(os.stat(os.path.join(root, name)).st_ctime)), True)
+				if os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
+					writeLog(_("[Serien Recorder] Remove folder: %s") % os.path.join(root, name), True)
 
-		#serien_id = self['menu_list'].getCurrent()[0][14]
-		serien_id = '25299'
-		url = "https://www.wunschliste.de/ajax/benachrichtigung.pl?s=%s&pos=1" % serien_id
-		cookies = {'user_id':'931801'}
-		print url
-		writeLog(_("[Serien Recorder] %s") % url, True)
-		getPage(getURLWithProxy(url), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(self.getImdblink2).addErrback(self.dataError,url)
 			
 	def getImdblink2(self, data):
 		data = processDownloadedData(data)
