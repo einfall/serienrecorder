@@ -21,10 +21,8 @@ class SearchSerie(object):
 
 	def	request(self):
 		print "[SerienRecorder] request ' %s '" % self.serien_name
-		#url = "http://www.wunschliste.de/ajax/search_dropdown.pl?%s" % urlencode( { 'q': re.sub("[^a-zA-Z0-9-*]", " ", quote(self.serien_name.encode('utf-8'))) } )
-		url = "http://www.wunschliste.de/ajax/search_dropdown.pl?%s" % urlencode( { 'q': self.serien_name.encode('utf-8') } )
-		#getPage(url, agent="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0", headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.__callback).addErrback(self.__errback, url)
-		getPage(getURLWithProxy(url), agent=getUserAgent(), headers=getHeaders()).addCallback(self.__callback).addErrback(self.__errback, url)
+		# url = "http://www.wunschliste.de/ajax/search_dropdown.pl?%s" % urlencode( { 'q': self.serien_name.encode('utf-8') } )
+		# getPage(getURLWithProxy(url), agent=getUserAgent(), headers=getHeaders()).addCallback(self.__callback).addErrback(self.__errback, url)
 
 	def request_and_return(self):
 		print "[SerienRecorder] request_and_return ' %s '" % self.serien_name

@@ -119,6 +119,7 @@ class SerienRecorderUpdateScreen(Screen):
 		self.downloadDone = False
 		self.container = eConsoleAppContainer()
 		self.appClosed_conn = None
+		self.stdoutAvail_conn = None
 
 		self['srlog'] = Label()
 
@@ -227,5 +228,5 @@ class SerienRecorderUpdateScreen(Screen):
 		else:
 			self.close()
 
-	def srlog(self,str):
-		self['srlog'].setText(str)
+	def srlog(self,string):
+		self['srlog'].setText(string)

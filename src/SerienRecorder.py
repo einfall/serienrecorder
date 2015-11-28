@@ -77,6 +77,7 @@ from SerienRecorderSplashScreen import *
 from SerienRecorderStartupInfoScreen import *
 from SerienRecorderUpdateScreen import *
 from SerienRecorderAboutScreen import *
+from SerienRecorderSeriesServer import *
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
@@ -2650,13 +2651,14 @@ class serienRecCheckForRecording():
 		global dbSerRec
 		if config.plugins.serienRec.AutoBackup.value:
 			# Remove old backups
-			writeLog(_("[Serien Recorder] Entferne alte Backup-Dateien und erzeuge neues Backup."), True)
-			now = time.time()
-			for root, dirs, files in os.walk(config.plugins.serienRec.BackupPath.value, topdown=False):
-				for name in dirs:
-					if os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
-						shutil.rmtree(os.path.join(root, name), True)
-						writeLog(_("[Serien Recorder] Removed folder: %s") % os.path.join(root, name), True)
+			if config.plugins.serienRec.deleteBackupFilesOlderThan.value > 0:
+				writeLog(_("[Serien Recorder] Entferne alte Backup-Dateien und erzeuge neues Backup."), True)
+				now = time.time()
+				for root, dirs, files in os.walk(config.plugins.serienRec.BackupPath.value, topdown=False):
+					for name in dirs:
+						if os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
+							shutil.rmtree(os.path.join(root, name), True)
+							writeLog(_("[Serien Recorder] Removed folder: %s") % os.path.join(root, name), True)
 
 			BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
 			if not os.path.exists(BackupPath):
@@ -4401,7 +4403,7 @@ class serienRecTimer(Screen, HelpableScreen):
 
 	def serieInfo(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 			
 		serien_name = self['menu_list'].getCurrent()[0][0]
@@ -4413,7 +4415,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de/%s" % serien_id[0])
+				self.session.open(serienRecShowInfo, serien_name, serien_id[0])
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -4424,7 +4426,7 @@ class serienRecTimer(Screen, HelpableScreen):
 	def youtubeSearch(self):
 		if epgTranslatorInstalled:
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -4436,7 +4438,7 @@ class serienRecTimer(Screen, HelpableScreen):
 	def WikipediaSearch(self):
 		if WikipediaInstalled:
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -4589,7 +4591,7 @@ class serienRecTimer(Screen, HelpableScreen):
 
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Serien Timer leer."
 			return
 		else:
@@ -4647,7 +4649,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			
 	def getCover(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5054,7 +5056,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		updateMenuKeys(self)
 		
 	def markerSetup(self):
-		if self['menu_list'].getCurrent() == None:
+		if self['menu_list'].getCurrent() is None:
 			return
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		self.session.openWithCallback(self.SetupFinished, serienRecMarkerSetup, serien_name)
@@ -5078,19 +5080,19 @@ class serienRecMarker(Screen, HelpableScreen):
 			return
 
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		serien_url = self['menu_list'].getCurrent()[0][1]
 		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', serien_url)
 		if serien_id:
-			self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de/%s" % serien_id[0])
+			self.session.open(serienRecShowInfo, serien_name, serien_id[0])
 
 	def episodeList(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5111,7 +5113,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				return
 
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5126,7 +5128,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				return
 
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5299,7 +5301,7 @@ class serienRecMarker(Screen, HelpableScreen):
 
 	def keyCheck(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Serien Marker leer."
 			return
 
@@ -5339,7 +5341,7 @@ class serienRecMarker(Screen, HelpableScreen):
 	def staffelSelect(self):		
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				print "[Serien Recorder] Serien Marker leer."
 				return
 
@@ -5419,7 +5421,7 @@ class serienRecMarker(Screen, HelpableScreen):
 	def keyGreen(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				print "[Serien Recorder] Serien Marker leer."
 				return
 
@@ -5462,7 +5464,7 @@ class serienRecMarker(Screen, HelpableScreen):
 	def keyYellow(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5515,7 +5517,7 @@ class serienRecMarker(Screen, HelpableScreen):
 	def keyRed(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				print "[Serien Recorder] Serien Marker leer."
 				return
 			else:
@@ -5534,7 +5536,7 @@ class serienRecMarker(Screen, HelpableScreen):
 	def keyRedLong(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				print "[Serien Recorder] Serien Marker leer."
 				return
 			else:
@@ -5553,7 +5555,7 @@ class serienRecMarker(Screen, HelpableScreen):
 	def disableAll(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				print "[Serien Recorder] Serien Marker leer."
 				return
 			else:
@@ -5755,6 +5757,8 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 		self.ErrorMsg = "unbekannt"
+		self.serienlist = None
+		self.skin = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, _("Marker für ausgewählte Serie hinzufügen")),
@@ -5858,13 +5862,13 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			return
 
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		serien_id = self['menu_list'].getCurrent()[0][2]
 		serien_name = self['menu_list'].getCurrent()[0][0]
 
-		self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de/%s" % serien_id)
+		self.session.open(serienRecShowInfo, serien_name, serien_id)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -5878,7 +5882,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 				return
 				
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 				
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5893,7 +5897,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 				return
 				
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5940,14 +5944,13 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self['title'].setText(_("Suche nach ' %s '") % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
-		from SearchSerie import SearchSerie
-		SearchSerie(self.serien_name, self.results, self.dataError).request()
+		# from SearchSerie import SearchSerie
+		# SearchSerie(self.serien_name, self.results, self.dataError).request()
+		self.results(SeriesServer().doSearch(self.serien_name))
 
 	def results(self, serienlist):	
 		self.serienlist = serienlist
 		self.chooseMenuList.setList(map(self.buildList, self.serienlist))
-		#self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(len(self.serienlist))))
-		#self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(sum([1 if x[0].find(_(" weitere Ergebnisse für ")) == -1 else int(x[0].replace("...", "").strip().split(" ", 1)[0]) for x in serienlist]))))
 		self['title'].setText(_("Die Suche für ' %s ' ergab %s Teffer.") % (self.serien_name, str(sum([1 if x[2] != "-1" else int(x[1]) for x in serienlist]))))
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 		self.loading = False
@@ -5970,7 +5973,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			return
 
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] keine infos gefunden"
 			return
 
@@ -6045,7 +6048,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			return
 		
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
@@ -6207,7 +6210,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', self.serie_url)
 		if serien_id:
-			self.session.open(serienRecShowInfo, self.serien_name, "http://www.wunschliste.de/%s" % serien_id[0])
+			self.session.open(serienRecShowInfo, self.serien_name, serien_id[0])
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -6620,7 +6623,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			return
 
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		sindex = self['menu_list'].getSelectedIndex()
@@ -7282,7 +7285,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 	def youtubeSearch(self):
 		if epgTranslatorInstalled:
 			check = self['list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			sender_name = self['list'].getCurrent()[0][0]
@@ -7293,7 +7296,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 	def WikipediaSearch(self):
 		if WikipediaInstalled:
 			check = self['list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			sender_name = self['list'].getCurrent()[0][0]
@@ -7468,12 +7471,12 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				self['popup_bg'].hide()
 
 				check = self['list'].getCurrent()
-				if check == None:
+				if check is None:
 					print "[Serien Recorder] Channel-List leer (list)."
 					return
 
 				check = self['popup_list'].getCurrent()
-				if check == None:
+				if check is None:
 					print "[Serien Recorder] Channel-List leer (popup_list)."
 					return
 
@@ -7580,7 +7583,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 	def keyRedLong(self):
 		check = self['list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Serien Marker leer."
 			return
 		else:
@@ -8272,7 +8275,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.databasePath :            (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird."), "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              (_("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
 			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/').") % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.deleteBackupFilesOlderThan: (_("Backup-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.deleteBackupFilesOlderThan: (_("Backup-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht.\n\nBei '0' ist die Funktion deaktiviert."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.coverPath :               (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Cover gespeichert werden."), "Speicherort_der_Cover"),
 			config.plugins.serienRec.BackupPath :              (_("Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert werden."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.checkfordays :            (_("Es werden nur Timer für Folgen erstellt, die innerhalb der nächsten hier eingestellten Anzahl von Tagen ausgestrahlt werden \n"
@@ -9838,7 +9841,7 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 
 	def keyBlue(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Conflict-List leer."
 			return
 		else:
@@ -10011,12 +10014,12 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 	def serieInfo(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 			serien_name = self['menu_list'].getCurrent()[0][1]
 		else:
 			check = self['popup_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 			serien_name = self['popup_list'].getCurrent()[0][0]
 
@@ -10028,7 +10031,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de/%s" % serien_id[0])
+				self.session.open(serienRecShowInfo, serien_name, serien_id[0])
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -10040,12 +10043,12 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if epgTranslatorInstalled:
 			if self.modus == "menu_list":
 				check = self['menu_list'].getCurrent()
-				if check == None:
+				if check is None:
 					return
 				serien_name = self['menu_list'].getCurrent()[0][1]
 			else:
 				check = self['popup_list'].getCurrent()
-				if check == None:
+				if check is None:
 					return
 				serien_name = self['popup_list'].getCurrent()[0][0]
 
@@ -10058,12 +10061,12 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if WikipediaInstalled:
 			if self.modus == "menu_list":
 				check = self['menu_list'].getCurrent()
-				if check == None:
+				if check is None:
 					return
 				serien_name = self['menu_list'].getCurrent()[0][1]
 			else:
 				check = self['popup_list'].getCurrent()
-				if check == None:
+				if check is None:
 					return
 				serien_name = self['popup_list'].getCurrent()[0][0]
 
@@ -10190,7 +10193,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Added-File leer."
 			return
 		else:
@@ -10229,12 +10232,12 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 	def getCover(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 			serien_name = self['menu_list'].getCurrent()[0][1]
 		else:
 			check = self['popup_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 			serien_name = self['popup_list'].getCurrent()[0][0]
 
@@ -10458,13 +10461,13 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		
 	def serieInfo(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 		url = self['menu_list'].getCurrent()[0][5]
 		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 		if serien_id:
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de/%s" % serien_id[0])
+			self.session.open(serienRecShowInfo, serien_name, serien_id[0])
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -10475,7 +10478,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 	def youtubeSearch(self):
 		if epgTranslatorInstalled:
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -10487,7 +10490,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 	def WikipediaSearch(self):
 		if WikipediaInstalled:
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -10525,7 +10528,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 				
 	def getCover(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
@@ -10537,7 +10540,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Proposal-DB leer."
 			return
 		else:
@@ -10551,7 +10554,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 
 	def keyOK(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Proposal-DB leer."
 			return
 		else:
@@ -10636,7 +10639,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		
 	def keyBlue(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Proposal-DB leer."
 			return
 		else:
@@ -10828,12 +10831,12 @@ class serienRecWishlist(Screen, HelpableScreen):
 	def serieInfo(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 			serien_name = self['menu_list'].getCurrent()[0][1]
 		else:
 			check = self['popup_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 			serien_name = self['popup_list'].getCurrent()[0][0]
 
@@ -10845,7 +10848,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de/%s" % serien_id[0])
+				self.session.open(serienRecShowInfo, serien_name, serien_id[0])
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -10854,12 +10857,12 @@ class serienRecWishlist(Screen, HelpableScreen):
 		if epgTranslatorInstalled:
 			if self.modus == "menu_list":
 				check = self['menu_list'].getCurrent()
-				if check == None:
+				if check is None:
 					return
 				serien_name = self['menu_list'].getCurrent()[0][1]
 			else:
 				check = self['popup_list'].getCurrent()
-				if check == None:
+				if check is None:
 					return
 				serien_name = self['popup_list'].getCurrent()[0][0]
 			
@@ -10871,12 +10874,12 @@ class serienRecWishlist(Screen, HelpableScreen):
 		if WikipediaInstalled:
 			if self.modus == "menu_list":
 				check = self['menu_list'].getCurrent()
-				if check == None:
+				if check is None:
 					return
 				serien_name = self['menu_list'].getCurrent()[0][1]
 			else:
 				check = self['popup_list'].getCurrent()
-				if check == None:
+				if check is None:
 					return
 				serien_name = self['popup_list'].getCurrent()[0][0]
 			
@@ -11013,7 +11016,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Merkzettel ist leer."
 			return
 		else:
@@ -11051,7 +11054,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 		
 	def keyBlue(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			print "[Serien Recorder] Merkzettel ist leer."
 			return
 		else:
@@ -11077,12 +11080,12 @@ class serienRecWishlist(Screen, HelpableScreen):
 	def getCover(self):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 			serien_name = self['menu_list'].getCurrent()[0][1]
 		else:
 			check = self['popup_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 			serien_name = self['popup_list'].getCurrent()[0][0]
 
@@ -11132,13 +11135,13 @@ class serienRecWishlist(Screen, HelpableScreen):
 			self.close()
 
 class serienRecShowInfo(Screen, HelpableScreen):
-	def __init__(self, session, serieName, serieUrl):
+	def __init__(self, session, serieName, serieID):
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
 		self.serieName = serieName
-		self.serieUrl = serieUrl
+		self.serieID = serieID
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"cancel": (self.keyCancel, _("zurück zur vorherigen Ansicht")),
@@ -11287,50 +11290,9 @@ class serienRecShowInfo(Screen, HelpableScreen):
 				self.getData()
 				
 	def getData(self):
-		getPage(getURLWithProxy(self.serieUrl), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(self.parseData).addErrback(self.dataError)
-		self.getCover()
-
-	def parseData(self, data):
-		data = processDownloadedData(data)
-		infoText = ""
-		# Get fancount
-		fancount = re.findall('<span id="fancount">(.*?)</span>', data, re.S)
-		if fancount:
-			infoText += ("Die Serie hat %s Fans" % fancount[0])
-
-		# Get rating
-		rating = re.findall('<span property="v:average">(.*?)</span>', data, re.S)
-		if rating:
-			infoText += (" und eine Bewertung von %s / 5.0 Sternen" % rating[0])
-
-		infoText += "\n\n"
-		# Get description and episode info
-		#info = re.findall('<div class="form"><a href=".*?">(.*?)</a>(.*?)</div>.*?<p class="mb4"></p>(.*?)<div class="newsliste mb4">', data, re.S)
-		info = re.findall('<div class="form"><a href=".*?">(.*?)</a>(.*?)</div>.*?<p class="mb4"></p>(.*?)<div style="text-align:center;" class="mt4 mb4">', data, re.S)
-		if info:
-			# Get episode info
-			infoText += "%s%s\n\n" % (info[0][0], info[0][1])
-
-			# Get description
-			seriesInfo = info[0][2].split('<div class="newsliste mb4">')[0]
-			raw = re.findall('<li><a href=".*?">(.*?)</li>', seriesInfo)
-			for text in raw:
-				raw2 = re.findall('(.*?)</a><span>(.*?)</span>', text, re.S)
-				if raw2:
-					seriesInfo = seriesInfo.replace(text, '%s:  %s' % (str(raw2[0][0]), str(raw2[0][1])))
-
-			seriesInfo = seriesInfo.replace('</div>', '').replace('<br>', '\n')
-			beschreibung = re.sub('<!--(.*\n)*?(.*)-->', '', seriesInfo, re.S)
-			beschreibung = re.sub('<.*?>', '', beschreibung)
-			beschreibung = re.sub('\n{3,}', '\n\n', beschreibung)
-			beschreibung = beschreibung.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
-			infoText += (str(beschreibung).replace('Cast & Crew\n','Cast & Crew:\n'))
-
+		infoText = SeriesServer().getSeriesInfo(self.serieID)
 		self['info'].setText(infoText)
-
-	def dataError(self, error):
-		writeErrorLog("   serienRecShowInfo(): %s\n   Serie: %s\n   Url: %s" % (error, self.serieName, self.serieUrl))
-		print error
+		self.getCover()
 
 	def pageUp(self):
 		self['info'].pageUp()
@@ -11654,9 +11616,9 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 
 	def serieInfo(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
-		self.session.open(serienRecShowInfo, self.serien_name, "http://www.wunschliste.de/%s" % self.serien_id)
+		self.session.open(serienRecShowInfo, self.serien_name, self.serien_id)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -11709,7 +11671,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 
 	def keyOK(self):
 		check = self['menu_list'].getCurrent()
-		if check == None:
+		if check is None:
 			return
 
 		url = self['menu_list'].getCurrent()[0][0]
@@ -11717,7 +11679,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 		print url
 		
 		stream = imdbVideo().stream_url(url)
-		if stream != None:
+		if stream is not None:
 			#sref = eServiceReference(0x1001, 0, stream)
 			sref = eServiceReference(4097, 0, stream)
 			self.session.open(MoviePlayer, sref)
@@ -11982,10 +11944,10 @@ class serienRecMain(Screen, HelpableScreen):
 		if check is None:
 			return
 
-		serien_url = self['menu_list'].getCurrent()[0][5]
+		serien_id = self['menu_list'].getCurrent()[0][5]
 		serien_name = self['menu_list'].getCurrent()[0][6]
 		
-		self.session.open(serienRecShowInfo, serien_name, "http://www.wunschliste.de%s" % serien_url)
+		self.session.open(serienRecShowInfo, serien_name, serien_id)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -11999,7 +11961,7 @@ class serienRecMain(Screen, HelpableScreen):
 				return
 
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][6]
@@ -12014,7 +11976,7 @@ class serienRecMain(Screen, HelpableScreen):
 				return
 				
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][6]
@@ -12380,7 +12342,7 @@ class serienRecMain(Screen, HelpableScreen):
 				return
 
 			check = self['menu_list'].getCurrent()
-			if check == None:
+			if check is None:
 				return
 
 			serien_neu = self['menu_list'].getCurrent()[0][2]

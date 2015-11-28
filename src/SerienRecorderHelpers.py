@@ -27,7 +27,7 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.2.3-beta'
+SRVERSION = '3.2.4-beta'
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -121,7 +121,7 @@ def getURLWithProxy(url):
 	global SRVERSION
 	if not STBTYPE:
 		STBTYPE = STBHelpers.getSTBType()
-	return "http://serienrecorder.lima-city.de/proxy.php?device=%s&version=%s&url=%s" % (STBTYPE, SRVERSION, url)
+	return "http://serienrecorder.lima-city.de/proxy.php?device=%s&version=%s&url=%s" % (STBTYPE, 'SR'+SRVERSION, url)
 
 def processDownloadedData(data):
 	# from gzip import GzipFile
