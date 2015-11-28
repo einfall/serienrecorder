@@ -4249,8 +4249,8 @@ class serienRecCheckForRecording():
 		cCursor.close()
 		
 	def dataError(self, error, url=None):
-		print "[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)" % error
-		writeLog(_("[Serien Recorder] Wunschliste Timeout.. webseite down ?! (%s)") % error, True)
+		print "[Serien Recorder] Es ist ein Fehler aufgetreten - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
+		writeLog(_("[Serien Recorder] Es ist ein Fehler aufgetreten  - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)") % error, True)
 		if url:
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   Url: %s" % (error, url))
 		else:
@@ -4266,8 +4266,8 @@ class serienRecCheckForRecording():
 		self.close()
 
 	def dataErrorNewStaffel(self, error, url=None):
-		print "[Serien Recorder] Wunschliste (SerienPlaner) Timeout.. webseite down ?! (%s)" % error
-		writeLog(_("[Serien Recorder] Wunschliste (SerienPlaner) Timeout.. webseite down ?! (%s)") % error, True)
+		print "[Serien Recorder] Serien-Planer Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
+		writeLog(_("[Serien Recorder] Serien-Planer Daten konnten nicht abgerufen/verarbeitet werden: (%s)") % error, True)
 		if url:
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   SerienPlaner-Url: %s" % (error, url))
 		else:
@@ -6934,8 +6934,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
 
-		imageMinus = "%simages/green_dot.png" % serienRecMainPath
-		imagePlus = "%simages/red_dot.png" % serienRecMainPath
+		imageMinus = "%simages/red_dot.png" % serienRecMainPath
+		imagePlus = "%simages/green_dot.png" % serienRecMainPath
 		imageNone = "%simages/black.png" % serienRecMainPath
 		imageTV = "%simages/tv.png" % serienRecMainPath
 
