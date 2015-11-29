@@ -23,12 +23,12 @@ class SearchEvents(object):
 		self.user_errback  = user_errback
 
 	def	request(self):
-		if self.serien_name in self.termineCache:
-			self.__callback(self.termineCache[self.serien_name], False)
-		else:
-			print "[SerienRecorder] suche ' %s '" % self.serien_name
-			print self.serie_url
-			getPage(getURLWithProxy(self.serie_url), agent=getUserAgent(), headers=getHeaders()).addCallback(self.__callback).addErrback(self.__errback)
+		# if self.serien_name in self.termineCache:
+		# 	self.__callback(self.termineCache[self.serien_name], False)
+		# else:
+		print "[SerienRecorder] suche ' %s '" % self.serien_name
+		print self.serie_url
+		getPage(getURLWithProxy(self.serie_url), agent=getUserAgent(), headers=getHeaders()).addCallback(self.__callback).addErrback(self.__errback)
 
 	def request_and_return(self):
 		print "[SerienRecorder] suche dates"
