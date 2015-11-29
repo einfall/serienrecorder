@@ -56,7 +56,7 @@ class SeriesServer:
 		resultList = []
 		searchResults = self.server.sp.cache.searchSeries(searchString)
 		for searchResult in searchResults['results']:
-			resultList.append((searchResult['name'], searchResult['country_year'], searchResult['id']))
+			resultList.append((searchResult['name'].encode('utf-8'), searchResult['country_year'], searchResult['id']))
 		if 'more' in searchResults:
 			resultList.append(("... %s%s'%s'" % (searchResults['more'], " weitere Ergebnisse für ", searchString.encode('utf-8')), str(searchResults['more']), "-1"))
 		return resultList

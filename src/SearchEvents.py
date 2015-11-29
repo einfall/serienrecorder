@@ -54,14 +54,14 @@ class SearchEvents(object):
 
 		if useCache:
 			raw = data
-		else:
+		elif data:
 			#('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
 			raw = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>', data)
 			#raw2 = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(.*?x))(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
 			raw2 = re.findall('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>', data)
 			raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
 			
-			self.termineCache.update({self.serien_name:raw})
+			#self.termineCache.update({self.serien_name:raw})
 			
 		if raw:
 			def y(l):

@@ -427,7 +427,8 @@ def retry(times, func, *args, **kwargs):
 def getCover(self, serien_name, serien_id):
 	if not config.plugins.serienRec.showCover.value:
 		return
-		
+
+	serien_name = serien_name.encode('utf-8')
 	serien_nameCover = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)
 	png_serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
 
@@ -11724,6 +11725,7 @@ class serienRecMain(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
+			#"1"		: (self.searchSeries, _("Serie manuell suchen")),
 			"2"		: (self.reloadSerienplaner, _("Serienplaner neu laden")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
@@ -11833,6 +11835,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self['text_ok'].setText(_("Marker hinzufügen"))
 		self['text_yellow'].setText(_("Serien Marker"))
 		self['text_blue'].setText(_("Timer-Liste"))
+		#self.num_bt_text[1][0] = _("Serie suchen")
 		self.num_bt_text[2][0] = _("neu laden")
 		self.num_bt_text[2][2] = _("Timer suchen")
 		
@@ -11935,6 +11938,18 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def showProposalDB(self):
 		self.session.openWithCallback(self.readWebpage, serienRecShowSeasonBegins)
+
+	def searchSeries(self):
+		if self.modus == "menu_list":
+			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
+
+	def wSearch(self, serien_name):
+		if serien_name:
+			print serien_name
+			self.changesMade = True
+			global runAutocheckAtExit
+			runAutocheckAtExit = True
+			self.session.openWithCallback(self.readSerienMarker, serienRecAddSerie, serien_name)
 
 	def serieInfo(self):
 		if self.loading:
