@@ -3328,8 +3328,8 @@ class serienRecCheckForRecording():
 		dbTmp.commit()
 		cTmp.close()
 		
-		global termineCache
-		termineCache.clear()
+		# global termineCache
+		# termineCache.clear()
 
 		# read channels
 		self.senderListe = {}
@@ -3397,8 +3397,8 @@ class serienRecCheckForRecording():
 				return time.mktime((int(now.year), int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
 		raw.sort(key=y)
 
-		global termineCache
-		termineCache.update({serien_name:raw})
+		# global termineCache
+		# termineCache.update({serien_name:raw})
 
 		# check for parsing error
 		if not raw:
@@ -3623,8 +3623,8 @@ class serienRecCheckForRecording():
 		cCursor.close()
 		#dbTmp.close()
 
-		if config.plugins.serienRec.planerCacheEnabled.value:
-			writeTermineData()
+		# if config.plugins.serienRec.planerCacheEnabled.value:
+		# 	writeTermineData()
 			
 		# Statistik
 		self.speedEndTime = time.clock()
@@ -6273,12 +6273,12 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 	def searchEvents(self, result=None):
 		global termineCache
-		if self.serien_name in termineCache:
-			self['title'].setText(_("Lade ' %s '") % self.serien_name)
-			print "[SerienRecorder] lade ' %s '" % self.serien_name
-		else:
-			self['title'].setText(_("Suche ' %s '") % self.serien_name)
-			print "[SerienRecorder] suche ' %s '" % self.serien_name
+		# if self.serien_name in termineCache:
+		# 	self['title'].setText(_("Lade ' %s '") % self.serien_name)
+		# 	print "[SerienRecorder] lade ' %s '" % self.serien_name
+		# else:
+		self['title'].setText(_("Suche ' %s '") % self.serien_name)
+		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		print self.serie_url
 		
 		if not self.serien_cover == "nix" and config.plugins.serienRec.showCover.value:
@@ -7103,7 +7103,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.aToEpisode == "":
 			self.aToEpisode = self.aFromEpisode
 
-		if not self.aToEpisode: # or self.aFromEpisode == None or self.aStaffel == None:
+		if not self.aToEpisode: # or self.aFromEpisode is None or self.aStaffel is None:
 			return
 		else:
 			print "[Serien Recorder] Staffel: %s" % self.aStaffel
@@ -7504,11 +7504,11 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self['popup_list2'].hide()
 			self['popup_bg'].hide()
 
-			if self['list'].getCurrent() == None:
+			if self['list'].getCurrent() is None:
 				print "[Serien Recorder] Channel-List leer (list)."
 				return
 
-			if self['popup_list'].getCurrent() == None:
+			if self['popup_list'].getCurrent() is None:
 				print "[Serien Recorder] Channel-List leer (popup_list)."
 				return
 
@@ -7531,7 +7531,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				
 	def keyRed(self):
 		global runAutocheckAtExit
-		if self['list'].getCurrent() == None:
+		if self['list'].getCurrent() is None:
 			print "[Serien Recorder] Channel-List leer."
 			return
 
@@ -10134,13 +10134,13 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 
 	def answerStaffel(self, aStaffel):
 		self.aStaffel = aStaffel
-		if self.aStaffel == None or self.aStaffel == "":
+		if self.aStaffel is None or self.aStaffel == "":
 			return
 		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = _("von Episode:"))
 
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
-		if self.aFromEpisode == None or self.aFromEpisode == "":
+		if self.aFromEpisode is None or self.aFromEpisode == "":
 			return
 		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = _("bis Episode:"))
 
@@ -10149,7 +10149,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if self.aToEpisode == "":
 			self.aToEpisode = self.aFromEpisode
 
-		if self.aToEpisode == None: # or self.aFromEpisode == None or self.aStaffel == None:
+		if self.aToEpisode is None: # or self.aFromEpisode is None or self.aStaffel is None:
 			return
 		else:
 			print "[Serien Recorder] Staffel: %s" % self.aStaffel
@@ -10181,7 +10181,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self['popup_list'].hide()
 			self['popup_bg'].hide()
 
-			if self['popup_list'].getCurrent() == None:
+			if self['popup_list'].getCurrent() is None:
 				print "[Serien Recorder] Marker-Liste leer."
 				return
 
@@ -10203,7 +10203,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.addedlist_tmp.remove(zeile)
 			self.addedlist.remove(zeile)
 			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
-			self.delAdded = True;
+			self.delAdded = True
 
 	def keyGreen(self):
 		if self.delAdded:
@@ -10944,13 +10944,13 @@ class serienRecWishlist(Screen, HelpableScreen):
 
 	def answerStaffel(self, aStaffel):
 		self.aStaffel = aStaffel
-		if self.aStaffel == None or self.aStaffel == "":
+		if self.aStaffel is None or self.aStaffel == "":
 			return
 		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = _("von Episode:"))
 	
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
-		if self.aFromEpisode == None or self.aFromEpisode == "":
+		if self.aFromEpisode is None or self.aFromEpisode == "":
 			return
 		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = _("bis Episode:"))
 	
@@ -10960,7 +10960,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 		print "[Serien Recorder] von Episode: %s" % self.aFromEpisode
 		print "[Serien Recorder] bis Episode: %s" % self.aToEpisode
 		
-		if self.aToEpisode == None or self.aFromEpisode == None or self.aStaffel == None or self.aToEpisode == "":
+		if self.aToEpisode is None or self.aFromEpisode is None or self.aStaffel is None or self.aToEpisode == "":
 			return
 		else:
 			if int(self.aFromEpisode) != 0 or int(self.aToEpisode) != 0:
@@ -11004,7 +11004,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 			self['popup_list'].hide()
 			self['popup_bg'].hide()
 
-			if self['popup_list'].getCurrent() == None:
+			if self['popup_list'].getCurrent() is None:
 				print "[Serien Recorder] Marker-Liste leer."
 				return
 
@@ -11794,9 +11794,9 @@ class serienRecMain(Screen, HelpableScreen):
 		else:
 			readPlanerData()
 
-		global termineCache
-		if not len(termineCache):
-			readTermineData()
+		# global termineCache
+		# if not len(termineCache):
+		# 	readTermineData()
 		
 		#config.plugins.serienRec.showStartupInfoText.value = True
 		#config.plugins.serienRec.showStartupInfoText.save()
@@ -12400,8 +12400,8 @@ class serienRecMain(Screen, HelpableScreen):
 			configfile.save()
 			self.chooseMenuList.setList(map(self.buildList, []))
 			#if (self.screenplaner != config.plugins.serienRec.screenplaner.value) or (self.screenmode != config.plugins.serienRec.screenmode.value):
-			if self.screenplaner != config.plugins.serienRec.screenplaner.value:
-				readPlanerData()
+			# if self.screenplaner != config.plugins.serienRec.screenplaner.value:
+			# 	readPlanerData()
 			self.readWebpage(False)
 
 	def getCover(self):
@@ -12621,9 +12621,9 @@ class serienRecMain(Screen, HelpableScreen):
 		self.readWebpage(False)
 
 	def __onClose(self):
-		if config.plugins.serienRec.planerCacheEnabled.value:
-			writePlanerData()
-			writeTermineData()
+		# if config.plugins.serienRec.planerCacheEnabled.value:
+		# 	writePlanerData()
+		# 	writeTermineData()
 		if self.displayTimer:
 			self.displayTimer.stop()
 			self.displayTimer = None

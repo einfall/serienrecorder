@@ -24,7 +24,7 @@ class SearchEvents(object):
 
 	def	request(self):
 		if self.serien_name in self.termineCache:
-			self.__callback(self.termineCache[self.serien_name], True)
+			self.__callback(self.termineCache[self.serien_name], False)
 		else:
 			print "[SerienRecorder] suche ' %s '" % self.serien_name
 			print self.serie_url
