@@ -3,7 +3,7 @@
 # This file contains the SerienRecoder Serien Server stuff
 
 # Constants
-SERIES_SERVER_URL = 'http://serienrecorder.lima-city.de/cache.php'
+SERIES_SERVER_URL = 'http://176.9.54.54/serienserver/cache/cache.php'
 
 try:
 	import xmlrpclib

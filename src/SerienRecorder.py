@@ -452,7 +452,7 @@ def getCover(self, serien_name, serien_id):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif serien_id:
 		try:
-			server = xmlrpclib.ServerProxy('http://serienrecorder.lima-city.de/cache.php', verbose=False)
+			server = xmlrpclib.ServerProxy('http://176.9.54.54/serienserver/cache/cache.php', verbose=False)
 			posterURL = server.sp.cache.getCoverURL(int(serien_id), serien_name)
 			if posterURL:
 				downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
