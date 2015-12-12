@@ -201,7 +201,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.update = ConfigYesNo(default = False)
 	config.plugins.serienRec.updateInterval = ConfigInteger(24, (0,24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
-	config.plugins.serienRec.deltime = ConfigClock(default = (2*3600)+time.timezone)
+	config.plugins.serienRec.deltime = ConfigClock(default = (12*3600)+time.timezone)
 	config.plugins.serienRec.maxDelayForAutocheck = ConfigInteger(15, (0,60))
 	config.plugins.serienRec.maxWebRequests = ConfigInteger(1, (1,99))
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
@@ -5945,9 +5945,9 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self['title'].setText(_("Suche nach ' %s '") % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
-		# from SearchSerie import SearchSerie
-		# SearchSerie(self.serien_name, self.results, self.dataError).request()
-		self.results(SeriesServer().doSearch(self.serien_name))
+		from SearchSerie import SearchSerie
+		SearchSerie(self.serien_name, self.results, self.dataError).request()
+		# self.results(SeriesServer().doSearch(self.serien_name))
 
 	def results(self, serienlist):	
 		self.serienlist = serienlist
@@ -12652,6 +12652,7 @@ class serienRecMain(Screen, HelpableScreen):
 			except:
 				pass
 
+			global runAutocheckAtExit
 			if runAutocheckAtExit and config.plugins.serienRec.runAutocheckAtExit.value:
 				singleTimer = eTimer()
 				if isDreamboxOS:

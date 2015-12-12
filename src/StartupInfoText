@@ -46,20 +46,27 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.2.2:
+CHANGE-LOG v3.2.5:
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
 
+Neue Funktionen:
+	- Neue Option um alte Backup Dateien automatisch zu löschen
+
 Änderungen:
-    - Die Farben sind jetzt nicht mehr im Plugin definiert, sondern werden aus dem Skin der Box übernommen
-    - Unterstützung für UHD Skins
+	- Verhalten der Event-Programmierung geändert (leider funktioniert es immer noch ganz richtig)
+	- Log beim Manueller Suchlauf in voller Breite
+	- Manueller Suchlauf kann erst nach Ende verlassen werden	
+	- Episodenliste zeigt Haken und Kreuz statt Plus/Minus
+	- Fehlermeldungen verallgemeinert
+	- Sendetermine-Cache deaktiviert
 	
 Bugfixes:
-    - Kein Crash mehr beim Öffnen der Serien-Marker Einstellungen
-    - Kleinere Skinprobleme behoben
-    - Cover werden wieder geladen
-    - Auto-Update Probleme auf Boxen mit DreamOS behoben
+	- Exceptionhandling bei Abrufen der Cover
+	- Auto-Update Funktionen korrigiert	
 
+Bekannte Probleme:
+	- Cover funktionieren nicht
 	
 Viel Spass mit dem SerienRecorder!
 
