@@ -72,12 +72,14 @@ try:
 except ImportError:
 	import json
 
-from SerienRecorderHelpers import *
+import SerienRecorderHelpers
 from SerienRecorderSplashScreen import *
 from SerienRecorderStartupInfoScreen import *
 from SerienRecorderUpdateScreen import *
 from SerienRecorderAboutScreen import *
 from SerienRecorderSeriesServer import *
+from SerienRecorderChannelScreen import *
+from SerienRecorderScreenHelpers import *
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
@@ -86,66 +88,11 @@ InfoFile = "%sStartupInfoText" % serienRecMainPath
 try:
 	default_before = int(config.recording.margin_before.value)
 	default_after = int(config.recording.margin_after.value)
-except Exception:
+except:
 	default_before = 0
 	default_after = 0
 
-showAllButtons = False
-longButtonText = False
-buttonText_na = _("-----")
-skinName = "SerienRecorder3.0"
-skin = "%sskins/SR_Skin.xml" % serienRecMainPath
-default_skinName = skinName
-default_skin = skin
-skinFactor = 1
 
-# Check if is Full HD / UHD
-DESKTOP_WIDTH = getDesktop(0).size().width()
-if DESKTOP_WIDTH > 1920:
-	skinFactor = 3.0	
-elif DESKTOP_WIDTH > 1280:
-	skinFactor = 1.5
-else:
-	skinFactor = 1
-print "[SerienRecorder] Skinfactor: %s" % skinFactor
-
-def SelectSkin():
-	global showAllButtons
-	showAllButtons = False
-	global longButtonText
-	longButtonText = False
-	global buttonText_na
-	buttonText_na = _("-----")
-	
-	global skinName
-	skinName = default_skinName
-	global skin
-	skin = default_skin
-	
-	if config.plugins.serienRec.SkinType.value == "Skinpart":
-		try:
-			from skin import lookupScreen
-			x, path = lookupScreen("SerienRecorder", 0)
-			if x:
-				skinName = "SerienRecorder"
-				showAllButtons = config.plugins.serienRec.showAllButtons.value
-		except:
-			writeErrorLog("   SelectSkin(): Error")
-			pass
-
-	elif config.plugins.serienRec.SkinType.value in ("", "Skin2", "AtileHD", "StyleFHD", "Black Box"):
-		skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
-		skin = skin.replace("//", "/")
-		if config.plugins.serienRec.SkinType.value in ("Skin2", "StyleFHD", "Black Box"):
-			showAllButtons = True
-		if config.plugins.serienRec.SkinType.value in ("Skin2", "AtileHD", "Black Box"):
-			buttonText_na = ""
-	else:
-		if fileExists("%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)):
-			skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
-			showAllButtons = config.plugins.serienRec.showAllButtons.value
-			buttonText_na = ""
-		
 def ReadConfigFile():
 	config.plugins.serienRec = ConfigSubsection()
 	config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
@@ -190,14 +137,14 @@ def ReadConfigFile():
 	config.plugins.serienRec.afterEvent = ConfigSelection(choices = [("0", _("nichts")), ("1", _("in Standby gehen")), ("2", _("in Deep-Standby gehen")), ("3", _("automatisch"))], default="3")
 	config.plugins.serienRec.AutoBackup = ConfigYesNo(default = False)
 	config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
-	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(14, (0,999))
+	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(0, (0,999))
 	config.plugins.serienRec.eventid = ConfigYesNo(default = True)
 	# Remove EPGRefresh action for VU+ Boxes
 	try:
 		from Tools.HardwareInfoVu import HardwareInfoVu
-		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit"))], default = "1")
+		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit"))], default = "0")
 	except:
-		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit")), ("2", _("nach EPGRefresh"))], default = "1")
+		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", _("Manuell")), ("1", _("zur gewählten Uhrzeit")), ("2", _("nach EPGRefresh"))], default = "0")
 	config.plugins.serienRec.update = ConfigYesNo(default = False)
 	config.plugins.serienRec.updateInterval = ConfigInteger(24, (0,24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
@@ -281,7 +228,7 @@ def ReadConfigFile():
 	
 	# interne
 	config.plugins.serienRec.version = NoSave(ConfigText(default="032"))
-	config.plugins.serienRec.showversion = NoSave(ConfigText(default=SRVERSION))
+	config.plugins.serienRec.showversion = NoSave(ConfigText(default=SerienRecorderHelpers.SRVERSION))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screenplaner = ConfigInteger(1, (1,5))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -452,8 +399,7 @@ def getCover(self, serien_name, serien_id):
 		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
 	elif serien_id:
 		try:
-			server = xmlrpclib.ServerProxy('http://176.9.54.54/serienserver/cache/cache.php', verbose=False)
-			posterURL = server.sp.cache.getCoverURL(int(serien_id), serien_name)
+			posterURL = SeriesServer().doGetCoverURL(int(serien_id), serien_name)
 			if posterURL:
 				downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
 		except:
@@ -477,25 +423,6 @@ def getCoverDataError(error, self, serien_nameCover):
 	writeLog(_("      %s") % str(error), True)
 	print error
 
-# def getImdblink(data, self, serien_nameCover):
-# 	data = processDownloadedData(data)
-# 	imdbID = re.findall('href="http://www.imdb.com/title/(.*?)/.*?"', data, re.S)
-# 	if imdbID:
-# 		omdbURL = "http://www.omdbapi.com/?i=%s" % imdbID[0]
-# 		writeLog(_("OMDB URL: %s") % omdbURL, True)
-# 		getPage(omdbURL, timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(loadImdbCover, self, serien_nameCover).addErrback(getCoverDataError, self, serien_nameCover)
-# 	else:
-# 		print "[Serien Recorder] es wurde kein imdb-link für ein cover gefunden."
-#
-# def loadImdbCover(data, self, serien_nameCover):
-# 	data = processDownloadedData(data)
-# 	parsed_json = json.loads(data)
-# 	posterURL = str(parsed_json['Poster'])
-# 	if posterURL:
-# 		print posterURL
-# 		writeLog(_("Post URL: %s") % posterURL, True)
-# 		downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
-	
 def showCover(data, self, serien_nameCover, force_show=True):
 	if self is not None: 
 		if not force_show:
@@ -524,260 +451,6 @@ def showCover(data, self, serien_nameCover, force_show=True):
 		else:
 			print "Coverfile not found: %s" % serien_nameCover
 
-
-def setSkinProperties(self, isLayoutFinshed=True):
-	global longButtonText
-	if isLayoutFinshed:
-		try:
-			x = self['text_3'].instance.size()
-			if x.width() > 250:
-				longButtonText = True
-			else:
-				longButtonText = False
-		except: 
-			longButtonText = False
-	
-	if longButtonText:
-		self.num_bt_text = ([_("Zeige Log"), buttonText_na, _("Abbrechen")],
-							[buttonText_na, _("Konflikt-Liste"), _("YouTube (lang: Wikipedia)")],
-							[buttonText_na, _("Merkzettel"), ""],
-							[_("Neue Serienstarts"), buttonText_na, _("Hilfe")],
-							[_("Serien Beschreibung"), buttonText_na, _("globale Einstellungen")])
-	else:
-		self.num_bt_text = ([_("Zeige Log"), buttonText_na, _("Abbrechen")],
-							[buttonText_na, _("Konflikt-Liste"), _("YouTube/Wikipedia")],
-							[buttonText_na, _("Merkzettel"), ""],
-							[_("Neue Serienstarts"), buttonText_na, _("Hilfe")],
-							[_("Serien Beschreibung"), buttonText_na, _("globale Einstellungen")])
-
-	if showAllButtons:
-		Skin1_Settings(self)
-							
-def InitSkin(self):
-	global showAllButtons
-	global longButtonText
-	global buttonText_na
-	global skin
-	global skinName
-	
-	self.skinName = skinName
-	if skin:
-		try:
-			SRSkin = open(skin)
-			self.skin = SRSkin.read()
-			SRSkin.close()
-		except:
-			showAllButtons = False
-			longButtonText = False
-			buttonText_na = _("-----")
-			
-			skinName = default_skinName
-			skin = default_skin
-
-			SRSkin = open(skin)
-			self.skin = SRSkin.read()
-			SRSkin.close()
-		
-	self['bt_red'] = Pixmap()
-	self['bt_green'] = Pixmap()
-	self['bt_yellow'] = Pixmap()
-	self['bt_blue'] = Pixmap()
-
-	self['bt_ok'] = Pixmap()
-	self['bt_exit'] = Pixmap()
-	self['bt_text'] = Pixmap()
-	self['bt_epg'] = Pixmap()
-	self['bt_info'] = Pixmap()
-	self['bt_menu'] = Pixmap()
-	self['bt_0'] = Pixmap()
-	self['bt_1'] = Pixmap()
-	self['bt_2'] = Pixmap()
-	self['bt_3'] = Pixmap()
-	self['bt_4'] = Pixmap()
-	self['bt_5'] = Pixmap()
-	self['bt_6'] = Pixmap()
-	self['bt_7'] = Pixmap()
-	self['bt_8'] = Pixmap()
-	self['bt_9'] = Pixmap()
-
-	self['text_red'] = Label("")
-	self['text_green'] = Label("")
-	self['text_yellow'] = Label("")
-	self['text_blue'] = Label(_(""))
-
-	self['text_ok'] = Label("")
-	self['text_exit'] = Label("")
-	self['text_text'] = Label("")
-	self['text_epg'] = Label("")
-	self['text_info'] = Label("")
-	self['text_menu'] = Label("")
-
-	self['text_0'] = Label("")
-	self['text_1'] = Label("")
-	self['text_2'] = Label("")
-	self['text_3'] = Label("")
-	self['text_4'] = Label("")
-	self['text_5'] = Label("")
-	self['text_6'] = Label("")
-	self['text_7'] = Label("")
-	self['text_8'] = Label("")
-	self['text_9'] = Label("")
-
-	self['Web_Channel'] = Label("")
-	self['Web_Channel'].hide()
-	self['STB_Channel'] = Label("")
-	self['STB_Channel'].hide()
-	self['alt_STB_Channel'] = Label("")
-	self['alt_STB_Channel'].hide()
-	self['separator'] = Label("")
-	self['separator'].hide()
-	self['path'] = Label("")
-	self['path'].hide()
-	self['menu_list'] = MenuList([])
-	self['menu_list'].hide()
-	self['config'] = MenuList([])
-	self['config'].hide()
-	self['log'] = MenuList([])
-	self['log'].hide()
-	self['list'] = MenuList([])
-	self['list'].hide()
-	self['popup_list'] = MenuList([])
-	self['popup_list'].hide()
-	self['popup_list2'] = MenuList([])
-	self['popup_list2'].hide()
-	self['popup_bg'] = Pixmap()
-	self['popup_bg'].hide()
-	self['cover'] = Pixmap()
-	self['cover'].hide()
-	self['config_information'] = Label("")
-	self['config_information'].hide()
-	self['config_information_text'] = Label("")
-	self['config_information_text'].hide()
-	self['info'] = ScrollLabel()
-	self['info'].hide()
-	desktopSize = getDesktop(0).size()
-	self["video"] = VideoWindow(decoder=0, fb_width=desktopSize.width(), fb_height=desktopSize.height())
-
-	self['title'] = Label("")
-	self['version'] = Label(_("Serien Recorder v%s") % config.plugins.serienRec.showversion.value)
-	self['headline'] = Label("")
-	
-	setSkinProperties(self, False)
-							
-	if not showAllButtons:
-		self['bt_red'].hide()
-		self['bt_green'].hide()
-		self['bt_yellow'].hide()
-		self['bt_blue'].hide()
-
-		self['bt_ok'].hide()
-		self['bt_exit'].hide()
-		self['bt_text'].hide()
-		self['bt_epg'].hide()
-		self['bt_info'].hide()
-		self['bt_menu'].hide()
-		self['bt_0'].hide()
-		self['bt_1'].hide()
-		self['bt_2'].hide()
-		self['bt_3'].hide()
-		self['bt_4'].hide()
-		self['bt_5'].hide()
-		self['bt_6'].hide()
-		self['bt_7'].hide()
-		self['bt_8'].hide()
-		self['bt_9'].hide()
-
-		self['text_red'].hide()
-		self['text_green'].hide()
-		self['text_yellow'].hide()
-		self['text_blue'].hide()
-
-		self['text_ok'].hide()
-		self['text_0'].hide()
-		self['text_1'].hide()
-		self['text_2'].hide()
-		self['text_3'].hide()
-		self['text_4'].hide()
-		self['text_5'].hide()
-		self['text_6'].hide()
-		self['text_7'].hide()
-		self['text_8'].hide()
-		self['text_9'].hide()
-
-def Skin1_Settings(self):			
-	self['text_0'].setText(self.num_bt_text[0][0])
-	self['text_1'].setText(self.num_bt_text[1][0])
-	self['text_2'].setText(self.num_bt_text[2][0])
-	self['text_3'].setText(self.num_bt_text[3][0])
-	self['text_4'].setText(self.num_bt_text[4][0])
-	self['text_5'].setText(self.num_bt_text[0][1])
-	self['text_6'].setText(self.num_bt_text[1][1])
-	self['text_7'].setText(self.num_bt_text[2][1])
-	self['text_8'].setText(self.num_bt_text[3][1])
-	self['text_9'].setText(self.num_bt_text[4][1])
-	self['text_exit'].setText(self.num_bt_text[0][2])
-	self['text_text'].setText(self.num_bt_text[1][2])
-	self['text_epg'].setText(self.num_bt_text[2][2])
-	self['text_info'].setText(self.num_bt_text[3][2])
-	self['text_menu'].setText(self.num_bt_text[4][2])
-		
-def updateMenuKeys(self):
-	if self.displayMode == 0:
-		self.displayMode = 1
-		self['bt_0'].hide()
-		self['bt_1'].hide()
-		self['bt_2'].hide()
-		self['bt_3'].hide()
-		self['bt_4'].hide()
-		self['bt_5'].show()
-		self['bt_6'].show()
-		self['bt_7'].show()
-		self['bt_8'].show()
-		self['bt_9'].show()
-		self['bt_exit'].hide()
-		self['bt_text'].hide()
-		self['bt_epg'].hide()
-		self['bt_info'].hide()
-		self['bt_menu'].hide()
-	elif self.displayMode == 1:
-		self.displayMode = 2
-		self['bt_0'].hide()
-		self['bt_1'].hide()
-		self['bt_2'].hide()
-		self['bt_3'].hide()
-		self['bt_4'].hide()
-		self['bt_5'].hide()
-		self['bt_6'].hide()
-		self['bt_7'].hide()
-		self['bt_8'].hide()
-		self['bt_9'].hide()
-		self['bt_exit'].show()
-		self['bt_text'].show()
-		self['bt_epg'].show()
-		self['bt_info'].show()
-		self['bt_menu'].show()
-	else:
-		self.displayMode = 0
-		self['bt_0'].show()
-		self['bt_1'].show()
-		self['bt_2'].show()
-		self['bt_3'].show()
-		self['bt_4'].show()
-		self['bt_5'].hide()
-		self['bt_6'].hide()
-		self['bt_7'].hide()
-		self['bt_8'].hide()
-		self['bt_9'].hide()
-		self['bt_exit'].hide()
-		self['bt_text'].hide()
-		self['bt_epg'].hide()
-		self['bt_info'].hide()
-		self['bt_menu'].hide()
-	self['text_0'].setText(self.num_bt_text[0][self.displayMode])
-	self['text_1'].setText(self.num_bt_text[1][self.displayMode])
-	self['text_2'].setText(self.num_bt_text[2][self.displayMode])
-	self['text_3'].setText(self.num_bt_text[3][self.displayMode])
-	self['text_4'].setText(self.num_bt_text[4][self.displayMode])
 
 def writeLog(text, forceWrite=False):
 	global logFile
@@ -888,6 +561,7 @@ def checkFileAccess():
 		Notifications.AddPopup(_("[Serien Recorder]\nDatei 'log' kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!") % (config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] checkFileAccess")
 			
 def checkTimerAdded(sender, serie, staffel, episode, start_unixtime):
+	global dbSerRec
 	#"Castle" "S03E20 - Die Pizza-Connection" "1392997800" "1:0:19:EF76:3F9:1:C00000:0:0:0:" "kabel eins"
 	found = False
 	cCursor = dbSerRec.cursor()
@@ -900,6 +574,7 @@ def checkTimerAdded(sender, serie, staffel, episode, start_unixtime):
 	return found
 
 def checkAlreadyAdded(serie, staffel, episode, title = None, searchOnlyActiveTimers = False):
+	global dbSerRec
 	Anzahl = 0
 	cCursor = dbSerRec.cursor()
 	if searchOnlyActiveTimers:
@@ -917,6 +592,7 @@ def checkAlreadyAdded(serie, staffel, episode, title = None, searchOnlyActiveTim
 	return Anzahl
 
 def getAlreadyAdded(serie, searchOnlyActiveTimers = False):
+	global dbSerRec
 	cCursor = dbSerRec.cursor()
 	if searchOnlyActiveTimers:
 		cCursor.execute("SELECT Staffel, Episode, Titel, LOWER(webChannel), StartZeitstempel FROM AngelegteTimer WHERE LOWER(Serie)=? AND TimerAktiviert=1 ORDER BY Staffel, Episode", (serie.lower(),))
@@ -928,6 +604,7 @@ def getAlreadyAdded(serie, searchOnlyActiveTimers = False):
 	return rows
 
 def getDirname(serien_name, staffel):
+	global dbSerRec
 	if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
 		seasonsubdirfillchar = ' '
 	else:
@@ -960,8 +637,13 @@ def getDirname(serien_name, staffel):
 				if config.plugins.serienRec.seasonsubdir.value:
 					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		
-	cCursor.close()	
-	return (dirname, dirname_serie)
+	cCursor.close()
+
+	# Replace not allowed characters in folder name
+	dirname_serie = "".join(i for i in dirname_serie if i not in "\/:*?<>|.")
+	dirname = "".join(i for i in dirname if i not in "\/:*?<>|.")
+
+	return dirname, dirname_serie
 
 
 
@@ -970,7 +652,12 @@ def CreateDirectory(serien_name, staffel):
 	if not fileExists(dirname):
 		print "[Serien Recorder] Erstelle Verzeichnis %s" % dirname
 		writeLog(_("[Serien Recorder] Erstelle Verzeichnis: ' %s '") % dirname)
-		os.makedirs(dirname)
+		try:
+			os.makedirs(dirname)
+		except OSError as e:
+			if e.error != 17:
+				raise
+
 	if fileExists(dirname):
 		if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname_serie, serien_name)):
 			shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname_serie, serien_name))
@@ -986,6 +673,7 @@ def CreateDirectory(serien_name, staffel):
 
 
 def getMargins(serien_name, webSender):
+	global dbSerRec
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT Vorlaufzeit, Nachlaufzeit FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
 	data = cCursor.fetchone()
@@ -1016,9 +704,11 @@ def getMargins(serien_name, webSender):
 		margin_after = config.plugins.serienRec.margin_after.value
 		
 	cCursor.close()
-	return (margin_before, margin_after)	
+	return margin_before, margin_after
+
 
 def getVPS(webSender, serien_name):
+	global dbSerRec
 	result = 0
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT CASE WHEN SerienMarker.vps IS NOT NULL AND SerienMarker.vps IS NOT '' THEN SerienMarker.vps ELSE Channels.vps END as vps FROM Channels,SerienMarker WHERE LOWER(Channels.WebChannel)=? AND LOWER(SerienMarker.Serie)=?", (webSender.lower(), serien_name.lower()))
@@ -1029,6 +719,7 @@ def getVPS(webSender, serien_name):
 	return (bool(result & 0x1), bool(result & 0x2))
 
 def getTags(serien_name):
+	global dbSerRec
 	tags = []
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT tags FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
@@ -1041,6 +732,7 @@ def getTags(serien_name):
 	return tags
 
 def getSpecialsAllowed(serien_name):
+	global dbSerRec
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT AlleStaffelnAb, TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
 	data = cCursor.fetchone()
@@ -1056,6 +748,7 @@ def getSpecialsAllowed(serien_name):
 	return bool(TimerForSpecials)
 	
 def getTimeSpan(serien_name):
+	global dbSerRec
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT AufnahmezeitVon, AufnahmezeitBis FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
 	data = cCursor.fetchone()
@@ -1073,6 +766,7 @@ def getTimeSpan(serien_name):
 	return (fromTime, toTime)	
 	
 def getMarker():
+	global dbSerRec
 	return_list = []
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays FROM SerienMarker ORDER BY Serie")
@@ -1128,6 +822,7 @@ def getMarker():
 	return return_list
 
 def getWebSender():
+	global dbSerRec
 	fSender = []
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels")
@@ -1138,6 +833,7 @@ def getWebSender():
 	return fSender
 
 def getWebSenderAktiv():
+	global dbSerRec
 	fSender = []
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef FROM Channels WHERE Erlaubt=1 ORDER BY LOWER(WebChannel)")
@@ -1148,6 +844,7 @@ def getWebSenderAktiv():
 	return fSender
 
 def addToWishlist(seriesName, fromEpisode, toEpisode, season):
+	global dbSerRec
 	if int(fromEpisode) != 0 or int(toEpisode) != 0:
 		AnzahlAufnahmen = int(config.plugins.serienRec.NoOfRecords.value)
 		cCursor = dbSerRec.cursor()
@@ -1170,6 +867,7 @@ def addToWishlist(seriesName, fromEpisode, toEpisode, season):
 		return False
 
 def addToAddedList(seriesName, fromEpisode, toEpisode, season, episodeTitle):
+	global dbSerRec
 	# Es gibt Episodennummern die nicht nur aus Zahlen bestehen, z.B. 14a
 	# um solche Folgen in die Datenbank zu bringen wird hier eine Unterscheidung gemacht.
 	if fromEpisode == toEpisode:
@@ -2573,8 +2271,13 @@ class serienRecCheckForRecording():
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 
+		global dbSerRec
+		global refreshTimer
+		global refreshTimerConnection
+		global isDreamboxOS
 		global logFile
 		global logFileSave
+
 		logFile = "%slog" % (config.plugins.serienRec.LogFilePath.value)
 		checkFileAccess()
 		if config.plugins.serienRec.longLogFileName.value:
@@ -2612,9 +2315,6 @@ class serienRecCheckForRecording():
 			return
 		cCursor.close()
 
-		global refreshTimer
-		global refreshTimerConnection
-		global isDreamboxOS
 		if refreshTimer:
 			refreshTimer.stop()
 			refreshTimer = None
@@ -2649,7 +2349,6 @@ class serienRecCheckForRecording():
 			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
 			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
-		global dbSerRec
 		if config.plugins.serienRec.AutoBackup.value:
 			# Remove old backups
 			if config.plugins.serienRec.deleteBackupFilesOlderThan.value > 0:
@@ -2692,7 +2391,10 @@ class serienRecCheckForRecording():
 			lt = datetime.datetime.now() - datetime.timedelta(days=config.plugins.serienRec.deleteLogFilesOlderThan.value)
 			for filename in os.listdir(config.plugins.serienRec.LogFilePath.value):
 				if (filename.find('log_') == 0) and (int(os.path.getmtime(os.path.join(config.plugins.serienRec.LogFilePath.value, filename))) < int(lt.strftime("%s"))):
-					os.remove('%s%s' % (config.plugins.serienRec.LogFilePath.value, filename))
+					try:
+						os.remove('%s%s' % (config.plugins.serienRec.LogFilePath.value, filename))
+					except:
+						writeLog(_("[Serien Recorder] Logdatei konnte nicht gelöscht werden: %s") % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
 					
 		open(logFile, 'w').close()
 
@@ -2807,6 +2509,8 @@ class serienRecCheckForRecording():
 			self.senderListe[s[0].lower()] = s[:]
 			
 		head_datum = re.findall('<li class="datum">(.*?)</li>', data, re.S)
+		if not head_datum:
+			return
 		txt = head_datum[0].split(",")
 		(day, month, year) = txt[1].split(".")
 		UTCDatum = TimeHelpers.getRealUnixTime(0, 0, day, month, year)
@@ -3124,6 +2828,10 @@ class serienRecCheckForRecording():
 						print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
 
 						timerUpdated = False
+						if str(staffel) is 'S' and str(episode) is '0':
+							writeLog(_("[Serien Recorder]    ' %s ' - Timer kann nicht aktualisiert werden @ %s") % (title, webChannel), True)
+							break
+
 						try:
 							# suche in aktivierten Timern
 							timerUpdated = self.updateTimer(recordHandler.timer_list, cTimer, eit, end_unixtime, episode,
@@ -3462,23 +3170,6 @@ class serienRecCheckForRecording():
 			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
 
-			# Process channel relevant data
-
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft welche sender aktiviert und eingestellt sind.
-			#
-			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
-			if stbChannel == "":
-				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '") % (label_serie, webChannel))
-				continue
-
-			if int(status) == 0:
-				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (label_serie, webChannel))
-				continue
-
 			##############################
 			#
 			# CHECK
@@ -3558,6 +3249,23 @@ class serienRecCheckForRecording():
 						liste.remove(-2)
 						liste.insert(0, _("Manuell"))
 					writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
+				continue
+
+			# Process channel relevant data
+
+			##############################
+			#
+			# CHECK
+			#
+			# ueberprueft welche sender aktiviert und eingestellt sind.
+			#
+			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
+			if stbChannel == "":
+				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '") % (label_serie, webChannel))
+				continue
+
+			if int(status) == 0:
+				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (label_serie, webChannel))
 				continue
 
 			##############################
@@ -4508,9 +4216,9 @@ class serienRecTimer(Screen, HelpableScreen):
 		if showTitle:			
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			if self.filter:
-				self['title'].setText(_("TimerList: %s Timer sind vorhanden.") % len(timerList))
+				self['title'].setText(_("Timer-Liste: %s Timer sind vorhanden.") % len(timerList))
 			else:
-				self['title'].setText(_("TimerList: %s Aufnahme(n) und %s Timer sind vorhanden.") % (deltimer, len(timerList)-deltimer))
+				self['title'].setText(_("Timer-Liste: %s Aufnahme(n) und %s Timer sind vorhanden.") % (deltimer, len(timerList)-deltimer))
 
 		if config.plugins.serienRec.recordListView.value == 0:
 			timerList.sort(key=lambda t : t[4])
@@ -4974,8 +4682,8 @@ class serienRecMarker(Screen, HelpableScreen):
 	def setSkinProperties(self):
 		setSkinProperties(self)
 		
-		self['text_green'].setText(_("Sender auswählen."))
-		self['text_ok'].setText(_("Staffel(n) auswählen."))
+		self['text_green'].setText(_("Sender auswählen"))
+		self['text_ok'].setText(_("Staffel(n) auswählen"))
 		self['text_yellow'].setText(_("Sendetermine"))
 		self.num_bt_text[1][0] = _("Serie suchen")
 		self.num_bt_text[0][1] = _("Episoden-Liste")
@@ -5801,8 +5509,8 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		setSkinProperties(self)
 
 		self['text_red'].setText(_("Abbrechen"))
-		self['text_ok'].setText(_("Hinzufügen"))
-		self['text_blue'].setText(_("Serie Suchen"))
+		self['text_ok'].setText(_("Marker hinzufügen"))
+		self['text_blue'].setText(_("Suche wiederholen"))
 
 		self.displayTimer = None
 		if showAllButtons:
@@ -5945,9 +5653,9 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self['title'].setText(_("Suche nach ' %s '") % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
-		from SearchSerie import SearchSerie
-		SearchSerie(self.serien_name, self.results, self.dataError).request()
-		# self.results(SeriesServer().doSearch(self.serien_name))
+		# from SearchSerie import SearchSerie
+		# SearchSerie(self.serien_name, self.results, self.dataError).request()
+		self.results(SeriesServer().doSearch(self.serien_name))
 
 	def results(self, serienlist):	
 		self.serienlist = serienlist
@@ -7122,538 +6830,6 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def __onClose(self):
 		self.stopDisplayTimer()
 
-#---------------------------------- Channel Functions ------------------------------------------
-
-class serienRecMainChannelEdit(Screen, HelpableScreen):
-	def __init__(self, session):
-		Screen.__init__(self, session)
-		HelpableScreen.__init__(self)
-		self.session = session
-		self.serienRecChlist = []
-
-		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok"       : (self.keyOK, _("Popup-Fenster zur Auswahl des STB-Channels öffnen")),
-			"cancel"   : (self.keyCancel, _("zurück zur Serienplaner-Ansicht")),
-			"red"	   : (self.keyRed, _("umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert")),
-			"red_long" : (self.keyRedLong, _("ausgewählten Sender aus der Channelliste endgültig löschen")),
-			"green"    : (self.keyGreen, _("Sender-Zuordnung zurücksetzen")),
-			"menu"     : (self.channelSetup, _("Menü für Sender-Einstellungen öffnen")),
-			"menu_long": (self.recSetup, _("Menü für globale Einstellungen öffnen")),
-			"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
-			"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
-			"up"       : (self.keyUp, _("eine Zeile nach oben")),
-			"down"     : (self.keyDown, _("eine Zeile nach unten")),
-			"startTeletext"       : (self.youtubeSearch, _("Trailer zum ausgewählten Sender auf YouTube suchen")),
-			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zum ausgewählten Sender auf Wikipedia suchen")),
-			"0"		   : (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"3"		   : (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
-			"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
-		}, -1)
-		self.helpList[0][2].sort()
-
-		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
-			"displayHelp"      : self.showHelp,
-			"displayHelp_long" : self.showManual,
-		}, 0)
-
-		self.setupSkin()
-
-		self.modus = "list"
-		self.changesMade = False
-		
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT * FROM Channels")
-		row = cCursor.fetchone()
-		if row:
-			cCursor.close()
-			self.onLayoutFinish.append(self.showChannels)
-		else:
-			cCursor.close()
-			if config.plugins.serienRec.selectBouquets.value:
-				self.stbChlist = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
-			else:
-				self.stbChlist = STBHelpers.buildSTBChannelList()
-			self.onLayoutFinish.append(self.readWebChannels)
-
-		self.onClose.append(self.__onClose)
-		self.onLayoutFinish.append(self.setSkinProperties)
-
-	def callHelpAction(self, *args):
-		HelpableScreen.callHelpAction(self, *args)
-		
-	def setSkinProperties(self):
-		setSkinProperties(self)
-
-		self['text_green'].setText(_("Reset Senderliste"))
-		self['text_ok'].setText(_("Sender auswählen"))
-
-		self.num_bt_text[4][0] = buttonText_na
-		if longButtonText:
-			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
-			self.num_bt_text[4][2] = _("Setup Sender (lang: global)")
-		else:
-			self['text_red'].setText(_("(De)aktivieren/Löschen"))
-			self.num_bt_text[4][2] = _("Setup Sender/global")
-
-		self.displayTimer = None
-		if showAllButtons:
-			Skin1_Settings(self)
-		else:
-			self.displayMode = 2
-			self.updateMenuKeys()
-		
-			self.displayTimer = eTimer()
-			if isDreamboxOS:
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-			
-	def setupSkin(self):
-		self.skin = None
-		InitSkin(self)
-
-		# normal
-		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(int(25*skinFactor))
-		self['list'] = self.chooseMenuList
-		self['list'].show()
-		
-		# popup
-		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList_popup.l.setItemHeight(int(25*skinFactor))
-		self['popup_list'] = self.chooseMenuList_popup
-		self['popup_list'].hide()
-
-		# popup2
-		self.chooseMenuList_popup2 = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList_popup2.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList_popup2.l.setItemHeight(int(25*skinFactor))
-		self['popup_list2'] = self.chooseMenuList_popup2
-		self['popup_list2'].hide()
-
-		self['title'].setText(_("Lade Web-Channel / STB-Channels..."))
-
-		self['Web_Channel'].setText(_("Web-Channel"))
-		self['STB_Channel'].setText(_("STB-Channel"))
-		self['alt_STB_Channel'].setText(_("alt. STB-Channel"))
-
-		self['Web_Channel'].show()
-		self['STB_Channel'].show()
-		self['alt_STB_Channel'].show()
-		self['separator'].show()
-		
-		if not showAllButtons:
-			self['bt_red'].show()
-			self['bt_green'].show()
-			self['bt_ok'].show()
-			self['bt_exit'].show()
-			self['bt_text'].show()
-			self['bt_info'].show()
-			self['bt_menu'].show()
-
-			self['text_red'].show()
-			self['text_green'].show()
-			self['text_ok'].show()
-			self['text_0'].show()
-			self['text_1'].show()
-			self['text_2'].show()
-			self['text_3'].show()
-			self['text_4'].show()
-			
-	def updateMenuKeys(self):
-		updateMenuKeys(self)
-		
-	def channelSetup(self):
-		webSender = self['list'].getCurrent()[0][0]
-		self.session.open(serienRecChannelSetup, webSender)
-
-	def readLogFile(self):
-		self.session.open(serienRecReadLog)
-
-	def showProposalDB(self):
-		self.session.open(serienRecShowSeasonBegins)
-
-	def showConflicts(self):
-		self.session.open(serienRecShowConflicts)
-		
-	def showWishlist(self):
-		self.session.open(serienRecWishlist)
-
-	def youtubeSearch(self):
-		if epgTranslatorInstalled:
-			check = self['list'].getCurrent()
-			if check is None:
-				return
-
-			sender_name = self['list'].getCurrent()[0][0]
-			self.session.open(searchYouTube, sender_name)
-		else:
-			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
-
-	def WikipediaSearch(self):
-		if WikipediaInstalled:
-			check = self['list'].getCurrent()
-			if check is None:
-				return
-
-			sender_name = self['list'].getCurrent()[0][0]
-			self.session.open(wikiSearch, sender_name)
-		else:
-			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
-
-	def showManual(self):
-		if OperaBrowserInstalled:
-			self.session.open(Browser, SR_OperatingManual, True)
-		elif DMMBrowserInstalled:
-			self.session.open(Browser, True, SR_OperatingManual)
-		else:
-			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
-			
-	def showAbout(self):
-		self.session.open(serienRecAboutScreen)
-	
-	def recSetup(self):
-		self.session.openWithCallback(self.setupClose, serienRecSetup)
-
-	def setupClose(self, result):
-		if not result[2]:
-			self.close()
-		else:	
-			if result[0]:
-				if config.plugins.serienRec.update.value:
-					serienRecCheckForRecording(self.session, False)
-				elif config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
-
-			if result[1]:
-				self.showChannels()
-				
-	def showChannels(self):
-		self.serienRecChlist = []
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels ORDER BY LOWER(WebChannel)")
-		for row in cCursor:
-			(webSender, servicename, serviceref, altservicename, altserviceref, status) = row
-			self.serienRecChlist.append((webSender, servicename, altservicename, status))
-
-		if len(self.serienRecChlist) != 0:
-			self['title'].setText(_("Sender zuordnen"))
-			self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
-		else:
-			print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
-		cCursor.close()
-
-	def readWebChannels(self):
-		print "[SerienRecorder] call webpage.."
-		self['title'].setText(_("Lade Web-Channels..."))
-
-		from WebChannels import WebChannels
-		WebChannels(self.createWebChannels, self.dataError).request()
-
-	def createWebChannels(self, web_chlist):
-		if web_chlist:
-			web_chlist.sort(key=lambda x: x.lower())
-			print web_chlist
-			self.serienRecChlist = []
-			if len(web_chlist) != 0:
-				self['title'].setText(_("erstelle Channels-List..."))
-				cCursor = dbSerRec.cursor()
-				sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)"
-				for webSender in web_chlist:
-					cCursor.execute("SELECT * FROM Channels WHERE LOWER(WebChannel)=?", (webSender.lower(),))
-					row = cCursor.fetchone()
-					if not row:
-						found = False
-						for servicename,serviceref in self.stbChlist:
-							#if re.search(webSender.lower(), servicename.lower(), re.S):
-							if re.search("\A%s\Z" % webSender.lower().replace('+','\+').replace('.','\.'), servicename.lower(), re.S):
-								cCursor.execute(sql, (webSender, servicename, serviceref, 1))
-								self.serienRecChlist.append((webSender, servicename, "", "1"))
-								found = True
-								break
-						if not found:
-							cCursor.execute(sql, (webSender, "", "", 0))
-							self.serienRecChlist.append((webSender, "", "", "0"))
-						self.changesMade = True
-						global runAutocheckAtExit
-						runAutocheckAtExit = True
-				dbSerRec.commit()
-				cCursor.close()
-			else:
-				print "[SerienRecorder] webChannel list leer.."
-
-			if len(self.serienRecChlist) != 0:
-				self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
-			else:
-				print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
-
-		else:
-			print "[SerienRecorder] get webChannel error.."
-			
-		self['title'].setText(_("Web-Channel / STB-Channels."))
-
-	def buildList(self, entry):
-		(webSender, stbSender, altstbSender, status) = entry
-		if int(status) == 0:		
-			imageStatus = "%simages/minus.png" % serienRecMainPath
-		else:
-			imageStatus = "%simages/plus.png" % serienRecMainPath
-			
-		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 7 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imageStatus)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 0, 300 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webSender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 0, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, stbSender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, altstbSender, parseColor('yellow').argb())
-			]
-
-	def buildList_popup(self, entry):
-		(servicename,serviceref) = entry
-		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 5, 1, 250 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, servicename)
-			]
-
-	def keyOK(self):
-		global runAutocheckAtExit
-		if self.modus == "list":
-			self.modus = "popup_list"
-			self['popup_list'].show()
-			self['popup_bg'].show()
-			if config.plugins.serienRec.selectBouquets.value:
-				self.stbChlist = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
-			else:
-				self.stbChlist = STBHelpers.buildSTBChannelList()
-			self.stbChlist.insert(0, ("", ""))
-			self.chooseMenuList_popup.setList(map(self.buildList_popup, self.stbChlist))
-			idx = 0
-			cCursor = dbSerRec.cursor()
-			cCursor.execute("SELECT STBChannel, alternativSTBChannel FROM Channels WHERE LOWER(WebChannel)=?", (self['list'].getCurrent()[0][0].lower(),))
-			row = cCursor.fetchone()
-			if row:
-				(stbChannel, altstbChannel) = row
-				if stbChannel:
-					try:
-						idx = zip(*self.stbChlist)[0].index(stbChannel)
-					except:
-						pass
-			cCursor.close()
-			self['popup_list'].moveToIndex(idx)
-			self['title'].setText(_("Standard STB-Channel für %s:") % self['list'].getCurrent()[0][0])
-		elif config.plugins.serienRec.selectBouquets.value:
-			if self.modus == "popup_list":
-				self.modus = "popup_list2"
-				self['popup_list'].hide()
-				self['popup_list2'].show()
-				self['popup_bg'].show()
-				self.stbChlist = STBHelpers.buildSTBChannelList(config.plugins.serienRec.AlternativeBouquet.value)
-				self.stbChlist.insert(0, ("", ""))
-				self.chooseMenuList_popup2.setList(map(self.buildList_popup, self.stbChlist))
-				idx = 0
-				cCursor = dbSerRec.cursor()
-				cCursor.execute("SELECT STBChannel, alternativSTBChannel FROM Channels WHERE LOWER(WebChannel)=?", (self['list'].getCurrent()[0][0].lower(),))
-				row = cCursor.fetchone()
-				if row:
-					(stbChannel, altstbChannel) = row
-					if stbChannel:
-						try:
-							idx = zip(*self.stbChlist)[0].index(altstbChannel)
-						except:
-							pass
-				cCursor.close()
-				self['popup_list2'].moveToIndex(idx)
-				self['title'].setText(_("alternativer STB-Channels für %s:") % self['list'].getCurrent()[0][0])
-			else:
-				self.modus = "list"
-				self['popup_list'].hide()
-				self['popup_list2'].hide()
-				self['popup_bg'].hide()
-
-				check = self['list'].getCurrent()
-				if check is None:
-					print "[Serien Recorder] Channel-List leer (list)."
-					return
-
-				check = self['popup_list'].getCurrent()
-				if check is None:
-					print "[Serien Recorder] Channel-List leer (popup_list)."
-					return
-
-				chlistSender = self['list'].getCurrent()[0][0]
-				stbSender = self['popup_list'].getCurrent()[0][0]
-				stbRef = self['popup_list'].getCurrent()[0][1]
-				altstbSender = self['popup_list2'].getCurrent()[0][0]
-				altstbRef = self['popup_list2'].getCurrent()[0][1]
-				print "[SerienRecorder] select:", chlistSender, stbSender, stbRef, altstbSender, altstbRef
-				cCursor = dbSerRec.cursor()
-				sql = "UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, alternativSTBChannel=?, alternativServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?"
-				if stbSender != "" or altstbSender != "":
-					cCursor.execute(sql, (stbSender, stbRef, altstbSender, altstbRef, 1, chlistSender.lower()))
-				else:
-					cCursor.execute(sql, (stbSender, stbRef, altstbSender, altstbRef, 0, chlistSender.lower()))
-				self.changesMade = True
-				runAutocheckAtExit = True
-				dbSerRec.commit()
-				cCursor.close()
-				self['title'].setText(_("Sender zuordnen"))
-				self.showChannels()
-		else:
-			self.modus = "list"
-			self['popup_list'].hide()
-			self['popup_list2'].hide()
-			self['popup_bg'].hide()
-
-			if self['list'].getCurrent() is None:
-				print "[Serien Recorder] Channel-List leer (list)."
-				return
-
-			if self['popup_list'].getCurrent() is None:
-				print "[Serien Recorder] Channel-List leer (popup_list)."
-				return
-
-			chlistSender = self['list'].getCurrent()[0][0]
-			stbSender = self['popup_list'].getCurrent()[0][0]
-			stbRef = self['popup_list'].getCurrent()[0][1]
-			print "[SerienRecorder] select:", chlistSender, stbSender, stbRef
-			cCursor = dbSerRec.cursor()
-			sql = "UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?"
-			if stbSender != "":
-				cCursor.execute(sql, (stbSender, stbRef, 1, chlistSender.lower()))
-			else:
-				cCursor.execute(sql, (stbSender, stbRef, 0, chlistSender.lower()))
-			self.changesMade = True
-			runAutocheckAtExit = True
-			dbSerRec.commit()
-			cCursor.close()
-			self['title'].setText(_("Sender zuordnen"))
-			self.showChannels()
-				
-	def keyRed(self):
-		global runAutocheckAtExit
-		if self['list'].getCurrent() is None:
-			print "[Serien Recorder] Channel-List leer."
-			return
-
-		if self.modus == "list":
-			chlistSender = self['list'].getCurrent()[0][0]
-			sender_status = self['list'].getCurrent()[0][2]
-			print sender_status
-
-			cCursor = dbSerRec.cursor()
-			cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (chlistSender.lower(),))
-			row = cCursor.fetchone()
-			if row:
-				(webSender, servicename, serviceref, status) = row
-				sql = "UPDATE OR IGNORE Channels SET Erlaubt=? WHERE LOWER(WebChannel)=?"
-				if int(status) == 0:
-					cCursor.execute(sql, (1, chlistSender.lower()))
-					print "[SerienRecorder] change to:", webSender, servicename, serviceref, "1"
-					self['title'].instance.setForegroundColor(parseColor("red"))
-					self['title'].setText("")
-					self['title'].setText(_("Sender '- %s -' wurde aktiviert.") % webSender)
-				else:
-					cCursor.execute(sql, (0, chlistSender.lower()))
-					print "[SerienRecorder] change to:",webSender, servicename, serviceref, "0"
-					self['title'].instance.setForegroundColor(parseColor("red"))
-					self['title'].setText("")
-					self['title'].setText(_("Sender '- %s -' wurde deaktiviert.") % webSender)
-				self.changesMade = True
-				runAutocheckAtExit = True
-				dbSerRec.commit()
-				
-			cCursor.close()	
-			self['title'].instance.setForegroundColor(parseColor("foreground"))
-			self.showChannels()
-
-	def keyGreen(self):
-		self.session.openWithCallback(self.channelReset, MessageBox, _("Sender-Liste zurücksetzen ?"), MessageBox.TYPE_YESNO)
-
-	def channelReset(self, answer):
-		if answer:
-			print "[Serien Recorder] channel-list reset..."
-
-			if config.plugins.serienRec.selectBouquets.value:
-				self.stbChlist = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
-			else:
-				self.stbChlist = STBHelpers.buildSTBChannelList()
-			self.readWebChannels()
-		else:
-			print "[Serien Recorder] channel-list ok."
-
-	def keyRedLong(self):
-		check = self['list'].getCurrent()
-		if check is None:
-			print "[Serien Recorder] Serien Marker leer."
-			return
-		else:
-			self.selected_sender = self['list'].getCurrent()[0][0]
-			cCursor = dbSerRec.cursor()
-			cCursor.execute("SELECT * FROM Channels WHERE LOWER(WebChannel)=?", (self.selected_sender.lower(),))
-			row = cCursor.fetchone()
-			if row:
-				print "gefunden."
-				if config.plugins.serienRec.confirmOnDelete.value:
-					self.session.openWithCallback(self.channelDelete, MessageBox, _("Soll '%s' wirklich entfernt werden?") % self.selected_sender, MessageBox.TYPE_YESNO, default = False)
-				else:
-					self.channelDelete(True)
-			cCursor.close()
-
-	def channelDelete(self, answer):
-		if not answer:
-			return
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("DELETE FROM NeuerStaffelbeginn WHERE LOWER(Sender)=?", (self.selected_sender.lower(),))
-		cCursor.execute("DELETE FROM SenderAuswahl WHERE LOWER(ErlaubterSender)=?", (self.selected_sender.lower(),))
-		cCursor.execute("DELETE FROM Channels WHERE LOWER(WebChannel)=?", (self.selected_sender.lower(),))
-		dbSerRec.commit()
-		cCursor.close()
-		self.changesMade = True
-		self['title'].instance.setForegroundColor(parseColor("red"))
-		self['title'].setText(_("Sender '- %s -' entfernt.") % self.selected_sender)
-		self.showChannels()	
-			
-	def keyLeft(self):
-		self[self.modus].pageUp()
-
-	def keyRight(self):
-		self[self.modus].pageDown()
-
-	def keyDown(self):
-		self[self.modus].down()
-
-	def keyUp(self):
-		self[self.modus].up()
-
-	def __onClose(self):
-		if self.displayTimer:
-			self.displayTimer.stop()
-			self.displayTimer = None
-
-	def keyCancel(self):
-		if self.modus == "popup_list":
-			self.modus = "list"
-			self['popup_list'].hide()
-			self['popup_bg'].hide()
-		elif self.modus == "popup_list2":
-			self.modus = "list"
-			self['popup_list2'].hide()
-			self['popup_bg'].hide()
-		else:
-			if config.plugins.serienRec.refreshViews.value:
-				self.close(self.changesMade)
-			else:
-				self.close(False)
-			
-	def dataError(self, error, url=None):
-		if url:
-			writeErrorLog("   serienRecMainChannelEdit(): %s\n   Url: %s" % (error, url))
-		else:
-			writeErrorLog("   serienRecMainChannelEdit(): %s" % error)
-		print error
-
-		
 #---------------------------------- Setup Functions ------------------------------------------
 
 class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
@@ -10337,7 +9513,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		setSkinProperties(self)
 
 		self['text_red'].setText(_("Eintrag löschen"))
-		self['text_ok'].setText(_("Marker übernehmen"))
+		self['text_ok'].setText(_("Marker hinzufügen"))
 		if self.filter:
 			self['text_yellow'].setText(_("Zeige alle"))
 		else:
@@ -11725,7 +10901,7 @@ class serienRecMain(Screen, HelpableScreen):
 			"startTeletext"       : (self.youtubeSearch, _("Trailer zur ausgewählten Serie auf YouTube suchen")),
 			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zur ausgewählten Serie auf Wikipedia suchen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			#"1"		: (self.searchSeries, _("Serie manuell suchen")),
+			"1"		: (self.searchSeries, _("Serie manuell suchen")),
 			"2"		: (self.reloadSerienplaner, _("Serienplaner neu laden")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
@@ -11806,7 +10982,6 @@ class serienRecMain(Screen, HelpableScreen):
 
 		self.onFirstExecBegin.append(self.showSplashScreen)
 
-		#self.onLayoutFinish.append(self.startScreen)
 		if config.plugins.serienRec.showStartupInfoText.value:
 			global InfoFile
 			if fileExists(InfoFile):
@@ -11835,7 +11010,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self['text_ok'].setText(_("Marker hinzufügen"))
 		self['text_yellow'].setText(_("Serien Marker"))
 		self['text_blue'].setText(_("Timer-Liste"))
-		#self.num_bt_text[1][0] = _("Serie suchen")
+		self.num_bt_text[1][0] = _("Serie suchen")
 		self.num_bt_text[2][0] = _("neu laden")
 		self.num_bt_text[2][2] = _("Timer suchen")
 		
@@ -11940,16 +11115,12 @@ class serienRecMain(Screen, HelpableScreen):
 		self.session.openWithCallback(self.readWebpage, serienRecShowSeasonBegins)
 
 	def searchSeries(self):
-		if self.modus == "menu_list":
+		if self.modus == "list":
 			self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = _("Serien Titel eingeben:"))
 
 	def wSearch(self, serien_name):
 		if serien_name:
-			print serien_name
-			self.changesMade = True
-			global runAutocheckAtExit
-			runAutocheckAtExit = True
-			self.session.openWithCallback(self.readSerienMarker, serienRecAddSerie, serien_name)
+			self.session.openWithCallback(serienRecMarker, serienRecAddSerie, serien_name)
 
 	def serieInfo(self):
 		if self.loading:
@@ -12113,7 +11284,7 @@ class serienRecMain(Screen, HelpableScreen):
 				self.readWebpage(False)
 
 	def readWebpage(self, answer=True):
-		if (not showMainScreen) and (not UpdateAvailable):
+		if not showMainScreen:
 			self.keyCancel()
 			self.close()
 

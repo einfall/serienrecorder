@@ -11,7 +11,6 @@ from Components.Label import Label
 
 from enigma import getDesktop
 
-
 class ShowSplashScreen(Screen):
 	DESKTOP_WIDTH  = getDesktop(0).size().width()
 	DESKTOP_HEIGHT = getDesktop(0).size().height()
