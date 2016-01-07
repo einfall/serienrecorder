@@ -195,7 +195,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.breakTimersuche = ConfigYesNo(default = False)
 	config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
 	config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default = True)
-	config.plugins.serienRec.tuner = ConfigInteger(4, (1,4))
+	config.plugins.serienRec.tuner = ConfigInteger(4, (1,8))
 	config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
 	config.plugins.serienRec.logWrapAround = ConfigYesNo(default = False)
 	config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", _("<Serienname> - SnnEmm - <Episodentitel>")), ("1", _("<Serienname>")), ("2", _("SnnEmm - <Episodentitel>"))], default="0")
@@ -616,7 +616,7 @@ def getDirname(serien_name, staffel):
 		dirname = config.plugins.serienRec.savetopath.value
 		dirname_serie = dirname
 		if config.plugins.serienRec.seriensubdir.value:
-			dirname = "%s%s/" % (dirname, serien_name)
+			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 			dirname_serie = dirname
 			if config.plugins.serienRec.seasonsubdir.value:
 				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
@@ -632,17 +632,12 @@ def getDirname(serien_name, staffel):
 			dirname = config.plugins.serienRec.savetopath.value
 			dirname_serie = dirname
 			if config.plugins.serienRec.seriensubdir.value:
-				dirname = "%s%s/" % (dirname, serien_name)
+				dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 				dirname_serie = dirname
 				if config.plugins.serienRec.seasonsubdir.value:
 					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		
 	cCursor.close()
-
-	# Replace not allowed characters in folder name
-	dirname_serie = "".join(i for i in dirname_serie if i not in "\/:*?<>|.")
-	dirname = "".join(i for i in dirname if i not in "\/:*?<>|.")
-
 	return dirname, dirname_serie
 
 
