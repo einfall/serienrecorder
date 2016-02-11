@@ -96,7 +96,7 @@ except:
 def ReadConfigFile():
 	config.plugins.serienRec = ConfigSubsection()
 	config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
-	config.plugins.serienRec.databasePath = ConfigText(default = serienRecMainPath, fixed_size=False, visible_width=80)
+	config.plugins.serienRec.databasePath = ConfigText(default = "/etc/enigma2/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.coverPath = ConfigText(default = serienRecCoverPath, fixed_size=False, visible_width=80)
 	
 	choices = [("Skinpart", _("Skinpart")), ("", _("SerienRecorder 1")), ("Skin2", _("SerienRecorder 2")), ("AtileHD", _("AtileHD")), ("StyleFHD", _("StyleFHD")), ("Black Box", _("Black Box"))]
@@ -148,7 +148,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.update = ConfigYesNo(default = False)
 	config.plugins.serienRec.updateInterval = ConfigInteger(24, (0,24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
-	config.plugins.serienRec.deltime = ConfigClock(default = (12*3600)+time.timezone)
+	config.plugins.serienRec.deltime = ConfigClock(default = (random.randint(1, 23)*3600)+time.timezone)
 	config.plugins.serienRec.maxDelayForAutocheck = ConfigInteger(15, (0,60))
 	config.plugins.serienRec.maxWebRequests = ConfigInteger(1, (1,99))
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
@@ -355,18 +355,18 @@ def retry(times, func, *args, **kwargs):
 	errorList = []
 	deferred = defer.Deferred()
 	def run():
-		#writeLog(_("[Serien Recorder] Versuche Webseite abzurufen..."), True)
+		#writeLog(_("[SerienRecorder] Versuche Webseite abzurufen..."), True)
 		d = func(*args, **kwargs)
 		d.addCallbacks(deferred.callback, error)
 	def error(retryError):
 		errorList.append(retryError)
 		# Retry
 		if len(errorList) < times:
-			writeLog(_("[Serien Recorder] Fehler beim Abrufen von ' %s ', versuche es noch %d mal...") % (args[1], times - len(errorList)), True)
+			writeLog(_("[SerienRecorder] Fehler beim Abrufen von ' %s ', versuche es noch %d mal...") % (args[1], times - len(errorList)), True)
 			run()
 		# Fail
 		else:
-			writeLog(_("[Serien Recorder] Abrufen von ' %s ' auch nach mehreren Versuchen nicht möglich!") % args[1], True)
+			writeLog(_("[SerienRecorder] Abrufen von ' %s ' auch nach mehreren Versuchen nicht möglich!") % args[1], True)
 			deferred.errback(errorList)
 	run()
 	return deferred
@@ -388,7 +388,7 @@ def getCover(self, serien_name, serien_id):
 		try:
 			shutil.os.mkdir(config.plugins.serienRec.coverPath.value)
 		except:
-			Notifications.AddPopup(_("[Serien Recorder]\nCover Pfad (%s) kann nicht angelegt werden.\n\nÜberprüfen Sie den Pfad und die Rechte!") % config.plugins.serienRec.coverPath.value, MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] checkFileAccess")
+			Notifications.AddPopup(_("[SerienRecorder]\nCover Pfad (%s) kann nicht angelegt werden.\n\nÜberprüfen Sie den Pfad und die Rechte!") % config.plugins.serienRec.coverPath.value, MessageBox.TYPE_INFO, timeout=10, id="[SerienRecorder] checkFileAccess")
 
 	# Change PNG cover file extension to correct file extension JPG
 	if fileExists(png_serien_nameCover):
@@ -412,14 +412,14 @@ def getCoverDataError(error, self, serien_nameCover):
 	if self is not None: 
 		#self['title'].setText(_("Cover-Suche auf 'Wunschliste.de' erfolglos"))
 		#self['title'].instance.setForegroundColor(parseColor("foreground"))
-		writeLog(_("[Serien Recorder] Fehler bei: %s (%s)") % (self.ErrorMsg, serien_nameCover), True)
+		writeLog(_("[SerienRecorder] Fehler bei: %s (%s)") % (self.ErrorMsg, serien_nameCover), True)
 		writeErrorLog("   getCover(): %s\n   Serie: %s\n   %s" % (error, serien_nameCover, self.ErrorMsg))
-		print "[Serien Recorder] Fehler bei: %s" % self.ErrorMsg
+		print "[SerienRecorder] Fehler bei: %s" % self.ErrorMsg
 	else:
 		ErrorMsg = _("Cover-Suche (%s) auf 'Wunschliste.de' erfolglos") % serien_nameCover
-		writeLog(_("[Serien Recorder] Fehler: %s") % ErrorMsg, True)
+		writeLog(_("[SerienRecorder] Fehler: %s") % ErrorMsg, True)
 		writeErrorLog("   getCover(): %s\n   Serie: %s" % (error, serien_nameCover))
-		print "[Serien Recorder] Fehler: %s" % ErrorMsg
+		print "[SerienRecorder] Fehler: %s" % ErrorMsg
 	writeLog(_("      %s") % str(error), True)
 	print error
 
@@ -558,7 +558,7 @@ def checkFileAccess():
 	
 	if not logFileValid:
 		logFile = "%slog" % serienRecMainPath	
-		Notifications.AddPopup(_("[Serien Recorder]\nDatei 'log' kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!") % (config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] checkFileAccess")
+		Notifications.AddPopup(_("[SerienRecorder]\nDatei 'log' kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!") % (config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=10, id="[SerienRecorder] checkFileAccess")
 			
 def checkTimerAdded(sender, serie, staffel, episode, start_unixtime):
 	global dbSerRec
@@ -645,8 +645,8 @@ def getDirname(serien_name, staffel):
 def CreateDirectory(serien_name, staffel):
 	(dirname, dirname_serie) = getDirname(serien_name, staffel)
 	if not fileExists(dirname):
-		print "[Serien Recorder] Erstelle Verzeichnis %s" % dirname
-		writeLog(_("[Serien Recorder] Erstelle Verzeichnis: ' %s '") % dirname)
+		print "[SerienRecorder] Erstelle Verzeichnis %s" % dirname
+		writeLog(_("[SerienRecorder] Erstelle Verzeichnis: ' %s '") % dirname)
 		try:
 			os.makedirs(dirname)
 		except OSError as e:
@@ -850,7 +850,7 @@ def addToWishlist(seriesName, fromEpisode, toEpisode, season):
 			if str(AnzahlWiederholungen).isdigit():
 				AnzahlAufnahmen = int(AnzahlWiederholungen)
 		for i in range(int(fromEpisode), int(toEpisode)+1):
-			print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(seriesName), str(season), str(i))
+			print "[SerienRecorder] %s Staffel: %s Episode: %s " % (str(seriesName), str(season), str(i))
 			cCursor.execute("SELECT * FROM Merkzettel WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (seriesName.lower(), season.lower(), str(i).zfill(2).lower()))
 			row = cCursor.fetchone()
 			if not row:
@@ -874,7 +874,7 @@ def addToAddedList(seriesName, fromEpisode, toEpisode, season, episodeTitle):
 		if int(fromEpisode) != 0 or int(toEpisode) != 0:
 			cCursor = dbSerRec.cursor()
 			for i in range(int(fromEpisode), int(toEpisode)+1):
-				print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(seriesName), str(season), str(i))
+				print "[SerienRecorder] %s Staffel: %s Episode: %s " % (str(seriesName), str(season), str(i))
 				cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (seriesName, season, str(i).zfill(2), episodeTitle, (int(time.time())), "", "", 0, 1))
 			dbSerRec.commit()
 			cCursor.close()
@@ -884,13 +884,17 @@ def addToAddedList(seriesName, fromEpisode, toEpisode, season, episodeTitle):
 
 def initDB():
 	global dbSerRec
-	
+
+	# If database is at old default location (SerienRecorder plugin folder) we have to move the db to new default location
+	if fileExists("%sSerienRecorder.db" % serienRecMainPath):
+		shutil.move("%sSerienRecorder.db" % serienRecMainPath, serienRecDataBase)
+
 	try:
 		dbSerRec = sqlite3.connect(serienRecDataBase)
 		dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 	except:
-		writeLog(_("[Serien Recorder] Fehler beim Initialisieren der Datenbank"))
-		Notifications.AddPopup(_("[Serien Recorder]\nDatenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!"), MessageBox.TYPE_INFO, timeout=10)
+		writeLog(_("[SerienRecorder] Fehler beim Initialisieren der Datenbank"))
+		Notifications.AddPopup(_("[SerienRecorder]\nDatenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!"), MessageBox.TYPE_INFO, timeout=10)
 		return False
 
 	if os.path.getsize(serienRecDataBase) == 0:
@@ -989,8 +993,8 @@ def initDB():
 						dbVersionMatch = True
 						break
 					elif dbValue > config.plugins.serienRec.dbversion.value:
-						writeLog(_("[Serien Recorder] Datenbankversion nicht kompatibel: SerienRecorder Version muss mindestens %s sein.") % dbValue)
-						Notifications.AddPopup(_("[Serien Recorder]\nDie Datenbank ist mit dieser SerienRecorder Version nicht kompatibel.\nAktualisieren Sie mindestens auf Version %s!") % dbValue, MessageBox.TYPE_INFO, timeout=10)
+						writeLog(_("[SerienRecorder] Datenbankversion nicht kompatibel: SerienRecorder Version muss mindestens %s sein.") % dbValue)
+						Notifications.AddPopup(_("[SerienRecorder]\nDie Datenbank ist mit dieser SerienRecorder Version nicht kompatibel.\nAktualisieren Sie mindestens auf Version %s!") % dbValue, MessageBox.TYPE_INFO, timeout=10)
 						dbIncompatible = True
 		cCursor.close()
 
@@ -1862,14 +1866,14 @@ class serienRecBaseScreen():
 
 	def youtubeSearch(self, searchWord):
 		if epgTranslatorInstalled:
-			print "[Serien Recorder] starte youtube suche für %s" % searchWord
+			print "[SerienRecorder] starte youtube suche für %s" % searchWord
 			self.session.open(searchYouTube, searchWord)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
 
 	def WikipediaSearch(self, searchWord):
 		if WikipediaInstalled:
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % searchWord
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % searchWord
 			self.session.open(wikiSearch, searchWord)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -1949,7 +1953,7 @@ class serienRecBaseScreen():
 			if serien_id:
 				serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
-		writeLog(_("[Serien Recorder] serienRecShowEpisodeInfo(): ID: %s  Serie: %s" % (str(serien_id), serienName)))
+		writeLog(_("[SerienRecorder] serienRecShowEpisodeInfo(): ID: %s  Serie: %s" % (str(serien_id), serienName)))
 		getCover(self, serienName, serien_id)
 
 #---------------------------------- Timer Functions ------------------------------------------
@@ -2008,7 +2012,7 @@ class serienRecAddTimer():
 
 		recordHandler = NavigationInstance.instance.RecordTimer
 		removed = False
-		print "[Serien Recorder] try to temove enigma2 Timer:", serien_name, start_time
+		print "[SerienRecorder] try to temove enigma2 Timer:", serien_name, start_time
 		
 		# entferne aktivierte Timer	
 		for timer in recordHandler.timer_list:
@@ -2116,9 +2120,9 @@ class serienRecAddTimer():
 
 		#if not config.plugins.skyrecorder.silent_timer_mode or config.plugins.skyrecorder.silent_timer_mode.value == False:
 		#message = session.open(MessageBox, _("%s - %s added.\nZiel: %s") % (name, description, dirname), MessageBox.TYPE_INFO, timeout=3)
-		print "[Serien Recorder] Versuche Timer anzulegen:", name, dirname
+		print "[SerienRecorder] Versuche Timer anzulegen:", name, dirname
 		if forceWrite:
-			writeLog(_("[Serien Recorder] Versuche Timer anzulegen: ' %s - %s '") % (name, dirname))
+			writeLog(_("[SerienRecorder] Versuche Timer anzulegen: ' %s - %s '") % (name, dirname))
 		return {
 			"result": True,
 			"message": "Timer '%s' added" % name,
@@ -2206,10 +2210,10 @@ class serienRecCheckForRecording():
 		try:
 			from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
 			self.epgrefresh_instance = epgrefresh
-			writeLog(_("[Serien Recorder] Try to remove EPGRefresh notifier"), True)
+			writeLog(_("[SerienRecorder] Try to remove EPGRefresh notifier"), True)
 			self.epgrefresh_instance.removeFinishNotifier(self.startCheck)
 		except:
-			writeLog(_("[Serien Recorder] EPGRefresh (v2.1.1 or higher) not installed!"), True)
+			writeLog(_("[SerienRecorder] EPGRefresh (v2.1.1 or higher) not installed!"), True)
 
 		if not self.manuell and config.plugins.serienRec.update.value:
 			refreshTimer = eTimer()
@@ -2219,8 +2223,8 @@ class serienRecCheckForRecording():
 				refreshTimer.callback.append(self.startCheck)
 			updateZeit = int(config.plugins.serienRec.updateInterval.value) * 3600000
 			refreshTimer.start(updateZeit, True)
-			print "%sSerien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
-			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
+			print "%sSerienRecorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
+			writeLog(_("[SerienRecorder] AutoCheck Hour-Timer gestartet."), True)
 		elif not self.manuell and config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
 			refreshTimer = eTimer()
@@ -2229,20 +2233,20 @@ class serienRecCheckForRecording():
 			else:
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
-			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
-			print "%s[Serien Recorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
-			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
-			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+			print "%s[SerienRecorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
+			print "%s[SerienRecorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
+			writeLog(_("[SerienRecorder] AutoCheck Clock-Timer gestartet."), True)
+			writeLog(_("[SerienRecorder] Verbleibende Zeit: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 		elif not self.manuell and config.plugins.serienRec.autochecktype.value == "2":
 			try:
 				from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
 				self.epgrefresh_instance = epgrefresh
-				writeLog(_("[Serien Recorder] Try to add EPGRefresh notifier"), True)
+				writeLog(_("[SerienRecorder] Try to add EPGRefresh notifier"), True)
 				self.epgrefresh_instance.addFinishNotifier(self.startCheck)
 			except:
-				writeLog(_("[Serien Recorder] EPGRefresh (v2.1.1 or higher) not installed!"), True)
+				writeLog(_("[SerienRecorder] EPGRefresh (v2.1.1 or higher) not installed!"), True)
 		else:
-			print "[Serien Recorder] checkRecTimer manuell."
+			print "[SerienRecorder] checkRecTimer manuell."
 			global runAutocheckAtExit
 			runAutocheckAtExit = False
 			self.startCheck(True)
@@ -2258,7 +2262,7 @@ class serienRecCheckForRecording():
 
 	def startCheck(self, amanuell=False):
 		self.manuell = amanuell
-		print "%s[Serien Recorder] settings:%s" % (self.color_print, self.color_end)
+		print "%s[SerienRecorder] settings:%s" % (self.color_print, self.color_end)
 		print "manuell:", amanuell
 		print "stunden check:", config.plugins.serienRec.update.value
 		print "uhrzeit check:", config.plugins.serienRec.timeUpdate.value
@@ -2291,8 +2295,8 @@ class serienRecCheckForRecording():
 		row = cCursor.fetchone()
 		if not row:
 			writeLog(_("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
-			print "[Serien Recorder] check: Tabelle SerienMarker leer."
-			writeLog(_("[Serien Recorder] check: Tabelle SerienMarker leer."), True)
+			print "[SerienRecorder] check: Tabelle SerienMarker leer."
+			writeLog(_("[SerienRecorder] check: Tabelle SerienMarker leer."), True)
 			writeLog(_("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"), True)
 			cCursor.close()
 			self.askForDSB()
@@ -2302,8 +2306,8 @@ class serienRecCheckForRecording():
 		row = cCursor.fetchone()
 		if not row:
 			writeLog(_("\n---------' Starte AutoCheckTimer um %s '---------------------------------------------------------------------------------------") % self.uhrzeit, True)
-			print "[Serien Recorder] check: Tabelle Channels leer."
-			writeLog(_("[Serien Recorder] check: Tabelle Channels leer."), True)
+			print "[SerienRecorder] check: Tabelle Channels leer."
+			writeLog(_("[SerienRecorder] check: Tabelle Channels leer."), True)
 			writeLog(_("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"), True)
 			cCursor.close()
 			self.askForDSB()
@@ -2317,8 +2321,8 @@ class serienRecCheckForRecording():
 			if refreshTimerConnection:
 				refreshTimerConnection = None
 
-			print "%s[Serien Recorder] AutoCheck Timer stop.%s" % (self.color_print, self.color_end)
-			writeLog(_("[Serien Recorder] AutoCheck Timer stop."), True)
+			print "%s[SerienRecorder] AutoCheck Timer stop.%s" % (self.color_print, self.color_end)
+			writeLog(_("[SerienRecorder] AutoCheck Timer stop."), True)
 
 		if config.plugins.serienRec.update.value:
 			refreshTimer = eTimer()
@@ -2328,8 +2332,8 @@ class serienRecCheckForRecording():
 				refreshTimer.callback.append(self.startCheck)
 			updateZeit = int(config.plugins.serienRec.updateInterval.value) * 3600000
 			refreshTimer.start(updateZeit, True)
-			print "%s[Serien Recorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
-			writeLog(_("[Serien Recorder] AutoCheck Hour-Timer gestartet."), True)
+			print "%s[SerienRecorder] AutoCheck Hour-Timer gestartet.%s" % (self.color_print, self.color_end)
+			writeLog(_("[SerienRecorder] AutoCheck Hour-Timer gestartet."), True)
 		elif config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
 			refreshTimer = eTimer()
@@ -2339,21 +2343,21 @@ class serienRecCheckForRecording():
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
 
-			print "%s[Serien Recorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
-			print "%s[Serien Recorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
-			writeLog(_("[Serien Recorder] AutoCheck Clock-Timer gestartet."), True)
-			writeLog(_("[Serien Recorder] Verbleibende Zeit: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+			print "%s[SerienRecorder] AutoCheck Clock-Timer gestartet.%s" % (self.color_print, self.color_end)
+			print "%s[SerienRecorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
+			writeLog(_("[SerienRecorder] AutoCheck Clock-Timer gestartet."), True)
+			writeLog(_("[SerienRecorder] Verbleibende Zeit: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if config.plugins.serienRec.AutoBackup.value:
 			# Remove old backups
 			if config.plugins.serienRec.deleteBackupFilesOlderThan.value > 0:
-				writeLog(_("[Serien Recorder] Entferne alte Backup-Dateien und erzeuge neues Backup."), True)
+				writeLog(_("[SerienRecorder] Entferne alte Backup-Dateien und erzeuge neues Backup."), True)
 				now = time.time()
 				for root, dirs, files in os.walk(config.plugins.serienRec.BackupPath.value, topdown=False):
 					for name in dirs:
 						if os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
 							shutil.rmtree(os.path.join(root, name), True)
-							writeLog(_("[Serien Recorder] Removed folder: %s") % os.path.join(root, name), True)
+							writeLog(_("[SerienRecorder] Removed folder: %s") % os.path.join(root, name), True)
 
 			BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
 			if not os.path.exists(BackupPath):
@@ -2389,7 +2393,7 @@ class serienRecCheckForRecording():
 					try:
 						os.remove('%s%s' % (config.plugins.serienRec.LogFilePath.value, filename))
 					except:
-						writeLog(_("[Serien Recorder] Logdatei konnte nicht gelöscht werden: %s") % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
+						writeLog(_("[SerienRecorder] Logdatei konnte nicht gelöscht werden: %s") % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
 					
 		open(logFile, 'w').close()
 
@@ -2405,7 +2409,7 @@ class serienRecCheckForRecording():
 			print "\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------" % (self.uhrzeit, str(self.page))
 			writeLog(_("\n---------' Starte AutoCheckTimer um %s - Page %s (auto)'-------------------------------------------------------------------------------\n") % (self.uhrzeit, str(self.page)), True)
 			if config.plugins.serienRec.showNotification.value in ("1", "3"):
-				Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde gestartet."), MessageBox.TYPE_INFO, timeout=3, id="[Serien Recorder] Suchlauf wurde gestartet")
+				Notifications.AddPopup(_("[SerienRecorder]\nAutomatischer Suchlauf für neue Timer wurde gestartet."), MessageBox.TYPE_INFO, timeout=3, id="[SerienRecorder] Suchlauf wurde gestartet")
 
 		if config.plugins.serienRec.writeLogVersion.value:
 			writeLog("STB Type: %s\nImage: %s" % (STBHelpers.getSTBType(), STBHelpers.getImageVersionString()), True)
@@ -2490,7 +2494,7 @@ class serienRecCheckForRecording():
 		finished = defer.DeferredList(downloads).addCallback(self.createNewMarker).addCallback(self.startCheck3).addErrback(self.dataErrorNewStaffel)
 		
 	def readWebpageForNewStaffel(self, url):
-		print "[Serien Recorder] call %s" % url
+		print "[SerienRecorder] call %s" % url
 		time.sleep(1)
 		return getPage(getURLWithProxy(url), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders())
 		
@@ -2559,8 +2563,8 @@ class serienRecCheckForRecording():
 										if not self.manuell:
 											self.newSeriesOrEpisodesFound = True
 											if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
-												self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
-												Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
+												self.MessageList.append((_("[SerienRecorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[SerienRecorder] Neue Episode"))
+												Notifications.AddPopup(_("[SerienRecorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[SerienRecorder] Neue Episode")
 									cCursor.close()
 									
 								else:
@@ -2587,8 +2591,8 @@ class serienRecCheckForRecording():
 													if not self.manuell:
 														self.newSeriesOrEpisodesFound = True
 														if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
-															self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
-															Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
+															self.MessageList.append((_("[SerienRecorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[SerienRecorder] Neue Episode"))
+															Notifications.AddPopup(_("[SerienRecorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[SerienRecorder] Neue Episode")
 									else:
 										cCursor.execute("SELECT TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=? AND TimerForSpecials=0", (serien_name.lower(),))				
 										row = cCursor.fetchone()
@@ -2604,8 +2608,8 @@ class serienRecCheckForRecording():
 												if not self.manuell:
 													self.newSeriesOrEpisodesFound = True
 													if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
-														self.MessageList.append((_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[Serien Recorder] Neue Episode"))
-														Notifications.AddPopup(_("[Serien Recorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[Serien Recorder] Neue Episode")
+														self.MessageList.append((_("[SerienRecorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, -1, "[SerienRecorder] Neue Episode"))
+														Notifications.AddPopup(_("[SerienRecorder]\nSerien- / Staffelbeginn wurde gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'"), MessageBox.TYPE_INFO, timeout=-1, id="[SerienRecorder] Neue Episode")
 									
 									cCursor.close()
 						
@@ -2647,7 +2651,7 @@ class serienRecCheckForRecording():
 								event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_time)+(int(margin_before) * 60))
 								if event_matches and len(event_matches) > 0:
 									for event_entry in event_matches:
-										print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+										print "[SerienRecorder] found eventID: %s" % int(event_entry[1])
 										start_time_eit = int(event_entry[3])
 										if self.checkTimer(serien_name, start_time_eit, sender):
 											aufnahme = True
@@ -2657,7 +2661,7 @@ class serienRecCheckForRecording():
 									event_matches = STBHelpers.getEPGEvent(['RITBDSE',(altstbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], altstbRef, serien_name, int(start_time)+(int(margin_before) * 60))
 									if event_matches and len(event_matches) > 0:
 										for event_entry in event_matches:
-											print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+											print "[SerienRecorder] found eventID: %s" % int(event_entry[1])
 											start_time_eit = int(event_entry[3])
 											if self.checkTimer(serien_name, start_time_eit, sender):
 												aufnahme = True
@@ -2719,9 +2723,9 @@ class serienRecCheckForRecording():
 			for row in cCursor:
 				(Serie, Staffel, StaffelStart) = row
 				if str(Staffel).isdigit():
-					writeLog(_("[Serien Recorder] %d. Staffel von '%s' beginnt am %s") % (int(Staffel), Serie, StaffelStart), True) 
+					writeLog(_("[SerienRecorder] %d. Staffel von '%s' beginnt am %s") % (int(Staffel), Serie, StaffelStart), True) 
 				else:
-					writeLog(_("[Serien Recorder] Staffel %s von '%s' beginnt am %s") % (Staffel, Serie, StaffelStart), True) 
+					writeLog(_("[SerienRecorder] Staffel %s von '%s' beginnt am %s") % (Staffel, Serie, StaffelStart), True) 
 
 			if config.plugins.serienRec.ActionOnNew.value in ("2", "3"):
 				cTmp = dbSerRec.cursor()
@@ -2737,7 +2741,7 @@ class serienRecCheckForRecording():
 							erlaubteSTB = 0
 							erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
 						cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
-						writeLog(_("[Serien Recorder] Neuer Marker für '%s' wurde angelegt") % Serie, True)
+						writeLog(_("[SerienRecorder] Neuer Marker für '%s' wurde angelegt") % Serie, True)
 					
 				cCursor.execute("SELECT Serie, MAX(Staffel), Sender, Url FROM NeuerStaffelbeginn WHERE CreationFlag=1 GROUP BY Serie")
 				for row in cCursor:
@@ -2756,7 +2760,7 @@ class serienRecCheckForRecording():
 							cTmp.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
 						else:
 							cTmp.execute("UPDATE OR IGNORE SerienMarker SET TimerForSpecials=1 WHERE LOWER(Serie)=?", (Serie.lower(),))
-						writeLog(_("[Serien Recorder] Neuer Marker für '%s' wurde angelegt") % Serie, True)
+						writeLog(_("[SerienRecorder] Neuer Marker für '%s' wurde angelegt") % Serie, True)
 
 				cTmp.close()
 				cCursor.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET CreationFlag=0 WHERE CreationFlag=1")
@@ -2784,7 +2788,7 @@ class serienRecCheckForRecording():
 		#
 		if config.plugins.serienRec.eventid.value:
 			recordHandler = NavigationInstance.instance.RecordTimer
-			#writeLog(_("[Serien Recorder] << Suche im EPG anhand der Uhrzeit"), True)
+			#writeLog(_("[SerienRecorder] << Suche im EPG anhand der Uhrzeit"), True)
 			cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE StartZeitstempel>?", (current_time, ))
 			for row in cCursor:
 				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
@@ -2815,16 +2819,16 @@ class serienRecCheckForRecording():
 					title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 					(dirname, dirname_serie) = getDirname(serien_name, staffel)
 					for event_entry in event_matches:
-						writeLog(_("[Serien Recorder] Versuche Timer zu aktualisieren: ' %s - %s '") % (title, dirname))
+						writeLog(_("[SerienRecorder] Versuche Timer zu aktualisieren: ' %s - %s '") % (title, dirname))
 						eit = int(event_entry[1])
 						start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
 						end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
 						
-						print "[Serien Recorder] try to modify enigma2 Timer:", title, serien_time
+						print "[SerienRecorder] try to modify enigma2 Timer:", title, serien_time
 
 						timerUpdated = False
 						if str(staffel) is 'S' and str(episode) is '0':
-							writeLog(_("[Serien Recorder]    ' %s ' - Timer kann nicht aktualisiert werden @ %s") % (title, webChannel), True)
+							writeLog(_("[SerienRecorder]    ' %s ' - Timer kann nicht aktualisiert werden @ %s") % (title, webChannel), True)
 							break
 
 						try:
@@ -2841,10 +2845,10 @@ class serienRecCheckForRecording():
 							                              staffel, start_unixtime, stbRef, title,
 							                              webChannel)
 						except Exception:
-							print "[Serien Recorder] Modifying enigma2 Timer failed:", title, serien_time
-							writeLog(_("[Serien Recorder] ' %s ' - Timeraktualisierung fehlgeschlagen @ %s") % (title, webChannel), True)
+							print "[SerienRecorder] Modifying enigma2 Timer failed:", title, serien_time
+							writeLog(_("[SerienRecorder] ' %s ' - Timeraktualisierung fehlgeschlagen @ %s") % (title, webChannel), True)
 						if not timerUpdated:
-							writeLog(_("[Serien Recorder]    ' %s ' - Timer muss nicht aktualisiert werden @ %s") % (title, webChannel), True)
+							writeLog(_("[SerienRecorder]    ' %s ' - Timer muss nicht aktualisiert werden @ %s") % (title, webChannel), True)
 						break
 						
 			dbSerRec.commit()
@@ -2909,13 +2913,13 @@ class serienRecCheckForRecording():
 					new_start = time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime(int(start_unixtime)))
 					old_start = time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime(int(serien_time)))
 					if updateStartTime:
-						writeLog(_("[Serien Recorder]    ' %s ' - Startzeit wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_start, new_start, webChannel), True)
+						writeLog(_("[SerienRecorder]    ' %s ' - Startzeit wurde aktualisiert von %s auf %s @ %s") % (title, old_start, new_start, webChannel), True)
 					if updateEIT:
-						writeLog(_("[Serien Recorder]    ' %s ' - Event ID wurde aktualisiert -> von %s -> auf %s @ %s") % (title, str(old_eit), str(eit), webChannel), True)
+						writeLog(_("[SerienRecorder]    ' %s ' - Event ID wurde aktualisiert von %s auf %s @ %s") % (title, str(old_eit), str(eit), webChannel), True)
 					if updateName:
-						writeLog(_("[Serien Recorder]    ' %s ' - Name wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timername, timer_name, webChannel), True)
+						writeLog(_("[SerienRecorder]    ' %s ' - Name wurde aktualisiert von %s auf %s @ %s") % (title, old_timername, timer_name, webChannel), True)
 					if updateDescription:
-						writeLog(_("[Serien Recorder]    ' %s ' - Beschreibung wurde aktualisiert -> von %s -> auf %s @ %s") % (title, old_timerdescription, timer_description, webChannel), True)
+						writeLog(_("[SerienRecorder]    ' %s ' - Beschreibung wurde aktualisiert von %s auf %s @ %s") % (title, old_timerdescription, timer_description, webChannel), True)
 					self.countTimerUpdate += 1
 					timerUpdated = True
 				break
@@ -2945,7 +2949,7 @@ class serienRecCheckForRecording():
 									timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 								else:
 									timer_name = serien_name
-								writeLog(_("[Serien Recorder] Versuche deaktivierten Timer zu aktivieren: ' %s - %s '") % (serien_title, dirname))
+								writeLog(_("[SerienRecorder] Versuche deaktivierten Timer zu aktivieren: ' %s - %s '") % (serien_title, dirname))
 								
 								if checkTuner(str(timer.begin), str(timer.end), str(timer.service_ref)):
 									timer.disabled = False
@@ -2960,7 +2964,7 @@ class serienRecCheckForRecording():
 										dbSerRec.commit()
 										cTimer.close()
 										show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-										writeLog(_("[Serien Recorder] ' %s ' - Timer wurde aktiviert -> %s %s @ %s") % (label_serie, show_start, timer_name, webChannel), True)
+										writeLog(_("[SerienRecorder] ' %s ' - Timer wurde aktiviert -> %s %s @ %s") % (label_serie, show_start, timer_name, webChannel), True)
 									else:
 										timer.disabled = True
 
@@ -3005,7 +3009,7 @@ class serienRecCheckForRecording():
 									timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 								else:
 									timer_name = serien_name
-								writeLog(_("[Serien Recorder] Versuche deaktivierten Timer aktiv zu erstellen: ' %s - %s '") % (serien_title, dirname))
+								writeLog(_("[SerienRecorder] Versuche deaktivierten Timer aktiv zu erstellen: ' %s - %s '") % (serien_title, dirname))
 								end_unixtime = int(begin) + int(duration)
 								end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 								result = serienRecAddTimer.addTimer(self.session, stbRef, str(serien_time), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title), eit, False, dirname, vpsSettings, tags, None, recordfile=".ts")
@@ -3017,7 +3021,7 @@ class serienRecCheckForRecording():
 									dbSerRec.commit()
 									cTimer.close()
 									show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
-									writeLog(_("[Serien Recorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s") % (label_serie, show_start, timer_name, webChannel), True)
+									writeLog(_("[SerienRecorder] ' %s ' - Timer wurde angelegt -> %s %s @ %s") % (label_serie, show_start, timer_name, webChannel), True)
 								break
 
 				except:				
@@ -3047,8 +3051,8 @@ class serienRecCheckForRecording():
 		search_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(current_time)))
 		search_end = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(future_time)))
 		search_rerun_end = time.strftime("%d.%m.%Y - %H:%M", time.localtime(future_time + (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400))
-		writeLog(_("[Serien Recorder] Berücksichtige Ausstrahlungstermine zwischen %s und %s") % (search_start, search_end), True)
-		writeLog(_("[Serien Recorder] Berücksichtige Wiederholungen zwischen %s und %s") % (search_start, search_rerun_end), True)
+		writeLog(_("[SerienRecorder] Berücksichtige Ausstrahlungstermine zwischen %s und %s") % (search_start, search_end), True)
+		writeLog(_("[SerienRecorder] Berücksichtige Wiederholungen zwischen %s und %s") % (search_start, search_rerun_end), True)
 		
 		## hier werden die wunschliste urls eingelesen vom serien marker
 		self.urls = getMarker()
@@ -3079,7 +3083,7 @@ class serienRecCheckForRecording():
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
 	def download(self, url):
-		print "[Serien Recorder] call %s" % url
+		print "[SerienRecorder] call %s" % url
 		time.sleep(1)
 		return getPage(getURLWithProxy(url), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders())
 
@@ -3178,7 +3182,24 @@ class serienRecCheckForRecording():
 				serieAllowed = True
 
 			if not serieAllowed:
-				writeLogFilter("allowedSender", _("[Serien Recorder] ' %s ' - Sender nicht erlaubt -> %s -> %s") % (label_serie, sender, allowedSender))
+				writeLogFilter("allowedSender", _("[SerienRecorder] ' %s ' - Sender nicht erlaubt -> %s -> %s") % (label_serie, sender, allowedSender))
+				continue
+
+			# Process channel relevant data
+
+			##############################
+			#
+			# CHECK
+			#
+			# ueberprueft welche sender aktiviert und eingestellt sind.
+			#
+			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
+			if stbChannel == "":
+				writeLogFilter("channels", _("[SerienRecorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '") % (label_serie, webChannel))
+				continue
+
+			if int(status) == 0:
+				writeLogFilter("channels", _("[SerienRecorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (label_serie, webChannel))
 				continue
 
 			##############################
@@ -3205,7 +3226,7 @@ class serienRecCheckForRecording():
 									liste[0] = _("ab %s") % liste[0]
 								liste.reverse()
 								liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
-								writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Episode nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
+								writeLogFilter("allowedEpisodes", _("[SerienRecorder] ' %s ' - Episode nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
 							continue
 						else:
 							serieAllowed = True
@@ -3223,7 +3244,7 @@ class serienRecCheckForRecording():
 				cCursorTmp.execute("SELECT * FROM Merkzettel WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serien_name.lower(), str(staffel).lower(), str(episode).zfill(2).lower()))
 				row = cCursorTmp.fetchone()
 				if row:
-					writeLog(_("[Serien Recorder] ' %s ' - Timer vom Merkzettel wird angelegt @ %s") % (label_serie, stbChannel), True)
+					writeLog(_("[SerienRecorder] ' %s ' - Timer vom Merkzettel wird angelegt @ %s") % (label_serie, stbChannel), True)
 					serieAllowed = True
 					vomMerkzettel = True
 				cCursorTmp.close()
@@ -3243,25 +3264,9 @@ class serienRecCheckForRecording():
 					if -2 in staffeln:
 						liste.remove(-2)
 						liste.insert(0, _("Manuell"))
-					writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
+					writeLogFilter("allowedEpisodes", _("[SerienRecorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
 				continue
 
-			# Process channel relevant data
-
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft welche sender aktiviert und eingestellt sind.
-			#
-			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
-			if stbChannel == "":
-				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '") % (label_serie, webChannel))
-				continue
-
-			if int(status) == 0:
-				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (label_serie, webChannel))
-				continue
 
 			##############################
 			#
@@ -3334,17 +3339,17 @@ class serienRecCheckForRecording():
 		self.speedEndTime = time.clock()
 		speedTime = (self.speedEndTime-self.speedStartTime)
 		if config.plugins.serienRec.eventid.value:
-			writeLog(_("[Serien Recorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt und %s Timer aktualisiert.") % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate)), True)
-			print "[Serien Recorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate))
+			writeLog(_("[SerienRecorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt und %s Timer aktualisiert.") % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate)), True)
+			print "[SerienRecorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate))
 		else:
-			writeLog(_("[Serien Recorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt.") % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer)), True)
-			print "[Serien Recorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt." % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer))
+			writeLog(_("[SerienRecorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt.") % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer)), True)
+			print "[SerienRecorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt." % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer))
 		if self.countNotActiveTimer > 0:
-			writeLog(_("[Serien Recorder] %s Timer wurde(n) wegen Konfikten deaktiviert erstellt!") % str(self.countNotActiveTimer), True)
-			print "[Serien Recorder] %s Timer wurde(n) wegen Konfikten deaktiviert erstellt!" % str(self.countNotActiveTimer)
+			writeLog(_("[SerienRecorder] %s Timer wurde(n) wegen Konfikten deaktiviert erstellt!") % str(self.countNotActiveTimer), True)
+			print "[SerienRecorder] %s Timer wurde(n) wegen Konfikten deaktiviert erstellt!" % str(self.countNotActiveTimer)
 		if self.countTimerFromWishlist > 0:
-			writeLog(_("[Serien Recorder] %s Timer vom Merkzettel wurde(n) erstellt!") % str(self.countTimerFromWishlist), True)
-			print "[Serien Recorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist)
+			writeLog(_("[SerienRecorder] %s Timer vom Merkzettel wurde(n) erstellt!") % str(self.countTimerFromWishlist), True)
+			print "[SerienRecorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist)
 		writeLog(_("---------' AutoCheckTimer Beendet ( Ausführungsdauer: %s Sek.)'---------------------------------------------------------------------------") % str(speedTime), True)
 		print "---------' AutoCheckTimer Beendet ( Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------------" % str(speedTime)
 		if (config.plugins.serienRec.showNotification.value in ("2", "3")) and (not self.manuell):
@@ -3353,7 +3358,7 @@ class serienRecCheckForRecording():
 			if self.newSeriesOrEpisodesFound:
 				newSeasonOrEpisodeMessage = _("\n\nNeuer Serien- oder Staffelbeginn gefunden")
 
-			Notifications.AddPopup(_("[Serien Recorder]\nAutomatischer Suchlauf für neue Timer wurde beendet.\n\n%s%s") % (statisticMessage, newSeasonOrEpisodeMessage), MessageBox.TYPE_INFO, timeout=10, id="[Serien Recorder] Suchlauf wurde beendet")
+			Notifications.AddPopup(_("[SerienRecorder]\nAutomatischer Suchlauf für neue Timer wurde beendet.\n\n%s%s") % (statisticMessage, newSeasonOrEpisodeMessage), MessageBox.TYPE_INFO, timeout=10, id="[SerienRecorder] Suchlauf wurde beendet")
 
 		if config.plugins.serienRec.longLogFileName.value:
 			shutil.copy(logFile, logFileSave)
@@ -3363,7 +3368,7 @@ class serienRecCheckForRecording():
 
 		lt = time.localtime()
 		deltatime = self.getNextAutoCheckTimer(lt)
-		writeLog(_("\n[Serien Recorder] Verbleibende Zeit bis zum nächsten Auto-Check: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+		writeLog(_("\n[SerienRecorder] Verbleibende Zeit bis zum nächsten Auto-Check: %s Stunden") % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		# in den deep-standby fahren.
 		self.askForDSB()
@@ -3375,7 +3380,7 @@ class serienRecCheckForRecording():
 			if (config.plugins.serienRec.updateInterval.value == 24) and (config.plugins.serienRec.wakeUpDSB.value or config.plugins.serienRec.autochecktype.value == "2") and int(config.plugins.serienRec.afterAutocheck.value):
 				if config.plugins.serienRec.DSBTimeout.value > 0:
 					try:
-						self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[Serien Recorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+						self.session.openWithCallback(self.gotoDeepStandby, MessageBox, _("[SerienRecorder]\nBox in (Deep-)Standby fahren?"), MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
 					except:
 						self.gotoDeepStandby(True)
 				else:
@@ -3388,18 +3393,18 @@ class serienRecCheckForRecording():
 					for each in self.MessageList:
 						Notifications.RemovePopup(each[3])
 
-					print "[Serien Recorder] gehe in Deep-Standby"
-					writeLog(_("[Serien Recorder] gehe in Deep-Standby"))
+					print "[SerienRecorder] gehe in Deep-Standby"
+					writeLog(_("[SerienRecorder] gehe in Deep-Standby"))
 					if Screens.Standby.inStandby:
 						RecordTimerEntry.TryQuitMainloop()
 					else:
 						Notifications.AddNotificationWithID("Shutdown", Screens.Standby.TryQuitMainloop, 1)
 				else:
-					print "[Serien Recorder] Eine laufenden Aufnahme verhindert den Deep-Standby"
-					writeLog(_("[Serien Recorder] Eine laufenden Aufnahme verhindert den Deep-Standby"))
+					print "[SerienRecorder] Eine laufenden Aufnahme verhindert den Deep-Standby"
+					writeLog(_("[SerienRecorder] Eine laufenden Aufnahme verhindert den Deep-Standby"))
 			else:
-				print "[Serien Recorder] gehe in Standby"
-				writeLog(_("[Serien Recorder] gehe in Standby"))
+				print "[SerienRecorder] gehe in Standby"
+				writeLog(_("[SerienRecorder] gehe in Standby"))
 				Notifications.AddNotification(Screens.Standby.Standby)
 
 	def searchTimer(self, NoOfRecords):
@@ -3491,8 +3496,8 @@ class serienRecCheckForRecording():
 				
 				if len(self.konflikt) > 0:
 					if config.plugins.serienRec.showMessageOnConflicts.value:
-						self.MessageList.append((_("[Serien Recorder]\nACHTUNG!  -  %s") % self.konflikt, MessageBox.TYPE_INFO, -1, self.konflikt))
-						Notifications.AddPopup(_("[Serien Recorder]\nACHTUNG!  -  %s") % self.konflikt, MessageBox.TYPE_INFO, timeout=-1, id=self.konflikt)
+						self.MessageList.append((_("[SerienRecorder]\nACHTUNG!  -  %s") % self.konflikt, MessageBox.TYPE_INFO, -1, self.konflikt))
+						Notifications.AddPopup(_("[SerienRecorder]\nACHTUNG!  -  %s") % self.konflikt, MessageBox.TYPE_INFO, timeout=-1, id=self.konflikt)
 						
 			##############################
 			#
@@ -3542,7 +3547,7 @@ class serienRecCheckForRecording():
 			#
 			# check ob timer existiert
 			if checkTimerAdded(webChannel, serien_name, staffel, episode, int(timer_start_unixtime)):
-				writeLogFilter("added", _("[Serien Recorder] ' %s ' - Staffel/Episode%s Timer wurde bereits erstellt -> ' %s '") % (label_serie, optionalText, check_SeasonEpisode))
+				writeLogFilter("added", _("[SerienRecorder] ' %s ' - Staffel/Episode%s Timer wurde bereits erstellt -> ' %s '") % (label_serie, optionalText, check_SeasonEpisode))
 				cAdded = dbTmp.cursor()
 				if str(episode).isdigit():
 					if int(episode) == 0:
@@ -3567,12 +3572,12 @@ class serienRecCheckForRecording():
 				bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, check_SeasonEpisode, serien_name, False)
 				
 			if bereits_vorhanden >= AnzahlAufnahmen:
-				writeLogFilter("added", _("[Serien Recorder] ' %s ' - Staffel/Episode%s wurde bereits aufgenommen -> ' %s '") % (label_serie, optionalText, check_SeasonEpisode))
+				writeLogFilter("added", _("[SerienRecorder] ' %s ' - Staffel/Episode%s wurde bereits aufgenommen -> ' %s '") % (label_serie, optionalText, check_SeasonEpisode))
 				TimerDone = True
 				break
 
 			if bereits_vorhanden_HDD >= AnzahlAufnahmen:
-				writeLogFilter("disk", _("[Serien Recorder] ' %s ' - Staffel/Episode%s bereits auf HDD vorhanden -> ' %s '") % (label_serie, optionalText, check_SeasonEpisode))
+				writeLogFilter("disk", _("[SerienRecorder] ' %s ' - Staffel/Episode%s bereits auf HDD vorhanden -> ' %s '") % (label_serie, optionalText, check_SeasonEpisode))
 				TimerDone = True
 				break
 
@@ -3580,19 +3585,19 @@ class serienRecCheckForRecording():
 			# if the transmission date is on an excluded weekday
 			if str(excludedWeekdays).isdigit():
 				print "[SerienRecorder] - Excluded weekdays check"
-				#writeLog(_("[Serien Recorder] - Excluded weekdays check"), True)
+				#writeLog(_("[SerienRecorder] - Excluded weekdays check"), True)
 				transmissionDate = datetime.date.fromtimestamp((int(timer_start_unixtime)))
 				weekday = transmissionDate.weekday()
 				print "    Serie = %s, Datum = %s, Wochentag = %s" % (label_serie, time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime))), weekday)
-				#writeLog(_("[Serien Recorder]    Serie = %s, Datum = %s, Wochentag = %s") % (label_serie, time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime))), weekday), True)
+				#writeLog(_("[SerienRecorder]    Serie = %s, Datum = %s, Wochentag = %s") % (label_serie, time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime))), weekday), True)
 				if excludedWeekdays & (1 << weekday) != 0:
-					writeLogFilter("timeRange", _("[Serien Recorder] ' %s ' - Wochentag auf der Ausnahmeliste -> ' %s '") % (label_serie, transmissionDate.strftime('%A')))
+					writeLogFilter("timeRange", _("[SerienRecorder] ' %s ' - Wochentag auf der Ausnahmeliste -> ' %s '") % (label_serie, transmissionDate.strftime('%A')))
 					TimerDone = True
 					continue
 
 			if config.plugins.serienRec.splitEventTimer.value != "0" and '/' in str(episode):
 			# Event-Programmierung auflösen -> 01/1x02/1x03
-				writeLogFilter("timerDebug", _("[Serien Recorder] Event-Programmierung gefunden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+				writeLogFilter("timerDebug", _("[SerienRecorder] Event-Programmierung gefunden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
 				splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
 
 				alreadyExistsCount = 0
@@ -3606,12 +3611,12 @@ class serienRecCheckForRecording():
 
 				if len(splitedSeasonEpisodeList) == alreadyExistsCount:
 					# Alle Einzelfolgen wurden bereits aufgenommen - der Event muss nicht mehr aufgenommen werden.
-					writeLogFilter("timerDebug", _("[Serien Recorder] ' %s ' - Timer für Einzelepisoden wurden bereits erstellt -> ' %s '") % (serien_name, check_SeasonEpisode))
+					writeLogFilter("timerDebug", _("[SerienRecorder] ' %s ' - Timer für Einzelepisoden wurden bereits erstellt -> ' %s '") % (serien_name, check_SeasonEpisode))
 					TimerDone = True
 					continue
 				elif config.plugins.serienRec.splitEventTimer.value == "2":
 					# Nicht alle Einzelfolgen wurden bereits aufgenommen, es sollen aber Einzelfolgen bevorzugt werden
-					writeLogFilter("timerDebug", _("[Serien Recorder] ' %s ' - Versuche zunächst Timer für Einzelepisoden anzulegen") % serien_name)
+					writeLogFilter("timerDebug", _("[SerienRecorder] ' %s ' - Versuche zunächst Timer für Einzelepisoden anzulegen") % serien_name)
 					eventRecordings.append((title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel))
 					continue
 
@@ -3627,14 +3632,14 @@ class serienRecCheckForRecording():
 				end_time = (time.localtime(int(timer_end_unixtime)).tm_hour * 60) + time.localtime(int(timer_end_unixtime)).tm_min
 				if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
 					timeRangeList = "[%s:%s-%s:%s]" % (str(int(fromTime)/60).zfill(2), str(int(fromTime)%60).zfill(2), str(int(toTime)/60).zfill(2), str(int(toTime)%60).zfill(2))
-					writeLogFilter("timeRange", _("[Serien Recorder] ' %s ' - Timer (%s:%s-%s:%s) nicht in Zeitspanne %s") % (label_serie, str(start_time/60).zfill(2), str(start_time%60).zfill(2), str(end_time/60).zfill(2), str(end_time%60).zfill(2), timeRangeList))
+					writeLogFilter("timeRange", _("[SerienRecorder] ' %s ' - Timer (%s:%s-%s:%s) nicht in Zeitspanne %s") % (label_serie, str(start_time/60).zfill(2), str(start_time%60).zfill(2), str(end_time/60).zfill(2), str(end_time%60).zfill(2), timeRangeList))
 					# forced recording activated?
 					if not config.plugins.serienRec.forceRecording.value:
 						continue
 						
 					# backup timer data for post processing
 					show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
-					writeLogFilter("timeRange", _("[Serien Recorder] ' %s ' - Backup Timer -> %s") % (label_serie, show_start))
+					writeLogFilter("timeRange", _("[SerienRecorder] ' %s ' - Backup Timer -> %s") % (label_serie, show_start))
 					forceRecordings.append((title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel))
 					continue
 					
@@ -3649,7 +3654,7 @@ class serienRecCheckForRecording():
 					if int(timer_start_unixtime) > int(TimeSpan_time):
 						# backup timer data for post processing
 						show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
-						writeLogFilter("timeRange", _("[Serien Recorder] ' %s ' - Backup Timer -> %s") % (label_serie, show_start))
+						writeLogFilter("timeRange", _("[SerienRecorder] ' %s ' - Backup Timer -> %s") % (label_serie, show_start))
 						forceRecordings_W.append((title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel))
 						continue
 
@@ -3694,7 +3699,7 @@ class serienRecCheckForRecording():
 			# post processing for forced recordings
 			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel in forceRecordings:
 				show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
-				writeLog(_("[Serien Recorder] ' %s ' - Keine Wiederholung gefunden! -> %s") % (label_serie, show_start), True)
+				writeLog(_("[SerienRecorder] ' %s ' - Keine Wiederholung gefunden! -> %s") % (label_serie, show_start), True)
 				# programmiere Timer
 				if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, optionalText, vomMerkzettel):
 					cAdded = dbTmp.cursor()
@@ -3714,7 +3719,7 @@ class serienRecCheckForRecording():
 			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel in eventRecordings:
 				if self.shouldCreateEventTimer(serien_name, staffel, episode, title):
 					show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
-					writeLog(_("[Serien Recorder] ' %s ' - Einzelepisoden nicht gefunden! -> %s") % (label_serie, show_start), True)
+					writeLog(_("[SerienRecorder] ' %s ' - Einzelepisoden nicht gefunden! -> %s") % (label_serie, show_start), True)
 					# programmiere Timer
 					if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, optionalText, vomMerkzettel):
 						TimerDone = True
@@ -3750,11 +3755,11 @@ class serienRecCheckForRecording():
 		show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 		if int(start_unixtime) > int(future_time):
 			show_future = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(future_time)))
-			writeLogFilter("timeLimit", _("[Serien Recorder] ' %s ' - Timer wird später angelegt -> Sendetermin: %s - Erlaubte Zeitspanne bis %s") % (label_serie, show_start, show_future))
+			writeLogFilter("timeLimit", _("[SerienRecorder] ' %s ' - Timer wird später angelegt -> Sendetermin: %s - Erlaubte Zeitspanne bis %s") % (label_serie, show_start, show_future))
 			return True
 		if int(current_time) > int(start_unixtime):
 			show_current = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(current_time)))
-			writeLogFilter("timeLimit", _("[Serien Recorder] ' %s ' - Der Sendetermin liegt in der Vergangenheit: %s - Aktuelles Datum: %s") % (label_serie, show_start, show_current))
+			writeLogFilter("timeLimit", _("[SerienRecorder] ' %s ' - Der Sendetermin liegt in der Vergangenheit: %s - Aktuelles Datum: %s") % (label_serie, show_start, show_current))
 			return True
 
 		# get VPS settings for channel
@@ -3779,7 +3784,7 @@ class serienRecCheckForRecording():
 				self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit)
 				if vomMerkzettel:
 					self.countTimerFromWishlist += 1
-					writeLog(_("[Serien Recorder] ' %s ' - Timer (vom Merkzettel) wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+					writeLog(_("[SerienRecorder] ' %s ' - Timer (vom Merkzettel) wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 					cCursor = dbSerRec.cursor()
 					cCursor.execute("UPDATE OR IGNORE Merkzettel SET AnzahlWiederholungen=AnzahlWiederholungen-1 WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serien_name.lower(), str(staffel).lower(), episode.lower()))
 					dbSerRec.commit()	
@@ -3787,7 +3792,7 @@ class serienRecCheckForRecording():
 					dbSerRec.commit()	
 					cCursor.close()
 				else:
-					writeLog(_("[Serien Recorder] ' %s ' - Timer wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+					writeLog(_("[SerienRecorder] ' %s ' - Timer wurde angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 					# Event-Programmierung verarbeiten
 					if config.plugins.serienRec.splitEventTimer.value == "1" and '/' in str(episode):
 						splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
@@ -3800,18 +3805,18 @@ class serienRecCheckForRecording():
 							if not alreadyExists:
 								# Nicht vorhandene Einzelfolgen als bereits aufgenommen markieren
 								addToAddedList(serien_name, entry[1], entry[1], entry[0], title)
-								writeLogFilter("timerDebug", _("[Serien Recorder] Einzelepisode wird nicht mehr aufgenommen: %s S%sE%s - %s") % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
+								writeLogFilter("timerDebug", _("[SerienRecorder] Einzelepisode wird nicht mehr aufgenommen: %s S%sE%s - %s") % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
 
 				self.enableDirectoryCreation = True
 				return True
 			elif not tryDisabled:
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
-				print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
-				writeLog(_("[Serien Recorder] ' %s ' - Timer konnte nicht angelegt werden%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+				print "[SerienRecorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
+				writeLog(_("[SerienRecorder] ' %s ' - Timer konnte nicht angelegt werden%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 			else:
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
-				print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
-				writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, result["message"]), True)
+				print "[SerienRecorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
+				writeLog(_("[SerienRecorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, result["message"]), True)
 				dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
 				
 				result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, True, dirname, vpsSettings, tags, None, recordfile=".ts")
@@ -3823,23 +3828,23 @@ class serienRecCheckForRecording():
 					cCursor.execute("INSERT OR IGNORE INTO TimerKonflikte (Message, StartZeitstempel, webChannel) VALUES (?, ?, ?)", (dbMessage, int(start_unixtime), webChannel))
 					if vomMerkzettel:
 						self.countTimerFromWishlist += 1
-						writeLog(_("[Serien Recorder] ' %s ' - Timer (vom Merkzettel) wurde deaktiviert angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+						writeLog(_("[SerienRecorder] ' %s ' - Timer (vom Merkzettel) wurde deaktiviert angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 						#cCursor.execute("UPDATE OR IGNORE Merkzettel SET AnzahlWiederholungen=AnzahlWiederholungen-1 WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serien_name.lower(), str(staffel).lower(), episode.lower()))
 						#dbSerRec.commit()	
 						#cCursor.execute("DELETE FROM Merkzettel WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND AnzahlWiederholungen<=0", (serien_name.lower(), str(staffel).lower(), episode.lower()))
 						#dbSerRec.commit()
 					else:
-						writeLog(_("[Serien Recorder] ' %s ' - Timer wurde deaktiviert angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+						writeLog(_("[SerienRecorder] ' %s ' - Timer wurde deaktiviert angelegt%s -> %s %s @ %s") % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
 					cCursor.close()
 					self.enableDirectoryCreation = True
 					return True
 				else:
 					self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
-					print "[Serien Recorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
-					writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, result["message"]), True)
+					print "[SerienRecorder] ' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
+					writeLog(_("[SerienRecorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, result["message"]), True)
 		else:
-			print "[Serien Recorder] Tuner belegt %s %s" % (label_serie, show_start)
-			writeLog(_("[Serien Recorder] Tuner belegt: %s %s") % (label_serie, show_start), True)
+			print "[SerienRecorder] Tuner belegt %s %s" % (label_serie, show_start)
+			writeLog(_("[SerienRecorder] Tuner belegt: %s %s") % (label_serie, show_start), True)
 		return False
 			
 	def checkMarker(self, Serie):
@@ -3941,20 +3946,20 @@ class serienRecCheckForRecording():
 		if row:
 			sql = "UPDATE OR IGNORE AngelegteTimer SET EventID=?, TimerAktiviert=? WHERE LOWER(Serie)=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
 			cCursor.execute(sql, (eit, int(TimerAktiviert), serien_name.lower(), stbRef.lower(), int(start_time) + (int(margin_before) * 60) - (int(STBHelpers.getEPGTimeSpan()) * 60), int(start_time) + (int(margin_before) * 60) + (int(STBHelpers.getEPGTimeSpan()) * 60)))
-			print "[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
-			writeLogFilter("timerDebug", _("[Serien Recorder] Timer bereits vorhanden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			print "[SerienRecorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+			writeLogFilter("timerDebug", _("[SerienRecorder] Timer bereits vorhanden: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
 		else:
 			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, int(TimerAktiviert)))
 			#cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit))
-			print "[Serien Recorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
-			writeLogFilter("timerDebug", _("[Serien Recorder] Timer angelegt: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			print "[SerienRecorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+			writeLogFilter("timerDebug", _("[SerienRecorder] Timer angelegt: %s S%sE%s - %s") % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
 
 		dbSerRec.commit()
 		cCursor.close()
 		
 	def dataError(self, error, url=None):
-		print "[Serien Recorder] Es ist ein Fehler aufgetreten - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
-		writeLog(_("[Serien Recorder] Es ist ein Fehler aufgetreten  - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)") % error, True)
+		print "[SerienRecorder] Es ist ein Fehler aufgetreten - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
+		writeLog(_("[SerienRecorder] Es ist ein Fehler aufgetreten  - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)") % error, True)
 		if url:
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   Url: %s" % (error, url))
 		else:
@@ -3970,8 +3975,8 @@ class serienRecCheckForRecording():
 		self.close()
 
 	def dataErrorNewStaffel(self, error, url=None):
-		print "[Serien Recorder] Serien-Planer Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
-		writeLog(_("[Serien Recorder] Serien-Planer Daten konnten nicht abgerufen/verarbeitet werden: (%s)") % error, True)
+		print "[SerienRecorder] Serien-Planer Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
+		writeLog(_("[SerienRecorder] Serien-Planer Daten konnten nicht abgerufen/verarbeitet werden: (%s)") % error, True)
 		if url:
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   SerienPlaner-Url: %s" % (error, url))
 		else:
@@ -4013,7 +4018,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -4134,7 +4139,7 @@ class serienRecTimer(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[Serien Recorder] starte youtube suche für %s" % serien_name
+			print "[SerienRecorder] starte youtube suche für %s" % serien_name
 			self.session.open(searchYouTube, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -4146,7 +4151,7 @@ class serienRecTimer(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % serien_name
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % serien_name
 			self.session.open(wikiSearch, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -4277,9 +4282,9 @@ class serienRecTimer(Screen, HelpableScreen):
 			title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 		removed = serienRecAddTimer.removeTimerEntry(title, serien_time, serien_eit)
 		if not removed:
-			print "[Serien Recorder] enigma2 NOOOTTT removed"
+			print "[SerienRecorder] enigma2 NOOOTTT removed"
 		else:
-			print "[Serien Recorder] enigma2 Timer removed."
+			print "[SerienRecorder] enigma2 Timer removed."
 		cCursor = dbSerRec.cursor()
 		if serien_eit > 0:
 			cCursor.execute("DELETE FROM AngelegteTimer WHERE EventID=? AND StartZeitstempel>=?", (serien_eit, int(time.time())))
@@ -4296,7 +4301,7 @@ class serienRecTimer(Screen, HelpableScreen):
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Serien Timer leer."
+			print "[SerienRecorder] Serien Timer leer."
 			return
 		else:
 			serien_name = self['menu_list'].getCurrent()[0][0]
@@ -4318,7 +4323,7 @@ class serienRecTimer(Screen, HelpableScreen):
 				else:
 					self.removeTimer(serien_name, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
 			else:
-				print "[Serien Recorder] keinen passenden timer gefunden."
+				print "[SerienRecorder] keinen passenden timer gefunden."
 			cCursor.close()
 			
 	def keyYellow(self):
@@ -4409,7 +4414,7 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -4541,12 +4546,12 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 			if self.readLogTimer:
 				self.readLogTimer.stop()
 				self.readLogTimer = None
-			print "[Serien Recorder] update log reader stopped."
+			print "[SerienRecorder] update log reader stopped."
 			self['title'].setText(_('Autocheck fertig !'))
 			readLog = open(logFile, "r")
 			for zeile in readLog.readlines():
 				if (not config.plugins.serienRec.logWrapAround.value) or (len(zeile.strip()) > 0):
-					self.logliste.append((zeile.replace(_('[Serien Recorder]'),'')))
+					self.logliste.append((zeile.replace(_('[SerienRecorder]'),'')))
 			readLog.close()
 			self.chooseMenuList.setList(map(self.buildList, self.logliste))
 			if config.plugins.serienRec.logScrollLast.value:
@@ -4559,11 +4564,15 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 					
 	def buildList(self, entry):
 		(zeile) = entry
+		width = 850
+		if config.plugins.serienRec.SkinType.value == "":
+			width = 1240
+
 		if config.plugins.serienRec.logWrapAround.value:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850 * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, width * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
 		else:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, 850 * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
-		
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
+
 	def pageUp(self):
 		self['log'].pageUp()
 
@@ -4571,7 +4580,7 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		self['log'].pageDown()
 		
 	def __onClose(self):
-		print "[Serien Recorder] update log reader stopped."
+		print "[SerienRecorder] update log reader stopped."
 		if self.readLogTimer:
 			self.readLogTimer.stop()
 			self.readLogTimer = None
@@ -4622,7 +4631,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				"4"		   : (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			    "5"		   : (self.episodeList, _("Episoden der ausgewählten Serie anzeigen")),
 				"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-				"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+				"7"		   : (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 				"9"		   : (self.disableAll, _("Alle Serien-Marker für diese Box-ID deaktivieren")),
 			}, -1)
 		else:
@@ -4650,7 +4659,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				"4"		   : (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			    "5"		   : (self.episodeList, _("Episoden der ausgewählten Serie anzeigen")),
 				"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-				"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+				"7"		   : (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 				"9"		   : (self.disableAll, _("Alle Serien-Marker für diese Box-ID deaktivieren")),
 			}, -1)
 		self.helpList[0][2].sort()
@@ -4821,7 +4830,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[Serien Recorder] starte youtube suche für %s" % serien_name
+			print "[SerienRecorder] starte youtube suche für %s" % serien_name
 			self.session.open(searchYouTube, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -4836,7 +4845,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % serien_name
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % serien_name
 			self.session.open(wikiSearch, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -5006,7 +5015,7 @@ class serienRecMarker(Screen, HelpableScreen):
 	def keyCheck(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Serien Marker leer."
+			print "[SerienRecorder] Serien Marker leer."
 			return
 
 		if self.modus == "menu_list":
@@ -5046,7 +5055,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
 			if check is None:
-				print "[Serien Recorder] Serien Marker leer."
+				print "[SerienRecorder] Serien Marker leer."
 				return
 
 			self.modus = "popup_list"
@@ -5126,7 +5135,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
 			if check is None:
-				print "[Serien Recorder] Serien Marker leer."
+				print "[SerienRecorder] Serien Marker leer."
 				return
 
 			getSender = getWebSenderAktiv()
@@ -5205,7 +5214,7 @@ class serienRecMarker(Screen, HelpableScreen):
 	def removeSerienMarker(self, serien_name, answer):
 		cCursor = dbSerRec.cursor()
 		if answer:
-			print "[Serien Recorder] lösche %s aus der added liste" % serien_name
+			print "[SerienRecorder] lösche %s aus der added liste" % serien_name
 			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=?", (serien_name.lower(),))
 		cCursor.execute("DELETE FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
 		cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
@@ -5222,7 +5231,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
 			if check is None:
-				print "[Serien Recorder] Serien Marker leer."
+				print "[SerienRecorder] Serien Marker leer."
 				return
 			else:
 				self.selected_serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5241,7 +5250,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
 			if check is None:
-				print "[Serien Recorder] Serien Marker leer."
+				print "[SerienRecorder] Serien Marker leer."
 				return
 			else:
 				self.selected_serien_name = self['menu_list'].getCurrent()[0][0]
@@ -5260,7 +5269,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
 			if check is None:
-				print "[Serien Recorder] Serien Marker leer."
+				print "[SerienRecorder] Serien Marker leer."
 				return
 			else:
 				self.session.openWithCallback(self.callDisableAll, MessageBox, _("Wollen Sie alle Serien-Marker für diese Box deaktivieren?"), MessageBox.TYPE_YESNO, default = False)
@@ -5480,7 +5489,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -5590,7 +5599,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 				return
 				
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[Serien Recorder] starte youtube suche für %s" % serien_name
+			print "[SerienRecorder] starte youtube suche für %s" % serien_name
 			self.session.open(searchYouTube, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -5605,7 +5614,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % serien_name
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % serien_name
 			self.session.open(wikiSearch, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -5678,7 +5687,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] keine infos gefunden"
+			print "[SerienRecorder] keine infos gefunden"
 			return
 
 		Serie = self['menu_list'].getCurrent()[0][0]
@@ -5807,7 +5816,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -5927,7 +5936,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			if self.loading:
 				return
 				
-			print "[Serien Recorder] starte youtube suche für %s" % self.serien_name
+			print "[SerienRecorder] starte youtube suche für %s" % self.serien_name
 			self.session.open(searchYouTube, self.serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -5937,7 +5946,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			if self.loading:
 				return
 				
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % self.serien_name
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % self.serien_name
 			self.session.open(wikiSearch, self.serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -5984,14 +5993,13 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		self['title'].setText(_("Suche ' %s '") % self.serien_name)
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		print self.serie_url
-		
-		if not self.serien_cover == "nix" and config.plugins.serienRec.showCover.value:
-			showCover(self.serien_cover, self, self.serien_cover)
-			
+
 		raw = re.findall(".*?(\d+)", self.serie_url)
 		self.serien_id = raw[0]
 		print self.serien_id
-		
+
+		getCover(self, self.serien_name, self.serien_id)
+
 		from SearchEvents import SearchEvents
 		SearchEvents(self.serien_name, self.serien_id, termineCache, self.resultsEvents, self.dataError).request()
 
@@ -6020,11 +6028,11 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, c_status) = cSender_list[0]
 			
 				if stbChannel == "":
-					print "[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '" % (self.serien_name, webChannel)
+					print "[SerienRecorder] ' %s ' - No STB-Channel found -> ' %s '" % (self.serien_name, webChannel)
 					continue
 					
 				if int(c_status) == 0:
-					print "[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (self.serien_name, webChannel)
+					print "[SerienRecorder] ' %s ' - STB-Channel deaktiviert -> ' %s '" % (self.serien_name, webChannel)
 					continue
 
 			imageNone = "%simages/black.png" % serienRecMainPath
@@ -6210,14 +6218,14 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					if (bereits_vorhanden < NoOfRecords) and (bereits_vorhanden_HDD < NoOfRecords):
 						TimerDone = self.doTimer(params)
 					else:
-						writeLog(_("[Serien Recorder] Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '") % (serien_name, seasonEpisodeString))
+						writeLog(_("[SerienRecorder] Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '") % (serien_name, seasonEpisodeString))
 						TimerDone = self.doTimer(params, config.plugins.serienRec.forceManualRecording.value)
 					if TimerDone:
 						# erstellt das serien verzeichnis
 						CreateDirectory(serien_name, staffel)
 
-			writeLog(_("[Serien Recorder] Es wurde(n) %s Timer erstellt.") % str(self.countTimer), True)
-			print "[Serien Recorder] Es wurde(n) %s Timer erstellt." % str(self.countTimer)
+			writeLog(_("[SerienRecorder] Es wurde(n) %s Timer erstellt.") % str(self.countTimer), True)
+			print "[SerienRecorder] Es wurde(n) %s Timer erstellt." % str(self.countTimer)
 			writeLog(_("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"), True)
 			print "---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"
 			#self.session.open(serienRecRunAutoCheck, False)
@@ -6227,7 +6235,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 		else:
 			self['title'].setText(_("Keine Sendetermine ausgewählt."))
-			print "[Serien Recorder] keine Sendetermine ausgewählt."
+			print "[SerienRecorder] keine Sendetermine ausgewählt."
 			
 		return changesMade
 
@@ -6247,9 +6255,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 			TimerOK = False
 			if stbChannel == "":
-				writeLog(_("[Serien Recorder] ' %s ' - No STB-Channel found -> ' %s '") % (serien_name, webChannel))
+				writeLog(_("[SerienRecorder] ' %s ' - No STB-Channel found -> ' %s '") % (serien_name, webChannel))
 			elif int(status) == 0:
-				writeLog(_("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (serien_name, webChannel))
+				writeLog(_("[SerienRecorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (serien_name, webChannel))
 			else:
 				if config.plugins.serienRec.TimerName.value == "0":
 					timer_name = label_serie
@@ -6286,8 +6294,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					else:
 						konflikt = result["message"]
 				else:
-					print "[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit)
-					writeLog(_("[Serien Recorder] Tuner belegt: %s %s") % (label_serie, startzeit), True)
+					print "[SerienRecorder] Tuner belegt: %s %s" % (label_serie, startzeit)
+					writeLog(_("[SerienRecorder] Tuner belegt: %s %s") % (label_serie, startzeit), True)
 
 				if (not TimerOK) and (useAlternativeChannel):
 					# try to get eventID (eit) from epgCache
@@ -6304,11 +6312,11 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 						else:
 							konflikt = result["message"]
 					else:
-						print "[Serien Recorder] Tuner belegt: %s %s" % (label_serie, startzeit)
-						writeLog(_("[Serien Recorder] Tuner belegt: %s %s") % (label_serie, startzeit), True)
+						print "[SerienRecorder] Tuner belegt: %s %s" % (label_serie, startzeit)
+						writeLog(_("[SerienRecorder] Tuner belegt: %s %s") % (label_serie, startzeit), True)
 
 				if (not TimerOK) and (konflikt):
-					writeLog(_("[Serien Recorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, konflikt), True)
+					writeLog(_("[SerienRecorder] ' %s ' - ACHTUNG! -> %s") % (label_serie, konflikt), True)
 					dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
 
 					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True, dirname, vpsSettings, tags, None, recordfile=".ts")
@@ -6321,7 +6329,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 						cCursor.close()
 
 			return TimerOK
-			
+
 	def keyOK(self):
 		if self.loading:
 			return
@@ -6384,14 +6392,14 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=?", (serien_name.lower(), start_time))
 		row = cCursor.fetchone()
 		if row:
-			print "[Serien Recorder] Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title)
-			writeLog(_("[Serien Recorder] Timer bereits vorhanden: %s %s - %s") % (serien_name, seasonEpisodeString, title))
+			print "[SerienRecorder] Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+			writeLog(_("[SerienRecorder] Timer bereits vorhanden: %s %s - %s") % (serien_name, seasonEpisodeString, title))
 			result = True
 		else:
 			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, int(TimerAktiviert)))
 			dbSerRec.commit()
-			print "[Serien Recorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
-			writeLog(_("[Serien Recorder] Timer angelegt: %s %s - %s") % (serien_name, seasonEpisodeString, title))
+			print "[SerienRecorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+			writeLog(_("[SerienRecorder] Timer angelegt: %s %s - %s") % (serien_name, seasonEpisodeString, title))
 			result = True
 		cCursor.close()
 		return result	
@@ -6504,7 +6512,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -6583,8 +6591,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 		else:
 			self.loading = True
-			if not self.serien_cover == "nix" and config.plugins.serienRec.showCover.value:
-				showCover(self.serien_cover, self, self.serien_cover)
+			raw = re.findall(".*?(\d+)", self.serie_url)
+			serien_id = raw[0]
+			getCover(self, self.serien_name, serien_id)
 			self['title'].setText(_("Suche Episoden ' %s '") % self.serien_name)
 
 			if self.page > 1:
@@ -6810,9 +6819,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if not self.aToEpisode: # or self.aFromEpisode is None or self.aStaffel is None:
 			return
 		else:
-			print "[Serien Recorder] Staffel: %s" % self.aStaffel
-			print "[Serien Recorder] von Episode: %s" % self.aFromEpisode
-			print "[Serien Recorder] bis Episode: %s" % self.aToEpisode
+			print "[SerienRecorder] Staffel: %s" % self.aStaffel
+			print "[SerienRecorder] von Episode: %s" % self.aFromEpisode
+			print "[SerienRecorder] bis Episode: %s" % self.aToEpisode
 			if addToAddedList(self.serien_name, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump"):
 				self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 
@@ -6926,7 +6935,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		#self['config'].list.setItemHeight(22) funktioniert nicht
 		self['config'].show()
 
-		self['title'].setText(_("Serien Recorder - Einstellungen:"))
+		self['title'].setText(_("SerienRecorder - Einstellungen:"))
 		self['text_red'].setText(_("Defaultwerte"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Verzeichnis auswählen"))
@@ -7328,7 +7337,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				#self.list.append(getConfigListEntry(_("    starte Cover-Suche beim automatischen Suchlauf:"), config.plugins.serienRec.autoSearchForCovers))
 			self.list.append(getConfigListEntry(_("Korrektur der Schriftgröße in Listen:"), config.plugins.serienRec.listFontsize))
 			self.list.append(getConfigListEntry(_("Anzahl der wählbaren Staffeln im Menü SerienMarker:"), config.plugins.serienRec.max_season))
-			self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und TimerList Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
+			self.list.append(getConfigListEntry(_("Vor Löschen in SerienMarker und Timer-Liste Benutzer fragen:"), config.plugins.serienRec.confirmOnDelete))
 			self.list.append(getConfigListEntry(_("Benachrichtigung beim Suchlauf:"), config.plugins.serienRec.showNotification))
 			self.list.append(getConfigListEntry(_("Benachrichtigung bei Timerkonflikten:"), config.plugins.serienRec.showMessageOnConflicts))
 			self.list.append(getConfigListEntry(_("Screens bei Änderungen sofort aktualisieren:"), config.plugins.serienRec.refreshViews))
@@ -7518,9 +7527,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.useAlternativeChannel :   (_("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu erstellen, "
 										                        "falls der Timer auf dem bevorzugten Channel nicht angelegt werden kann."), "Bouquet_Auswahl"),
 			config.plugins.serienRec.showPicons :              (_("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt."), "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.piconPath :               (_("Auswahl, welche Sender-Logos angezeigt werden. Serien Recorder muß neu gestartet werden damit die Änderung wirksam wird."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.piconPath :               (_("Auswahl, welche Sender-Logos angezeigt werden. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.showCover :               (_("Bei 'nein' werden keine Cover angezeigt."), "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.listFontsize :            (_("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. Serien Recorder muß neu gestartet werden damit die Änderung wirksam wird."), "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.listFontsize :            (_("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.intensiveTimersuche :     (_("Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist."), "intensive_Suche"),
 			config.plugins.serienRec.sucheAufnahme :           (_("Bei 'ja' wird ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv."), "Aufnahme_vorhanden"),
 			config.plugins.serienRec.max_season :              (_("Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann."), "1.3_Die_globalen_Einstellungen"),
@@ -7794,8 +7803,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				dbSerRec = sqlite3.connect(serienRecDataBase)
 				dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 			except:
-				writeLog(_("[Serien Recorder] Fehler beim Kopieren der Datenbank"))
-				Notifications.AddPopup(_("[Serien Recorder]\nDatenbank konnte nicht kopiert werden.\nDer alte Datenbankpfad wird wiederhergestellt!"), MessageBox.TYPE_INFO, timeout=10)
+				writeLog(_("[SerienRecorder] Fehler beim Kopieren der Datenbank"))
+				Notifications.AddPopup(_("[SerienRecorder]\nDatenbank konnte nicht kopiert werden.\nDer alte Datenbankpfad wird wiederhergestellt!"), MessageBox.TYPE_INFO, timeout=10)
 				serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
 		else:
 			serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
@@ -7947,7 +7956,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 		self['config_information'].show()
 		self['config_information_text'].show()
 
-		self['title'].setText(_("Serien Recorder - Einstellungen für '%s':") % self.Serie)
+		self['title'].setText(_("SerienRecorder - Einstellungen für '%s':") % self.Serie)
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_green'].setText(_("Speichern"))
 		self['text_ok'].setText(_("Verzeichnis auswählen"))
@@ -8154,10 +8163,10 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.tags.setChoices([len(res) == 0 and _("Keine") or ' '.join(res)])
 
 	def chooseTags(self):
-		writeLog(_("[Serien Recorder] Choose tags was called."), True)
+		writeLog(_("[SerienRecorder] Choose tags was called."), True)
 		preferredTagEditor = getPreferredTagEditor()
 		if preferredTagEditor:
-			writeLog(_("[Serien Recorder] Has preferred tageditor."), True)
+			writeLog(_("[SerienRecorder] Has preferred tageditor."), True)
 			self.session.openWithCallback(
 				self.tagEditFinished,
 				preferredTagEditor,
@@ -8369,7 +8378,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen, HelpableScreen):
 		self['config_information'].show()
 		self['config_information_text'].show()
 
-		self['title'].setText(_("Serien Recorder - Einstellungen für '%s':") % self.webSender)
+		self['title'].setText(_("SerienRecorder - Einstellungen für '%s':") % self.webSender)
 		self['text_red'].setText(_("Abbrechen"))
 		self['text_green'].setText(_("Speichern"))
 
@@ -8685,7 +8694,7 @@ class serienRecReadLog(Screen, HelpableScreen):
 			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 			"red"   : (self.keyRed, _("zurück zur vorherigen Ansicht")),
 		}, -1)
 		self.helpList[0][2].sort()
@@ -8806,7 +8815,7 @@ class serienRecReadLog(Screen, HelpableScreen):
 			logliste = []
 			for zeile in readLog.readlines():
 				if (not config.plugins.serienRec.logWrapAround.value) or (len(zeile.strip()) > 0):
-					logliste.append((zeile.replace(_('[Serien Recorder]'),'')))
+					logliste.append((zeile.replace(_('[SerienRecorder]'),'')))
 			readLog.close()
 			self['title'].hide()
 			self['path'].setText(_("LogFile:\n(%s)") % logFile)
@@ -8868,7 +8877,7 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 			"menu"  : (self.recSetup, _("Menü für globale Einstellungen öffnen")),
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -9014,7 +9023,7 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 	def keyBlue(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Conflict-List leer."
+			print "[SerienRecorder] Conflict-List leer."
 			return
 		else:
 			if config.plugins.serienRec.confirmOnDelete.value:
@@ -9069,7 +9078,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -9224,7 +9233,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 					return
 				serien_name = self['popup_list'].getCurrent()[0][0]
 
-			print "[Serien Recorder] starte youtube suche für %s" % serien_name
+			print "[SerienRecorder] starte youtube suche für %s" % serien_name
 			self.session.open(searchYouTube, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -9242,7 +9251,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 					return
 				serien_name = self['popup_list'].getCurrent()[0][0]
 
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % serien_name
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % serien_name
 			self.session.open(wikiSearch, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -9324,9 +9333,9 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if self.aToEpisode is None: # or self.aFromEpisode is None or self.aStaffel is None:
 			return
 		else:
-			print "[Serien Recorder] Staffel: %s" % self.aStaffel
-			print "[Serien Recorder] von Episode: %s" % self.aFromEpisode
-			print "[Serien Recorder] bis Episode: %s" % self.aToEpisode
+			print "[SerienRecorder] Staffel: %s" % self.aStaffel
+			print "[SerienRecorder] von Episode: %s" % self.aFromEpisode
+			print "[SerienRecorder] bis Episode: %s" % self.aToEpisode
 
 			if addToAddedList(self.aSerie, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump"):
 				self.readAdded()
@@ -9354,7 +9363,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self['popup_bg'].hide()
 
 			if self['popup_list'].getCurrent() is None:
-				print "[Serien Recorder] Marker-Liste leer."
+				print "[SerienRecorder] Marker-Liste leer."
 				return
 
 			self.aSerie = self['popup_list'].getCurrent()[0][0]
@@ -9366,7 +9375,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Added-File leer."
+			print "[SerienRecorder] Added-File leer."
 			return
 		else:
 			zeile = self['menu_list'].getCurrent()[0]
@@ -9482,7 +9491,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -9654,7 +9663,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[Serien Recorder] starte youtube suche für %s" % serien_name
+			print "[SerienRecorder] starte youtube suche für %s" % serien_name
 			self.session.open(searchYouTube, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -9666,7 +9675,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % serien_name
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % serien_name
 			self.session.open(wikiSearch, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -9713,7 +9722,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Proposal-DB leer."
+			print "[SerienRecorder] Proposal-DB leer."
 			return
 		else:
 			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = self['menu_list'].getCurrent()[0]
@@ -9727,7 +9736,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 	def keyOK(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Proposal-DB leer."
+			print "[SerienRecorder] Proposal-DB leer."
 			return
 		else:
 			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = self['menu_list'].getCurrent()[0]
@@ -9812,7 +9821,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 	def keyBlue(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Proposal-DB leer."
+			print "[SerienRecorder] Proposal-DB leer."
 			return
 		else:
 			if config.plugins.serienRec.confirmOnDelete.value:
@@ -10128,9 +10137,9 @@ class serienRecWishlist(Screen, HelpableScreen):
 	
 	def answerToEpisode(self, aToEpisode):
 		self.aToEpisode = aToEpisode
-		print "[Serien Recorder] Staffel: %s" % self.aStaffel
-		print "[Serien Recorder] von Episode: %s" % self.aFromEpisode
-		print "[Serien Recorder] bis Episode: %s" % self.aToEpisode
+		print "[SerienRecorder] Staffel: %s" % self.aStaffel
+		print "[SerienRecorder] von Episode: %s" % self.aFromEpisode
+		print "[SerienRecorder] bis Episode: %s" % self.aToEpisode
 		
 		if self.aToEpisode is None or self.aFromEpisode is None or self.aStaffel is None or self.aToEpisode == "":
 			return
@@ -10145,7 +10154,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 					if str(AnzahlWiederholungen).isdigit():
 						AnzahlAufnahmen = int(AnzahlWiederholungen)
 				for i in range(int(self.aFromEpisode), int(self.aToEpisode)+1):
-					print "[Serien Recorder] %s Staffel: %s Episode: %s " % (str(self.aSerie), str(self.aStaffel), str(i))
+					print "[SerienRecorder] %s Staffel: %s Episode: %s " % (str(self.aSerie), str(self.aStaffel), str(i))
 					cCursor.execute("SELECT * FROM Merkzettel WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (self.aSerie.lower(), self.aStaffel.lower(), str(i).zfill(2).lower()))
 					row = cCursor.fetchone()
 					if not row:
@@ -10177,7 +10186,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 			self['popup_bg'].hide()
 
 			if self['popup_list'].getCurrent() is None:
-				print "[Serien Recorder] Marker-Liste leer."
+				print "[SerienRecorder] Marker-Liste leer."
 				return
 
 			self.aSerie = self['popup_list'].getCurrent()[0][0]
@@ -10189,7 +10198,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Merkzettel ist leer."
+			print "[SerienRecorder] Merkzettel ist leer."
 			return
 		else:
 			zeile = self['menu_list'].getCurrent()[0]
@@ -10227,7 +10236,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 	def keyBlue(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Merkzettel ist leer."
+			print "[SerienRecorder] Merkzettel ist leer."
 			return
 		else:
 			if config.plugins.serienRec.confirmOnDelete.value:
@@ -10328,7 +10337,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -10408,14 +10417,14 @@ class serienRecShowInfo(Screen, HelpableScreen):
 
 	def youtubeSearch(self):
 		if epgTranslatorInstalled:
-			print "[Serien Recorder] starte youtube suche für %s" % self.serieName
+			print "[SerienRecorder] starte youtube suche für %s" % self.serieName
 			self.session.open(searchYouTube, self.serieName)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
 
 	def WikipediaSearch(self):
 		if WikipediaInstalled:
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % self.serieName
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % self.serieName
 			self.session.open(wikiSearch, self.serieName)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -10503,7 +10512,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 			"0"		: (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -10583,14 +10592,14 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 
 	def youtubeSearch(self):
 		if epgTranslatorInstalled:
-			print "[Serien Recorder] starte youtube suche für %s" % self.serieName
+			print "[SerienRecorder] starte youtube suche für %s" % self.serieName
 			self.session.open(searchYouTube, self.serieName)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
 
 	def WikipediaSearch(self):
 		if WikipediaInstalled:
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % self.serieName
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % self.serieName
 			self.session.open(wikiSearch, self.serieName)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -10708,7 +10717,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -10901,7 +10910,7 @@ class serienRecMain(Screen, HelpableScreen):
 			"3"		: (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
 			"4"		: (self.serieInfo, _("Informationen zur ausgewählten Serie anzeigen")),
 			"6"		: (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		: (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"7"		: (self.showWishlist, _("Merkzettel (vorgemerkte Folgen) anzeigen")),
 			"9"     : (self.importFromFile, _("manueller Import der Daten von älteren Versionen (bis 2.3)")),
 			#"5"		: (self.test, _("-")),
 		}, -1)
@@ -11077,7 +11086,7 @@ class serienRecMain(Screen, HelpableScreen):
 			for name in dirs:
 				writeLog(_("%s -> %s") % (os.path.join(root, name), str(os.stat(os.path.join(root, name)).st_ctime)), True)
 				if os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
-					writeLog(_("[Serien Recorder] Remove folder: %s") % os.path.join(root, name), True)
+					writeLog(_("[SerienRecorder] Remove folder: %s") % os.path.join(root, name), True)
 
 			
 	def getImdblink2(self, data):
@@ -11115,7 +11124,13 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def wSearch(self, serien_name):
 		if serien_name:
-			self.session.openWithCallback(serienRecMarker, serienRecAddSerie, serien_name)
+			self.session.openWithCallback(self.handleSeriesSearchEnd, serienRecAddSerie, serien_name)
+
+	def handleSeriesSearchEnd(self, serien_name=None):
+		if serien_name:
+			self.session.openWithCallback(self.readWebpage, serienRecMarker, serien_name)
+		else:
+			self.readWebpage(False)
 
 	def serieInfo(self):
 		if self.loading:
@@ -11146,7 +11161,7 @@ class serienRecMain(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][6]
-			print "[Serien Recorder] starte youtube suche für %s" % serien_name
+			print "[SerienRecorder] starte youtube suche für %s" % serien_name
 			self.session.open(searchYouTube, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -11161,7 +11176,7 @@ class serienRecMain(Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][6]
-			print "[Serien Recorder] starte Wikipedia Suche für %s" % serien_name
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % serien_name
 			self.session.open(wikiSearch, serien_name)
 		else:
 			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
@@ -11243,21 +11258,21 @@ class serienRecMain(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.update.value:
-					#print "%s[Serien Recorder] AutoCheck Hour-Timer: %s%s" % (self.color_print, config.plugins.serienRec.update.value, self.color_end)
+					#print "%s[SerienRecorder] AutoCheck Hour-Timer: %s%s" % (self.color_print, config.plugins.serienRec.update.value, self.color_end)
 					serienRecCheckForRecording(self.session, False)
 				elif config.plugins.serienRec.timeUpdate.value:
-					#print "%s[Serien Recorder] AutoCheck Clock-Timer: %s%s" % (self.color_print, config.plugins.serienRec.timeUpdate.value, self.color_end)
+					#print "%s[SerienRecorder] AutoCheck Clock-Timer: %s%s" % (self.color_print, config.plugins.serienRec.timeUpdate.value, self.color_end)
 					serienRecCheckForRecording(self.session, False)
 				#elif not config.plugins.serienRec.update.value:
-				#	print "%s[Serien Recorder] AutoCheck Hour-Timer: %s%s" % (self.color_print, config.plugins.serienRec.update.value, self.color_end)
+				#	print "%s[SerienRecorder] AutoCheck Hour-Timer: %s%s" % (self.color_print, config.plugins.serienRec.update.value, self.color_end)
 				#elif config.plugins.serienRec.timeUpdate.value:
-				#	print "%s[Serien Recorder] AutoCheck Clock-Timer: %s%s" % (self.color_print, config.plugins.serienRec.timeUpdate.value, self.color_end)
+				#	print "%s[SerienRecorder] AutoCheck Clock-Timer: %s%s" % (self.color_print, config.plugins.serienRec.timeUpdate.value, self.color_end)
 
 			if result[1]:
 				self.readWebpage()
 
 	def startScreen(self):
-		print "[Serien Recorder] version %s is running..." % config.plugins.serienRec.showversion.value
+		print "[SerienRecorder] version %s is running..." % config.plugins.serienRec.showversion.value
 		
 		global refreshTimer
 		if not refreshTimer:
@@ -11270,7 +11285,7 @@ class serienRecMain(Screen, HelpableScreen):
 			checkGitHubUpdate(self.session).checkForUpdate()
 			
 		if self.isChannelsListEmpty():
-			print "[Serien Recorder] Channellist is empty !"
+			print "[SerienRecorder] Channellist is empty !"
 			self.session.openWithCallback(self.readWebpage, serienRecMainChannelEdit)
 		else:
 			if config.plugins.serienRec.firstscreen.value == "1":
@@ -11380,7 +11395,7 @@ class serienRecMain(Screen, HelpableScreen):
 									event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(start_time)+(int(margin_before) * 60))
 									if event_matches and len(event_matches) > 0:
 										for event_entry in event_matches:
-											print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+											print "[SerienRecorder] found eventID: %s" % int(event_entry[1])
 											start_time_eit = int(event_entry[3])
 											if self.checkTimer(serien_name, start_time_eit, sender):
 												aufnahme = True
@@ -11390,7 +11405,7 @@ class serienRecMain(Screen, HelpableScreen):
 										event_matches = STBHelpers.getEPGEvent(['RITBDSE',(altstbRef, 0, int(start_time)+(int(margin_before) * 60), -1)], altstbRef, serien_name, int(start_time)+(int(margin_before) * 60))
 										if event_matches and len(event_matches) > 0:
 											for event_entry in event_matches:
-												print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+												print "[SerienRecorder] found eventID: %s" % int(event_entry[1])
 												start_time_eit = int(event_entry[3])
 												if self.checkTimer(serien_name, start_time_eit, sender):
 													aufnahme = True
@@ -11432,7 +11447,7 @@ class serienRecMain(Screen, HelpableScreen):
 					if re.search('01', episode, re.S):
 						self.daylist[3].append((regional,paytv,neu,prime,transmissionTime,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 
-			print "[Serien Recorder] Es wurden %s Serie(n) gefunden" % len(self.daylist[int(config.plugins.serienRec.screenmode.value)])
+			print "[SerienRecorder] Es wurden %s Serie(n) gefunden" % len(self.daylist[int(config.plugins.serienRec.screenmode.value)])
 			
 			if head_datum:
 				d = head_datum[0].split(',')
@@ -11460,7 +11475,7 @@ class serienRecMain(Screen, HelpableScreen):
 				self.page -= 1
 			self['title'].setText(_("Es wurden für heute %s Serie(n) gefunden.") % len(self.daylist[int(config.plugins.serienRec.screenmode.value)]))
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
-			print "[Serien Recorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
+			print "[SerienRecorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
 			self.chooseMenuList.setList(map(self.buildList, self.daylist[int(config.plugins.serienRec.screenmode.value)]))
 
 	def buildList(self, entry):
@@ -11701,7 +11716,7 @@ class serienRecMain(Screen, HelpableScreen):
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT Count(*) from Channels")
 		(count,) = cCursor.fetchone()
-		print "[Serien Recorder] count channels %s" % count
+		print "[SerienRecorder] count channels %s" % count
 		if count == 0:
 			print "channels: true"
 			return True
@@ -11839,10 +11854,10 @@ class serienRecMain(Screen, HelpableScreen):
 	def dataError(self, error, url):
 		self['title'].setText(_("Suche auf 'Wunschliste.de' erfolglos"))
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
-		writeLog(_("[Serien Recorder] Fehler bei: %s") % self.ErrorMsg, True)
+		writeLog(_("[SerienRecorder] Fehler bei: %s") % self.ErrorMsg, True)
 		writeLog(_("      %s") % error, True)
 		writeErrorLog("   serienRecMain(): %s\n   %s\n   Url: %s" % (error, self.ErrorMsg, url))
-		print "[Serien Recorder] Fehler bei: %s" % self.ErrorMsg
+		print "[SerienRecorder] Fehler bei: %s" % self.ErrorMsg
 		print error
 
 
@@ -11853,7 +11868,7 @@ def getNextWakeup():
 	color_end = "\33[0m"
 
 	if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.timeUpdate.value and config.plugins.serienRec.autochecktype.value == "1":
-		print color_print+"[Serien Recorder] Deep-Standby WakeUp: AN" +color_end
+		print color_print+"[SerienRecorder] Deep-Standby WakeUp: AN" +color_end
 		now = time.localtime()
 		current_time = int(time.time())
 		
@@ -11861,17 +11876,17 @@ def getNextWakeup():
 
 		# überprüfe ob die aktuelle zeit größer ist als der clock-timer + 1 day.
 		if int(current_time) > int(begin):
-			print color_print+"[Serien Recorder] WakeUp-Timer + 1 day."+color_end
+			print color_print+"[SerienRecorder] WakeUp-Timer + 1 day."+color_end
 			begin += 86400
 		# 5 min. bevor der Clock-Check anfängt wecken.
 		begin -= 300
 
 		wakeupUhrzeit = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(begin)))
-		print color_print+"[Serien Recorder] Deep-Standby WakeUp um %s" % wakeupUhrzeit +color_end
+		print color_print+"[SerienRecorder] Deep-Standby WakeUp um %s" % wakeupUhrzeit +color_end
 
 		return begin
 	else:
-		print color_print+"[Serien Recorder] Deep-Standby WakeUp: AUS" +color_end
+		print color_print+"[SerienRecorder] Deep-Standby WakeUp: AUS" +color_end
 
 def autostart(reason, **kwargs):
 	if reason == 0 and "session" in kwargs:
@@ -11890,7 +11905,7 @@ def autostart(reason, **kwargs):
 
 		#if initDB():
 		if config.plugins.serienRec.autochecktype.value in ("1", "2") and (config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value):
-			print color_print+"[Serien Recorder] AutoCheck: AN"+color_end
+			print color_print+"[SerienRecorder] AutoCheck: AN"+color_end
 			startTimer = eTimer()
 			if isDreamboxOS:
 				startTimerConnection = startTimer.timeout.connect(startAutoCheckTimer)
@@ -11899,7 +11914,7 @@ def autostart(reason, **kwargs):
 			startTimer.start(60 * 1000, True)
 			#serienRecCheckForRecording(session, False)
 		else:
-			print color_print+"[Serien Recorder] AutoCheck: AUS"+color_end
+			print color_print+"[SerienRecorder] AutoCheck: AUS"+color_end
 
 		#API
 		from SerienRecorderResource import addWebInterfaceForDreamMultimedia

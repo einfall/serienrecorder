@@ -44,34 +44,41 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-
-
-CHANGE-LOG v3.2.5:
+CHANGE-LOG v3.2.6:
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
 
 Neue Funktionen:
-	- Neue Option um alte Backup Dateien automatisch zu löschen
+	- Umzug auf den endgültigen Proxy Server http://www.serienserver.de
+	- Die Suche nach Serien kann jetzt auch von der SerienPlaner Ansicht aus ausgeführt werden (Taste 1)
+	- Die Sender werden jetzt über den SerienServer bei Wunschliste abgerufen und verarbeitet
+	- Timer aktualisieren bei fehlender Staffel-/Episodennummer unterdrücken
+	- Nicht erlaubte Zeichen beim Anlegen von Verzeichnissen berücksichtigen
+	- Neues Plugin Logo wegen http://www.serienserver.de
+	- Die Suche ob eine Episode auf der Festplatte ist findet jetzt folgende Endungen: ts|mkv|avi|mp4|divx|xvid|mpg|mov (Danke an andy71)
 
 Änderungen:
-	- Verhalten der Event-Programmierung geändert (leider funktioniert es immer noch ganz richtig)
-	- Log beim Manueller Suchlauf in voller Breite
-	- Manueller Suchlauf kann erst nach Ende verlassen werden	
-	- Episodenliste zeigt Haken und Kreuz statt Plus/Minus
-	- Fehlermeldungen verallgemeinert
-	- Sendetermine-Cache deaktiviert
-	
-Bugfixes:
-	- Exceptionhandling bei Abrufen der Cover
-	- Auto-Update Funktionen korrigiert	
+	- Die Datenbank des SerienRecorders wird jetzt standardmäßig unter /etc/enigma2/ abgelegt
+	- Die 'Sender zuordnen' Ansicht wurde jetzt in ein eigenes Modul ausgelagert
+	- Automatisches Zuordnen von Websender und STB Sender verbessert
+	- Defaultwert für Auto-Check und Backup löschen geändert
+	- max. Anzahl Tuner auf 8 erhöht
+	- Bezeichnung "SerienRecorder" vereinheitlicht
+	- Bezeichnung "Merkzettel" vereinheitlicht
+	- Bezeichnung "Timer-Liste" vereinheitlicht
+	- Auto-Check ist jetzt standmäßig auf manuell
+	- Auto-Check Uhrzeit wird jetzt per Zufall bestimmt, wenn nicht konfiguriert
 
-Bekannte Probleme:
-	- Cover funktionieren nicht
+Bugfix:
+	- Merkzettel korrigiert
+	- Diverse Funktionen abgesichert
+	- Breite der Liste beim manuellen Auto-Check korrigiert
+	- Cover werden jetzt auch in der Sendetermine Ansicht angezeigt
+	- Cover werden jetzt auch in der Episodenliste Ansicht angezeigt
 	
 Viel Spass mit dem SerienRecorder!
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel
-@w22754: per PayPal an w22754@yahoo.de
 @MacDisein: per PayPal an macdisein@gmx.de
 Danke! 

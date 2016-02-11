@@ -27,7 +27,7 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.2.6-beta'
+SRVERSION = '3.2.6'
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -103,7 +103,7 @@ def getURLWithProxy(url):
 	global SRVERSION
 	if not STBTYPE:
 		STBTYPE = STBHelpers.getSTBType()
-	return "http://176.9.54.54/serienserver/proxy/proxy.php?device=%s&version=%s&url=%s" % (STBTYPE, 'SR'+SRVERSION, url)
+	return "http://www.serienserver.de/proxy/proxy.php?device=%s&version=%s&url=%s" % (STBTYPE, 'SR'+SRVERSION, url)
 
 def processDownloadedData(data):
 	# from gzip import GzipFile
@@ -112,7 +112,7 @@ def processDownloadedData(data):
 	# except:
 	# 	from StringIO import StringIO
 	#
-	# #writeLog(_("[Serien Recorder] Downloaded data size = %d bytes") % (len(data)))
+	# #writeLog(_("[SerienRecorder] Downloaded data size = %d bytes") % (len(data)))
 	# compressedstream = StringIO(data)
 	# gzipper = GzipFile(fileobj=compressedstream)
 	# try:
@@ -123,7 +123,7 @@ def processDownloadedData(data):
 	# 	gzipper.close()
 	# 	compressedstream.close()
 	#
-	# #writeLog(_("[Serien Recorder] Uncompressed data size = %d bytes") % (len(data)))
+	# #writeLog(_("[SerienRecorder] Uncompressed data size = %d bytes") % (len(data)))
 	return data
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -292,7 +292,7 @@ class STBHelpers:
 			event_matches = cls.getEPGEvent(['RITBDSE', (STBRef, 0, int(start_unixtime_eit) + (int(margin_before) * 60), -1)], STBRef, serien_name, int(start_unixtime_eit) + (int(margin_before) * 60))
 			if event_matches and len(event_matches) > 0:
 				for event_entry in event_matches:
-					print "[Serien Recorder] found eventID: %s" % int(event_entry[1])
+					print "[SerienRecorder] found eventID: %s" % int(event_entry[1])
 					eit = int(event_entry[1])
 					start_unixtime_eit = int(event_entry[3]) - (int(margin_before) * 60)
 					end_unixtime_eit = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
@@ -305,9 +305,9 @@ class STBHelpers:
 		count = 0
 		if fileExists(dirname):
 			if title is None:
-				searchString = '%s.*?%s.*?\.ts\Z' % (re.escape(serien_name), re.escape(seasonEpisodeString))
+				searchString = '%s.*?%s.*?\.(ts|mkv|avi|mp4|divx|xvid|mpg|mov)\Z' % (re.escape(serien_name), re.escape(seasonEpisodeString))
 			else:
-				searchString = '%s.*?%s.*?%s.*?\.ts\Z' % (re.escape(serien_name), re.escape(seasonEpisodeString), re.escape(title))
+				searchString = '%s.*?%s.*?%s.*?\.(ts|mkv|avi|mp4|divx|xvid|mpg|mov)\Z' % (re.escape(serien_name), re.escape(seasonEpisodeString), re.escape(title))
 			dirs = os.listdir(dirname)
 			for dir in dirs:
 				if re.search(searchString, dir):

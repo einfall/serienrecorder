@@ -387,12 +387,12 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 				check = self['list'].getCurrent()
 				if check is None:
-					print "[Serien Recorder] Channel-List leer (list)."
+					print "[SerienRecorder] Channel-List leer (list)."
 					return
 
 				check = self['popup_list'].getCurrent()
 				if check is None:
-					print "[Serien Recorder] Channel-List leer (popup_list)."
+					print "[SerienRecorder] Channel-List leer (popup_list)."
 					return
 
 				chlistSender = self['list'].getCurrent()[0][0]
@@ -420,11 +420,11 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self['popup_bg'].hide()
 
 			if self['list'].getCurrent() is None:
-				print "[Serien Recorder] Channel-List leer (list)."
+				print "[SerienRecorder] Channel-List leer (list)."
 				return
 
 			if self['popup_list'].getCurrent() is None:
-				print "[Serien Recorder] Channel-List leer (popup_list)."
+				print "[SerienRecorder] Channel-List leer (popup_list)."
 				return
 
 			chlistSender = self['list'].getCurrent()[0][0]
@@ -447,7 +447,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 	def keyRed(self):
 		global runAutocheckAtExit
 		if self['list'].getCurrent() is None:
-			print "[Serien Recorder] Channel-List leer."
+			print "[SerienRecorder] Channel-List leer."
 			return
 
 		if self.modus == "list":
@@ -486,7 +486,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 	def channelReset(self, answer):
 		if answer:
-			print "[Serien Recorder] channel-list reset..."
+			print "[SerienRecorder] channel-list reset..."
 
 			if config.plugins.serienRec.selectBouquets.value:
 				self.stbChlist = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
@@ -494,12 +494,12 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				self.stbChlist = STBHelpers.buildSTBChannelList()
 			self.readWebChannels()
 		else:
-			print "[Serien Recorder] channel-list ok."
+			print "[SerienRecorder] channel-list ok."
 
 	def keyRedLong(self):
 		check = self['list'].getCurrent()
 		if check is None:
-			print "[Serien Recorder] Serien Marker leer."
+			print "[SerienRecorder] Serien Marker leer."
 			return
 		else:
 			self.selected_sender = self['list'].getCurrent()[0][0]

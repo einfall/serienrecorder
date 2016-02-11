@@ -28,7 +28,7 @@ class ShowStartupInfo(Screen):
 			<widget name="text_ok" position="%d,%d" size="%d,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_exit" position="%d,%d" size="%d,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
-		</screen>""" % (10, 10, DESKTOP_WIDTH - 20, DESKTOP_HEIGHT - 20, _("Serien Recorder InfoText"),
+		</screen>""" % (10, 10, DESKTOP_WIDTH - 20, DESKTOP_HEIGHT - 20, _("SerienRecorder InfoText"),
 		                DESKTOP_WIDTH - 30, DESKTOP_HEIGHT - 80,
 						BUTTON_X + 50, BUTTON_Y,
 						BUTTON_X + 100, BUTTON_Y, BUTTON_X - 100,

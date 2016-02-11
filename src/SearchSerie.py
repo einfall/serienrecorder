@@ -65,7 +65,7 @@ class SearchSerie(object):
 						else:
 							serienlist.append((name_Serie, year_Serie, id_Serie))
 		else:
-			print "[Serien Recorder] keine Sendetermine für ' %s ' gefunden." % self.serien_name
+			print "[SerienRecorder] keine Sendetermine für ' %s ' gefunden." % self.serien_name
 
 		if (self.user_callback):
 			self.user_callback(serienlist)

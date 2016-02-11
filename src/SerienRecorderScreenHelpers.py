@@ -207,7 +207,7 @@ def InitSkin(self):
 	self["video"] = VideoWindow(decoder=0, fb_width=desktopSize.width(), fb_height=desktopSize.height())
 
 	self['title'] = Label("")
-	self['version'] = Label(_("Serien Recorder v%s") % config.plugins.serienRec.showversion.value)
+	self['version'] = Label(_("SerienRecorder v%s") % config.plugins.serienRec.showversion.value)
 	self['headline'] = Label("")
 
 	setSkinProperties(self, False)

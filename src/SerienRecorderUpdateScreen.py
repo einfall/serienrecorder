@@ -58,7 +58,7 @@ class checkGitHubUpdate:
 		if remoteversion > version:
 			UpdateAvailable = True
 			self.latestVersion = latestVersion
-			self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das Serien Recorder Plugin ist ein Update (v%s) verfügbar!\nWollen Sie es jetzt herunterladen und installieren?") % str(latestVersion), MessageBox.TYPE_YESNO, msgBoxID="[Serien Recorder] Update available")
+			self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das SerienRecorder Plugin ist ein Update (v%s) verfügbar!\nWollen Sie es jetzt herunterladen und installieren?") % str(latestVersion), MessageBox.TYPE_YESNO, msgBoxID="[SerienRecorder] Update available")
 
 	@staticmethod
 	def checkIfBetaVersion(foundVersion):
@@ -92,7 +92,7 @@ class checkGitHubUpdate:
 			try:
 				self.session.open(SerienRecorderUpdateScreen, remoteUrl, self.latestVersion)
 			except:
-				Notifications.AddPopup(_("[Serien Recorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO, timeout=3)
+				Notifications.AddPopup(_("[SerienRecorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO, timeout=3)
 		else:
 			return
 
@@ -105,7 +105,7 @@ class SerienRecorderUpdateScreen(Screen):
 			<widget name="srlog" position="5,5" size="710,310" font="Regular;18" valign="center" halign="center" foregroundColor="white" transparent="1" zPosition="5"/>
 			<widget name="activityslider" position="5,280" size="710,25" borderWidth="1" transparent="1" zPosition="4"/>
 			<widget name="status" position="30,280" size="660,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
-		</screen>""" % ((DESKTOP_WIDTH - 720) / 2, (DESKTOP_HEIGHT - 320) / 2, _("Serien Recorder Update"))
+		</screen>""" % ((DESKTOP_WIDTH - 720) / 2, (DESKTOP_HEIGHT - 320) / 2, _("SerienRecorder Update"))
 
 	def __init__(self, session, updateurl, version):
 		from Components.Slider import Slider
@@ -209,14 +209,14 @@ class SerienRecorderUpdateScreen(Screen):
 	def downloadError(self):
 		self.stopActivityTimer()
 		writeErrorLog("   SerienRecorderUpdateScreen():\n   Url: %s" % self.target)
-		self.session.open(MessageBox, _("[Serien Recorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
+		self.session.open(MessageBox, _("[SerienRecorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
 		self.close()
 
 	def finishedPluginUpdate(self,retval):
 		self.stopActivityTimer()
 		if fileExists(self.file_name):
 			os.remove(self.file_name)
-		self.session.openWithCallback(self.restartGUI, MessageBox, _("Serien Recorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?"), MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.restartGUI, MessageBox, _("SerienRecorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?"), MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, answer):
 		config.plugins.serienRec.showStartupInfoText.value = True
