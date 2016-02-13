@@ -255,7 +255,6 @@ def ReadConfigFile():
 	SelectSkin()
 ReadConfigFile()
 
-UpdateAvailable = False
 if config.plugins.serienRec.firstscreen.value == "0":
 	showMainScreen = True
 else:
@@ -4605,7 +4604,13 @@ class serienRecMarker(Screen, HelpableScreen):
 		self.picload = ePicLoad()
 		self.SelectSerie = SelectSerie
 		self.ErrorMsg = "unbekannt"
-		
+		self.skin = None
+		self.displayMode = 0
+		self.displayTimer = None
+		self.displayTimer_conn = None
+		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+
 		if not showMainScreen:
 			self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 				"ok"       : (self.keyOK, _("zur Staffelauswahl")),
@@ -4713,7 +4718,6 @@ class serienRecMarker(Screen, HelpableScreen):
 		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
-		
 			self.displayTimer = eTimer()
 			if isDreamboxOS:
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
@@ -4722,18 +4726,15 @@ class serienRecMarker(Screen, HelpableScreen):
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		
 	def setupSkin(self):
-		self.skin = None
 		InitSkin(self)
 		
 		#normal
-		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList.l.setItemHeight(int(70*skinFactor))
 		self['menu_list'] = self.chooseMenuList
 		self['menu_list'].show()
 
 		# popup
-		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
 		self.chooseMenuList_popup.l.setItemHeight(int(25*skinFactor))
 		self['popup_list'] = self.chooseMenuList_popup
@@ -4904,6 +4905,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		markerList = []
 		numberOfDeactivatedSeries = 0
 
+		start = time.time()
 		cCursor = dbSerRec.cursor()
 		#cCursor.execute("SELECT SerienMarker.ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB FROM SerienMarker LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID ORDER BY Serie")
 		cCursor.execute("SELECT SerienMarker.ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, COUNT(StaffelAuswahl.ID) AS ErlaubteStaffelCount FROM SerienMarker LEFT JOIN StaffelAuswahl ON StaffelAuswahl.ID = SerienMarker.ID LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID GROUP BY Serie ORDER BY Serie")
@@ -4974,10 +4976,15 @@ class serienRecMarker(Screen, HelpableScreen):
 			markerList.append((Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert))
 				
 		cCursor.close()
+		end = time.time()
+		writeLog(_("Serien-Marker Ansicht: Datenbank abfragen [%s]") % str(end - start), True)
 		self['title'].setText(_("Serien Marker - %d/%d Serien vorgemerkt.") % (len(markerList)-numberOfDeactivatedSeries, len(markerList)))
 		if len(markerList) != 0:
 			#markerList.sort()
+			start = time.time()
 			self.chooseMenuList.setList(map(self.buildList, markerList))
+			end = time.time()
+			writeLog(_("Serien-Marker Ansicht: Liste aufbauen [%s]") % str(end - start), True)
 			if self.SelectSerie:
 				try:
 					idx = zip(*markerList)[0].index(self.SelectSerie)
@@ -4987,29 +4994,35 @@ class serienRecMarker(Screen, HelpableScreen):
 			self.loading = False
 			self.getCover()
 
-	def buildList(self, entry):
+	@staticmethod
+	def buildList(entry):
 		(serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert) = entry
 
 		if preferredChannel == 1:
-			SenderText = _("Std.")
+			senderText = "Std."
 			if useAlternativeChannel:
-				SenderText = _("%s, Alt.") % SenderText
+				senderText = "%s, Alt." % senderText
 		else:
-			SenderText = _("Alt.")
+			senderText = "Alt."
 			if useAlternativeChannel:
-				SenderText = _("%s, Std.") % SenderText
+				senderText = "%s, Std." % senderText
 
 		if SerieAktiviert:
-			SerieColor = parseColor('yellow').argb()
+			serieColor = parseColor('yellow').argb()
 		else:
-			SerieColor = parseColor('red').argb()
+			serieColor = parseColor('red').argb()
+
+		senderText = "Sender (%s): %s" % (senderText, sendern)
+		staffelText = "Staffel: %s" % staffeln
+		infoText = "Wdh./Vorl./Nachl.: %s / %s / %s" % (int(AnzahlAufnahmen) - 1, int(Vorlaufzeit), int(Nachlaufzeit))
+		folderText = "Dir: %s" % AufnahmeVerzeichnis
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Staffel: %s") % staffeln),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Sender (%s): %s") % (SenderText, sendern)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Wdh./Vorl./Nachl.: %s / %s / %s") % (int(AnzahlAufnahmen) - 1, int(Vorlaufzeit), int(Nachlaufzeit))),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 49 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, _("Dir: %s") % AufnahmeVerzeichnis)
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffelText),
+			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, senderText),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, infoText),
+			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 49 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText)
 			]
 
 	def keyCheck(self):
@@ -11081,13 +11094,9 @@ class serienRecMain(Screen, HelpableScreen):
 		updateMenuKeys(self)
 		
 	def test(self):
-		now = time.time()
-		for root, dirs, files in os.walk(config.plugins.serienRec.BackupPath.value, topdown=False):
-			for name in dirs:
-				writeLog(_("%s -> %s") % (os.path.join(root, name), str(os.stat(os.path.join(root, name)).st_ctime)), True)
-				if os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
-					writeLog(_("[SerienRecorder] Remove folder: %s") % os.path.join(root, name), True)
-
+		remoteUrl = "http://www.google.de"
+		version = "1.0.0"
+		self.session.open(SerienRecorderUpdateScreen, remoteUrl, version)
 			
 	def getImdblink2(self, data):
 		data = processDownloadedData(data)
@@ -11278,17 +11287,15 @@ class serienRecMain(Screen, HelpableScreen):
 		if not refreshTimer:
 			if config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
 				serienRecCheckForRecording(self.session, False)
-		
-		global UpdateAvailable
-		UpdateAvailable = False
+
 		if config.plugins.serienRec.Autoupdate.value:
 			checkGitHubUpdate(self.session).checkForUpdate()
-			
+
 		if self.isChannelsListEmpty():
 			print "[SerienRecorder] Channellist is empty !"
 			self.session.openWithCallback(self.readWebpage, serienRecMainChannelEdit)
 		else:
-			if config.plugins.serienRec.firstscreen.value == "1":
+			if not showMainScreen:
 				self.session.openWithCallback(self.readWebpage, serienRecMarker)
 			else:
 				self.readWebpage(False)
