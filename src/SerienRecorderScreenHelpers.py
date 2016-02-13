@@ -19,7 +19,7 @@ serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 
 showAllButtons = False
 longButtonText = False
-buttonText_na = _("-----")
+buttonText_na = "-----"
 skinName = "SerienRecorder3.0"
 skin = "%sskins/SR_Skin.xml" % serienRecMainPath
 default_skinName = skinName
@@ -42,7 +42,7 @@ def SelectSkin():
 	global longButtonText
 	longButtonText = False
 	global buttonText_na
-	buttonText_na = _("-----")
+	buttonText_na = "-----"
 
 	global skinName
 	skinName = default_skinName
@@ -86,17 +86,17 @@ def setSkinProperties(self, isLayoutFinshed=True):
 			longButtonText = False
 
 	if longButtonText:
-		self.num_bt_text = ([_("Zeige Log"), buttonText_na, _("Abbrechen")],
-							[buttonText_na, _("Konflikt-Liste"), _("YouTube (lang: Wikipedia)")],
-							[buttonText_na, _("Merkzettel"), ""],
-							[_("Neue Serienstarts"), buttonText_na, _("Hilfe")],
-							[_("Serien Beschreibung"), buttonText_na, _("globale Einstellungen")])
+		self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
+							[buttonText_na, "Konflikt-Liste", "YouTube (lang: Wikipedia)"],
+							[buttonText_na, "Merkzettel", ""],
+							["Neue Serienstarts", buttonText_na, "Hilfe"],
+							["Serien Beschreibung", buttonText_na, "globale Einstellungen"])
 	else:
-		self.num_bt_text = ([_("Zeige Log"), buttonText_na, _("Abbrechen")],
-							[buttonText_na, _("Konflikt-Liste"), _("YouTube/Wikipedia")],
-							[buttonText_na, _("Merkzettel"), ""],
-							[_("Neue Serienstarts"), buttonText_na, _("Hilfe")],
-							[_("Serien Beschreibung"), buttonText_na, _("globale Einstellungen")])
+		self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
+							[buttonText_na, "Konflikt-Liste", "YouTube/Wikipedia"],
+							[buttonText_na, "Merkzettel", ""],
+							["Neue Serienstarts", buttonText_na, "Hilfe"],
+							["Serien Beschreibung", buttonText_na, "globale Einstellungen"])
 
 	if showAllButtons:
 		Skin1_Settings(self)
@@ -117,7 +117,7 @@ def InitSkin(self):
 		except:
 			showAllButtons = False
 			longButtonText = False
-			buttonText_na = _("-----")
+			buttonText_na = "-----"
 
 			skinName = default_skinName
 			skin = default_skin
@@ -151,7 +151,7 @@ def InitSkin(self):
 	self['text_red'] = Label("")
 	self['text_green'] = Label("")
 	self['text_yellow'] = Label("")
-	self['text_blue'] = Label(_(""))
+	self['text_blue'] = Label("")
 
 	self['text_ok'] = Label("")
 	self['text_exit'] = Label("")
@@ -207,7 +207,7 @@ def InitSkin(self):
 	self["video"] = VideoWindow(decoder=0, fb_width=desktopSize.width(), fb_height=desktopSize.height())
 
 	self['title'] = Label("")
-	self['version'] = Label(_("SerienRecorder v%s") % config.plugins.serienRec.showversion.value)
+	self['version'] = Label("SerienRecorder v%s" % config.plugins.serienRec.showversion.value)
 	self['headline'] = Label("")
 
 	setSkinProperties(self, False)

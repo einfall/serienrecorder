@@ -112,7 +112,7 @@ def processDownloadedData(data):
 	# except:
 	# 	from StringIO import StringIO
 	#
-	# #writeLog(_("[SerienRecorder] Downloaded data size = %d bytes") % (len(data)))
+	# #writeLog("[SerienRecorder] Downloaded data size = %d bytes" % (len(data)))
 	# compressedstream = StringIO(data)
 	# gzipper = GzipFile(fileobj=compressedstream)
 	# try:
@@ -123,7 +123,7 @@ def processDownloadedData(data):
 	# 	gzipper.close()
 	# 	compressedstream.close()
 	#
-	# #writeLog(_("[SerienRecorder] Uncompressed data size = %d bytes") % (len(data)))
+	# #writeLog("[SerienRecorder] Uncompressed data size = %d bytes" % (len(data)))
 	return data
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -321,8 +321,8 @@ class STBHelpers:
 	def getImageVersionString(cls):
 		from Components.About import about
 
-		creator = _("n/a")
-		version = _("n/a")
+		creator = "n/a"
+		version = "n/a"
 
 		if hasattr(about,'getVTiVersionString'):
 			creator = about.getVTiVersionString()

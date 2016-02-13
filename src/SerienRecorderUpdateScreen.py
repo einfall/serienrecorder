@@ -194,7 +194,7 @@ class SerienRecorderUpdateScreen(Screen):
 		self.status.setText("")
 
 		if fileExists(self.file_name):
-			self['srlog'].setText(_("Starte Update, bitte warten..."))
+			self['srlog'].setText("Starte Update, bitte warten...")
 			if isDreamboxOS:
 				self.stdoutAvail_conn = self.container.stdoutAvail.connect(self.srlog)
 				self.appClosed_conn = self.container.appClosed.connect(self.finishedPluginUpdate)
@@ -209,14 +209,14 @@ class SerienRecorderUpdateScreen(Screen):
 	def downloadError(self):
 		self.stopActivityTimer()
 		writeErrorLog("   SerienRecorderUpdateScreen():\n   Url: %s" % self.target)
-		self.session.open(MessageBox, _("[SerienRecorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen."), MessageBox.TYPE_INFO)
+		self.session.open(MessageBox, "[SerienRecorder]\nDer Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen.", MessageBox.TYPE_INFO)
 		self.close()
 
 	def finishedPluginUpdate(self,retval):
 		self.stopActivityTimer()
 		if fileExists(self.file_name):
 			os.remove(self.file_name)
-		self.session.openWithCallback(self.restartGUI, MessageBox, _("SerienRecorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?"), MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.restartGUI, MessageBox, "SerienRecorder wurde erfolgreich aktualisiert!\nWollen Sie jetzt Enigma2 GUI neu starten?", MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, answer):
 		config.plugins.serienRec.showStartupInfoText.value = True

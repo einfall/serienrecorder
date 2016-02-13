@@ -35,23 +35,23 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		self.chooseMenuList_popup2 = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok"       : (self.keyOK, _("Popup-Fenster zur Auswahl des STB-Channels öffnen")),
-			"cancel"   : (self.keyCancel, _("zurück zur Serienplaner-Ansicht")),
-			"red"	   : (self.keyRed, _("umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert")),
-			"red_long" : (self.keyRedLong, _("ausgewählten Sender aus der Channelliste endgültig löschen")),
-			"green"    : (self.keyGreen, _("Sender-Zuordnung aktualisieren")),
-			"menu"     : (self.channelSetup, _("Menü für Sender-Einstellungen öffnen")),
-			"menu_long": (self.recSetup, _("Menü für globale Einstellungen öffnen")),
-			"left"     : (self.keyLeft, _("zur vorherigen Seite blättern")),
-			"right"    : (self.keyRight, _("zur nächsten Seite blättern")),
-			"up"       : (self.keyUp, _("eine Zeile nach oben")),
-			"down"     : (self.keyDown, _("eine Zeile nach unten")),
-			"startTeletext"       : (self.youtubeSearch, _("Trailer zum ausgewählten Sender auf YouTube suchen")),
-			"startTeletext_long"  : (self.WikipediaSearch, _("Informationen zum ausgewählten Sender auf Wikipedia suchen")),
-			"0"		   : (self.readLogFile, _("Log-File des letzten Suchlaufs anzeigen")),
-			"3"		   : (self.showProposalDB, _("Liste der Serien/Staffel-Starts anzeigen")),
-			"6"		   : (self.showConflicts, _("Liste der Timer-Konflikte anzeigen")),
-			"7"		   : (self.showWishlist, _("Wunschliste (vorgemerkte Folgen) anzeigen")),
+			"ok"       : (self.keyOK, "Popup-Fenster zur Auswahl des STB-Channels öffnen"),
+			"cancel"   : (self.keyCancel, "zurück zur Serienplaner-Ansicht"),
+			"red"	   : (self.keyRed, "umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert"),
+			"red_long" : (self.keyRedLong, "ausgewählten Sender aus der Channelliste endgültig löschen"),
+			"green"    : (self.keyGreen, "Sender-Zuordnung aktualisieren"),
+			"menu"     : (self.channelSetup, "Menü für Sender-Einstellungen öffnen"),
+			"menu_long": (self.recSetup, "Menü für globale Einstellungen öffnen"),
+			"left"     : (self.keyLeft, "zur vorherigen Seite blättern"),
+			"right"    : (self.keyRight, "zur nächsten Seite blättern"),
+			"up"       : (self.keyUp, "eine Zeile nach oben"),
+			"down"     : (self.keyDown, "eine Zeile nach unten"),
+			"startTeletext"       : (self.youtubeSearch, "Trailer zum ausgewählten Sender auf YouTube suchen"),
+			"startTeletext_long"  : (self.WikipediaSearch, "Informationen zum ausgewählten Sender auf Wikipedia suchen"),
+			"0"		   : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
+			"3"		   : (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
+			"6"		   : (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
+			"7"		   : (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -88,16 +88,16 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 	def setSkinProperties(self):
 		setSkinProperties(self)
 
-		self['text_green'].setText(_("Aktualisieren"))
-		self['text_ok'].setText(_("Sender auswählen"))
+		self['text_green'].setText("Aktualisieren")
+		self['text_ok'].setText("Sender auswählen")
 
 		self.num_bt_text[4][0] = buttonText_na
 		if longButtonText:
-			self['text_red'].setText(_("An/Aus (lang: Löschen)"))
-			self.num_bt_text[4][2] = _("Setup Sender (lang: global)")
+			self['text_red'].setText("An/Aus (lang: Löschen)")
+			self.num_bt_text[4][2] = "Setup Sender (lang: global)"
 		else:
-			self['text_red'].setText(_("(De)aktivieren/Löschen"))
-			self.num_bt_text[4][2] = _("Setup Sender/global")
+			self['text_red'].setText("(De)aktivieren/Löschen")
+			self.num_bt_text[4][2] = "Setup Sender/global"
 
 		self.displayTimer = None
 		if showAllButtons:
@@ -138,11 +138,11 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		self['popup_list2'] = self.chooseMenuList_popup2
 		self['popup_list2'].hide()
 
-		self['title'].setText(_("Lade Web-Channel / STB-Channels..."))
+		self['title'].setText("Lade Web-Channel / STB-Channels...")
 
-		self['Web_Channel'].setText(_("Web-Channel"))
-		self['STB_Channel'].setText(_("STB-Channel"))
-		self['alt_STB_Channel'].setText(_("alt. STB-Channel"))
+		self['Web_Channel'].setText("Web-Channel")
+		self['STB_Channel'].setText("STB-Channel")
+		self['alt_STB_Channel'].setText("alt. STB-Channel")
 
 		self['Web_Channel'].show()
 		self['STB_Channel'].show()
@@ -196,7 +196,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			from Plugins.Extensions.EPGTranslator.plugin import searchYouTube
 			self.session.open(searchYouTube, sender_name)
 		else:
-			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
 
 	def WikipediaSearch(self):
 		if SerienRecorder.WikipediaInstalled:
@@ -208,7 +208,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			from Plugins.Extensions.Wikipedia.plugin import wikiSearch
 			self.session.open(wikiSearch, sender_name)
 		else:
-			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
 
 	def showManual(self):
 		if SerienRecorder.OperaBrowserInstalled:
@@ -216,7 +216,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		elif SerienRecorder.DMMBrowserInstalled:
 			self.session.open(SerienRecorder.Browser, True, SerienRecorder.SR_OperatingManual)
 		else:
-			self.session.open(MessageBox, _("Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein.") % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
 
 	def showAbout(self):
 		self.session.open(serienRecAboutScreen)
@@ -246,7 +246,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self.serienRecChlist.append((webSender, servicename, altservicename, status))
 
 		if len(self.serienRecChlist) != 0:
-			self['title'].setText(_("Sender zuordnen"))
+			self['title'].setText("Sender zuordnen")
 			self.chooseMenuList.setList(map(self.buildList, self.serienRecChlist))
 		else:
 			print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
@@ -254,7 +254,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 	def readWebChannels(self):
 		print "[SerienRecorder] call webpage.."
-		self['title'].setText(_("Lade Web-Channels..."))
+		self['title'].setText("Lade Web-Channels...")
 
 		#from WebChannels import WebChannels
 		#WebChannels(self.createWebChannels, self.dataError).request()
@@ -269,7 +269,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			print web_chlist
 			self.serienRecChlist = []
 			if len(web_chlist) != 0:
-				self['title'].setText(_("erstelle Channels-List..."))
+				self['title'].setText("erstelle Channels-List...")
 				cCursor = SerienRecorder.dbSerRec.cursor()
 				sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)"
 				for webSender in web_chlist:
@@ -306,7 +306,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		else:
 			print "[SerienRecorder] get webChannel error.."
 
-		self['title'].setText(_("Web-Channel / STB-Channels."))
+		self['title'].setText("Web-Channel / STB-Channels.")
 
 	@staticmethod
 	def buildList(entry):
@@ -355,7 +355,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 						pass
 			cCursor.close()
 			self['popup_list'].moveToIndex(idx)
-			self['title'].setText(_("Standard STB-Channel für %s:") % self['list'].getCurrent()[0][0])
+			self['title'].setText("Standard STB-Channel für %s:" % self['list'].getCurrent()[0][0])
 		elif config.plugins.serienRec.selectBouquets.value:
 			if self.modus == "popup_list":
 				self.modus = "popup_list2"
@@ -378,7 +378,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 							pass
 				cCursor.close()
 				self['popup_list2'].moveToIndex(idx)
-				self['title'].setText(_("alternativer STB-Channels für %s:") % self['list'].getCurrent()[0][0])
+				self['title'].setText("alternativer STB-Channels für %s:" % self['list'].getCurrent()[0][0])
 			else:
 				self.modus = "list"
 				self['popup_list'].hide()
@@ -411,7 +411,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				runAutocheckAtExit = True
 				SerienRecorder.dbSerRec.commit()
 				cCursor.close()
-				self['title'].setText(_("Sender zuordnen"))
+				self['title'].setText("Sender zuordnen")
 				self.showChannels()
 		else:
 			self.modus = "list"
@@ -441,7 +441,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			runAutocheckAtExit = True
 			SerienRecorder.dbSerRec.commit()
 			cCursor.close()
-			self['title'].setText(_("Sender zuordnen"))
+			self['title'].setText("Sender zuordnen")
 			self.showChannels()
 
 	def keyRed(self):
@@ -466,13 +466,13 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 					print "[SerienRecorder] change to:", webSender, servicename, serviceref, "1"
 					self['title'].instance.setForegroundColor(parseColor("red"))
 					self['title'].setText("")
-					self['title'].setText(_("Sender '- %s -' wurde aktiviert.") % webSender)
+					self['title'].setText("Sender '- %s -' wurde aktiviert." % webSender)
 				else:
 					cCursor.execute(sql, (0, chlistSender.lower()))
 					print "[SerienRecorder] change to:",webSender, servicename, serviceref, "0"
 					self['title'].instance.setForegroundColor(parseColor("red"))
 					self['title'].setText("")
-					self['title'].setText(_("Sender '- %s -' wurde deaktiviert.") % webSender)
+					self['title'].setText("Sender '- %s -' wurde deaktiviert." % webSender)
 				self.changesMade = True
 				runAutocheckAtExit = True
 				SerienRecorder.dbSerRec.commit()
@@ -482,7 +482,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self.showChannels()
 
 	def keyGreen(self):
-		self.session.openWithCallback(self.channelReset, MessageBox, _("Sender-Liste zurücksetzen ?"), MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.channelReset, MessageBox, "Sender-Liste zurücksetzen ?", MessageBox.TYPE_YESNO)
 
 	def channelReset(self, answer):
 		if answer:
@@ -509,7 +509,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			if row:
 				print "gefunden."
 				if config.plugins.serienRec.confirmOnDelete.value:
-					self.session.openWithCallback(self.channelDelete, MessageBox, _("Soll '%s' wirklich entfernt werden?") % self.selected_sender, MessageBox.TYPE_YESNO, default = False)
+					self.session.openWithCallback(self.channelDelete, MessageBox, "Soll '%s' wirklich entfernt werden?" % self.selected_sender, MessageBox.TYPE_YESNO, default = False)
 				else:
 					self.channelDelete(True)
 			cCursor.close()
@@ -525,7 +525,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		cCursor.close()
 		self.changesMade = True
 		self['title'].instance.setForegroundColor(parseColor("red"))
-		self['title'].setText(_("Sender '- %s -' entfernt.") % self.selected_sender)
+		self['title'].setText("Sender '- %s -' entfernt." % self.selected_sender)
 		self.showChannels()
 
 	def keyLeft(self):
