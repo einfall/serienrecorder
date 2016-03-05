@@ -45,7 +45,7 @@ class checkGitHubUpdate:
 		self.response = json.load(data)
 		latestVersion = self.response[0]['name'][1:]
 
-		if config.plugins.serienRec.updateType.value == "0" and self.checkIfBetaVersion(latestVersion): # Stable
+		if self.checkIfBetaVersion(latestVersion): # Stable
 			latestVersion = self.searchLatestStable()
 
 		remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")

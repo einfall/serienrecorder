@@ -56,29 +56,23 @@ def writeErrorLog(text):
 		writeLogFile.write("%s: %s\n----------------------------------------------------------\n\n" % (time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime()), text))
 		writeLogFile.close()
 
-def decodeISO8859_1(txt, doReplaces=False):
+def decodeISO8859_1(txt, replace=False):
 	txt = unicode(txt, 'ISO-8859-1')
 	txt = txt.encode('utf-8')
-	if doReplaces:
-		txt = txt.replace('...','').replace('..','').replace(':','')
-		# &apos;, &quot;, &amp;, &lt;, and &gt;
-		txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
+	if replace:
+		txt = doReplaces(txt)
 	return txt
 
-def decodeCP1252(txt, doReplaces=False):
+def decodeCP1252(txt, replace=False):
 	txt = unicode(txt, 'cp1252')
 	txt = txt.encode('utf-8')
-	if doReplaces:
-		txt = txt.replace('...','').replace('..','').replace(':','')
-		# &apos;, &quot;, &amp;, &lt;, and &gt;
-		txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
+	if replace:
+		txt = doReplaces(txt)
 	return txt
 
 def doReplaces(txt):
-	if doReplaces:
-		txt = txt.replace('...','').replace('..','').replace(':','')
-		# &apos;, &quot;, &amp;, &lt;, and &gt;
-		txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
+	txt = txt.replace('...','').replace('..','').replace(':','')
+	txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
 	return txt
 
 def getUserAgent():
@@ -139,7 +133,7 @@ class TimeHelpers:
 	@classmethod
 	def getNextDayUnixtime(cls, minutes, hour, day, month):
 		now = datetime.datetime.now()
-		if int(month) < now.month:
+		if int(month) < now.month and now.month is 12:
 			date = datetime.datetime(int(now.year) + 1,int(month),int(day),int(hour),int(minutes))
 		else:
 			date = datetime.datetime(int(now.year),int(month),int(day),int(hour),int(minutes))
@@ -149,7 +143,7 @@ class TimeHelpers:
 	@classmethod
 	def getUnixTimeAll(cls, minutes, hour, day, month):
 		now = datetime.datetime.now()
-		if int(month) < now.month:
+		if int(month) < now.month and now.month is 12:
 			return datetime.datetime(int(now.year) + 1, int(month), int(day), int(hour), int(minutes)).strftime("%s")
 		else:
 			return datetime.datetime(int(now.year), int(month), int(day), int(hour), int(minutes)).strftime("%s")
@@ -239,7 +233,6 @@ class STBHelpers:
 
 		if not BouquetName:
 			for bouquet in tvbouquets:
-				bouquetlist = []
 				bouquetlist = cls.getServiceList(bouquet[0])
 				for (serviceref, servicename) in bouquetlist:
 					playable = not (eServiceReference(serviceref).flags & mask)
@@ -248,7 +241,6 @@ class STBHelpers:
 		else:
 			for bouquet in tvbouquets:
 				if bouquet[1] == BouquetName:
-					bouquetlist = []
 					bouquetlist = cls.getServiceList(bouquet[0])
 					for (serviceref, servicename) in bouquetlist:
 						playable = not (eServiceReference(serviceref).flags & mask)

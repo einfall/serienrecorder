@@ -67,3 +67,8 @@ class SeriesServer:
 	def doGetWebChannels(self):
 		return self.server.sp.cache.getWebChannels()
 
+	def doGetPlanerData(self, planertype, offset, webChannels):
+		return self.server.sp.cache.getPlanerData(int(planertype), int(offset), webChannels)
+
+	def doGetEpisodes(self, seriesID, page):
+		return self.server.sp.cache.getEpisodes(int(seriesID), int(page))
