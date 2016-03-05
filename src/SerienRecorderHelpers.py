@@ -346,7 +346,7 @@ class STBHelpers:
 class PicLoader:
 	def __init__(self, width, height, sc=None):
 		self.picload = ePicLoad()
-		if(not sc):
+		if not sc:
 			sc = AVSwitch().getFramebufferScale()
 		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
 

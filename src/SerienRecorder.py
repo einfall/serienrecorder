@@ -3644,6 +3644,7 @@ class serienRecCheckForRecording():
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
 				print "' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
 				writeLog("' %s ' - Timer konnte nicht angelegt werden%s -> %s %s @ %s" % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+				writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"]), True)
 			else:
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
 				print "' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
@@ -10680,7 +10681,7 @@ class serienRecMain(Screen, HelpableScreen):
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
-		self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
+		self.picloader = None
 		self.ErrorMsg = "unbekannt"
 		self.skin = None
 		self.chooseMenuList = None
@@ -11215,6 +11216,7 @@ class serienRecMain(Screen, HelpableScreen):
 		
 		if config.plugins.serienRec.showPicons.value:
 			if config.plugins.serienRec.piconPath.value == "Original":
+				self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
 				picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, sender))
 				self.picloader.destroy()
 			else:
