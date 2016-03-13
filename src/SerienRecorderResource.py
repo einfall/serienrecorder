@@ -193,22 +193,23 @@ class ApiStbChannelsResource(ApiBaseResource):
 
 class ApiWebChannelsResource(ApiBackgroundingResource):
 	def renderBackground(self, req):
-		from WebChannels import WebChannels
-		data = []
-		results = WebChannels().request_and_return()
-		print "ApiWebChannelsResource results"
-		print results
-		if results:
-			for channel in results:
-				#(webChannel, stbChannel, stbRef, status) = channel
-				#data.append( {
-				#		'webChannel': webChannel,
-				#		'stbChannel': stbChannel,
-				#		'stbRef': stbRef,
-				#		'status': status
-				data.append( {
-						'webChannel': channel
-					} )
-		print "ApiWebChannelsResource data"
-		print data
-		return self.returnResult( req, True, data )
+		print "Not implemented"
+		# from WebChannels import WebChannels
+		# data = []
+		# results = WebChannels().request_and_return()
+		# print "ApiWebChannelsResource results"
+		# print results
+		# if results:
+		# 	for channel in results:
+		# 		#(webChannel, stbChannel, stbRef, status) = channel
+		# 		#data.append( {
+		# 		#		'webChannel': webChannel,
+		# 		#		'stbChannel': stbChannel,
+		# 		#		'stbRef': stbRef,
+		# 		#		'status': status
+		# 		data.append( {
+		# 				'webChannel': channel
+		# 			} )
+		# print "ApiWebChannelsResource data"
+		# print data
+		# return self.returnResult( req, True, data )

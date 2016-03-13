@@ -660,15 +660,21 @@ def getMargins(serien_name, webSender):
 	global dbSerRec
 	cCursor = dbSerRec.cursor()
 	#writeLog("getMargins: ' %s ' @ ' %s " % (serien_name, webSender))
-	cCursor.execute("SELECT MAX(IFNULL(SerienMarker.Vorlaufzeit, 0), IFNULL(Channels.Vorlaufzeit, 0)), MAX(IFNULL(SerienMarker.Nachlaufzeit, 0), IFNULL(Channels.Nachlaufzeit, 0)) FROM SerienMarker, Channels WHERE LOWER(SerienMarker.Serie)=? AND LOWER(Channels.WebChannel)=?", (serien_name.lower(), webSender.lower()))
+	cCursor.execute("SELECT MAX(IFNULL(SerienMarker.Vorlaufzeit, -1), IFNULL(Channels.Vorlaufzeit, -1)), MAX(IFNULL(SerienMarker.Nachlaufzeit, -1), IFNULL(Channels.Nachlaufzeit, -1)) FROM SerienMarker, Channels WHERE LOWER(SerienMarker.Serie)=? AND LOWER(Channels.WebChannel)=?", (serien_name.lower(), webSender.lower()))
 	data = cCursor.fetchone()
 	if not data:
 		margin_before = config.plugins.serienRec.margin_before.value
 		margin_after = config.plugins.serienRec.margin_after.value
 	else:
 		(margin_before, margin_after) = data
-	cCursor.close()
 
+	if margin_before is None or margin_before is -1:
+		margin_before = config.plugins.serienRec.margin_before.value
+
+	if margin_after is None or margin_after is -1:
+		margin_after = config.plugins.serienRec.margin_after.value
+
+	cCursor.close()
 	return margin_before, margin_after
 
 
@@ -2638,10 +2644,13 @@ class serienRecCheckForRecording():
 			for row in cCursor:
 				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
 
-				refreshTitle = False
 				new_serien_title = serien_title
 				new_serien_time = 0
-				cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
+				if str(staffel) is 'S' and str(episode) is '0':
+					# Something went wrong at Wunschliste - try to find real season and episode by title
+					cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=? AND Title=?", (serien_name, staffel, episode, serien_title))
+				else:
+					cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
 				tmpRow = cCursorTmp.fetchone()
 				if tmpRow:
 					(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = tmpRow
@@ -2672,22 +2681,22 @@ class serienRecCheckForRecording():
 						print "[SerienRecorder] try to modify enigma2 Timer:", title, serien_time
 
 						timerUpdated = False
-						if str(staffel) is 'S' and str(episode) is '0':
+						if str(new_staffel) is 'S' and str(new_episode) is '0':
 							writeLog("   ' %s ' - Timer kann nicht aktualisiert werden @ %s" % (title, webChannel), True)
 							break
 
 						try:
 							# suche in aktivierten Timern
-							timerUpdated = self.updateTimer(recordHandler.timer_list, cTimer, eit, end_unixtime, episode,
+							timerUpdated = self.updateTimer(recordHandler.timer_list, cTimer, eit, end_unixtime, new_episode,
 							                              new_serien_title, serien_name, serien_time,
-							                              staffel, start_unixtime, stbRef, title,
+							                              new_staffel, start_unixtime, stbRef, title,
 							                              webChannel)
 
 							if not timerUpdated:
 								# suche in deaktivierten Timern
-								timerUpdated = self.updateTimer(recordHandler.processed_timers, cTimer, eit, end_unixtime, episode,
+								timerUpdated = self.updateTimer(recordHandler.processed_timers, cTimer, eit, end_unixtime, new_episode,
 							                              new_serien_title, serien_name, serien_time,
-							                              staffel, start_unixtime, stbRef, title,
+							                              new_staffel, start_unixtime, stbRef, title,
 							                              webChannel)
 						except Exception:
 							print "[SerienRecorder] Modifying enigma2 Timer failed:", title, serien_time
@@ -2740,7 +2749,7 @@ class serienRecCheckForRecording():
 
 				if timer.name != timer_name:
 					timer.name = timer_name
-					updateTimerName = True
+					updateName = True
 
 				# Timerbeschreibung
 				updateDescription = False
@@ -3197,6 +3206,7 @@ class serienRecCheckForRecording():
 		return result
 
 	def askForDSB(self):
+		writeLog("askForDSB")
 		if not self.manuell:
 			dbSerRec.close()
 			if (config.plugins.serienRec.updateInterval.value == 24) and (config.plugins.serienRec.wakeUpDSB.value or config.plugins.serienRec.autochecktype.value == "2") and int(config.plugins.serienRec.afterAutocheck.value):
@@ -3586,7 +3596,7 @@ class serienRecCheckForRecording():
 		show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 		if int(start_unixtime) > int(future_time):
 			show_future = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(future_time)))
-			writeLogFilter("timeLimit", "' %s ' - Timer wird später angelegt -> Sendetermin: %s - Erlaubte Zeitspanne bis %s" % (label_serie, show_start, show_future))
+			writeLogFilter("timeLimit", "' %s ' - Timer wird evtl. später angelegt -> Sendetermin: %s - Erlaubte Zeitspanne bis %s" % (label_serie, show_start, show_future))
 			return True
 		if int(current_time) > int(start_unixtime):
 			show_current = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(current_time)))
@@ -3801,23 +3811,6 @@ class serienRecCheckForRecording():
 		autoCheckFinished = True
 		
 		self.askForDSB()
-		self.close()
-
-	def dataErrorNewStaffel(self, error, url=None):
-		print "[SerienRecorder] Serien-Planer Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
-		writeLog("Serien-Planer Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error, True)
-		if url:
-			writeErrorLog("   serienRecCheckForRecording(): %s\n   SerienPlaner-Url: %s" % (error, url))
-		else:
-			writeErrorLog("   serienRecCheckForRecording(): %s\n   createNewMarker()" % error)
-		
-		if config.plugins.serienRec.longLogFileName.value:
-			shutil.copy(logFile, logFileSave)
-		
-		global autoCheckFinished
-		autoCheckFinished = True
-		
-		#self.askForDSB()
 		self.close()
 
 class serienRecTimer(Screen, HelpableScreen):
@@ -10759,7 +10752,7 @@ class serienRecMain(Screen, HelpableScreen):
 			showMainScreen = False
 
 		self.pRegional = 0
-		self.pPaytv = 1		
+		self.pPaytv = 1
 		self.pPrime = 1
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
@@ -10776,15 +10769,10 @@ class serienRecMain(Screen, HelpableScreen):
 		else:
 			readPlanerData()
 
-		# global termineCache
-		# if not len(termineCache):
-		# 	readTermineData()
-		
-		#config.plugins.serienRec.showStartupInfoText.value = True
-		#config.plugins.serienRec.showStartupInfoText.save()
-		#configfile.save()
+		self.onLayoutFinish.append(self.setSkinProperties)
 
 		self.onFirstExecBegin.append(self.showSplashScreen)
+		self.onFirstExecBegin.append(self.checkForUpdate)
 
 		if config.plugins.serienRec.showStartupInfoText.value:
 			global InfoFile
@@ -10795,13 +10783,21 @@ class serienRecMain(Screen, HelpableScreen):
 		else:
 			self.onFirstExecBegin.append(self.startScreen)
 		self.onClose.append(self.__onClose)
-		self.onLayoutFinish.append(self.setSkinProperties)
 
 	def showInfoText(self):
 		self.session.openWithCallback(self.startScreen, ShowStartupInfo)
 
 	def showSplashScreen(self):
-		self.session.openWithCallback(self.startScreen, ShowSplashScreen, config.plugins.serienRec.showversion.value)
+		self.session.openWithCallback(self.checkForUpdate, ShowSplashScreen, config.plugins.serienRec.showversion.value)
+
+	def checkForUpdate(self):
+		writeLog("checkForUpdate", True)
+		if config.plugins.serienRec.Autoupdate.value:
+			writeLog("AutoUpdate is enabled", True)
+			self.session.openWithCallback(self.startScreen, checkGitHubUpdateScreen)
+			#checkGitHubUpdate(self.session).checkForUpdate()
+		else:
+			self.startScreen()
 
 	def callHelpAction(self, *args):
 		HelpableScreen.callHelpAction(self, *args)
@@ -11043,9 +11039,6 @@ class serienRecMain(Screen, HelpableScreen):
 		if not refreshTimer:
 			if config.plugins.serienRec.update.value or config.plugins.serienRec.timeUpdate.value:
 				serienRecCheckForRecording(self.session, False)
-
-		if config.plugins.serienRec.Autoupdate.value:
-			checkGitHubUpdate(self.session).checkForUpdate()
 
 		if self.isChannelsListEmpty():
 			print "[SerienRecorder] Channellist is empty !"
@@ -11301,7 +11294,7 @@ class serienRecMain(Screen, HelpableScreen):
 			config.plugins.serienRec.screenplaner.save()
 			configfile.save()
 			self.chooseMenuList.setList(map(self.buildList, []))
-			self.readWebpage(False)
+			self.readWebpage(True)
 
 	def getCover(self):
 		if self.loading:
@@ -11476,9 +11469,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self.readWebpage(False)
 
 	def __onClose(self):
-		# if config.plugins.serienRec.planerCacheEnabled.value:
-		# 	writePlanerData()
-		# 	writeTermineData()
+		writeLog("onClose", True)
 		if self.displayTimer:
 			self.displayTimer.stop()
 			self.displayTimer = None

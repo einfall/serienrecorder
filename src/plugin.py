@@ -7,11 +7,15 @@ import SearchEvents
 import SearchSerie
 import SerienRecorderResource
 import SerienRecorderHelpers
-import WebChannels
+import SerienRecorderSeriesServer
+import SerienRecorderScreenHelpers
 import SerienRecorderUpdateScreen
+import SerienRecorderAboutScreen
+import SerienRecorderChannelScreen
+import SerienRecorderSplashScreen
+import SerienRecorderStartupInfoScreen
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
-
 
 def SRstart(session, **kwargs):
 
@@ -19,9 +23,14 @@ def SRstart(session, **kwargs):
 	                  ('SearchEvents', SearchEvents),
 	                  ('SearchSerie', SearchSerie),
 	                  ('SerienRecorderResource', SerienRecorderResource),
-	                  ('WebChannels', WebChannels),
+	                  ('SerienRecorderSeriesServer', SerienRecorderSeriesServer),
+	                  ('SerienRecorderScreenHelpers', SerienRecorderScreenHelpers),
 	                  ('SerienRecorderHelpers', SerienRecorderHelpers),
-	                  ('SerienRecorderUpdateScreen', SerienRecorderUpdateScreen)):
+	                  ('SerienRecorderUpdateScreen', SerienRecorderUpdateScreen),
+	                  ('SerienRecorderAboutScreen', SerienRecorderAboutScreen),
+	                  ('SerienRecorderChannelScreen', SerienRecorderChannelScreen),
+	                  ('SerienRecorderSplashScreen', SerienRecorderSplashScreen),
+	                  ('SerienRecorderStartupInfoScreen', SerienRecorderStartupInfoScreen)):
 		if fileExists(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0])):
 			if (int(os.path.getmtime(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0]))) < int(
 					os.path.getmtime(os.path.join(serienRecMainPath, "%s.py" % file_name[0])))):

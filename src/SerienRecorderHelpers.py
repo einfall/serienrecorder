@@ -27,7 +27,8 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.3.0-beta'
+#SRVERSION = '3.3.0-beta'
+SRVERSION = '3.2.4'
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -371,8 +372,9 @@ class imdbVideo():
 	def __init__(self):
 		print "imdbvideos.."
 
-	def videolist(self, url):
-		url = url + "videogallery"
+	@staticmethod
+	def videolist(url):
+		url += "videogallery"
 		print url
 		headers = { 'User-Agent' : 'Mozilla/5.0' }
 		req = urllib2.Request(url, None, headers)
@@ -389,7 +391,8 @@ class imdbVideo():
 		else:
 			return None
 
-	def stream_url(self, url):
+	@staticmethod
+	def stream_url(url):
 		headers = { 'User-Agent' : 'Mozilla/5.0' }
 		req = urllib2.Request(url, None, headers)
 		data = urllib2.urlopen(req).read()
@@ -399,5 +402,6 @@ class imdbVideo():
 		else:
 			return None
 
-	def dataError(self, error):
+	@staticmethod
+	def dataError(error):
 		return None

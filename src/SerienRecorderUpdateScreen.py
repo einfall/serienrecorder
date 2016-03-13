@@ -11,7 +11,10 @@ from Tools import Notifications
 from Tools.Directories import fileExists
 
 from Components.Label import Label
+from Components.ActionMap import ActionMap
+from Components.ScrollLabel import ScrollLabel
 from Components.config import config, configfile
+from Components.Slider import Slider
 
 from enigma import getDesktop, eTimer, eConsoleAppContainer
 from twisted.web.client import getPage, downloadPage
@@ -25,6 +28,116 @@ except ImportError:
 	import json
 
 from SerienRecorderHelpers import *
+
+class checkGitHubUpdateScreen(Screen):
+	DESKTOP_WIDTH  = getDesktop(0).size().width()
+	DESKTOP_HEIGHT = getDesktop(0).size().height()
+
+	BUTTON_X = DESKTOP_WIDTH / 2
+	BUTTON_Y = DESKTOP_HEIGHT - 220
+
+	skin = """
+		<screen name="SerienRecorderUpdateCheck" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20" flags="wfBorder">
+			<widget name="headline" position="20,20" size="600,40" foregroundColor="red" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="srlog" position="5,100" size="%d,%d" font="Regular;21" valign="left" halign="top" foregroundColor="white" transparent="1" zPosition="5"/>
+			<widget name="activityslider" position="5,%d" size="%d,25" borderWidth="1" transparent="1" zPosition="4"/>
+			<widget name="status" position="5,%d" size="%d,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
+			<widget name="separator" position="%d,%d" size="%d,5" backgroundColor="#00000f64" zPosition="6" />
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="text_ok" position="%d,%d" size="%d,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
+			<widget name="text_exit" position="%d,%d" size="%d,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
+		</screen>""" % (50, 100, DESKTOP_WIDTH - 100, DESKTOP_HEIGHT - 180, _("SerienRecorder Update"),
+						DESKTOP_WIDTH - 110, DESKTOP_HEIGHT - 420,
+						DESKTOP_HEIGHT - 400, DESKTOP_WIDTH - 110,
+						DESKTOP_HEIGHT - 375, DESKTOP_WIDTH - 110,
+						5, BUTTON_Y - 20, DESKTOP_WIDTH - 110,
+						BUTTON_X + 50, BUTTON_Y,
+						BUTTON_X + 100, BUTTON_Y, BUTTON_X - 100,
+						50, BUTTON_Y,
+						100, BUTTON_Y, BUTTON_X - 100,
+						)
+
+	def __init__(self, session):
+		self.session = session
+		self.serienRecInfoFilePath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/StartupInfoText"
+
+		Screen.__init__(self, session)
+
+		self["actions"] = ActionMap(["SerienRecorderActions",], {
+			"ok"    : self.keyOK,
+			"cancel": self.keyCancel,
+			"left"  : self.keyLeft,
+			"right" : self.keyRight,
+			"up"    : self.keyUp,
+			"down"  : self.keyDown,
+		}, -1)
+
+		self['headline'] = Label()
+		self['srlog'] = ScrollLabel()
+		self['status'] = Label(_("Preparing... Please wait"))
+		self['activityslider'] = Slider(0, 100)
+		self['separator'] = Label()
+		self['text_ok'] = Label("Jetzt herunterladen und installieren")
+		self['text_exit'] = Label("Später aktualisieren")
+
+		self.onLayoutFinish.append(self.__onLayoutFinished)
+
+	def __onLayoutFinished(self):
+
+		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
+		try:
+			conn.request(url="/repos/einfall/serienrecorder/releases", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
+			rawData = conn.getresponse()
+			data = json.load(rawData)
+			latestRelease = data[0]
+			latestVersion = latestRelease['tag_name'][1:]
+
+			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
+			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
+			remoteversion.extend((max([len(remoteversion),len(version)])-len(remoteversion)) * '0')
+			remoteversion = map(lambda x: int(x), remoteversion)
+			version.extend((max([len(remoteversion),len(version)])-len(version)) * '0')
+			version = map(lambda x: int(x), version)
+
+			if remoteversion > version:
+				self['headline'].setText("Update verfügbar: " + latestRelease['name'])
+			else:
+				self.close()
+		except:
+			self.close()
+
+
+		# sl = self['srlog']
+		# sl.instance.setZPosition(5)
+		#
+		# text = ""
+		# if fileExists(self.serienRecInfoFilePath):
+		# 	readFile = open(self.serienRecInfoFilePath, "r")
+		# 	text = readFile.read()
+		# 	readFile.close()
+		# self['srlog'].setText(text)
+
+	def keyLeft(self):
+		self['srlog'].pageUp()
+
+	def keyRight(self):
+		self['srlog'].pageDown()
+
+	def keyDown(self):
+		self['srlog'].pageDown()
+
+	def keyUp(self):
+		self['srlog'].pageUp()
+
+	def keyOK(self):
+		#config.plugins.serienRec.showStartupInfoText.value = False
+		#config.plugins.serienRec.showStartupInfoText.save()
+		#configfile.save()
+		self.close()
+
+	def keyCancel(self):
+		self.close()
 
 class checkGitHubUpdate:
 	def __init__(self, session):
@@ -43,22 +156,25 @@ class checkGitHubUpdate:
 			return
 
 		self.response = json.load(data)
-		latestVersion = self.response[0]['name'][1:]
+		try:
+			latestVersion = self.response[0]['name'][1:]
 
-		if self.checkIfBetaVersion(latestVersion): # Stable
-			latestVersion = self.searchLatestStable()
+			if self.checkIfBetaVersion(latestVersion): # Stable
+				latestVersion = self.searchLatestStable()
 
-		remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
-		version=config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
-		remoteversion.extend((max([len(remoteversion),len(version)])-len(remoteversion)) * '0')
-		remoteversion=map(lambda x: int(x), remoteversion)
-		version.extend((max([len(remoteversion),len(version)])-len(version)) * '0')
-		version=map(lambda x: int(x), version)
+			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
+			version=config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
+			remoteversion.extend((max([len(remoteversion),len(version)])-len(remoteversion)) * '0')
+			remoteversion=map(lambda x: int(x), remoteversion)
+			version.extend((max([len(remoteversion),len(version)])-len(version)) * '0')
+			version=map(lambda x: int(x), version)
 
-		if remoteversion > version:
-			UpdateAvailable = True
-			self.latestVersion = latestVersion
-			self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das SerienRecorder Plugin ist ein Update (v%s) verfügbar!\nWollen Sie es jetzt herunterladen und installieren?") % str(latestVersion), MessageBox.TYPE_YESNO, msgBoxID="[SerienRecorder] Update available")
+			if remoteversion > version:
+				UpdateAvailable = True
+				self.latestVersion = latestVersion
+				self.session.openWithCallback(self.startUpdate, MessageBox, _("Für das SerienRecorder Plugin ist ein Update (v%s) verfügbar!\nWollen Sie es jetzt herunterladen und installieren?") % str(latestVersion), MessageBox.TYPE_YESNO, msgBoxID="[SerienRecorder] Update available")
+		except:
+			return
 
 	@staticmethod
 	def checkIfBetaVersion(foundVersion):
