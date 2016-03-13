@@ -244,6 +244,11 @@ def ReadConfigFile():
 	config.plugins.serienRec.updateInterval.save()
 	if config.plugins.serienRec.planerCacheSize.value > 4:
 		config.plugins.serienRec.planerCacheSize.value = 4
+	if config.plugins.serienRec.screenplaner.value is 1 and config.plugins.serienRec.screenmode.value > 2:
+		config.plugins.serienRec.screenmode.value = 2
+	if config.plugins.serienRec.screenplaner.value > 1 and config.plugins.serienRec.screenmode.value > 1:
+		config.plugins.serienRec.screenmode.value = 1
+
 	configfile.save()
 
 	SelectSkin()

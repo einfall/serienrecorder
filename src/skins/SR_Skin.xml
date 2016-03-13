@@ -37,26 +37,36 @@
 	<widget name="bt_5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_5.png" position="20,685" zPosition="2" size="32,32" alphatest="on" />
 	<widget name="bt_exit" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="20,685" zPosition="1" size="32,32" alphatest="on" />
 	<widget name="text_0" position="60,688" size="200,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_5" position="60,688" size="200,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_exit" position="60,688" size="200,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
 
 	<widget name="bt_1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_1.png" position="268,685" zPosition="3" size="32,32" alphatest="on" />
 	<widget name="bt_6" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_6.png" position="268,685" zPosition="2" size="32,32" alphatest="on" />
 	<widget name="bt_text" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_text.png" position="268,685" zPosition="1" size="32,32" alphatest="on" />
 	<widget name="text_1" position="308,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_6" position="308,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_text" position="308,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 
 	<widget name="bt_2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_2.png" position="516,685" zPosition="3" size="32,32" alphatest="on" />
 	<widget name="bt_7" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_7.png" position="516,685" zPosition="2" size="32,32" alphatest="on" />
 	<widget name="bt_epg" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_epg.png" position="516,685" zPosition="1" size="32,32" alphatest="on" />
 	<widget name="text_2" position="556,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_7" position="556,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_epg" position="556,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 
 	<widget name="bt_3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_3.png" position="764,685" zPosition="3" size="32,32" alphatest="on" />
 	<widget name="bt_8" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_8.png" position="764,685" zPosition="2" size="32,32" alphatest="on" />
 	<widget name="bt_info" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_help.png" position="764,685" zPosition="1" size="32,32" alphatest="on" />
 	<widget name="text_3" position="804,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_8" position="804,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_info" position="804,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 
 	<widget name="bt_4" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_4.png" position="1012,685" zPosition="3" size="32,32" alphatest="on" />
 	<widget name="bt_9" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_9.png" position="1012,685" zPosition="2" size="32,32" alphatest="on" />
 	<widget name="bt_menu" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_menu.png" position="1012,685" zPosition="1" size="32,32" alphatest="on" />
 	<widget name="text_4" position="1052,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_9" position="1052,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
+	<widget name="text_menu" position="1052,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 
 	<widget name="Web_Channel" position="45,115" size="200,30" font="Regular; 25" backgroundColor="#26181d20" foregroundColor="#000090e6" />			
 	<widget name="STB_Channel" position="360,115" size="200,30" font="Regular; 25" backgroundColor="#26181d20" foregroundColor="#000090e6" />			
