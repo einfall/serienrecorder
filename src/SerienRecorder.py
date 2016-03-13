@@ -2651,11 +2651,7 @@ class serienRecCheckForRecording():
 
 				new_serien_title = serien_title
 				new_serien_time = 0
-				if str(staffel) is 'S' and str(episode) is '0':
-					# Something went wrong at Wunschliste - try to find real season and episode by title
-					cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=? AND Title=?", (serien_name, staffel, episode, serien_title))
-				else:
-					cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
+				cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
 				tmpRow = cCursorTmp.fetchone()
 				if tmpRow:
 					(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = tmpRow
@@ -2692,16 +2688,16 @@ class serienRecCheckForRecording():
 
 						try:
 							# suche in aktivierten Timern
-							timerUpdated = self.updateTimer(recordHandler.timer_list, cTimer, eit, end_unixtime, new_episode,
+							timerUpdated = self.updateTimer(recordHandler.timer_list, cTimer, eit, end_unixtime, episode,
 							                              new_serien_title, serien_name, serien_time,
-							                              new_staffel, start_unixtime, stbRef, title,
+							                              staffel, start_unixtime, stbRef, title,
 							                              webChannel)
 
 							if not timerUpdated:
 								# suche in deaktivierten Timern
-								timerUpdated = self.updateTimer(recordHandler.processed_timers, cTimer, eit, end_unixtime, new_episode,
+								timerUpdated = self.updateTimer(recordHandler.processed_timers, cTimer, eit, end_unixtime, episode,
 							                              new_serien_title, serien_name, serien_time,
-							                              new_staffel, start_unixtime, stbRef, title,
+							                              staffel, start_unixtime, stbRef, title,
 							                              webChannel)
 						except Exception:
 							print "[SerienRecorder] Modifying enigma2 Timer failed:", title, serien_time
