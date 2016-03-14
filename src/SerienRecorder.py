@@ -2682,7 +2682,7 @@ class serienRecCheckForRecording():
 						print "[SerienRecorder] try to modify enigma2 Timer:", title, serien_time
 
 						timerUpdated = False
-						if str(new_staffel) is 'S' and str(new_episode) is '0':
+						if str(staffel) is 'S' and str(episode) is '0':
 							writeLog("   ' %s ' - Timer kann nicht aktualisiert werden @ %s" % (title, webChannel), True)
 							break
 
