@@ -355,7 +355,7 @@ def retry(times, func, *args, **kwargs):
 	errorList = []
 	deferred = defer.Deferred()
 	def run():
-		#writeLog("Versuche Webseite abzurufen...", True)
+		writeLog("Versuche Webseite ' %s ' abzurufen..." % args[1], True)
 		d = func(*args, **kwargs)
 		d.addCallbacks(deferred.callback, error)
 	def error(retryError):
@@ -2932,17 +2932,22 @@ class serienRecCheckForRecording():
 			if SerieEnabled:
 				# Download only if series is enabled
 				self.countActivatedSeries += 1
-				downloads.append(retry(5, ds.run, self.download, SerieUrl).addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,webChannels,excludedWeekdays).addErrback(self.dataError,SerieUrl))
+				download = retry(5, ds.run, self.download, SerieUrl)
+				download.addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,webChannels,excludedWeekdays)
+				download.addErrback(self.dataError,SerieUrl)
+				downloads.append(download)
 
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
 	@staticmethod
 	def download(url):
 		print "[SerienRecorder] call %s" % url
+		writeLog("Downloading URL: %s" % url, True)
 		time.sleep(1)
 		return getPage(getURLWithProxy(url), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders())
 
 	def parseWebpage(self, data, c1, c2, serien_name, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time, webChannels, excludedWeekdays=None):
+		writeLog("Parsing download data for %s" % serien_name, True)
 		data = processDownloadedData(data)
 		self.count_url += 1
 
@@ -3138,6 +3143,7 @@ class serienRecCheckForRecording():
 			cCursorTmp.close()
 			
 	def createTimer(self, result=True):
+		writeLog("Creating timers", True)
 		dbTmp.commit()
 
 		# versuche deaktivierte Timer zu erstellen
@@ -3803,16 +3809,15 @@ class serienRecCheckForRecording():
 		if url:
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   Url: %s" % (error, url))
 		else:
+			# Only a createTimer error results in askForDSB and autoCheckFinished
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   createTimer()" % error)
-		
-		if config.plugins.serienRec.longLogFileName.value:
-			shutil.copy(logFile, logFileSave)
-		
-		global autoCheckFinished
-		autoCheckFinished = True
-		
-		self.askForDSB()
-		self.close()
+			if config.plugins.serienRec.longLogFileName.value:
+				shutil.copy(logFile, logFileSave)
+
+			global autoCheckFinished
+			autoCheckFinished = True
+
+			self.askForDSB()
 
 class serienRecTimer(Screen, HelpableScreen):
 	def __init__(self, session):
@@ -10260,7 +10265,10 @@ class serienRecShowInfo(Screen, HelpableScreen):
 				self.getData()
 				
 	def getData(self):
-		infoText = SeriesServer().getSeriesInfo(self.serieID)
+		try:
+			infoText = SeriesServer().getSeriesInfo(self.serieID)
+		except:
+			infoText = 'Es ist ein Fehler beim Abrufen der Serien-Informationen aufgetreten!'
 		self['info'].setText(infoText)
 		self.getCover()
 

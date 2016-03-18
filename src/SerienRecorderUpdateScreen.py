@@ -37,30 +37,35 @@ class checkGitHubUpdateScreen(Screen):
 	BUTTON_Y = DESKTOP_HEIGHT - 220
 
 	skin = """
-		<screen name="SerienRecorderUpdateCheck" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20" flags="wfBorder">
+		<screen name="SerienRecorderUpdateCheck" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20">
 			<widget name="headline" position="20,20" size="600,40" foregroundColor="red" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
-			<widget name="srlog" position="5,100" size="%d,%d" font="Regular;21" valign="left" halign="top" foregroundColor="white" transparent="1" zPosition="5"/>
+			<widget name="srlog" position="5,100" size="%d,%d" font="Regular;21" valign="top" halign="left" foregroundColor="white" transparent="1" zPosition="5"/>
 			<widget name="activityslider" position="5,%d" size="%d,25" borderWidth="1" transparent="1" zPosition="4"/>
 			<widget name="status" position="5,%d" size="%d,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
-			<widget name="separator" position="%d,%d" size="%d,5" backgroundColor="#00000f64" zPosition="6" />
+			<widget name="separator" position="%d,%d" size="%d,5" backgroundColor="#00808080" zPosition="6" />
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_ok" position="%d,%d" size="%d,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_exit" position="%d,%d" size="%d,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>""" % (50, 100, DESKTOP_WIDTH - 100, DESKTOP_HEIGHT - 180, _("SerienRecorder Update"),
-						DESKTOP_WIDTH - 110, DESKTOP_HEIGHT - 420,
-						DESKTOP_HEIGHT - 400, DESKTOP_WIDTH - 110,
-						DESKTOP_HEIGHT - 375, DESKTOP_WIDTH - 110,
+						DESKTOP_WIDTH - 110, DESKTOP_HEIGHT - 405,
+						BUTTON_Y - 75, DESKTOP_WIDTH - 110,
+						BUTTON_Y - 50, DESKTOP_WIDTH - 110,
 						5, BUTTON_Y - 20, DESKTOP_WIDTH - 110,
 						BUTTON_X + 50, BUTTON_Y,
-						BUTTON_X + 100, BUTTON_Y, BUTTON_X - 100,
+						BUTTON_X + 100, BUTTON_Y + 8, BUTTON_X - 100,
 						50, BUTTON_Y,
-						100, BUTTON_Y, BUTTON_X - 100,
+						100, BUTTON_Y + 8, BUTTON_X - 100,
 						)
 
 	def __init__(self, session):
 		self.session = session
 		self.serienRecInfoFilePath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/StartupInfoText"
+		self.updateAvailable = False
+		self.updateInfo = None
+		self.updateName = None
+		self.updateDEBURL = None
+		self.updateIPKURL = None
 
 		Screen.__init__(self, session)
 
@@ -73,25 +78,21 @@ class checkGitHubUpdateScreen(Screen):
 			"down"  : self.keyDown,
 		}, -1)
 
-		self['headline'] = Label()
-		self['srlog'] = ScrollLabel()
-		self['status'] = Label(_("Preparing... Please wait"))
+		self['headline'] = Label("")
+		self['srlog'] = ScrollLabel("")
+		self['status'] = Label("")
 		self['activityslider'] = Slider(0, 100)
-		self['separator'] = Label()
+		self['separator'] = Label("")
 		self['text_ok'] = Label("Jetzt herunterladen und installieren")
 		self['text_exit'] = Label("Später aktualisieren")
-
-		self.onLayoutFinish.append(self.__onLayoutFinished)
-
-	def __onLayoutFinished(self):
 
 		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
 		try:
 			conn.request(url="/repos/einfall/serienrecorder/releases", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
 			rawData = conn.getresponse()
 			data = json.load(rawData)
-			latestRelease = data[0]
-			latestVersion = latestRelease['tag_name'][1:]
+			self.latestRelease = data[0]
+			latestVersion = self.latestRelease['tag_name'][1:]
 
 			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
 			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
@@ -101,12 +102,24 @@ class checkGitHubUpdateScreen(Screen):
 			version = map(lambda x: int(x), version)
 
 			if remoteversion > version:
-				self['headline'].setText("Update verfügbar: " + latestRelease['name'])
+				self.updateName = self.latestRelease['name'].encode('utf-8')
+				self.updateInfo = self.latestRelease['body'].encode('utf-8')
+				for asset in self.latestRelease['assets']:
+					updateURL = asset['browser_download_url']
+					if updateURL.find(".deb"):
+						self.updateDEBURL = updateURL
+					elif updateURL.find('.ipk'):
+						self.updateIPKURL = updateURL
+
+				self.onLayoutFinish.append(self.__onLayoutFinished)
 			else:
 				self.close()
 		except:
 			self.close()
 
+	def __onLayoutFinished(self):
+		self['headline'].setText("Update verfügbar: %s" % self.updateName)
+		self['srlog'].setText(self.updateInfo)
 
 		# sl = self['srlog']
 		# sl.instance.setZPosition(5)
