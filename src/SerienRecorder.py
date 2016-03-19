@@ -362,12 +362,13 @@ def retry(times, func, *args, **kwargs):
 		errorList.append(retryError)
 		# Retry
 		if len(errorList) < times:
+			writeLog("Download Fehler: %s" % retryError, True)
 			writeLog("Fehler beim Abrufen von ' %s ', versuche es noch %d mal..." % (args[1], times - len(errorList)), True)
 			run()
 		# Fail
 		else:
 			writeLog("Abrufen von ' %s ' auch nach mehreren Versuchen nicht möglich!" % args[1], True)
-			deferred.errback(errorList)
+			deferred.errback('retryError', args[1])
 	run()
 	return deferred
 
@@ -3805,11 +3806,13 @@ class serienRecCheckForRecording():
 		
 	def dataError(self, error, url=None):
 		print "[SerienRecorder] Es ist ein Fehler aufgetreten - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
-		writeLog("Es ist ein Fehler aufgetreten  - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error, True)
+
 		if url:
+			writeLog("Es ist ein Fehler aufgetreten  - die Daten konnten nicht abgerufen werden: (%s)" % error, True)
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   Url: %s" % (error, url))
 		else:
 			# Only a createTimer error results in askForDSB and autoCheckFinished
+			writeLog("Es ist ein Fehler aufgetreten  - die Daten konnten nicht verarbeitet werden: (%s)" % error, True)
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   createTimer()" % error)
 			if config.plugins.serienRec.longLogFileName.value:
 				shutil.copy(logFile, logFileSave)
