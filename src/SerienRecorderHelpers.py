@@ -27,8 +27,8 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.3.0-beta'
-#SRVERSION = '3.2.4'
+#SRVERSION = '3.3.0-beta'
+SRVERSION = '3.2.4'
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -225,7 +225,6 @@ class STBHelpers:
 
 	@classmethod
 	def buildSTBChannelList(cls, BouquetName=None):
-		serien_chlist = None
 		serien_chlist = []
 		mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
 		print "[SerienRecorder] read STB Channellist.."

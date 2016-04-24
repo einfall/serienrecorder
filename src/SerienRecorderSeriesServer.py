@@ -72,3 +72,13 @@ class SeriesServer:
 
 	def doGetEpisodes(self, seriesID, page):
 		return self.server.sp.cache.getEpisodes(int(seriesID), int(page))
+
+	def doGetTransmissions(self, seriesID, offset, webChannels):
+		resultList = []
+		transmissions = self.server.sp.cache.getTransmissions(int(seriesID), int(offset), webChannels)
+		seriesName = transmissions['series']
+
+		for event in transmissions['events']:
+			resultList.append([seriesName, event['channel'].encode('utf-8'), event['start'], event['end'], event['season'], event['episode'], event['title'].encode('utf-8'), "0"])
+
+		return resultList

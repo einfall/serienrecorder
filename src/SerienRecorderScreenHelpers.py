@@ -2,20 +2,35 @@
 
 # This file contains the SerienRecoder Screen Helpers
 
-from __init__ import _
-
-from Components.Label import Label
-from Components.Pixmap import Pixmap
-from Components.MenuList import MenuList
-from Components.ScrollLabel import ScrollLabel
-from Components.VideoWindow import VideoWindow
-from Components.config import config
-
-from enigma import getDesktop
+import SerienRecorder
 
 from Tools.Directories import fileExists
+from enigma import eListboxPythonMultiContent, gFont, getDesktop, eTimer
+from Components.config import config
+from Components.Label import Label
+from Components.MenuList import MenuList
+from Components.Pixmap import Pixmap
+from Components.VideoWindow import VideoWindow
+from Components.ScrollLabel import ScrollLabel
+from Screens.MessageBox import MessageBox
+
+import re
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
+
+# init EPGTranslator
+if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/EPGTranslator/plugin.pyo"):
+	from Plugins.Extensions.EPGTranslator.plugin import searchYouTube
+	epgTranslatorInstalled = True
+else:
+	epgTranslatorInstalled = False
+
+# init Wikipedia
+if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/Wikipedia/plugin.pyo"):
+	from Plugins.Extensions.Wikipedia.plugin import wikiSearch
+	WikipediaInstalled = True
+else:
+	WikipediaInstalled = False
 
 showAllButtons = False
 longButtonText = False
@@ -326,3 +341,137 @@ def updateMenuKeys(self):
 	self['text_2'].setText(self.num_bt_text[2][self.displayMode])
 	self['text_3'].setText(self.num_bt_text[3][self.displayMode])
 	self['text_4'].setText(self.num_bt_text[4][self.displayMode])
+
+class serienRecBaseScreen():
+	def __init__(self, session):
+		self.session = session
+		self.skin = None
+		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+
+	def setupSkin(self):
+		InitSkin(self)
+
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
+		self.chooseMenuList.l.setItemHeight(int(50*skinFactor))
+		self[self.modus] = self.chooseMenuList
+
+	def setSkinProperties(self):
+		self.displayTimer = None
+		global showAllButtons
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
+			self.displayMode = 2
+			self.updateMenuKeys()
+
+			self.displayTimer = eTimer()
+			if SerienRecorder.isDreamboxOS:
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+
+	def readLogFile(self):
+		self.session.open(SerienRecorder.serienRecReadLog)
+
+	def showProposalDB(self):
+		self.session.open(SerienRecorder.serienRecShowSeasonBegins)
+
+	def serieInfo(self):
+		self.session.open(SerienRecorder.serienRecShowInfo, self.serien_name, self.serie_url)
+
+	def showConflicts(self):
+		self.session.open(SerienRecorder.serienRecShowConflicts)
+
+	def showWishlist(self):
+		self.session.open(SerienRecorder.serienRecWishlist)
+
+	def youtubeSearch(self, searchWord):
+		if epgTranslatorInstalled:
+			print "[SerienRecorder] starte youtube suche für %s" % searchWord
+			self.session.open(searchYouTube, searchWord)
+		else:
+			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
+
+	def WikipediaSearch(self, searchWord):
+		if WikipediaInstalled:
+			print "[SerienRecorder] starte Wikipedia Suche für %s" % searchWord
+			self.session.open(wikiSearch, searchWord)
+		else:
+			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
+
+	def showManual(self):
+		if SerienRecorder.OperaBrowserInstalled:
+			self.session.open(SerienRecorder.Browser, SerienRecorder.SR_OperatingManual, True)
+		elif SerienRecorder.DMMBrowserInstalled:
+			self.session.open(SerienRecorder.Browser, True, SerienRecorder.SR_OperatingManual)
+		else:
+			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
+
+	def showAbout(self):
+		self.session.open(SerienRecorder.serienRecAboutScreen)
+
+	def recSetup(self):
+		self.session.openWithCallback(self.setupClose, SerienRecorder.serienRecSetup)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:
+			if result[0]:
+				if config.plugins.serienRec.timeUpdate.value:
+					SerienRecorder.serienRecCheckForRecording(self.session, False)
+
+			if result[1]:
+				self.showChannels()
+
+	def keyLeft(self):
+		self[self.modus].pageUp()
+
+	def keyRight(self):
+		self[self.modus].pageDown()
+
+	def keyDown(self):
+		self[self.modus].down()
+
+	def keyUp(self):
+		self[self.modus].up()
+
+	def keyRed(self):
+		if config.plugins.serienRec.refreshViews.value:
+			self.close(self.changesMade)
+		else:
+			self.close(False)
+
+	def keyCancel(self):
+		if config.plugins.serienRec.refreshViews.value:
+			self.close(self.changesMade)
+		else:
+			self.close(False)
+
+	def dataError(self, error, url=None):
+		if url:
+			SerienRecorder.writeErrorLog("   serienRecEpisodes(): %s\n   Url: %s" % (error, url))
+		else:
+			SerienRecorder.writeErrorLog("   serienRecEpisodes(): %s" % error)
+		print error
+
+	def stopDisplayTimer(self):
+		if self.displayTimer:
+			self.displayTimer.stop()
+			self.displayTimer = None
+
+	def getCover(self, serienName):
+		cCursor = SerienRecorder.dbSerRec.cursor()
+		cCursor.execute("SELECT Url FROM SerienMarker WHERE LOWER(Serie)=?", (serienName.lower(), ))
+		row = cCursor.fetchone()
+		cCursor.close()
+		serien_id = None
+		if row:
+			(url, ) = row
+			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
+			if serien_id:
+				serien_id = serien_id[0]
+		self.ErrorMsg = "'getCover()'"
+		#writeLog("serienRecShowEpisodeInfo(): ID: %s  Serie: %s" % (str(serien_id), serienName))
+		SerienRecorder.getCover(self, serienName, serien_id)

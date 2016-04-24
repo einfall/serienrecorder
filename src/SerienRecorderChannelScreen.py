@@ -292,8 +292,8 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 					cCursor.execute("SELECT WebChannel, STBChannel FROM Channels")
 					dbChannels = cCursor.fetchall()
 
-					unassignedWebChannels = self.getUnassignedOrMissingWebChannels(webChannelList, dbChannels)
-					for webChannel in unassignedWebChannels:
+					missingWebChannels = self.getMissingWebChannels(webChannelList, dbChannels)
+					for webChannel in missingWebChannels:
 						# Unmapped web channel
 						(servicename, serviceref) = self.findWebChannelInSTBChannels(webChannel)
 						if servicename and serviceref:
@@ -327,13 +327,8 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		self['title'].setText("Web-Channel / STB-Channels")
 
 	@staticmethod
-	def getUnassignedOrMissingWebChannels(webChannels, dbChannels):
+	def getMissingWebChannels(webChannels, dbChannels):
 		result = []
-
-		# append unassigned
-		for (dbWebChannel, dbSTBChannel) in dbChannels:
-			if not dbSTBChannel and dbWebChannel.lower() in [webChannel.lower() for webChannel in webChannels]:
-				result.append(dbWebChannel)
 
 		# append missing
 		for webChannel in webChannels:
