@@ -27,8 +27,8 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-#SRVERSION = '3.3.0-beta'
-SRVERSION = '3.2.4'
+SRVERSION = '3.3.0-beta'
+#SRVERSION = '3.2.4'
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -44,7 +44,7 @@ def writeTestLog(text):
 		open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", 'w').close()
 
 	writeLogFile = open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", "a")
-	writeLogFile.write('%s\n' % (text))
+	writeLogFile.write('%s\n' % text)
 	writeLogFile.close()
 
 def writeErrorLog(text):

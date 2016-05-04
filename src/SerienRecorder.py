@@ -3241,6 +3241,7 @@ class serienRecCheckForRecording():
 			# Is channel assigned
 			if timer_stbChannel == "":
 				writeLogFilter("channels", "' %s ' - STB-Channel nicht in bevorzugter Kanalliste zugewiesen -> ' %s '" % (label_serie, webChannel))
+				continue
 
 			##############################
 			#
@@ -5761,8 +5762,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				else:
 					addedType = 0
 
-			startTime = time.strftime("%H:%M", time.localtime(startzeit))
-			self.sendetermine_list.append([serien_name, sender, datum, startTime, staffel, episode, title, status, addedType])
+			startTime = time.strftime("%H.%M", time.localtime(startzeit))
+			endTime = time.strftime("%H.%M", time.localtime(endzeit))
+			self.sendetermine_list.append([serien_name, sender, datum, startTime, endTime, staffel, episode, title, status, addedType])
 
 		if len(self.sendetermine_list):
 			self['text_green'].setText("Timer erstellen")
@@ -5775,7 +5777,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList_termine(entry):
-		(serien_name, sender, datum, start, staffel, episode, title, status, addedType) = entry
+		(serien_name, sender, datum, start, end, staffel, episode, title, status, addedType) = entry
 
 		# addedType: 0 = None, 1 = on HDD, 2 = Timer available, 3 = in DB
 
@@ -5784,18 +5786,20 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		imageMinus = "%simages/minus.png" % serienRecMainPath
 		imagePlus = "%simages/plus.png" % serienRecMainPath
 		imageNone = "%simages/black.png" % serienRecMainPath
-		imageHDD = "%simages/hdd.png" % serienRecMainPath
 
 		if int(status) == 0:
 			leftImage = imageMinus
 		else:
 			leftImage = imagePlus
 
-		rightImage = imageNone
+		imageHDD = imageNone
+		imageTimer = imageNone
 		if addedType == 1:
 			titleColor = parseColor('yellow').argb()
+			imageHDD = "%simages/hdd_icon.png" % serienRecMainPath
 		elif addedType == 2:
 			titleColor = parseColor('blue').argb()
+			imageTimer = "%simages/timer.png" % serienRecMainPath
 		elif addedType == 3:
 			titleColor = parseColor('green').argb()
 		else:
@@ -5807,9 +5811,10 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), dateColor, dateColor),
+		    (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 7 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer)),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 30 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDD)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), titleColor, titleColor),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 750 * skinFactor, 1 * skinFactor, 48 * skinFactor, 48 * skinFactor, loadPNG(rightImage))
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 498 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), titleColor, titleColor)
 			]
 
 	def isAlreadyAdded(self, season, episode, title=None):
@@ -10699,7 +10704,7 @@ class serienRecMain(Screen, HelpableScreen):
 		imageNone = "%simages/black.png" % serienRecMainPath
 		imageNeu = "%simages/neu.png" % serienRecMainPath
 		imageTimer = "%simages/timer.png" % serienRecMainPath
-		imageHDD = "%simages/hdd_24x24.png" % serienRecMainPath
+		imageHDD = "%simages/hdd_icon.png" % serienRecMainPath
 		
 		if serieAdded == 1:
 			seriesColor = parseColor('green').argb()
