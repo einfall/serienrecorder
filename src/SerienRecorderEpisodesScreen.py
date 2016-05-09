@@ -227,13 +227,13 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if seasonEpisodeString != "S00E00":
 			title = None
 
-		cCursor = dbSerRec.cursor()
+		cCursor = SerienRecorder.dbSerRec.cursor()
 		if not title:
 			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (self.serien_name.lower(), season.lower(), str(episode).zfill(2).lower()))
 		else:
 			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=? OR Titel='')", (self.serien_name.lower(), season.lower(), str(episode).zfill(2).lower(), title.lower(), "dump"))
 
-		dbSerRec.commit()
+		SerienRecorder.dbSerRec.commit()
 		cCursor.close()
 
 	def keyOK(self):
