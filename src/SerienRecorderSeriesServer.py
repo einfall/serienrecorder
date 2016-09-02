@@ -79,6 +79,6 @@ class SeriesServer:
 		seriesName = transmissions['series']
 
 		for event in transmissions['events']:
-			resultList.append([seriesName.encode('ISO-8859-1'), event['channel'].encode('utf-8'), event['start'], event['end'], event['season'], event['episode'], event['title'].encode('utf-8'), "0"])
+			resultList.append([seriesName.encode('utf-8'), event['channel'].encode('utf-8'), event['start'], event['end'], event['season'], event['episode'], event['title'].encode('utf-8'), "0"])
 
 		return resultList

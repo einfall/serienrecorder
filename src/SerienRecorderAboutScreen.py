@@ -25,13 +25,10 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 		self.session = session
 		Screen.__init__(self, session)
 
-		self["actions"] = ActionMap(["SerienRecorderActions"], {
-			"cancel": self.exit,
-			"ok": self.exit
-		}, -1)
+		self["actions"] = ActionMap(["SerienRecorderActions"], dict(cancel=self.exit, ok=self.exit), -1)
 
 		self.info =("SerienRecorder for Enigma2 (Version %s)\n"
-		            "(c) 2014-2015 by einfall, w22754 and MacDisein\n"
+		            "(c) 2014-2016 by einfall, w22754 and MacDisein\n"
 					"\n"
 					"For more info:\n"
 					"http://tinyurl.com/puafaaz\n"

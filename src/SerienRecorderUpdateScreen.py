@@ -29,6 +29,46 @@ except ImportError:
 
 from SerienRecorderHelpers import *
 
+class checkGitHubUpdate:
+	def __init__(self, session):
+		self.session = session
+
+	def checkForUpdate(self):
+		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
+		try:
+			conn.request(url="/repos/einfall/serienrecorder/releases", method="GET", headers={
+				'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
+			rawData = conn.getresponse()
+			data = json.load(rawData)
+			latestRelease = data[0]
+			latestVersion = latestRelease['tag_name'][1:]
+
+			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
+			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
+			remoteversion.extend((max([len(remoteversion), len(version)]) - len(remoteversion)) * '0')
+			remoteversion = map(lambda x: int(x), remoteversion)
+			version.extend((max([len(remoteversion), len(version)]) - len(version)) * '0')
+			version = map(lambda x: int(x), version)
+
+			if remoteversion > version:
+				updateName = latestRelease['name'].encode('utf-8')
+				updateInfo = latestRelease['body'].encode('utf-8')
+				downloadURL = None
+				downloadFileSize = 5 * 1024
+				for asset in latestRelease['assets']:
+					updateURL = asset['browser_download_url'].encode('utf-8')
+					if isDreamboxOS and updateURL.find(".deb"):
+						downloadURL = updateURL
+						downloadFileSize = int(asset['size'] / 1024)
+					if not isDreamboxOS and updateURL.find('.ipk'):
+						downloadURL = updateURL
+						downloadFileSize = int(asset['size'] / 1024)
+
+				self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
+		except:
+			Notifications.AddPopup("Unerwarteter Fehler beim Überprüfen der SerienRecorder Version", MessageBox.TYPE_INFO, timeout=3)
+
+
 class checkGitHubUpdateScreen(Screen):
 	DESKTOP_WIDTH  = getDesktop(0).size().width()
 	DESKTOP_HEIGHT = getDesktop(0).size().height()
@@ -58,15 +98,15 @@ class checkGitHubUpdateScreen(Screen):
 						92, BUTTON_Y + 3, BUTTON_X - 100,
 						)
 
-	def __init__(self, session):
+	def __init__(self, session, updateName, updateInfo, downloadURL, downloadFileSize):
 		self.session = session
 		self.updateAvailable = False
-		self.updateInfo = None
-		self.updateName = None
+		self.updateInfo = updateInfo
+		self.updateName = updateName
 		self.progress = 0
 		self.downloadDone = False
-		self.downloadURL = None
-		self.downloadFileSize = 5 * 1024
+		self.downloadURL = downloadURL
+		self.downloadFileSize = downloadFileSize
 		self.filePath = None
 
 		self.progressTimer = eTimer()
@@ -95,38 +135,7 @@ class checkGitHubUpdateScreen(Screen):
 		self['text_ok'] = Label("Jetzt herunterladen und installieren")
 		self['text_exit'] = Label("Später aktualisieren")
 
-		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
-		try:
-			conn.request(url="/repos/einfall/serienrecorder/releases", method="GET", headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
-			rawData = conn.getresponse()
-			data = json.load(rawData)
-			self.latestRelease = data[0]
-			latestVersion = self.latestRelease['tag_name'][1:]
-
-			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
-			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
-			remoteversion.extend((max([len(remoteversion),len(version)])-len(remoteversion)) * '0')
-			remoteversion = map(lambda x: int(x), remoteversion)
-			version.extend((max([len(remoteversion),len(version)])-len(version)) * '0')
-			version = map(lambda x: int(x), version)
-
-			if remoteversion > version:
-				self.updateName = self.latestRelease['name'].encode('utf-8')
-				self.updateInfo = self.latestRelease['body'].encode('utf-8')
-				for asset in self.latestRelease['assets']:
-					updateURL = asset['browser_download_url'].encode('utf-8')
-					if isDreamboxOS and updateURL.find(".deb"):
-						self.downloadURL = updateURL
-						self.downloadFileSize = int(asset['size'] / 1024)
-					if not isDreamboxOS and updateURL.find('.ipk'):
-						self.downloadURL = updateURL
-						self.downloadFileSize = int(asset['size'] / 1024)
-
-				self.onLayoutFinish.append(self.__onLayoutFinished)
-			else:
-				self.close()
-		except:
-			self.close()
+		self.onLayoutFinish.append(self.__onLayoutFinished)
 
 	def __onLayoutFinished(self):
 		self['headline'].setText("Update verfügbar: %s" % self.updateName)

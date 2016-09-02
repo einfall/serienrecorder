@@ -3006,6 +3006,7 @@ class serienRecCheckForRecording():
 	def createTimer(self, result=True):
 		dbTmp.commit()
 
+		writeLog("\n", True)
 		# versuche deaktivierte Timer zu erstellen
 		self.activateTimer()
 		
@@ -5715,7 +5716,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		#from SearchEvents import SearchEvents
 		#SearchEvents(self.serien_name, self.serien_id, termineCache, self.resultsEvents, self.dataError).request()
 
-	def resultsEvents(self, sendetermine_list):
+	def resultsEvents(self, transmissions):
 		self.sendetermine_list = []
 
 		#build unique dir list by season
@@ -5725,7 +5726,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		#build unique margins
 		marginList = {}
 
-		for serien_name,sender,startzeit,endzeit,staffel,episode,title,status in sendetermine_list:
+		for serien_name,sender,startzeit,endzeit,staffel,episode,title,status in transmissions:
 
 			datum = time.strftime("%d.%m", time.localtime(startzeit))
 			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
@@ -6368,7 +6369,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		
 	def keyBlue(self):
 		self.session.openWithCallback(self.importSettings, MessageBox, "Die Konfiguration aus der Datei 'Config.backup' \nim Verzeichnis '%s' wird geladen." % serienRecMainPath, MessageBox.TYPE_YESNO, default = False)
-		
+
 	def importSettings(self, answer=False):
 		if answer:
 			writeSettings = open("/etc/enigma2/settings_new", "w")
@@ -10316,11 +10317,9 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def checkForUpdate(self):
 		if config.plugins.serienRec.Autoupdate.value:
-			writeLog("AutoUpdate is enabled", True)
-			self.session.openWithCallback(self.startScreen, checkGitHubUpdateScreen)
-			#checkGitHubUpdate(self.session).checkForUpdate()
-		else:
-			self.startScreen()
+			checkGitHubUpdate(self.session).checkForUpdate()
+
+		self.startScreen()
 
 	def callHelpAction(self, *args):
 		HelpableScreen.callHelpAction(self, *args)
@@ -10401,6 +10400,11 @@ class serienRecMain(Screen, HelpableScreen):
 	def test(self):
 		remoteUrl = "http://www.google.de"
 		version = "1.0.0"
+		SERIES_SERVER_URL = 'http://192.168.23.21:82/proxy/cache.php'
+
+		server = xmlrpclib.ServerProxy(SERIES_SERVER_URL, verbose=False)
+		print 'getWebChannels:', server.sp.cache.getWebChannels()
+
 		#self.session.open(SerienRecorderUpdateScreen, remoteUrl, version)
 			
 	def getImdblink2(self, data):
