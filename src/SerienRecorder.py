@@ -171,7 +171,6 @@ def ReadConfigFile():
 	config.plugins.serienRec.deleteLogFilesOlderThan = ConfigInteger(14, (0,999))
 	config.plugins.serienRec.writeLog = ConfigYesNo(default = True)
 	config.plugins.serienRec.writeLogChannels = ConfigYesNo(default = True)
-	config.plugins.serienRec.writeLogAllowedSender = ConfigYesNo(default = True)
 	config.plugins.serienRec.writeLogAllowedEpisodes = ConfigYesNo(default = True)
 	config.plugins.serienRec.writeLogAdded = ConfigYesNo(default = True)
 	config.plugins.serienRec.writeLogDisk = ConfigYesNo(default = True)
@@ -190,7 +189,6 @@ def ReadConfigFile():
 	config.plugins.serienRec.showPicons = ConfigYesNo(default = True)
 	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 35, 1, default = 0)
 	config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default = True)
-	config.plugins.serienRec.breakTimersuche = ConfigYesNo(default = False)
 	config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
 	config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default = True)
 	config.plugins.serienRec.tuner = ConfigInteger(4, (1,8))
@@ -339,13 +337,6 @@ except:
 	
 #---------------------------------- Common Functions ------------------------------------------
 
-
-def getUrl(url):
-	req = urllib2.Request(url)
-	res = urllib2.urlopen(req)
-	finalurl = res.geturl()
-	return finalurl
-
 def retry(times, func, *args, **kwargs):
 	"""retry a defer function
 
@@ -471,7 +462,6 @@ def writeLogFilter(logtype, text, forceWrite=False):
 
 		writeLogFile = open(logFile, "a")
 		if (logtype is "channels" and config.plugins.serienRec.writeLogChannels.value) or \
-		   (logtype is "allowedSender" and config.plugins.serienRec.writeLogAllowedSender.value) or \
 		   (logtype is "allowedEpisodes" and config.plugins.serienRec.writeLogAllowedEpisodes.value) or \
 		   (logtype is "added" and config.plugins.serienRec.writeLogAdded.value) or \
 		   (logtype is "disk" and config.plugins.serienRec.writeLogDisk.value) or \
@@ -2005,7 +1995,7 @@ class serienRecCheckForRecording():
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
 		self.senderListe = {}
-		self.urls = []
+		self.markers = []
 		self.MessageList = []
 		self.speedStartTime = 0
 		self.speedEndTime = 0
@@ -2260,13 +2250,10 @@ class serienRecCheckForRecording():
 			writeLog("STB Type: %s\nImage: %s" % (STBHelpers.getSTBType(), STBHelpers.getImageVersionString()), True)
 		writeLog("SR Version: %s" % config.plugins.serienRec.showversion.value, True)
 		writeLog("Skin Auflösung: %s x %s" % (str(getDesktop(0).size().width()), str(getDesktop(0).size().height())), True)
-		#writeLog("User-Agent: %s" % getUserAgent(), True)
 
 		sMsg = "\nDEBUG Filter: "
 		if config.plugins.serienRec.writeLogChannels.value:
 			sMsg += "Senderliste "
-		if config.plugins.serienRec.writeLogAllowedSender.value:
-			sMsg += "Sender "
 		if config.plugins.serienRec.writeLogAllowedEpisodes.value:
 			sMsg += "Episoden "
 		if config.plugins.serienRec.writeLogAdded.value:
@@ -2281,7 +2268,7 @@ class serienRecCheckForRecording():
 			sMsg += "Timer Debug "
 		writeLog(sMsg, True)
 
-		self.urls = []
+		self.markers = []
 		self.MessageList = []
 		self.speedStartTime = time.clock()
 
@@ -2769,8 +2756,8 @@ class serienRecCheckForRecording():
 		writeLog("Berücksichtige Ausstrahlungstermine zwischen %s und %s" % (search_start, search_end), True)
 		writeLog("Berücksichtige Wiederholungen zwischen %s und %s" % (search_start, search_rerun_end), True)
 		
-		## hier werden die wunschliste urls eingelesen vom serien marker
-		self.urls = getMarker()
+		## hier werden die wunschliste markers eingelesen vom serien marker
+		self.markers = getMarker()
 		self.count_url = 0
 		self.countTimer = 0
 		self.countTimerUpdate = 0
@@ -2785,51 +2772,41 @@ class serienRecCheckForRecording():
 			ds = defer.DeferredSemaphore(tokens=1)
 
 		##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
-		c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
-		c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
+		#c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
+		#c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
 		downloads = []
 		webChannels = getWebSenderAktiv()
 
-		for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.urls:
+		for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
 			self.countSerien += 1
 			if SerieEnabled:
 				# Download only if series is enabled
+				seriesID = getSeriesIDByURL(SerieUrl)
+				if 'Alle' in SerieSender:
+					markerChannels = webChannels
+				else:
+					markerChannels = SerieSender
+
 				self.countActivatedSeries += 1
-				download = retry(5, ds.run, self.download, SerieUrl)
-				download.addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,webChannels,excludedWeekdays)
+				download = retry(5, ds.run, self.download, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
+				download.addCallback(self.processTransmissions,serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
 				download.addErrback(self.dataError,SerieUrl)
 				downloads.append(download)
 
 		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
 	@staticmethod
-	def download(url):
-		print "[SerienRecorder] call %s" % url
-		time.sleep(1)
-		return getPage(getURLWithProxy(url), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders())
+	def download(seriesID, timeSpan, markerChannels):
+		start = time.time()
+		transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
+		end = time.time()
+		writeLog('download Transmissions: %s' % str(end - start))
+		return transmissions
 
-	def parseWebpage(self, data, c1, c2, serien_name, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time, webChannels, excludedWeekdays=None):
-		data = processDownloadedData(data)
+	def processTransmissions(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
+		start = time.time()
+
 		self.count_url += 1
-
-		raw = c1.findall(data)
-		raw2 = c2.findall(data)
-		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
-		#raw.sort(key=lambda t : time.strptime("%s %s" % (t[1],t[2]),"%d.%m %H.%M"))
-		def y(l):
-			(current_day, current_month) = l[1].split('.')
-			(start_hours, start_mins) = l[2].split('.')
-			now = datetime.datetime.now()
-			if int(current_month) < now.month:
-				return time.mktime((int(now.year) + 1, int(current_month), int(current_day), int(start_hours), int(start_mins), 0, 0, 0, 0))
-			else:
-				return time.mktime((int(now.year), int(current_month), int(current_day), int(start_hours), int(start_mins), 0, 0, 0, 0))
-		raw.sort(key=y)
-
-		# check for parsing error
-		if not raw:
-			# parsing error -> nothing to do
-			return
 
 		(fromTime, toTime) = getTimeSpan(serien_name)
 		if self.NoOfRecords < AnzahlAufnahmen:
@@ -2840,37 +2817,14 @@ class serienRecCheckForRecording():
 			TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
 
 		# loop over all transmissions
-		for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
-			# umlaute umwandeln
-			sender = decodeISO8859_1(sender, True)
-			sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
-			title = decodeISO8859_1(title, True)
-			staffel = decodeISO8859_1(staffel, True)
-			
-			if sender not in webChannels:
-				continue
-
-			# formatiere start/end-zeit
-			(day, month) = datum.split('.')
-			(start_hour, start_min) = startzeit.split('.')
-			(end_hour, end_min) = endzeit.split('.')
-
-			start_unixtime = TimeHelpers.getUnixTimeAll(start_min, start_hour, day, month)
-
-			if int(start_hour) > int(end_hour):
-				end_unixtime = TimeHelpers.getNextDayUnixtime(end_min, end_hour, day, month)
-			else:
-				end_unixtime = TimeHelpers.getUnixTimeAll(end_min, end_hour, day, month)
+		for serien_name, sender, startzeit, endzeit, staffel, episode, title, status in data:
+			start_unixtime = startzeit
+			end_unixtime = endzeit
 
 			# setze die vorlauf/nachlauf-zeit
 			(margin_before, margin_after) = getMargins(serien_name, sender)
 			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
 			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
-
-			# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
-			if config.plugins.serienRec.breakTimersuche.value and (int(start_unixtime) > int(TimeSpan_time)):
-				# We reached the maximal time range to look for transmissions, so we can break here
-				break
 
 			if not config.plugins.serienRec.forceRecording.value:
 				if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
@@ -2889,22 +2843,6 @@ class serienRecCheckForRecording():
 			# initialize strings
 			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
-
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft ob der sender zum sender von der Serie aus dem serien marker passt.
-			#
-			serieAllowed = False
-			if 'Alle' in allowedSender:
-				serieAllowed = True
-			elif sender in allowedSender:
-				serieAllowed = True
-
-			if not serieAllowed:
-				writeLogFilter("allowedSender", "' %s ' - Sender nicht erlaubt -> %s -> %s" % (label_serie, sender, allowedSender))
-				continue
 
 			# Process channel relevant data
 
@@ -2938,7 +2876,7 @@ class serienRecCheckForRecording():
 				if int(staffel) == 0:
 					if str(episode).isdigit():
 						if int(episode) < int(AbEpisode):
-							if config.plugins.serienRec.writeLogAllowedSender.value:
+							if config.plugins.serienRec.writeLogAllowedEpisodes.value:
 								liste = staffeln[:]
 								liste.sort()
 								liste.reverse()
@@ -2971,7 +2909,7 @@ class serienRecCheckForRecording():
 				cCursorTmp.close()
 
 			if not serieAllowed:
-				if config.plugins.serienRec.writeLogAllowedSender.value:
+				if config.plugins.serienRec.writeLogAllowedEpisodes.value:
 					liste = staffeln[:]
 					liste.sort()
 					liste.reverse()
@@ -3002,6 +2940,10 @@ class serienRecCheckForRecording():
 			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays))
 			cCursorTmp.close()
+
+		end = time.time()
+		writeLog('ProcessTransmissions: %s' % str(end - start))
+
 			
 	def createTimer(self, result=True):
 		dbTmp.commit()
@@ -4065,9 +4007,7 @@ class serienRecTimer(Screen, HelpableScreen):
 		serien_id = None
 		if row:
 			(url, ) = row
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-			if serien_id:
-				serien_id = serien_id[0]
+			serien_id = getSeriesIDByURL(url)
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 			
@@ -4498,9 +4438,9 @@ class serienRecMarker(Screen, HelpableScreen):
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		serien_url = self['menu_list'].getCurrent()[0][1]
-		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', serien_url)
+		serien_id = getSeriesIDByURL(serien_url)
 		if serien_id:
-			self.session.open(serienRecShowInfo, serien_name, serien_id[0])
+			self.session.open(serienRecShowInfo, serien_name, serien_id)
 
 	def episodeList(self):
 		if self.modus == "menu_list":
@@ -4510,9 +4450,9 @@ class serienRecMarker(Screen, HelpableScreen):
 
 			serien_name = self['menu_list'].getCurrent()[0][0]
 			serien_url = self['menu_list'].getCurrent()[0][1]
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', serien_url)
+			serien_id = getSeriesIDByURL(serien_url)
 			if serien_id:
-				self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s" % serien_id[0], self.serien_nameCover)
+				self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s" % serien_id, self.serien_nameCover)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -4591,9 +4531,7 @@ class serienRecMarker(Screen, HelpableScreen):
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		self.serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
-		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', self['menu_list'].getCurrent()[0][1])
-		if serien_id:
-			serien_id = serien_id[0]
+		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][1])
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
@@ -4886,10 +4824,7 @@ class serienRecMarker(Screen, HelpableScreen):
 			serien_name = self['menu_list'].getCurrent()[0][0]
 			serien_url = self['menu_list'].getCurrent()[0][1]
 			
-			#print "teestt"
-			#serien_url = getUrl(serien_url.replace('epg_print.pl?s=',''))
 			print serien_url
-			#self.session.open(serienRecSendeTermine, serien_name, serien_url, self.serien_nameCover)
 			self.session.openWithCallback(self.callTimerAdded, serienRecSendeTermine, serien_name, serien_url, self.serien_nameCover)
 
 	def callDisableAll(self, answer):
@@ -5359,8 +5294,6 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self['title'].setText("Suche nach ' %s '" % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
-		# from SearchSerie import SearchSerie
-		# SearchSerie(self.serien_name, self.results, self.dataError).request()
 		self.results(SeriesServer().doSearch(self.serien_name))
 
 	def results(self, serienlist):	
@@ -5628,9 +5561,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		if self.loading:
 			return
 
-		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', self.serie_url)
+		serien_id = getSeriesIDByURL(self.serie_url)
 		if serien_id:
-			self.session.open(serienRecShowInfo, self.serien_name, serien_id[0])
+			self.session.open(serienRecShowInfo, self.serien_name, serien_id)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -5712,9 +5645,6 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		end = time.time()
 		writeLog('Sendetermine vom Server holen: %s' % str(end - self.start))
 		self.resultsEvents(transmissions)
-
-		#from SearchEvents import SearchEvents
-		#SearchEvents(self.serien_name, self.serien_id, termineCache, self.resultsEvents, self.dataError).request()
 
 	def resultsEvents(self, transmissions):
 		self.sendetermine_list = []
@@ -6157,10 +6087,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			webChannels = getMarkerChannels(self.serien_id)
 		transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
 		self.resultsEvents(transmissions)
-		
-		# from SearchEvents import SearchEvents
-		# global termineCache
-		# SearchEvents(self.serien_name, serien_id, termineCache, self.resultsEvents, self.dataError).request()
+
 		
 	def keyBlue(self):
 		self.session.openWithCallback(self.searchEvents, serienRecTimer)
@@ -6659,8 +6586,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("---------  OPTIMIERUNGEN:  ------------------------------------------------------------------------------------"))
 			self.list.append(getConfigListEntry("Intensive Suche nach angelegten Timern:", config.plugins.serienRec.intensiveTimersuche))
 			self.list.append(getConfigListEntry("Zeige ob die Episode als Aufnahme auf der HDD ist:", config.plugins.serienRec.sucheAufnahme))
-			self.list.append(getConfigListEntry("Zeitspanne für Timersuche einschränken:", config.plugins.serienRec.breakTimersuche))
-
 			self.list.append(getConfigListEntry(""))
 			self.list.append(getConfigListEntry("---------  GUI:  ----------------------------------------------------------------------------------------------"))
 			self.list.append(getConfigListEntry("Skin:", config.plugins.serienRec.SkinType))
@@ -6701,7 +6626,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("DEBUG LOG - STB Informationen:", config.plugins.serienRec.writeLogVersion))
 			self.list.append(getConfigListEntry("DEBUG LOG - Senderliste:", config.plugins.serienRec.writeLogChannels))
-			self.list.append(getConfigListEntry("DEBUG LOG - Seriensender:", config.plugins.serienRec.writeLogAllowedSender))
 			self.list.append(getConfigListEntry("DEBUG LOG - Episoden:", config.plugins.serienRec.writeLogAllowedEpisodes))
 			self.list.append(getConfigListEntry("DEBUG LOG - Added:", config.plugins.serienRec.writeLogAdded))
 			self.list.append(getConfigListEntry("DEBUG LOG - Festplatte:", config.plugins.serienRec.writeLogDisk))
@@ -6890,7 +6814,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			                                                    "Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern.", "Das_Log"),
 			config.plugins.serienRec.writeLogVersion :         ("Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten.", "Das_Log"),
 			config.plugins.serienRec.writeLogChannels :        ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Channel-Zuordnung kein STB-Channel zugeordnet ist, oder der STB-Channel deaktiviert ist.", "Das_Log"),
-			config.plugins.serienRec.writeLogAllowedSender :   ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der ausstrahlende Sender in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogAllowedEpisodes : ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogAdded :           ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogDisk :            ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Aufnahmen vorhanden ist.", "Das_Log"),
@@ -6912,15 +6835,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		    config.plugins.serienRec.planerCacheSize :         ("Es werden nur, für die eingestellte Anzahl Tage, Daten im Voraus heruntergeladen und gespeichert.", "Daten_speichern"),
 			config.plugins.serienRec.writeErrorLog:			   ("Bei 'ja' werden Verbindungs- und Lade-Fehler in einer eigenen Datei protokolliert.", "Das_Log"),
 		}			
-
-		if config.plugins.serienRec.forceRecording.value:
-			self.HilfeTexte.update({
-				config.plugins.serienRec.breakTimersuche : ("Bei 'ja' wird die Timersuche nach Ablauf der Wartezeit für Wiederholungen (dzt. %s Tage) abgebrochen." % int(config.plugins.serienRec.TimeSpanForRegularTimer.value), "1.3_Die_globalen_Einstellungen")
-			})
-		else:
-			self.HilfeTexte.update({
-				config.plugins.serienRec.breakTimersuche : ("Bei 'ja' wird die Timersuche abgebrochen, wenn der Ausstrahlungstermin zu weit in der Zukunft liegt (also nach %s)." % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))), "1.3_Die_globalen_Einstellungen")
-			})
 
 		if config.plugins.serienRec.ActionOnNew.value != "0":
 			self.HilfeTexte.update({
@@ -6998,7 +6912,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.deleteLogFilesOlderThan.save()
 		config.plugins.serienRec.writeLog.save()
 		config.plugins.serienRec.writeLogChannels.save()
-		config.plugins.serienRec.writeLogAllowedSender.save()
 		config.plugins.serienRec.writeLogAllowedEpisodes.save()
 		config.plugins.serienRec.writeLogAdded.save()
 		config.plugins.serienRec.writeLogDisk.save()
@@ -7029,7 +6942,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.listFontsize.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
-		config.plugins.serienRec.breakTimersuche.save()
 		config.plugins.serienRec.selectNoOfTuners.save()
 		config.plugins.serienRec.tuner.save()
 		config.plugins.serienRec.logScrollLast.save()
@@ -8524,9 +8436,8 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		cCursor.close()
 		if row:
 			(url, ) = row
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-			if serien_id:
-				self.session.open(serienRecShowInfo, serien_name, serien_id[0])
+			serien_id = getSeriesIDByURL(url)
+			self.session.open(serienRecShowInfo, serien_name, serien_id)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -8741,9 +8652,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		serien_id = None
 		if row:
 			(url, ) = row
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-			if serien_id:
-				serien_id = serien_id[0]
+			serien_id = getSeriesIDByURL(url)
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
@@ -8964,10 +8873,10 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		if check is None:
 			return
 		url = self['menu_list'].getCurrent()[0][5]
-		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-		if serien_id:
+		serien_id = getSeriesIDByURL(url)
+		if serien_id > 0:
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			self.session.open(serienRecShowInfo, serien_name, serien_id[0])
+			self.session.open(serienRecShowInfo, serien_name, serien_id)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -9030,9 +8939,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
-		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', self['menu_list'].getCurrent()[0][5])
-		if serien_id:
-			serien_id = serien_id[0]
+		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][5])
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
@@ -9345,9 +9252,9 @@ class serienRecWishlist(Screen, HelpableScreen):
 		cCursor.close()
 		if row:
 			(url, ) = row
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
+			serien_id = getSeriesIDByURL(url)
 			if serien_id:
-				self.session.open(serienRecShowInfo, serien_name, serien_id[0])
+				self.session.open(serienRecShowInfo, serien_name, serien_id)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -9593,9 +9500,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 		serien_id = None
 		if row:
 			(url, ) = row
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-			if serien_id:
-				serien_id = serien_id[0]
+			serien_id = getSeriesIDByURL(url)
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 			
@@ -9768,9 +9673,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 		serien_id = None
 		if row:
 			(url, ) = row
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-			if serien_id:
-				serien_id = serien_id[0]
+			serien_id = getSeriesIDByURL(url)
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, self.serieName, serien_id)
 
@@ -9950,39 +9853,12 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 				self.getData()
 
 	def getData(self):
-		self.getCover()
-		getPage(getURLWithProxy(self.serieUrl), timeout=WebTimeout, agent=getUserAgent(), headers=getHeaders()).addCallback(self.parseData).addErrback(self.dataError)
-
-	def parseData(self, data):
-		data = processDownloadedData(data)
-		infoText = ""
-		info = re.findall('<div class="text">.(?:<div>(.*?)</div>)?(?:<div>(.*?)</div>)?.*?<span class="wertung">(.*?)(?:</span>|<span class="small">).*?(?:<p class="clear mb4"></p>.)+(?:<div class="epg_bild">.*?</div></div>)?(.*?)(?:<p class="credits">(.*?)</p>(.*?))?<div class="clear mb8"></div>', data, re.S)
-		if info:
-			for transmission,otransmission,ranking,description,credit,cast in info:
-				if transmission:
-					infoText += "%s\n" % re.sub('<em>|</em>', '', transmission)
-				if otransmission:
-					infoText += "%s\n" % re.sub('<em>|</em>', '', otransmission)
-				infoText += "\n"
-				if ranking:
-					infoText += ("Episoden-Bewertung: %s" % ranking)
-				infoText += "\n"
-				if description:
-					infoText += description
-				infoText += "\n"
-				if credit:
-					infoText += credit
-				infoText += "\n"
-				if cast:
-					cast = cast.split('<p><a href="',1)[0]
-					cast = re.sub('<p>|</p>', '', cast)
-					cast = re.sub('<div>|</div>', '', cast)
-					cast = re.sub('<(?:a|span).*?>.*?</(?:a|span)>', '', cast)
-					infoText += cast
-
-		infoText = infoText.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
-
+		try:
+			infoText = SeriesServer().getEpisodeInfo(self.serieUrl)
+		except:
+			infoText = 'Es ist ein Fehler beim Abrufen der Episoden-Informationen aufgetreten!'
 		self['info'].setText(infoText)
+		self.getCover()
 
 	def dataError(self, error):
 		writeErrorLog("   serienRecShowEpisodeInfo(): %s\n   Serie: %s\n   Episode: %s\n   Url: %s" % (error, self.serieName, self.episodeTitle, self.serieUrl))
@@ -10007,9 +9883,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 		serien_id = None
 		if row:
 			(url, ) = row
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-			if serien_id:
-				serien_id = serien_id[0]
+			serien_id = getSeriesIDByURL(url)
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, self.serieName, serien_id)
 
@@ -10408,7 +10282,6 @@ class serienRecMain(Screen, HelpableScreen):
 		#self.session.open(SerienRecorderUpdateScreen, remoteUrl, version)
 			
 	def getImdblink2(self, data):
-		data = processDownloadedData(data)
 		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 		if ilink:
 			print ilink
@@ -10716,9 +10589,8 @@ class serienRecMain(Screen, HelpableScreen):
 			seriesColor = parseColor('red').argb()
 		else:
 			seriesColor = parseColor('foreground').argb()
-			if str(episode).isdigit():
-				if int(episode) == 1:
-					seriesColor = parseColor('blue').argb()
+			if aufnahme:
+				seriesColor = parseColor('blue').argb()
 
 		titleColor = timeColor = parseColor('yellow').argb()
 

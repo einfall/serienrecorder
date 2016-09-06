@@ -76,50 +76,13 @@ def doReplaces(txt):
 	txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
 	return txt
 
-def getUserAgent():
-	return "Enigma2-SerienRecorder"
+def getSeriesIDByURL(url):
+	result = None
+	seriesID = re.findall('epg_print.pl\?s=([0-9]+)', url)
+	if seriesID:
+		result = seriesID[0]
 
-def getHeaders(referer = None):
-	if not referer:
-		referer = 'http://www.wunschliste.de/main'
-	headers = {
-		# 'Accept': 'text/html, application/xhtml+xml, image/jxr, */*',
-		# 'Accept-Encoding': 'gzip',
-		# 'Accept-Language': 'de-DE,de;q=0.5',
-		# 'Referer': referer,
-		# 'Connection': 'Keep-Alive',
-		# 'Host': 'www.wunschliste.de',
-		# 'DNT': '1',
-	}
-	return headers
-
-def getURLWithProxy(url):
-	global STBTYPE
-	global SRVERSION
-	if not STBTYPE:
-		STBTYPE = STBHelpers.getSTBType()
-	return "http://www.serienserver.de/proxy/proxy.php?device=%s&version=%s&url=%s" % (STBTYPE, 'SR'+SRVERSION, url)
-
-def processDownloadedData(data):
-	# from gzip import GzipFile
-	# try:
-	# 	from cStringIO import StringIO
-	# except:
-	# 	from StringIO import StringIO
-	#
-	# #writeLog("[SerienRecorder] Downloaded data size = %d bytes" % (len(data)))
-	# compressedstream = StringIO(data)
-	# gzipper = GzipFile(fileobj=compressedstream)
-	# try:
-	# 	data = gzipper.read()
-	# except:
-	# 	data = data
-	# finally:
-	# 	gzipper.close()
-	# 	compressedstream.close()
-	#
-	# #writeLog("[SerienRecorder] Uncompressed data size = %d bytes" % (len(data)))
-	return data
+	return result
 
 # ----------------------------------------------------------------------------------------------------------------------
 #

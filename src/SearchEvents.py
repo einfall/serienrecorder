@@ -48,8 +48,6 @@ class SearchEvents(object):
 			self.user_errback(error, self.serie_url)
 
 	def __callback(self, data, useCache=False):
-		if not useCache:
-			data = processDownloadedData(data)
 		sendetermine_list = []
 
 		if useCache:

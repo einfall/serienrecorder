@@ -42,7 +42,6 @@ class SearchSerie(object):
 			self.user_errback(error, url)
 
 	def __callback(self, data):
-		data = processDownloadedData(data)
 		serienlist = []
 		count_lines = len(data.splitlines())
 		if int(count_lines) >= 1:

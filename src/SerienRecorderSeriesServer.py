@@ -52,6 +52,43 @@ class SeriesServer:
 			infoText += "\n\nCast und Crew:\n%s\n%s" % (glue.join(seriesInfo['cast']).encode('utf-8'), glue.join(seriesInfo['crew']).encode('utf-8'))
 		return infoText
 
+	def getEpisodeInfo(self, url):
+		episodeInfo = self.server.sp.cache.getEpisodeInfo(url)
+		infoText = ""
+
+		if 'season' in episodeInfo and 'episode' in episodeInfo:
+			infoText += "Staffel: %s, Episode: %s\n" % (episodeInfo['season'], episodeInfo['episode'])
+
+		# Title
+		if 'title' in episodeInfo:
+			infoText += "Titel: %s" % episodeInfo['title'].encode('utf-8')
+
+		if 'otitle' in episodeInfo:
+			infoText += "\n"
+			infoText += "Originaltitel: %s" % episodeInfo['otitle'].encode('utf-8')
+
+		# Rating
+		if 'rating' in episodeInfo:
+			infoText += "\n\n"
+			infoText += episodeInfo['rating']
+
+		# Transmissions
+		infoText += "\n\n"
+		if 'transmissions' in episodeInfo:
+			glue = "\n"
+			infoText += "%s\n" % glue.join(episodeInfo['transmissions']).encode('utf-8')
+
+		if 'description' in episodeInfo:
+			infoText += "\n\n"
+			infoText += "%s\n" % episodeInfo['description'].encode('utf-8')
+
+		# Cast / Crew
+		if 'cast' in episodeInfo:
+			glue = "\n"
+			infoText += "\n\nCast und Crew:\n%s" % glue.join(episodeInfo['cast']).encode('utf-8')
+		return infoText
+
+
 	def doSearch(self, searchString):
 		resultList = []
 		searchResults = self.server.sp.cache.searchSeries(searchString)

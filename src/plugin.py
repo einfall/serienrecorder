@@ -3,8 +3,6 @@ from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 import os
 import SerienRecorder
-import SearchEvents
-import SearchSerie
 import SerienRecorderResource
 import SerienRecorderHelpers
 import SerienRecorderSeriesServer
@@ -20,8 +18,6 @@ serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 def SRstart(session, **kwargs):
 
 	for file_name in (('SerienRecorder', SerienRecorder),
-	                  ('SearchEvents', SearchEvents),
-	                  ('SearchSerie', SearchSerie),
 	                  ('SerienRecorderResource', SerienRecorderResource),
 	                  ('SerienRecorderSeriesServer', SerienRecorderSeriesServer),
 	                  ('SerienRecorderScreenHelpers', SerienRecorderScreenHelpers),
