@@ -2797,15 +2797,10 @@ class serienRecCheckForRecording():
 		
 	@staticmethod
 	def download(seriesID, timeSpan, markerChannels):
-		start = time.time()
 		transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
-		end = time.time()
-		writeLog('download Transmissions: %s' % str(end - start))
 		return transmissions
 
 	def processTransmissions(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
-		start = time.time()
-
 		self.count_url += 1
 
 		(fromTime, toTime) = getTimeSpan(serien_name)
@@ -2940,9 +2935,6 @@ class serienRecCheckForRecording():
 			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays))
 			cCursorTmp.close()
-
-		end = time.time()
-		writeLog('ProcessTransmissions: %s' % str(end - start))
 
 			
 	def createTimer(self, result=True):
