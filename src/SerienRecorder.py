@@ -2812,7 +2812,7 @@ class serienRecCheckForRecording():
 			TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
 
 		# loop over all transmissions
-		for serien_name, sender, startzeit, endzeit, staffel, episode, title, status in data:
+		for current_serien_name, sender, startzeit, endzeit, staffel, episode, title, status in data:
 			start_unixtime = startzeit
 			end_unixtime = endzeit
 
