@@ -82,6 +82,7 @@ from SerienRecorderChannelScreen import *
 from SerienRecorderScreenHelpers import *
 from SerienRecorderEpisodesScreen import *
 
+showAllButtons = False
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
 InfoFile = "%sStartupInfoText" % serienRecMainPath
@@ -1896,7 +1897,7 @@ class serienRecAddTimer():
 		return removed
 
 	@staticmethod
-	def addTimer(session, serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, logentries=None, recordfile=None, forceWrite=True):
+	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, logentries=None):
 
 		recordHandler = NavigationInstance.instance.RecordTimer
 		#config.plugins.serienRec.seriensubdir
@@ -1970,11 +1971,8 @@ class serienRecAddTimer():
 				"message": "Could not add timer '%s'!" % e
 			}
 
-		#if not config.plugins.skyrecorder.silent_timer_mode or config.plugins.skyrecorder.silent_timer_mode.value == False:
-		#message = session.open(MessageBox, "%s - %s added.\nZiel: %s" % (name, description, dirname), MessageBox.TYPE_INFO, timeout=3)
 		print "[SerienRecorder] Versuche Timer anzulegen:", name, dirname
-		if forceWrite:
-			writeLog("Versuche Timer anzulegen: ' %s - %s '" % (name, dirname))
+		writeLog("Versuche Timer anzulegen: ' %s - %s '" % (name, dirname))
 		return {
 			"result": True,
 			"message": "Timer '%s' added" % name,
@@ -2717,7 +2715,7 @@ class serienRecCheckForRecording():
 								writeLog("Versuche deaktivierten Timer aktiv zu erstellen: ' %s - %s '" % (serien_title, dirname))
 								end_unixtime = int(begin) + int(duration)
 								end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
-								result = serienRecAddTimer.addTimer(self.session, stbRef, str(serien_time), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title), eit, False, dirname, vpsSettings, tags, None, recordfile=".ts")
+								result = serienRecAddTimer.addTimer(stbRef, str(serien_time), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title), eit, False, dirname, vpsSettings, tags, None)
 								if result["result"]:
 									self.countTimer += 1
 									# Eintrag in das timer file
@@ -3425,7 +3423,7 @@ class serienRecCheckForRecording():
 				timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title)
 			else:
 				timer_name = serien_name
-			result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, False, dirname, vpsSettings, tags, None, recordfile=".ts")
+			result = serienRecAddTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, False, dirname, vpsSettings, tags, None)
 			if result["result"]:
 				self.countTimer += 1
 				# Eintrag in das timer file
@@ -3468,7 +3466,7 @@ class serienRecCheckForRecording():
 				writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"]), True)
 				dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
 				
-				result = serienRecAddTimer.addTimer(self.session, stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, True, dirname, vpsSettings, tags, None, recordfile=".ts")
+				result = serienRecAddTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, True, dirname, vpsSettings, tags, None)
 				if result["result"]:
 					self.countNotActiveTimer += 1
 					# Eintrag in das timer file
@@ -5320,7 +5318,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			print "[SerienRecorder] keine infos gefunden"
 			return
 
-		Serie = self['menu_list'].getCurrent()[0][0]
+		Serie = doReplaces(self['menu_list'].getCurrent()[0][0])
 		Year = self['menu_list'].getCurrent()[0][1]
 		Id = self['menu_list'].getCurrent()[0][2]
 		print Serie, Year, Id
@@ -5914,7 +5912,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				# versuche timer anzulegen
 				#if checkTuner(start_unixtime_eit, end_unixtime_eit, timer_stbRef):
 				if True:
-					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, False, dirname, vpsSettings, tags, None, recordfile=".ts")
+					result = serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, False, dirname, vpsSettings, tags, None)
 					if result["result"]:
 						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit):
 							self.countTimer += 1
@@ -5931,7 +5929,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					# versuche timer anzulegen
 					#if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit, timer_altstbRef):
 					if True:
-						result = serienRecAddTimer.addTimer(self.session, timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), alt_eit, False, dirname, vpsSettings, tags, None, recordfile=".ts")
+						result = serienRecAddTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), alt_eit, False, dirname, vpsSettings, tags, None)
 						if result["result"]:
 							konflikt = None
 							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit):
@@ -5947,7 +5945,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, konflikt), True)
 					dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
 
-					result = serienRecAddTimer.addTimer(self.session, timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True, dirname, vpsSettings, tags, None, recordfile=".ts")
+					result = serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True, dirname, vpsSettings, tags, None)
 					if result["result"]:
 						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, False):
 							self.countTimer += 1
