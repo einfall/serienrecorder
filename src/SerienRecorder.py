@@ -82,7 +82,6 @@ from SerienRecorderChannelScreen import *
 from SerienRecorderScreenHelpers import *
 from SerienRecorderEpisodesScreen import *
 
-showAllButtons = False
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
 InfoFile = "%sStartupInfoText" % serienRecMainPath
@@ -249,7 +248,7 @@ def ReadConfigFile():
 		config.plugins.serienRec.screenmode.value = 1
 
 	configfile.save()
-
+	
 	SelectSkin()
 ReadConfigFile()
 
@@ -257,6 +256,11 @@ if config.plugins.serienRec.firstscreen.value == "0":
 	showMainScreen = True
 else:
 	showMainScreen = False
+	
+if config.plugins.serienRec.SkinType.value in ("", "AtileHD"):
+	showAllButtons = False
+else:
+	showAllButtons = True	
 
 #logFile = "%slog" % serienRecMainPath
 SERIENRECORDER_LOGFILENAME = "%sSerienRecorder.log"
