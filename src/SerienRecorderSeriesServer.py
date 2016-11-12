@@ -91,11 +91,14 @@ class SeriesServer:
 
 	def doSearch(self, searchString):
 		resultList = []
-		searchResults = self.server.sp.cache.searchSeries(searchString)
-		for searchResult in searchResults['results']:
-			resultList.append((searchResult['name'].encode('utf-8'), searchResult['country_year'], str(searchResult['id'])))
-		if 'more' in searchResults:
-			resultList.append(("... %s%s'%s'" % (searchResults['more'], " weitere Ergebnisse für ", searchString.encode('utf-8')), str(searchResults['more']), "-1"))
+		try:
+			searchResults = self.server.sp.cache.searchSeries(searchString)
+			for searchResult in searchResults['results']:
+				resultList.append((searchResult['name'].encode('utf-8'), searchResult['country_year'], str(searchResult['id'])))
+			if 'more' in searchResults:
+				resultList.append(("... %s%s'%s'" % (searchResults['more'], " weitere Ergebnisse für ", searchString.encode('utf-8')), str(searchResults['more']), "-1"))
+		except:
+			resultList = []
 		return resultList
 
 	def doGetCoverURL(self, seriesID, seriesName):

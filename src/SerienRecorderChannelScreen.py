@@ -37,9 +37,9 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 		from difflib import SequenceMatcher
 		self.sequenceMatcher = SequenceMatcher(" ".__eq__, "", "")
-
+		
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok"       : (self.keyOK, "Popup-Fenster zur Auswahl des STB-Channels öffnen"),
+			"ok"       : (self.keyOK, "Popup-Fenster zur Auswahl des STB-Sender öffnen"),
 			"cancel"   : (self.keyCancel, "zurück zur Serienplaner-Ansicht"),
 			"red"	   : (self.keyRed, "umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert"),
 			"red_long" : (self.keyRedLong, "ausgewählten Sender aus der Channelliste endgültig löschen"),
@@ -114,6 +114,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		self['text_blue'].setText("Auto-Zuordnung")
 
 		self.displayTimer = None
+		global showAllButtons
 		if showAllButtons:
 			Skin1_Settings(self)
 		else:
@@ -152,17 +153,18 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		self['popup_list2'] = self.chooseMenuList_popup2
 		self['popup_list2'].hide()
 
-		self['title'].setText("Lade Web-Channel / STB-Channels...")
+		self['title'].setText("Lade Web-Sender / STB-Sender...")
 
-		self['Web_Channel'].setText("Web-Channel")
-		self['STB_Channel'].setText("STB-Channel")
-		self['alt_STB_Channel'].setText("alt. STB-Channel")
+		self['Web_Channel'].setText("Web-Sender")
+		self['STB_Channel'].setText("STB-Sender")
+		self['alt_STB_Channel'].setText("alt. STB-Sender")
 
 		self['Web_Channel'].show()
 		self['STB_Channel'].show()
 		self['alt_STB_Channel'].show()
 		self['separator'].show()
 
+		global showAllButtons
 		if not showAllButtons:
 			self['bt_red'].show()
 			self['bt_green'].show()
@@ -252,7 +254,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				self.showChannels()
 
 	def __onLayoutFinished(self):
-		self['title'].setText("Lade Web-Channel / STB-Channels...")
+		self['title'].setText("Lade Web-Sender / STB-Sender...")
 		self.timer_default.start(0)
 
 	def showChannels(self):
@@ -273,11 +275,11 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 	def readWebChannels(self):
 		print "[SerienRecorder] call webpage.."
-		self['title'].setText("Lade Web-Channels...")
+		self['title'].setText("Lade Web-Sender...")
 		try:
 			self.createWebChannels(SeriesServer().doGetWebChannels(), False)
 		except:
-			self['title'].setText("Fehler beim Laden der Web-Channels")
+			self['title'].setText("Fehler beim Laden der Web-Sender")
 
 	def createWebChannels(self, webChannelList, autoMatch):
 		if webChannelList:
@@ -324,7 +326,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		else:
 			print "[SerienRecorder] get webChannel error.."
 
-		self['title'].setText("Web-Channel / STB-Channels")
+		self['title'].setText("Web-Sender / STB-Sender")
 
 	@staticmethod
 	def getMissingWebChannels(webChannels, dbChannels):
@@ -406,7 +408,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 						pass
 			cCursor.close()
 			self['popup_list'].moveToIndex(idx)
-			self['title'].setText("Standard STB-Channel für %s:" % self['list'].getCurrent()[0][0])
+			self['title'].setText("Standard STB-Sender für %s:" % self['list'].getCurrent()[0][0])
 		elif config.plugins.serienRec.selectBouquets.value:
 			if self.modus == "popup_list":
 				self.modus = "popup_list2"
@@ -429,7 +431,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 							pass
 				cCursor.close()
 				self['popup_list2'].moveToIndex(idx)
-				self['title'].setText("alternativer STB-Channels für %s:" % self['list'].getCurrent()[0][0])
+				self['title'].setText("alternativer STB-Sender für %s:" % self['list'].getCurrent()[0][0])
 			else:
 				self.modus = "list"
 				self['popup_list'].hide()
@@ -438,12 +440,12 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 				check = self['list'].getCurrent()
 				if check is None:
-					print "[SerienRecorder] Channel-List leer (list)."
+					print "[SerienRecorder] Sender-Liste leer (list)."
 					return
 
 				check = self['popup_list'].getCurrent()
 				if check is None:
-					print "[SerienRecorder] Channel-List leer (popup_list)."
+					print "[SerienRecorder] Sender-Liste leer (popup_list)."
 					return
 
 				chlistSender = self['list'].getCurrent()[0][0]
@@ -471,11 +473,11 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self['popup_bg'].hide()
 
 			if self['list'].getCurrent() is None:
-				print "[SerienRecorder] Channel-List leer (list)."
+				print "[SerienRecorder] Sender-Liste leer (list)."
 				return
 
 			if self['popup_list'].getCurrent() is None:
-				print "[SerienRecorder] Channel-List leer (popup_list)."
+				print "[SerienRecorder] Sender-Liste leer (popup_list)."
 				return
 
 			chlistSender = self['list'].getCurrent()[0][0]
@@ -498,7 +500,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 	def keyRed(self):
 		global runAutocheckAtExit
 		if self['list'].getCurrent() is None:
-			print "[SerienRecorder] Channel-List leer."
+			print "[SerienRecorder] Sender-Liste leer."
 			return
 
 		if self.modus == "list":
@@ -543,16 +545,16 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
 			else:
 				self.stbChannelList = STBHelpers.buildSTBChannelList()
-			self['title'].setText("Lade Web-Channels...")
+			self['title'].setText("Lade Web-Sender...")
 			try:
 				self.createWebChannels(SeriesServer().doGetWebChannels(), False)
 			except:
-				self['title'].setText("Fehler beim Laden der Web-Channels")
+				self['title'].setText("Fehler beim Laden der Web-Sender")
 		else:
 			print "[SerienRecorder] channel-list ok."
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.autoMatch, MessageBox, "Automatische Zuordnung durchführen?\n\nDieser Vorgang kann je nach Umfang der Kanalliste einige Zeit dauern?", MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.autoMatch, MessageBox, "Automatische Zuordnung durchführen?\n\nDieser Vorgang kann je nach Umfang der Senderliste einige Zeit dauern?", MessageBox.TYPE_YESNO)
 
 	def autoMatch(self, execute):
 		if execute:
@@ -564,7 +566,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			try:
 				self.createWebChannels(SeriesServer().doGetWebChannels(), True)
 			except:
-				self['title'].setText("Fehler beim Laden der Web-Channels")
+				self['title'].setText("Fehler beim Laden der Web-Sender")
 
 	def keyRedLong(self):
 		check = self['list'].getCurrent()

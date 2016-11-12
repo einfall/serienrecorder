@@ -13,7 +13,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.session = session
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
-		self.serie_url = serie_url
+		self.serien_id = 0
 		self.serien_cover = serien_cover
 		self.addedEpisodes = SerienRecorder.getAlreadyAdded(self.serien_name)
 		self.episodes_list_cache = {}
@@ -21,22 +21,22 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.aFromEpisode = None
 		self.aToEpisode = None
 		#self.pages = []
-		self.page = 0
+		self.page = 1
 		self.maxPages = 1
 		self.loading = False
 		self.changesMade = False
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, "Informationen zur ausgewählten Episode anzeigen"),
-			"cancel": (self.keyCancel, "zurück zur Serien-Marker-Ansicht"),
-			"left"  : (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right" : (self.keyRight, "zur nächsten Seite blättern"),
-			"up"    : (self.keyUp, "eine Zeile nach oben"),
-			"down"  : (self.keyDown, "eine Zeile nach unten"),
-			"red"	: (self.keyRed, "zurück zur Serien-Marker-Ansicht"),
-			"green"	: (self.keyGreen, "diese Folge (nicht mehr) aufnehmen"),
+			"cancel": (self.keyCancel, "Zurück zur Serien-Marker-Ansicht"),
+			"left"  : (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right" : (self.keyRight, "Zur nächsten Seite blättern"),
+			"up"    : (self.keyUp, "Eine Zeile nach oben"),
+			"down"  : (self.keyDown, "Eine Zeile nach unten"),
+			"red"	: (self.keyRed, "Zurück zur Serien-Marker-Ansicht"),
+			"green"	: (self.keyGreen, "Diese Folge (nicht mehr) aufnehmen"),
 			"yellow": (self.keyYellow, "Ausgewählte Folge auf den Merkzettel"),
-			"blue"  : (self.keyBlue, "neue Einträge manuell hinzufügen"),
+			"blue"  : (self.keyBlue, "Neue Einträge manuell hinzufügen"),
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"nextBouquet" : (self.nextPage, "Nächste Seite laden"),
 			"prevBouquet" : (self.backPage, "Vorherige Seite laden"),
@@ -57,6 +57,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.setupSkin()
 
+		raw = re.findall(".*?(\d+)", serie_url)
+		self.serien_id = raw[0]
+
 		self.timer_default = eTimer()
 		if isDreamboxOS:
 			self.timer_default_conn = self.timer_default.timeout.connect(self.loadEpisodes)
@@ -72,7 +75,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def setSkinProperties(self):
 		setSkinProperties(self)
-		self['text_red'].setText("Abbrechen")
+		self['text_red'].setText("Zurück")
 		self['text_green'].setText("(De)aktivieren")
 		self['text_ok'].setText("Beschreibung")
 		self['text_yellow'].setText("Auf den Merkzettel")
@@ -131,22 +134,20 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.loading = True
 		self.timer_default.start(0)
 
-	def processEpisode(self, episode):
-		if "title" in episode:
-			title = episode["title"].encode("utf-8")
-		else:
-			title = "-"
-		if "otitle" in episode:
-			otitle = episode["otitle"].encode("utf-8")
-		else:
-			otitle = ("(%s)" % title)
-		self.episodes_list_cache[self.page].append([episode["season"], episode["episode"], episode["tv"], episode["url"], title, otitle])
-
 	def resultsEpisodes(self, data):
 		self.maxPages = data["numPages"]
 		self.episodes_list_cache[self.page] = []
 		for episode in data["episodes"]:
-			self.processEpisode(episode)
+			if "title" in episode:
+				title = episode["title"].encode("utf-8")
+			else:
+				title = "-"
+			if "otitle" in episode:
+				otitle = episode["otitle"].encode("utf-8")
+			else:
+				otitle = ("(%s)" % title)
+			self.episodes_list_cache[self.page].append(
+				[episode["season"], episode["episode"], episode["tv"], episode["url"], title, otitle])
 
 		self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 		numberOfEpisodes = data["numEpisodes"]
@@ -160,10 +161,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.page in self.episodes_list_cache:
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 		else:
-			raw = re.findall(".*?(\d+)", self.serie_url)
-			serien_id = raw[0]
-			SerienRecorder.getCover(self, self.serien_name, serien_id)
-			episodes = SeriesServer().doGetEpisodes(int(serien_id), int(self.page))
+			SerienRecorder.getCover(self, self.serien_name, self.serien_id)
+			episodes = SeriesServer().doGetEpisodes(int(self.serien_id), int(self.page))
 			self.resultsEpisodes(episodes)
 
 	def buildList_episodes(self, entry):
@@ -190,7 +189,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 100 * skinFactor, 48 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % seasonEpisodeString, color),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 140 * skinFactor, 48 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % seasonEpisodeString, color),
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 150 * skinFactor, 17 * skinFactor, 48 * skinFactor, 48 * skinFactor, loadPNG(middleImage)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title),
 			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle, parseColor('yellow').argb()),

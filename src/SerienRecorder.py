@@ -179,7 +179,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
 	config.plugins.serienRec.writeLogVersion = ConfigYesNo(default = True)
 	config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
-	config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", "keine"), ("1", "nur Benachrichtigung"), ("4", "nur Suchen")], default="0")
+	config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", "keine"), ("1", "benachrichten"), ("4", "suchen")], default="0")
 	config.plugins.serienRec.ActionOnNewManuell = ConfigYesNo(default = True)
 	config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
 	config.plugins.serienRec.planerCacheEnabled = ConfigYesNo(default = True)
@@ -649,9 +649,8 @@ def CreateDirectory(serien_name, staffel):
 				seasonsubdirfillchar = ' '
 			else:
 				seasonsubdirfillchar = config.plugins.serienRec.seasonsubdirfillchar.value
-			season_dirname = "Season %s" % (str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar), )
-			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname, season_dirname)):
-				shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, season_dirname))
+			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname):
+				shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname)
 
 
 
@@ -1743,13 +1742,16 @@ def readPlanerData():
 			pass
 		f.close()
 
-		heute = time.strptime(time.strftime('%d.%m.%Y', datetime.datetime.now().timetuple()), '%d.%m.%Y')
-		l = []
-		for key in dayCache: 
-			if time.strptime(key, '%d.%m.%Y') < heute: l.append(key)
-		for key in l:
-			del dayCache[key]
-			
+		try:
+			heute = time.strptime(time.strftime('%d.%m.%Y', datetime.datetime.now().timetuple()), '%d.%m.%Y')
+			l = []
+			for key in dayCache:
+				if time.strptime(key, '%d.%m.%Y') < heute: l.append(key)
+			for key in l:
+				del dayCache[key]
+		except:
+			pass
+
 		optimizePlanerData()
 		
 def optimizePlanerData():
@@ -2079,8 +2081,8 @@ class serienRecCheckForRecording():
 			self.startCheck(True)
 		else:
 			try:
-				from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
-				self.epgrefresh_instance = epgrefresh
+				from Plugins.Extensions.EPGRefresh.EPGRefresh import EPGRefresh
+				self.epgrefresh_instance = EPGRefresh
 				config.plugins.serienRec.autochecktype.addNotifier(self.setEPGRefreshCallback(config.plugins.serienRec.autochecktype))
 			except:
 				writeLog("EPGRefresh not installed!", True)
@@ -2799,11 +2801,18 @@ class serienRecCheckForRecording():
 		
 	@staticmethod
 	def download(seriesID, timeSpan, markerChannels):
-		transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
+		try:
+			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
+		except:
+			transmissions = None
 		return transmissions
 
 	def processTransmissions(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
 		self.count_url += 1
+
+		if data is None:
+			writeLog("Fehler beim Abrufen und Verarbeiten der Ausstrahlungstermine [%s]\n" % serien_name, True)
+			return
 
 		(fromTime, toTime) = getTimeSpan(serien_name)
 		if self.NoOfRecords < AnzahlAufnahmen:
@@ -2851,11 +2860,11 @@ class serienRecCheckForRecording():
 			#
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
 			if stbChannel == "":
-				writeLogFilter("channels", "' %s ' - STB-Channel nicht gefunden ' -> ' %s '" % (label_serie, webChannel))
+				writeLogFilter("channels", "' %s ' - STB-Sender nicht gefunden ' -> ' %s '" % (label_serie, webChannel))
 				continue
 
 			if int(status) == 0:
-				writeLogFilter("channels", "' %s ' - STB-Channel deaktiviert -> ' %s '" % (label_serie, webChannel))
+				writeLogFilter("channels", "' %s ' - STB-Sender deaktiviert -> ' %s '" % (label_serie, webChannel))
 				continue
 
 			##############################
@@ -3077,7 +3086,7 @@ class serienRecCheckForRecording():
 
 			self.konflikt = ""
 			TimerDone = self.searchTimer2(serien_name, staffel, episode, title, optionalText, preferredChannel, dirname)
-			if (not TimerDone) and (useAlternativeChannel):
+			if (not TimerDone) and useAlternativeChannel:
 				if preferredChannel == 1:
 					usedChannel = 2
 				else:
@@ -3177,7 +3186,9 @@ class serienRecCheckForRecording():
 
 			# Is channel assigned
 			if timer_stbChannel == "":
-				writeLogFilter("channels", "' %s ' - STB-Channel nicht in bevorzugter Kanalliste zugewiesen -> ' %s '" % (label_serie, webChannel))
+				writeLogFilter("channels", "' %s ' - STB-Sender nicht in bevorzugter Senderliste zugewiesen -> ' %s '" % (label_serie, webChannel))
+				# Nicht in bevorzugter Kanalliste - dann gehen wir davon aus, dass kein Timer angelegt werden soll.
+				TimerDone = True
 				continue
 
 			##############################
@@ -3642,7 +3653,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			"red"	: (self.keyRed, "ausgewählten Timer löschen"),
 			"green" : (self.viewChange, "Sortierung ändern"),
 			"yellow": (self.keyYellow, "umschalten alle/nur aktive Timer anzeigen"),
-			"blue"  : (self.keyBlue, "alle vergangenen Timer aus der Datenbank löschen"),
+			"blue"  : (self.keyBlue, "alle noch ausstehenden Timer löschen"),
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"startTeletext"       : (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
 			"startTeletext_long"  : (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
@@ -3651,6 +3662,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
+			"9"		: (self.dropAllTimer, "Alle Timer aus der Datenbank löschen"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -3682,7 +3694,8 @@ class serienRecTimer(Screen, HelpableScreen):
 			self['text_green'].setText("Zeige früheste Timer zuerst")
 		self['text_ok'].setText("Liste bearbeiten")
 		self['text_yellow'].setText("Zeige auch alte Timer")
-		self['text_blue'].setText("Entferne alle alten")
+		self['text_blue'].setText("Entferne neue Timer")
+		self.num_bt_text[4][1] = "Datenbank leeren"
 
 		self.displayTimer = None
 		global showAllButtons
@@ -3845,7 +3858,7 @@ class serienRecTimer(Screen, HelpableScreen):
 				timerList.append((serie, staffel, episode, title, start_time, webChannel, "0", eit, bool(activeTimer)))
 		cCursor.close()
 		
-		if showTitle:			
+		if showTitle:
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			if self.filter:
 				self['title'].setText("Timer-Liste: %s Timer sind vorhanden." % len(timerList))
@@ -3860,7 +3873,7 @@ class serienRecTimer(Screen, HelpableScreen):
 
 		self.chooseMenuList.setList(map(self.buildList, timerList))
 		if len(timerList) == 0:
-			if showTitle:			
+			if showTitle:
 				self['title'].instance.setForegroundColor(parseColor("foreground"))
 				self['title'].setText("Serien Timer - 0 Serien in der Aufnahmeliste.")
 
@@ -3944,7 +3957,6 @@ class serienRecTimer(Screen, HelpableScreen):
 			serien_channel = self['menu_list'].getCurrent()[0][5]
 			serien_eit = self['menu_list'].getCurrent()[0][7]
 
-			found = False
 			print self['menu_list'].getCurrent()[0]
 
 			cCursor = dbSerRec.cursor()
@@ -3967,24 +3979,50 @@ class serienRecTimer(Screen, HelpableScreen):
 			self.filter = True
 		self.readTimer()
 		
+	def removeNewTimerFromDB(self, answer):
+		if answer:
+			current_time = int(time.time())
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, webChannel, EventID, TimerAktiviert FROM AngelegteTimer WHERE StartZeitstempel>=?",(current_time,))
+			for row in cCursor:
+				(serie, staffel, episode, title, start_time, webChannel, eit, activeTimer) = row
+				self.removeTimer(serie, staffel, episode, title, start_time, webChannel, eit)
+			cCursor.close()
+
+			self.readTimer(False)
+			self['title'].instance.setForegroundColor(parseColor("red"))
+			self['title'].setText("Alle noch ausstehenden Timer wurden entfernt.")
+		else:
+			return
+
+	def keyBlue(self):
+		if config.plugins.serienRec.confirmOnDelete.value:
+			self.session.openWithCallback(self.removeOldTimerFromDB, MessageBox,
+			                              "Sollen wirklich alle noch ausstehenden Timer von der Box und aus der Datenbank entfernt werden?",
+			                              MessageBox.TYPE_YESNO, default = False)
+		else:
+			self.removeOldTimerFromDB(True)
+
 	def removeOldTimerFromDB(self, answer):
 		if answer:
 			cCursor = dbSerRec.cursor()
-			cCursor.execute("DELETE FROM AngelegteTimer WHERE StartZeitstempel<?", (int(time.time()), ))
+			cCursor.execute("DELETE FROM AngelegteTimer WHERE StartZeitstempel<?", (int(time.time()),))
 			dbSerRec.commit()
 			cCursor.execute("VACUUM")
 			dbSerRec.commit()
 			cCursor.close()
-		
+
 			self.readTimer(False)
 			self['title'].instance.setForegroundColor(parseColor("red"))
 			self['title'].setText("Alle alten Timer wurden entfernt.")
 		else:
 			return
 
-	def keyBlue(self):
+	def dropAllTimer(self):
 		if config.plugins.serienRec.confirmOnDelete.value:
-			self.session.openWithCallback(self.removeOldTimerFromDB, MessageBox, "Sollen wirklich alle alten Timer entfernt werden?", MessageBox.TYPE_YESNO, default = False)
+			self.session.openWithCallback(self.removeOldTimerFromDB, MessageBox,
+			                              "Sollen wirklich alle alten Timer aus der Datenbank entfernt werden?", MessageBox.TYPE_YESNO,
+			                              default=False)
 		else:
 			self.removeOldTimerFromDB(True)
 			
@@ -5514,7 +5552,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		self['menu_list'] = self.chooseMenuList
 		self['menu_list'].show()
 
-		self['title'].setText("Lade Web-Channel / STB-Channels...")
+		self['title'].setText("Lade Web-Sender / STB-Sender...")
 
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
@@ -5885,9 +5923,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 			TimerOK = False
 			if stbChannel == "":
-				writeLog("' %s ' - No STB-Channel found -> ' %s '" % (serien_name, webChannel))
+				writeLog("' %s ' - Kein STB-Kanal gefunden -> ' %s '" % (serien_name, webChannel))
 			elif int(status) == 0:
-				writeLog("' %s ' - STB-Channel deaktiviert -> ' %s '" % (serien_name, webChannel))
+				writeLog("' %s ' - STB-Kanel deaktiviert -> ' %s '" % (serien_name, webChannel))
 			else:
 				if config.plugins.serienRec.TimerName.value == "0":
 					timer_name = label_serie
@@ -6573,7 +6611,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				if config.plugins.serienRec.setupType.value == "1":
 					self.list.append(getConfigListEntry("    Standard Bouquet:", config.plugins.serienRec.MainBouquet))
 					self.list.append(getConfigListEntry("    Alternatives Bouquet:", config.plugins.serienRec.AlternativeBouquet))
-					self.list.append(getConfigListEntry("    Verwende alternative Channels bei Konflikten:", config.plugins.serienRec.useAlternativeChannel))
+					self.list.append(getConfigListEntry("    Verwende alternative Sender bei Konflikten:", config.plugins.serienRec.useAlternativeChannel))
 		
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry(""))
@@ -6739,13 +6777,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.tuner :                   ("Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten.", "Anzahl_der_Tuner"),
 			config.plugins.serienRec.ActionOnNew :             ("Wird eine neue Staffel oder Serie gefunden (d.h. Folge 1), wird die hier eingestellt Aktion ausgeführt:\n"
 			                                                    "  - 'keine': Es wird nicht nach neuen Serien/Staffeln gesucht.\n"
-																"  - 'nur Benachrichtigung': Wurde eine neue Serie oder Staffel gefunden wirde eine Nachricht eingeblendet.\n"
-																"  - 'nur Suchen': Es wird nur eine Suche durchgeführt, die Ergebnisse können über Taste 3 abgerufen werden.", "Aktion_bei_neuer_Staffel"),
+																"  - 'benachrichtigen': Wurde eine neue Serie oder Staffel gefunden wirde eine Nachricht eingeblendet.\n"
+																"  - 'suchen': Es wird nur eine Suche durchgeführt, die Ergebnisse können über Taste 3 abgerufen werden.", "Aktion_bei_neuer_Staffel"),
 			config.plugins.serienRec.ActionOnNewManuell :      ("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht.", "Aktion_bei_neuer_Staffel"),
 			config.plugins.serienRec.deleteOlderThan :         ("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
 																"und auch nicht mehr angezeigt." % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))), "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.runAutocheckAtExit :      ("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Channels und/oder Markern Änderungen vorgenommen wurden, "
-			                                                    "die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Channel zugewiesen, etc.)", "Suchlauf_beim_Beenden"),
+			config.plugins.serienRec.runAutocheckAtExit :      ("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Sendern und/oder Markern Änderungen vorgenommen wurden, "
+			                                                    "die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Sender zugewiesen, etc.)", "Suchlauf_beim_Beenden"),
 			config.plugins.serienRec.wakeUpDSB :               ("Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
 			                                                    "Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die STB im Deep-Standby befindet.", "Deep-Standby"),
 			config.plugins.serienRec.afterAutocheck :          ("Hier kann ausgewählt werden, ob die STB nach dem automatischen Suchlauf in Standby oder Deep-Standby gehen soll.", "Deep-Standby"),
@@ -6777,12 +6815,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			                                                    "Falls das nicht möglich ist, wird das Event aufgenommen.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.TimerName :               ("Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
 																"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden.", "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.selectBouquets :          ("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Channel-Zuordnung verwendet werden.\n"
-			                                                    "Bei 'nein' wird das erste Bouquet für die Channel-Zuordnung benutzt.", "Bouquet_Auswahl"),
+			config.plugins.serienRec.selectBouquets :          ("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Sender-Zuordnung verwendet werden.\n"
+			                                                    "Bei 'nein' wird das erste Bouquet für die Sender-Zuordnung benutzt.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.MainBouquet :             ("Auswahl, welches Bouquet bei der Sender-Zuordnung als Standard verwendet werden soll.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.AlternativeBouquet :      ("Auswahl, welches Bouquet bei der Sender-Zuordnung als Alternative verwendet werden soll.", "Bouquet_Auswahl"),
-			config.plugins.serienRec.useAlternativeChannel :   ("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu erstellen, "
-										                        "falls der Timer auf dem bevorzugten Channel nicht angelegt werden kann.", "Bouquet_Auswahl"),
+			config.plugins.serienRec.useAlternativeChannel :   ("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "
+										                        "falls der Timer auf dem bevorzugten Sender nicht angelegt werden kann.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.showPicons :              ("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.piconPath :               ("Auswahl, welche Sender-Logos angezeigt werden. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.showCover :               ("Bei 'nein' werden keine Cover angezeigt.", "1.3_Die_globalen_Einstellungen"),
@@ -6795,7 +6833,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.showMessageOnConflicts :  ("Bei 'ja' wird für jeden Timer, der beim automatische Timer-Suchlauf wegen eines Konflikts nicht angelegt werden konnte, eine Nachricht auf dem Bildschirm eingeblendet.\n"
 			                                                    "Diese Nachrichten bleiben solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.DisplayRefreshRate :      ("Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt.", "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.refreshViews :            ("Bei 'ja' werden die Anzeigen nach Änderungen von Markern, Channels, etc. sofort aktualisiert, was aber je nach STB-Typ und Internet-Verbindung zeitintensiv sein kann.\n"
+			config.plugins.serienRec.refreshViews :            ("Bei 'ja' werden die Anzeigen nach Änderungen von Markern, Sendern, etc. sofort aktualisiert, was aber je nach STB-Typ und Internet-Verbindung zeitintensiv sein kann.\n"
 			                                                    "Bei 'nein' erfolgt die Aktualisierung erst, wenn die Anzeige erneut geöffnet wird.", "Sofortige_Aktualisierung"),
 			config.plugins.serienRec.defaultStaffel :          ("Auswahl, ob bei neuen Markern die Staffeln manuell eingegeben werden, oder 'Alle' ausgewählt wird.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.openMarkerScreen :        ("Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können.", "1.3_Die_globalen_Einstellungen"),
@@ -6807,7 +6845,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.writeLog :                ("Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des Timer-Suchlaufs.\n"
 			                                                    "Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern.", "Das_Log"),
 			config.plugins.serienRec.writeLogVersion :         ("Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten.", "Das_Log"),
-			config.plugins.serienRec.writeLogChannels :        ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Channel-Zuordnung kein STB-Channel zugeordnet ist, oder der STB-Channel deaktiviert ist.", "Das_Log"),
+			config.plugins.serienRec.writeLogChannels :        ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Sender-Zuordnung kein STB-Sender zugeordnet ist, oder der STB-Sender deaktiviert ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogAllowedEpisodes : ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogAdded :           ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogDisk :            ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Aufnahmen vorhanden ist.", "Das_Log"),
@@ -7259,8 +7297,8 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 				if self.enable_vps.value:
 					self.list.append(getConfigListEntry("            Sicherheitsmodus aktivieren:", self.enable_vps_savemode))
 
-		self.list.append(getConfigListEntry("Bevorzugte Channel-Liste:", self.preferredChannel))
-		self.list.append(getConfigListEntry("Verwende alternative Channels bei Konflikten:", self.useAlternativeChannel))
+		self.list.append(getConfigListEntry("Bevorzugte Sender-Liste:", self.preferredChannel))
+		self.list.append(getConfigListEntry("Verwende alternative Sender bei Konflikten:", self.useAlternativeChannel))
 
 		self.list.append(getConfigListEntry("Wochentage von der Timer-Erstellung ausschließen:", self.enable_excludedWeekdays))
 		if self.enable_excludedWeekdays.value:
@@ -7435,10 +7473,10 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.enable_vps_savemode :   ("Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet. Die programmierten Start- und Endzeiten werden eingehalten.\n"
 			                              "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.\n"
 										  "Diese Einstellung hat Vorrang gegenüber der Sender Einstellung für VPS.") % self.Serie,
-			self.preferredChannel :      "Auswahl, ob die Standard-Channels oder die alternativen Channels für die Aufnahmen von '%s' verwendet werden sollen." % self.Serie,
-			self.useAlternativeChannel : ("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Channel (Standard oder alternativ) zu erstellen, "
-										  "falls der Timer für '%s' auf dem bevorzugten Channel nicht angelegt werden kann.\n"
-										  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Verwendung von alternativen Channels.\n"
+			self.preferredChannel :      "Auswahl, ob die Standard-Sender oder die alternativen Sender für die Aufnahmen von '%s' verwendet werden sollen." % self.Serie,
+			self.useAlternativeChannel : ("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "
+										  "falls der Timer für '%s' auf dem bevorzugten Sender nicht angelegt werden kann.\n"
+										  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Verwendung von alternativen Sendern.\n"
 										  "Bei 'gemäß Setup' gilt die Einstellung vom globalen Setup.") % self.Serie,
 		    self.enable_excludedWeekdays : ("Bei 'ja' können bestimmte Wochentage für die Erstellung von Timern für '%s' ausgenommen werden.\n"
 										  "Es werden also an diesen Wochentage für diese Serie keine Timer erstellt.\n"
@@ -7525,9 +7563,9 @@ class serienRecChannelSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.webSender = webSender
 		
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"red"	: (self.cancel, "Änderungen verwerfen und zurück zur Channel-Ansicht"),
-			"green"	: (self.save, "Einstellungen speichern und zurück zur Channel-Ansicht"),
-			"cancel": (self.cancel, "Änderungen verwerfen und zurück zur Channel-Ansicht"),
+			"red"	: (self.cancel, "Änderungen verwerfen und zurück zur Sender-Ansicht"),
+			"green"	: (self.save, "Einstellungen speichern und zurück zur Sender-Ansicht"),
+			"cancel": (self.cancel, "Änderungen verwerfen und zurück zur Sender-Ansicht"),
 			"ok"	: (self.ok, "---"),
 			"up"    : (self.keyUp, "eine Zeile nach oben"),
 			"down"  : (self.keyDown, "eine Zeile nach unten"),
@@ -8818,19 +8856,22 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 			
 	def buildList(self, entry):
 		(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = entry
-		
-		if CreationFlag == 0:
-			imageFound = "%simages/found.png" % serienRecMainPath
-		else:
-			imageFound = "%simages/black.png" % serienRecMainPath
-		
+
+		icon = imageNone = "%simages/black.png" % serienRecMainPath
+		imageNeu = "%simages/neu.png" % serienRecMainPath
+
 		if CreationFlag == 2:
 			setFarbe = parseColor('green').argb()
 		elif CreationFlag == 3:
 			setFarbe = parseColor('red').argb()
+		elif str(Staffel).isdigit() and int(Staffel) == 0:
+			setFarbe = parseColor('grey').argb()
 		else:
 			setFarbe = parseColor('foreground').argb()
-			
+
+		if str(Staffel).isdigit() and int(Staffel) == 1:
+			icon = imageNeu
+
 		Staffel = "S%sE01" % str(Staffel).zfill(2)
 		WochenTag=["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+", %d.%m.%Y", time.localtime(int(UTCTime)))
@@ -8844,7 +8885,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80 * skinFactor, 40 * skinFactor, picon),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(imageFound)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(icon)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
 				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb(), parseColor('yellow').argb()),
 				(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
@@ -8852,7 +8893,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 				]
 		else:
 			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(imageFound)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(icon)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
 				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb(), parseColor('yellow').argb()),
 				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
@@ -9013,7 +9054,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 
 				cCursor = dbSerRec.cursor()
 				data = (Serie, Staffel, Sender, Datum) 
-				cCursor.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET CreationFlag=0 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?", data)
+				cCursor.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET CreationFlag=2 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?", data)
 				dbSerRec.commit()
 				cCursor.close()
 				self.changesMade = True
