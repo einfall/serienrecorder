@@ -2082,20 +2082,20 @@ class serienRecCheckForRecording():
 		else:
 			try:
 				from Plugins.Extensions.EPGRefresh.EPGRefresh import EPGRefresh
-				self.epgrefresh_instance = EPGRefresh
-				config.plugins.serienRec.autochecktype.addNotifier(self.setEPGRefreshCallback(config.plugins.serienRec.autochecktype))
-			except:
-				writeLog("EPGRefresh not installed!", True)
+				self.epgrefresh_instance = EPGRefresh()
+				config.plugins.serienRec.autochecktype.addNotifier(self.setEPGRefreshCallback)
+			except Exception as e:
+				writeLog("EPGRefresh not installed! " + str(e), True)
 
-	def setEPGRefreshCallback(self, configentry):
+	def setEPGRefreshCallback(self, configentry = None):
 		try:
 			if self.epgrefresh_instance:
-				if configentry.value == "2":
+				if config.plugins.serienRec.autochecktype.value == "2":
 					self.epgrefresh_instance.addFinishNotifier(self.startCheck)
 				else:
 					self.epgrefresh_instance.removeFinishNotifier(self.startCheck)
-		except:
-			writeLog("EPGRefresh (v2.1.1 or higher) not installed!", True)
+		except Exception as e:
+			writeLog("EPGRefresh (v2.1.1 or higher) not installed! " + str(e), True)
 
 	@staticmethod
 	def getNextAutoCheckTimer(lt):
