@@ -21,13 +21,21 @@ class SeriesServer:
 		seriesInfo = self.server.sp.cache.getSeriesInfo(seriesID)
 		infoText = ""
 
+		# Title
+		if 'title' in seriesInfo:
+			infoText += seriesInfo['title']
+
 		# Fan count
 		if 'fancount' in seriesInfo:
-			infoText += ("Die Serie hat %s Fans" % seriesInfo['fancount'])
+			infoText += ("\n\nDie Serie hat %s Fans" % seriesInfo['fancount'])
 
 		# Rating
 		if 'rating' in seriesInfo:
-			infoText += (" und eine Bewertung von %s / 5.0 Sternen" % seriesInfo['rating'])
+			infoText += (" und eine Bewertung von %s" % seriesInfo['rating'])
+
+		# Sex
+		if 'male' in seriesInfo and 'female' in seriesInfo and 'age' in seriesInfo:
+			infoText += ("\nZielgruppe: %s (Männer: %s, Frauen: %s)" % (seriesInfo['age'], seriesInfo['male'], seriesInfo['female']))
 
 		# Transmission info
 		infoText += "\n\n"
@@ -38,18 +46,25 @@ class SeriesServer:
 		if 'transmissioninfo' in seriesInfo:
 			infoText += "%s\n" % seriesInfo['transmissioninfo']
 
-		if 'category' in seriesInfo:
-			infoText += "%s\n" % seriesInfo['category']
-
 		infoText += "\n"
 		# Description
 		if 'description' in seriesInfo:
 			infoText += seriesInfo['description'].encode('utf-8')
 
+		# Info
+		if 'info' in seriesInfo:
+			infoText += "\n\n%s" % seriesInfo['info']
+
+		# Upfronts
+		infoText += "\n\n"
+		if 'upfronts' in seriesInfo:
+			glue = '\n'
+			infoText += "%s\n" % glue.join(seriesInfo['upfronts'])
+
 		# Cast / Crew
 		if 'cast' in seriesInfo:
 			glue = "\n"
-			infoText += "\n\nCast und Crew:\n%s\n%s" % (glue.join(seriesInfo['cast']).encode('utf-8'), glue.join(seriesInfo['crew']).encode('utf-8'))
+			infoText += "\n\nCast und Crew:\n%s\n\n%s" % (glue.join(seriesInfo['cast']).encode('utf-8'), glue.join(seriesInfo['crew']).encode('utf-8'))
 		return infoText
 
 	def getEpisodeInfo(self, url):
@@ -94,9 +109,9 @@ class SeriesServer:
 		try:
 			searchResults = self.server.sp.cache.searchSeries(searchString)
 			for searchResult in searchResults['results']:
-				resultList.append((searchResult['name'].encode('utf-8'), searchResult['country_year'], str(searchResult['id'])))
+				resultList.append((searchResult['name'].encode('utf-8'), searchResult['country_year'].encode('utf-8'), str(searchResult['id'])))
 			if 'more' in searchResults:
-				resultList.append(("... %s%s'%s'" % (searchResults['more'], " weitere Ergebnisse für ", searchString.encode('utf-8')), str(searchResults['more']), "-1"))
+				resultList.append(("... %s'%s'" % ("Es gibt weitere Ergebnisse für ", searchString.encode('utf-8')), str(searchResults['more']), "-1"))
 		except:
 			resultList = []
 		return resultList

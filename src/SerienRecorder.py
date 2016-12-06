@@ -113,16 +113,17 @@ def ReadConfigFile():
 	config.plugins.serienRec.showAllButtons = ConfigYesNo(default = False)
 	config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1,60))
 
-	choices = [("Original", "Original"), ]
-	try:
-		t = list(os.walk("%simages" % serienRecMainPath))
-		for x in t[0][1]:
-			if x not in ("sender", "Original"):
-				choices.append((x, x))
-	except:
-		writeErrorLog("   ReadConfigFile(): Error creating Picon-List")
-		pass
-	config.plugins.serienRec.piconPath = ConfigSelection(choices = choices, default="Original") 
+	# choices = [("Original", "Original"), ]
+	# try:
+	# 	t = list(os.walk("%simages" % serienRecMainPath))
+	# 	for x in t[0][1]:
+	# 		if x not in ("sender", "Original"):
+	# 			choices.append((x, x))
+	# except:
+	# 	writeErrorLog("   ReadConfigFile(): Error creating Picon-List")
+	# 	pass
+	# config.plugins.serienRec.piconPath = ConfigSelection(choices = choices, default="Original")
+	config.plugins.serienRec.piconPath = ConfigText(default="/usr/share/enigma2/picon/", fixed_size=False, visible_width=80)
 	
 	#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 	config.plugins.serienRec.BoxID = ConfigSelectionNumber(1, 16, 1, default = 1)
@@ -284,7 +285,6 @@ startTimer = None
 startTimerConnection = None
 
 dayCache = {}
-termineCache = {}
 
 # init EPGTranslator
 if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/EPGTranslator/plugin.pyo"):
@@ -341,6 +341,45 @@ except:
 	
 	
 #---------------------------------- Common Functions ------------------------------------------
+
+class PiconLoader:
+	def __init__(self):
+		self.nameCache = { }
+		#config.usage.configselection_piconspath.addNotifier(self.piconPathChanged, initial_call = False)
+		self.partnerbox = re.compile('1:0:[0-9a-fA-F]+:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+:http')
+
+	def getPicon(self, sRef):
+		pos = sRef.rfind(':')
+		pos2 = sRef.rfind(':', 0, pos)
+		if pos - pos2 == 1 or self.partnerbox.match(sRef) is not None:
+			sRef = sRef[:pos2].replace(':', '_')
+		else:
+			sRef = sRef[:pos].replace(':', '_')
+		pngname = self.nameCache.get(sRef, "")
+		if pngname == "":
+			pngname = self.findPicon(sRef)
+			if pngname != "":
+				self.nameCache[sRef] = pngname
+			if pngname == "": # no picon for service found
+				pngname = self.nameCache.get("default", "")
+				if pngname == "": # no default yet in cache..
+					pngname = self.findPicon("picon_default")
+					if pngname != "":
+						self.nameCache["default"] = pngname
+		if fileExists(pngname):
+			return pngname
+		else:
+			return None
+
+	def findPicon(self, sRef):
+		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, sRef)
+		if not fileExists(pngname):
+			pngname = ""
+		return pngname
+
+	def piconPathChanged(self, configElement = None):
+		self.nameCache.clear()
+
 
 def retry(times, func, *args, **kwargs):
 	"""retry a defer function
@@ -642,8 +681,8 @@ def CreateDirectory(serien_name, staffel):
 				raise
 
 	if fileExists(dirname):
-		if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname_serie, serien_name)):
-			shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname_serie, serien_name))
+		if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
+			shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolderjpg" % dirname_serie)
 		if config.plugins.serienRec.seasonsubdir.value:
 			if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
 				seasonsubdirfillchar = ' '
@@ -789,16 +828,17 @@ def getMarker():
 	cCursor.close()
 	return return_list
 
-def getWebSender():
+def getActiveServiceRefs():
 	global dbSerRec
-	fSender = []
+	serviceRefs = {}
 	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT WebChannel FROM Channels")
+	cCursor.execute("SELECT WebChannel, ServiceRef FROM Channels WHERE Erlaubt=1 ORDER BY LOWER(WebChannel)")
 	for row in cCursor:
-		(webChannel,) = row
-		fSender.append(webChannel)
+		(webChannel,serviceRef) = row
+
+		serviceRefs[webChannel] = serviceRef
 	cCursor.close()
-	return fSender
+	return serviceRefs
 
 def getWebSenderAktiv():
 	global dbSerRec
@@ -1700,34 +1740,6 @@ def writePlanerData():
 		except:
 			pass
 
-def writeTermineData(data=None):
-	if not os.path.exists("%stmp/" % serienRecMainPath):
-		try:
-			os.makedirs("%stmp/" % serienRecMainPath)
-		except:
-			pass
-	if os.path.isdir("%stmp/" % serienRecMainPath):
-		try:
-			os.chmod("%stmp/termine" % serienRecMainPath, 0o666)
-		except:
-			pass
-			
-		f = open("%stmp/termine" % serienRecMainPath, "wb")
-		try:
-			p = pickle.Pickler(f, 2)
-			if data is None:
-				global termineCache
-				data = termineCache
-			p.dump(data)
-		except:
-			pass
-		f.close()
-
-		try:
-			os.chmod("%stmp/termine" % serienRecMainPath, 0o666)
-		except:
-			pass
-
 def readPlanerData():
 	global dayCache
 	dayCache.clear()
@@ -1775,20 +1787,6 @@ def optimizePlanerData():
 					a.remove(b)
 		except:
 			pass
-
-def readTermineData():
-	global termineCache
-	termineCache.clear()
-	
-	termineFile = "%stmp/termine" % serienRecMainPath
-	if fileExists(termineFile):
-		f = open(termineFile, "rb")
-		try:
-			u = pickle.Unpickler(f)
-			termineCache = u.load()
-		except:
-			pass
-		f.close()
 
 def testWebConnection():
 	conn = httplib.HTTPConnection("www.google.com", timeout=WebTimeout)
@@ -2061,6 +2059,13 @@ class serienRecCheckForRecording():
 		dbTmp.commit()
 		cTmp.close()
 
+		if config.plugins.serienRec.autochecktype.value == "0":
+			writeLog("Auto-Check ist deaktiviert - nur manuelle Timersuche", True)
+		elif config.plugins.serienRec.autochecktype.value == "1":
+			writeLog("Auto-Check wird zur gewählten Uhrzeit gestartet", True)
+		elif config.plugins.serienRec.autochecktype.value == "2":
+			writeLog("Auto-Check wird nach dem EPGRefresh ausgeführt", True)
+
 		if not self.manuell and config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
 			refreshTimer = eTimer()
@@ -2069,10 +2074,9 @@ class serienRecCheckForRecording():
 			else:
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
-			print "%s[SerienRecorder] AutoCheck Uhrzeit-Timer gestartet.%s" % (self.color_print, self.color_end)
+			print "%s[SerienRecorder] Auto-Check Uhrzeit-Timer gestartet.%s" % (self.color_print, self.color_end)
 			print "%s[SerienRecorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
-			writeLog("AutoCheck Uhrzeit-Timer gestartet.", True)
-			writeLog("Verbleibende Zeit: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+			writeLog("Verbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if self.manuell:
 			print "[SerienRecorder] checkRecTimer manuell."
@@ -2081,8 +2085,8 @@ class serienRecCheckForRecording():
 			self.startCheck(True)
 		else:
 			try:
-				from Plugins.Extensions.EPGRefresh.EPGRefresh import EPGRefresh
-				self.epgrefresh_instance = EPGRefresh()
+				from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
+				self.epgrefresh_instance = epgrefresh
 				config.plugins.serienRec.autochecktype.addNotifier(self.setEPGRefreshCallback)
 			except Exception as e:
 				writeLog("EPGRefresh not installed! " + str(e), True)
@@ -2112,9 +2116,6 @@ class serienRecCheckForRecording():
 		print "%s[SerienRecorder] settings:%s" % (self.color_print, self.color_end)
 		print "manuell:", amanuell
 		print "uhrzeit check:", config.plugins.serienRec.timeUpdate.value
-		writeLogFile = open(logFile, "a")
-		traceback.print_stack(file=writeLogFile)
-		writeLogFile.close()
 
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
@@ -2142,10 +2143,10 @@ class serienRecCheckForRecording():
 		cCursor.execute("SELECT * FROM SerienMarker")
 		row = cCursor.fetchone()
 		if not row:
-			writeLog("\n---------' Starte AutoCheck um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
+			writeLog("\n---------' Starte Auto-Check um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
 			print "[SerienRecorder] check: Tabelle SerienMarker leer."
-			writeLog("check: Tabelle SerienMarker leer.", True)
-			writeLog("---------' AutoCheck beendet '---------------------------------------------------------------------------------------", True)
+			writeLog("Es sind keine Serien-Marker vorhanden - Auto-Check kann nicht ausgeführt werden.", True)
+			writeLog("---------' Auto-Check beendet '---------------------------------------------------------------------------------------", True)
 			cCursor.close()
 			self.askForDSB()
 			return
@@ -2153,10 +2154,10 @@ class serienRecCheckForRecording():
 		cCursor.execute("SELECT * FROM Channels")
 		row = cCursor.fetchone()
 		if not row:
-			writeLog("\n---------' Starte AutoCheck um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
+			writeLog("\n---------' Starte Auto-Check um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
 			print "[SerienRecorder] check: Tabelle Channels leer."
-			writeLog("check: Tabelle Channels leer.", True)
-			writeLog("---------' AutoCheck beendet '---------------------------------------------------------------------------------------", True)
+			writeLog("Es wurden keine Sender zugeordnet - Auto-Check kann nicht ausgeführt werden.", True)
+			writeLog("---------' Auto-Check beendet '---------------------------------------------------------------------------------------", True)
 			cCursor.close()
 			self.askForDSB()
 			return
@@ -2169,8 +2170,8 @@ class serienRecCheckForRecording():
 			if refreshTimerConnection:
 				refreshTimerConnection = None
 
-			print "%s[SerienRecorder] AutoCheck Timer stop.%s" % (self.color_print, self.color_end)
-			writeLog("AutoCheck stop.", True)
+			print "%s[SerienRecorder] Auto-Check Timer stop.%s" % (self.color_print, self.color_end)
+			writeLog("Auto-Check stop.", True)
 
 		if config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
@@ -2181,9 +2182,9 @@ class serienRecCheckForRecording():
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
 
-			print "%s[SerienRecorder] AutoCheck Uhrzeit-Timer gestartet.%s" % (self.color_print, self.color_end)
+			print "%s[SerienRecorder] Auto-Check Uhrzeit-Timer gestartet.%s" % (self.color_print, self.color_end)
 			print "%s[SerienRecorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
-			writeLog("AutoCheck Uhrzeit-Timer gestartet.", True)
+			writeLog("Auto-Check Uhrzeit-Timer gestartet.", True)
 			writeLog("Verbleibende Zeit: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if config.plugins.serienRec.AutoBackup.value:
@@ -2242,11 +2243,11 @@ class serienRecCheckForRecording():
 		cCursor.close()
 		
 		if self.manuell:
-			print "\n---------' Starte AutoCheck um %s (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
-			writeLog("\n---------' Starte AutoCheck um %s (manuell) '-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check um %s (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
+			writeLog("\n---------' Starte Auto-Check um %s (manuell) '-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
 		else:
-			print "\n---------' Starte AutoCheck um %s (auto)'-------------------------------------------------------------------------------" % self.uhrzeit
-			writeLog("\n---------' Starte AutoCheck um %s (auto)'-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check um %s (auto)'-------------------------------------------------------------------------------" % self.uhrzeit
+			writeLog("\n---------' Starte Auto-Check um %s (auto)'-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
 			if config.plugins.serienRec.showNotification.value in ("1", "3"):
 				Notifications.AddPopup("SerienRecorder Suchlauf nach neuen Timern wurde gestartet.", MessageBox.TYPE_INFO, timeout=3, id="Suchlauf wurde gestartet")
 
@@ -2278,13 +2279,13 @@ class serienRecCheckForRecording():
 
 		# teste Verbindung ins Internet
 		if not testWebConnection():
-			writeLog("\nkeine Verbindung ins Internet. AutoCheck wurde abgebrochen!!\n", True)
+			writeLog("\nKeine Verbindung ins Internet. Auto-Check wurde abgebrochen!!\n", True)
 
 			# Statistik
 			self.speedEndTime = time.clock()
 			speedTime = (self.speedEndTime - self.speedStartTime)
-			writeLog("---------' AutoCheck beendet ( Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------" % str(speedTime), True)
-			print "---------' AutoCheck beendet ( Ausführungsdauer: %s Sek.)'----------------------------------------------------------------------------" % str(speedTime)
+			writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------" % str(speedTime), True)
+			print "---------' Auto-Check beendet ( Ausführungsdauer: %s Sek.)'----------------------------------------------------------------------------" % str(speedTime)
 
 			if config.plugins.serienRec.longLogFileName.value:
 				shutil.copy(logFile, logFileSave)
@@ -2537,7 +2538,7 @@ class serienRecCheckForRecording():
 
 						timerUpdated = False
 						if str(staffel) is 'S' and str(episode) is '0':
-							writeLog("   ' %s ' - Timer kann nicht aktualisiert werden @ %s" % (title, webChannel), True)
+							writeLog("   Timer kann nicht aktualisiert werden @ %s" % webChannel, True)
 							break
 
 						try:
@@ -2557,7 +2558,7 @@ class serienRecCheckForRecording():
 							print "[SerienRecorder] Modifying enigma2 Timer failed:", title, serien_time
 							writeLog("' %s ' - Timeraktualisierung fehlgeschlagen @ %s" % (title, webChannel), True)
 						if not timerUpdated:
-							writeLog("   ' %s ' - Timer muss nicht aktualisiert werden @ %s" % (title, webChannel), True)
+							writeLog("   Timer muss nicht aktualisiert werden @ %s" % webChannel, True)
 						break
 						
 			dbSerRec.commit()
@@ -2586,11 +2587,11 @@ class serienRecCheckForRecording():
 
 				# Startzeit
 				updateStartTime = False
-				if timer.begin != start_unixtime:
+				if timer.begin != start_unixtime and abs(start_unixtime - timer.begin) > 30:
 					timer.begin = start_unixtime
 					timer.end = end_unixtime
 					NavigationInstance.instance.RecordTimer.timeChanged(timer)
-					updateStartTimer = True
+					updateStartTime = True
 
 				# Timername
 				updateName = False
@@ -2619,16 +2620,16 @@ class serienRecCheckForRecording():
 					NavigationInstance.instance.RecordTimer.saveTimer()
 					sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=?"
 					cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
-					new_start = time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime(int(start_unixtime)))
-					old_start = time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime(int(serien_time)))
+					new_start = time.strftime("%d.%m - %H:%M", time.localtime(int(start_unixtime)))
+					old_start = time.strftime("%d.%m - %H:%M", time.localtime(int(serien_time)))
 					if updateStartTime:
-						writeLog("   ' %s ' - Startzeit wurde aktualisiert von %s auf %s @ %s" % (title, old_start, new_start, webChannel), True)
+						writeLog("   Startzeit wurde aktualisiert von %s auf %s @ %s" % (old_start, new_start, webChannel), True)
 					if updateEIT:
-						writeLog("   ' %s ' - Event ID wurde aktualisiert von %s auf %s @ %s" % (title, str(old_eit), str(eit), webChannel), True)
+						writeLog("   Event ID wurde aktualisiert von %s auf %s @ %s" % (str(old_eit), str(eit), webChannel), True)
 					if updateName:
-						writeLog("   ' %s ' - Name wurde aktualisiert von %s auf %s @ %s" % (title, old_timername, timer_name, webChannel), True)
+						writeLog("   Name wurde aktualisiert von %s auf %s @ %s" % (old_timername, timer_name, webChannel), True)
 					if updateDescription:
-						writeLog("   ' %s ' - Beschreibung wurde aktualisiert von %s auf %s @ %s" % (title, old_timerdescription, timer_description, webChannel), True)
+						writeLog("   Beschreibung wurde aktualisiert von %s auf %s @ %s" % (old_timerdescription, timer_description, webChannel), True)
 					self.countTimerUpdate += 1
 					timerUpdated = True
 				break
@@ -2976,9 +2977,6 @@ class serienRecCheckForRecording():
 		cCursor.close()
 		#dbTmp.close()
 
-		# if config.plugins.serienRec.planerCacheEnabled.value:
-		# 	writeTermineData()
-			
 		# Statistik
 		self.speedEndTime = time.clock()
 		speedTime = (self.speedEndTime-self.speedStartTime)
@@ -2994,8 +2992,8 @@ class serienRecCheckForRecording():
 		if self.countTimerFromWishlist > 0:
 			writeLog("%s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist), True)
 			print "[SerienRecorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist)
-		writeLog("---------' AutoCheck beendet (Ausführungsdauer: %s Sek.)'---------------------------------------------------------------------------" % str(speedTime), True)
-		print "---------' AutoCheck beendet (Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------------" % str(speedTime)
+		writeLog("---------' Auto-Check beendet (Ausführungsdauer: %s Sek.)'---------------------------------------------------------------------------" % str(speedTime), True)
+		print "---------' Auto-Check beendet (Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------------" % str(speedTime)
 		if (config.plugins.serienRec.showNotification.value in ("2", "3")) and (not self.manuell):
 			statisticMessage = "Serien vorgemerkt: %s/%s\nTimer erstellt: %s\nTimer aktualisiert: %s\nTimer mit Konflikten: %s\nTimer vom Merkzettel: %s" % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate), str(self.countNotActiveTimer), str(self.countTimerFromWishlist))
 			newSeasonOrEpisodeMessage = ""
@@ -4095,6 +4093,12 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		self.logliste = []
 		self.points = ""
 
+		self.timer_default = eTimer()
+		if isDreamboxOS:
+			self.timer_default_conn = self.timer_default.timeout.connect(self.realStartCheck)
+		else:
+			self.timer_default.callback.append(self.realStartCheck)
+
 		self.onLayoutFinish.append(self.startCheck)
 		self.onClose.append(self.__onClose)
 		self.onLayoutFinish.append(self.setSkinProperties)
@@ -4191,13 +4195,8 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 
 			if result[1]:
 				self.startCheck()
-				
-	def startCheck(self):
-		if self.manuell:
-			global autoCheckFinished
-			autoCheckFinished = False
-			serienRecCheckForRecording(self.session, True)
 
+	def startCheck(self):
 		# Log Reload Timer
 		self.readLogTimer = eTimer()
 		if isDreamboxOS:
@@ -4207,6 +4206,15 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		self.readLogTimer.start(2500)
 		self.readLog()
 
+		self.timer_default.start(0)
+
+	def realStartCheck(self):
+		self.timer_default.stop()
+		if self.manuell:
+			global autoCheckFinished
+			autoCheckFinished = False
+			serienRecCheckForRecording(self.session, True)
+
 	def readLog(self):
 		global autoCheckFinished
 		if autoCheckFinished or not self.manuell:
@@ -4214,7 +4222,7 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 				self.readLogTimer.stop()
 				self.readLogTimer = None
 			print "[SerienRecorder] update log reader stopped."
-			self['title'].setText("Autocheck fertig !")
+			self['title'].setText("Auto-Check fertig !")
 			readLog = open(logFile, "r")
 			for zeile in readLog.readlines():
 				if (not config.plugins.serienRec.logWrapAround.value) or (len(zeile.strip()) > 0):
@@ -5655,7 +5663,6 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				self.searchEvents()
 
 	def searchEvents(self, result=None):
-		global termineCache
 		self['title'].setText("Suche ' %s '" % self.serien_name)
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		print self.serie_url
@@ -5665,7 +5672,6 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		print self.serien_id
 
 		getCover(self, self.serien_name, self.serien_id)
-		self.start = time.time()
 
 		if self.FilterMode is 0:
 			webChannels = []
@@ -5674,8 +5680,6 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		else:
 			webChannels = getMarkerChannels(self.serien_id)
 		transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
-		end = time.time()
-		writeLog('Sendetermine vom Server holen: %s' % str(end - self.start))
 		self.resultsEvents(transmissions)
 
 	def resultsEvents(self, transmissions):
@@ -5733,8 +5737,6 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			self['text_green'].setText("Timer erstellen")
 
 		self.chooseMenuList.setList(map(self.buildList_termine, self.sendetermine_list))
-		end = time.time()
-		writeLog('Sendetermine: %s' % str(end - self.start))
 		self.loading = False
 		self['title'].setText("%s Sendetermine für ' %s ' gefunden. (%s)" % (str(len(self.sendetermine_list)), self.serien_name, self.title_txt))
 
@@ -6161,6 +6163,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			"up"    : (self.keyUp, "eine Zeile nach oben"),
 			"down"  : (self.keyDown, "eine Zeile nach unten"),
 		    "startTeletext" : (self.showAbout, "Über dieses Plugin"),
+			"menu"	: (self.openChannelSetup, "Sender zuordnen"),
 			#"deleteForward" : (self.keyDelForward, "---"),
 			#"deleteBackward": (self.keyDelBackward, "---"),
 			"nextBouquet":	(self.bouquetPlus, "zur vorherigen Seite blättern"),
@@ -6183,7 +6186,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 		self.setupModified = False
 		self.SkinType = config.plugins.serienRec.SkinType.value
-		self.piconPath = config.plugins.serienRec.piconPath.value
+		#self.piconPath = config.plugins.serienRec.piconPath.value
 		
 		self.__C_JUSTPLAY__ = 0
 		self.__C_ZAPBEFORERECORD__ = 1
@@ -6251,6 +6254,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self['text_ok'].setText("Verzeichnis auswählen")
 		self['text_yellow'].setText("in Datei speichern")
 		self['text_blue'].setText("aus Datei laden")
+		self['text_menu'].setText("Sender zuordnen")
 
 		self['config_information'].show()
 		self['config_information_text'].show()
@@ -6274,12 +6278,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
+			self['bt_menu'].show()
 		else:
 			self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
+								[buttonText_na, buttonText_na, "About"],
 								[buttonText_na, buttonText_na, buttonText_na],
 								[buttonText_na, buttonText_na, buttonText_na],
-								[buttonText_na, buttonText_na, "Hilfe"],
-								[buttonText_na, buttonText_na, buttonText_na])
+								[buttonText_na, buttonText_na, "Sender zuordnen"])
 
 	def showManual(self):
 		if OperaBrowserInstalled:
@@ -6572,11 +6577,11 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			if config.plugins.serienRec.ActionOnNew.value != "0":
 				self.list.append(getConfigListEntry("    auch bei manuellem Suchlauf:", config.plugins.serienRec.ActionOnNewManuell))
 				self.list.append(getConfigListEntry("    Einträge löschen die älter sind als X Tage:", config.plugins.serienRec.deleteOlderThan))
-				self.list.append(getConfigListEntry("Serien-Planer und Sendetermine beim automatischen Suchlauf speichern:", config.plugins.serienRec.planerCacheEnabled))
-			else:
-				self.list.append(getConfigListEntry("Sendetermine beim automatischen Suchlauf speichern:", config.plugins.serienRec.planerCacheEnabled))
-			if config.plugins.serienRec.planerCacheEnabled.value:
-				self.list.append(getConfigListEntry("    X Tage im Voraus speichern:", config.plugins.serienRec.planerCacheSize))
+				#self.list.append(getConfigListEntry("Serien-Planer und Sendetermine beim automatischen Suchlauf speichern:", config.plugins.serienRec.planerCacheEnabled))
+			#else:
+			#	self.list.append(getConfigListEntry("Sendetermine beim automatischen Suchlauf speichern:", config.plugins.serienRec.planerCacheEnabled))
+			#if config.plugins.serienRec.planerCacheEnabled.value:
+			#	self.list.append(getConfigListEntry("    X Tage im Voraus speichern:", config.plugins.serienRec.planerCacheSize))
 			if not isDreamboxOS:
 				self.list.append(getConfigListEntry("nach Änderungen Suchlauf beim Beenden starten:", config.plugins.serienRec.runAutocheckAtExit))
 		#if config.plugins.serienRec.updateInterval.value == 24:
@@ -6634,7 +6639,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("Starte Plugin mit:", config.plugins.serienRec.firstscreen))
 			self.list.append(getConfigListEntry("Zeige Picons:", config.plugins.serienRec.showPicons))
 			if config.plugins.serienRec.showPicons.value:
-				self.list.append(getConfigListEntry("    Verwende folgende Picons:", config.plugins.serienRec.piconPath))
+				self.list.append(getConfigListEntry("    Verzeichnis mit Picons:", config.plugins.serienRec.piconPath))
 			self.list.append(getConfigListEntry("Zeige Cover:", config.plugins.serienRec.showCover))
 			if config.plugins.serienRec.showCover.value:
 				self.list.append(getConfigListEntry("    Speicherort der Cover:", config.plugins.serienRec.coverPath))
@@ -6677,7 +6682,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.MainBouquet.setChoices(choices = self.bouquetList, default = self.bouquetList[0][0])
 		config.plugins.serienRec.AlternativeBouquet.setChoices(choices = self.bouquetList, default = self.bouquetList[1][0])
 		
-	def changedEntry(self):
+	def changedEntry(self, dummy=False):
 		self.createConfigList()
 		self['config'].setList(self.list)
 
@@ -6699,38 +6704,35 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.coverPath:
 			start_dir = config.plugins.serienRec.coverPath.value
 			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Cover-Verzeichnis auswählen")
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.piconPath:
+			start_dir = config.plugins.serienRec.piconPath.value
+			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Picon-Verzeichnis auswählen")
 
 	def selectedMediaFile(self, res):
 		if res is not None:
 			if self['config'].getCurrent()[1] == config.plugins.serienRec.savetopath:
 				print res
 				config.plugins.serienRec.savetopath.value = res
-				#config.plugins.serienRec.savetopath.save()
-				#configfile.save()
 				self.changedEntry()
 			elif self['config'].getCurrent()[1] == config.plugins.serienRec.LogFilePath:
 				print res
 				config.plugins.serienRec.LogFilePath.value = res
-				#config.plugins.serienRec.LogFilePath.save()
-				#configfile.save()
 				self.changedEntry()
 			elif self['config'].getCurrent()[1] == config.plugins.serienRec.BackupPath:
 				print res
 				config.plugins.serienRec.BackupPath.value = res
-				#config.plugins.serienRec.BackupPath.save()
-				#configfile.save()
 				self.changedEntry()
 			elif self['config'].getCurrent()[1] == config.plugins.serienRec.databasePath:
 				print res
 				config.plugins.serienRec.databasePath.value = res
-				#config.plugins.serienRec.databasePath.save()
-				#configfile.save()
 				self.changedEntry()
 			elif self['config'].getCurrent()[1] == config.plugins.serienRec.coverPath:
 				print res
 				config.plugins.serienRec.coverPath.value = res
-				#config.plugins.serienRec.coverPath.save()
-				#configfile.save()
+				self.changedEntry()
+			elif self['config'].getCurrent()[1] == config.plugins.serienRec.piconPath:
+				print res
+				config.plugins.serienRec.piconPath.value = res
 				self.changedEntry()
 
 	def setInfoText(self):
@@ -6822,7 +6824,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.useAlternativeChannel :   ("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "
 										                        "falls der Timer auf dem bevorzugten Sender nicht angelegt werden kann.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.showPicons :              ("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.", "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.piconPath :               ("Auswahl, welche Sender-Logos angezeigt werden. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.", "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.piconPath :               ("Wählen Sie das Verzeichnis aus dem die Sender-Logos geladen werden sollen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.showCover :               ("Bei 'nein' werden keine Cover angezeigt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.listFontsize :            ("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.intensiveTimersuche :     ("Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.", "intensive_Suche"),
@@ -6868,15 +6870,15 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.writeErrorLog:			   ("Bei 'ja' werden Verbindungs- und Lade-Fehler in einer eigenen Datei protokolliert.", "Das_Log"),
 		}			
 
-		if config.plugins.serienRec.ActionOnNew.value != "0":
-			self.HilfeTexte.update({
-				config.plugins.serienRec.planerCacheEnabled : ("Bei 'ja' werden beim automatischen Suchlauf die Daten für den Serienplaner und die Sendetermine geladen und gespeichert. "
-															   "Die Speicherung der Serienplaner-Daten erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.", "Daten_speichern")
-			})
-		else:
-			self.HilfeTexte.update({
-				config.plugins.serienRec.planerCacheEnabled : ("Bei 'ja' werden beim automatischen Suchlauf die Sendetermine geladen und gespeichert.", "Daten_speichern")
-			})
+		# if config.plugins.serienRec.ActionOnNew.value != "0":
+		# 	self.HilfeTexte.update({
+		# 		config.plugins.serienRec.planerCacheEnabled : ("Bei 'ja' werden beim automatischen Suchlauf die Daten für den Serienplaner und die Sendetermine geladen und gespeichert. "
+		# 													   "Die Speicherung der Serienplaner-Daten erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.", "Daten_speichern")
+		# 	})
+		# else:
+		# 	self.HilfeTexte.update({
+		# 		config.plugins.serienRec.planerCacheEnabled : ("Bei 'ja' werden beim automatischen Suchlauf die Sendetermine geladen und gespeichert.", "Daten_speichern")
+		# 	})
 
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
@@ -6908,6 +6910,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.wakeUpDSB.value = False
 
 		if config.plugins.serienRec.planerCacheSize.value > 4:
+			config.plugins.serienRec.planerCacheSize.value = 4
+
+		if config.plugins.serienRec.ActionOnNew.value != "0" or config.plugins.serienRec.firstscreen.value == "0":
+			config.plugins.serienRec.planerCacheEnabled.value = True
+			config.plugins.serienRec.planerCacheSize.value = 4
+		else:
+			config.plugins.serienRec.planerCacheEnabled.value = False
 			config.plugins.serienRec.planerCacheSize.value = 4
 
 		config.plugins.serienRec.BoxID.save()
@@ -7006,24 +7015,24 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.writeErrorLog.save()
 		configfile.save()
 
-		if self.piconPath != config.plugins.serienRec.piconPath.value:
-			if os.path.exists('%simages/sender' % serienRecMainPath):
-				if os.path.islink('%simages/sender' % serienRecMainPath):
-					os.unlink('%simages/sender' % serienRecMainPath)
-				else:
-					try:
-						shutil.rmtree('%simages/sender' % serienRecMainPath)
-					except:
-						try:
-							shutil.move('%simages/sender' % serienRecMainPath, '%simages/sender_old' % serienRecMainPath)
-							shutil.rmtree('%simages/sender_old' % serienRecMainPath, True)
-						except:
-							pass
-							
-			try:
-				os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
-			except:
-				config.plugins.serienRec.showPicons.value = False
+		# if self.piconPath != config.plugins.serienRec.piconPath.value:
+		# 	if os.path.exists('%simages/sender' % serienRecMainPath):
+		# 		if os.path.islink('%simages/sender' % serienRecMainPath):
+		# 			os.unlink('%simages/sender' % serienRecMainPath)
+		# 		else:
+		# 			try:
+		# 				shutil.rmtree('%simages/sender' % serienRecMainPath)
+		# 			except:
+		# 				try:
+		# 					shutil.move('%simages/sender' % serienRecMainPath, '%simages/sender_old' % serienRecMainPath)
+		# 					shutil.rmtree('%simages/sender_old' % serienRecMainPath, True)
+		# 				except:
+		# 					pass
+		#
+		# 	try:
+		# 		os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
+		# 	except:
+		# 		config.plugins.serienRec.showPicons.value = False
 			
 		if self.SkinType != config.plugins.serienRec.SkinType.value:
 			SelectSkin()
@@ -7066,6 +7075,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		
 		success = initDB()
 		self.close((True, True, success))
+
+	def openChannelSetup(self):
+		self.session.openWithCallback(self.changedEntry, serienRecMainChannelEdit)
 
 	def keyCancel(self):
 		if self.setupModified:
@@ -7973,7 +7985,7 @@ class serienRecReadLog(Screen, HelpableScreen):
 	def setSkinProperties(self):
 		setSkinProperties(self)
 
-		self['text_red'].setText("Abbrechen")
+		self['text_red'].setText("Schließen")
 		self.num_bt_text[0][0] = buttonText_na
 		self.num_bt_text[4][0] = buttonText_na
 
@@ -8727,6 +8739,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		self.session = session
 		self.picload = ePicLoad()
 		self.ErrorMsg = "unbekannt"
+		self.piconLoader = PiconLoader()
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
@@ -8759,6 +8772,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 
 		self.changesMade = False
 		self.proposalList = []
+		self.serviceRefs = getActiveServiceRefs()
 		self.onLayoutFinish.append(self.readProposal)
 		self.onClose.append(self.__onClose)
 		self.onLayoutFinish.append(self.setSkinProperties)
@@ -8877,12 +8891,20 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+", %d.%m.%Y", time.localtime(int(UTCTime)))
 
 		if config.plugins.serienRec.showPicons.value:
-			if config.plugins.serienRec.piconPath.value == "Original":
-				self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
-				picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
-				self.picloader.destroy()
-			else:
-				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, Sender))
+			picon = imageNone
+			if Sender:
+				piconPath = self.piconLoader.getPicon(self.serviceRefs.get(Sender))
+				if piconPath:
+					self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
+					picon = self.picloader.load(piconPath)
+					self.picloader.destroy()
+
+			# if config.plugins.serienRec.piconPath.value == "Original":
+			# 	self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
+			# 	picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
+			# 	self.picloader.destroy()
+			# else:
+			# 	picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80 * skinFactor, 40 * skinFactor, picon),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(icon)),
@@ -10117,6 +10139,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self.chooseMenuList = None
 		self.chooseMenuList_popup = None
 		self.popup_list = []
+		self.piconLoader = PiconLoader()
 		
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
@@ -10156,19 +10179,19 @@ class serienRecMain(Screen, HelpableScreen):
 		if not initDB():
 			self.close()
 
-		if not os.path.exists('%simages/sender' % serienRecMainPath):
-			try:
-				if os.path.islink('%simages/sender' % serienRecMainPath):
-					os.unlink('%simages/sender' % serienRecMainPath)
-				if os.path.exists('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value)):
-					os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
-				else:
-					os.symlink('%simages/Original' % serienRecMainPath, '%simages/sender' % serienRecMainPath)
-					config.plugins.serienRec.piconPath.value = "Original"
-					config.plugins.serienRec.piconPath.save()
-					configfile.save()
-			except:
-				config.plugins.serienRec.showPicons.value = False
+		# if not os.path.exists('%simages/sender' % serienRecMainPath):
+		# 	try:
+		# 		if os.path.islink('%simages/sender' % serienRecMainPath):
+		# 			os.unlink('%simages/sender' % serienRecMainPath)
+		# 		if os.path.exists('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value)):
+		# 			os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
+		# 		else:
+		# 			os.symlink('%simages/Original' % serienRecMainPath, '%simages/sender' % serienRecMainPath)
+		# 			config.plugins.serienRec.piconPath.value = "Original"
+		# 			config.plugins.serienRec.piconPath.save()
+		# 			configfile.save()
+		# 	except:
+		# 		config.plugins.serienRec.showPicons.value = False
 					
 		self.setupSkin()
 		
@@ -10196,6 +10219,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self.daylist = [[],[],[]]
 		self.displayTimer = None
 		self.displayMode = 1
+		self.serviceRefs = getActiveServiceRefs()
 		
 		global dayCache
 		if len(dayCache):
@@ -10640,12 +10664,22 @@ class serienRecMain(Screen, HelpableScreen):
 			imageHDDTimer = imageNone
 		
 		if config.plugins.serienRec.showPicons.value:
-			if config.plugins.serienRec.piconPath.value == "Original":
-				self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
-				picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, sender))
-				self.picloader.destroy()
-			else:
-				picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, sender))
+			picon = imageNone
+			if sender:
+				piconPath = self.piconLoader.getPicon(self.serviceRefs.get(sender))
+				if piconPath:
+					self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
+					picon = self.picloader.load(piconPath)
+					self.picloader.destroy()
+
+			# piconPath = "%simages/sender/%s.png" % (str(serienRecMainPath), str(sender))
+				# if fileExists(piconPath, 'r'):
+				# 	if config.plugins.serienRec.piconPath.value == "Original":
+				# 		self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
+				# 		picon = self.picloader.load(piconPath)
+				# 		self.picloader.destroy()
+				# 	else:
+				# 		picon = loadPNG(piconPath)
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5 * skinFactor, 80 * skinFactor, 40 * skinFactor, picon),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 7 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageNeu)),
@@ -10850,7 +10884,9 @@ class serienRecMain(Screen, HelpableScreen):
 			return False
 
 	def keyGreen(self):
-		self.session.openWithCallback(self.readWebpage, serienRecMainChannelEdit)
+		self.session.openWithCallback(self.readWebpage, MessageBox, ("Die Funktion 'Sender zuordnen' lässt sich jetzt in den globalen Einstellungen über die MENÜ Taste aufrufen."),
+		                              MessageBox.TYPE_INFO, timeout=10)
+		#self.session.openWithCallback(self.readWebpage, serienRecMainChannelEdit)
 		
 	def keyYellow(self):
 		self.session.openWithCallback(self.readWebpage, serienRecMarker)
@@ -11011,7 +11047,7 @@ def autostart(reason, **kwargs):
 
 		#if initDB():
 		if config.plugins.serienRec.autochecktype.value in ("1", "2") and config.plugins.serienRec.timeUpdate.value:
-			print color_print+"[SerienRecorder] AutoCheck: AN"+color_end
+			print color_print+"[SerienRecorder] Auto-Check: AN"+color_end
 			startTimer = eTimer()
 			if isDreamboxOS:
 				startTimerConnection = startTimer.timeout.connect(startAutoCheckTimer)
@@ -11020,7 +11056,7 @@ def autostart(reason, **kwargs):
 			startTimer.start(60 * 1000, True)
 			#serienRecCheckForRecording(session, False)
 		else:
-			print color_print+"[SerienRecorder] AutoCheck: AUS"+color_end
+			print color_print+"[SerienRecorder] Auto-Check: AUS"+color_end
 
 		#API
 		from SerienRecorderResource import addWebInterfaceForDreamMultimedia

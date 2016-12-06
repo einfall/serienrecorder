@@ -44,37 +44,41 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.2.6:
+CHANGE-LOG v3.3.0:
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
 
 Neue Funktionen:
-	- Umzug auf den endgültigen Proxy Server http://www.serienserver.de
-	- Die Suche nach Serien kann jetzt auch von der SerienPlaner Ansicht aus ausgeführt werden (Taste 1)
-	- Die Sender werden jetzt über den SerienServer bei Wunschliste abgerufen und verarbeitet
-	- Timer aktualisieren bei fehlender Staffel-/Episodennummer unterdrücken
-	- Nicht erlaubte Zeichen beim Anlegen von Verzeichnissen berücksichtigen
-	- Neues Plugin Logo wegen http://www.serienserver.de
-	- Die Suche ob eine Episode auf der Festplatte ist findet jetzt folgende Endungen: ts|mkv|avi|mp4|divx|xvid|mpg|mov (Danke an andy71)
-
+	- Serien-Planer Ansicht holt jetzt die Daten vom Serien-Server
+	- Episoden Ansicht holt die Daten jetzt vom Serien-Server 
+	- Sendetermine werden beim Auto-Check jetzt vom Serien-Server geholt
+	- Serien-Planer Cache wird jetzt beim Auto-Check auch aus den Daten vom Serien-Server befüllt
+	- Daten für Serien-/Staffelstart werden beim Auto-Check jetzt vom Serien-Server geholt
+	- Cover im Staffelverzeichnis bekommt jetzt die Bezeichnung "folder.jpg" damit funktioniert das Cover sowohl für EMC wie auch VTI Movielist (alte Cover werden nicht automatisch gelöscht)
+	- Sendetermine Cache entfernt
+	- "Sender zuordnen" kann jetzt in den globalen Einstellungen über die MENÜ Taste aufgerufen werden
+	- Betaversionen können nicht mehr für Updates ausgewählt werden
+	
 Änderungen:
-	- Die Datenbank des SerienRecorders wird jetzt standardmäßig unter /etc/enigma2/ abgelegt
-	- Die 'Sender zuordnen' Ansicht wurde jetzt in ein eigenes Modul ausgelagert
-	- Automatisches Zuordnen von Websender und STB Sender verbessert
-	- Defaultwert für Auto-Check und Backup löschen geändert
-	- max. Anzahl Tuner auf 8 erhöht
-	- Bezeichnung "SerienRecorder" vereinheitlicht
-	- Bezeichnung "Merkzettel" vereinheitlicht
-	- Bezeichnung "Timer-Liste" vereinheitlicht
-	- Auto-Check ist jetzt standmäßig auf manuell
-	- Auto-Check Uhrzeit wird jetzt per Zufall bestimmt, wenn nicht konfiguriert
+	- Logfile umbenannt (log = SerienRecorder.log, log_old = SerienRecorder.old.log)
+	- Logzeilen Prefix [SerienRecorder] entfernt - reduziert die Größe des Logs
+	- Verständlichkeit der Logeinträge verbessert
+	- In der Sendetermine Ansicht wurden die Symbole durch Farben ersetzt (blau = Timer für Episode vorhanden, grün = Episode in der Datenbank, rot = Episode noch nicht vorhanden, gelb = Episode auf der Festplatte)
+	- Geänderte Farben in der Serien-Planer Ansicht (blau = Episode 1, grün = aktiver Serien-Marker, rot = deaktivierter Serien-Marker)
+	- Geänderte Farben in der Serien-/Staffelstart Ansicht (grün = aktiver Serien-Marker, rot = deaktivierter Serien-Marker, grau = Serie ohne Staffel [S00E01])
+	- Geänderte Icons in der Serien-/Staffelstart Ansicht (Serien die neu beginnen, also S01E01, bekommen jetzt ein "Neu" Icon)
+	- Es werden jetzt nur noch die SR Backup Ordner gelöscht (Namens-Schema wird geprüft)
+	- Bezeichnung "Channel" durch "Sender" ersetzt	
+	- Planer Cache ist jetzt nicht mehr konfigurierbar (er wird automatisch gefüllt wenn der SerienRecorder entweder mit der Planer-Ansicht gestartet wird oder wenn "Aktion bei neuer Serie/Staffel" aktiv ist)
+	- Picons (Senderlogos) sind jetzt nicht mehr Bestandteil des SR. Der Pfad zu dem im Image installierten Picons kann jetzt ausgewählt werden.
+	- Einige Optionen unter "Optimierungen" in den Einstellungen wurden entfernt, weil sie jetzt von Serien-Server übernommen werden
+	- Geänderte Tasten in der Timer-Liste Ansicht (blau = Alle neuen Timer löschen, 9 = Alle Timer aus der Datenbank löschen)
 
-Bugfix:
-	- Merkzettel korrigiert
-	- Diverse Funktionen abgesichert
-	- Breite der Liste beim manuellen Auto-Check korrigiert
-	- Cover werden jetzt auch in der Sendetermine Ansicht angezeigt
-	- Cover werden jetzt auch in der Episodenliste Ansicht angezeigt
+Bugfixes:
+	- Schaltjahr Bug behoben
+	- Problem mit Backup Timern behoben
+	- Problem mit Event-Programmierungen behoben
+	- Die Option "Verwende bevorzugte Senderliste" in den Serien-Marker Einstellungen bricht jetzt ab, wenn der Sender nicht in der Liste ist
 	
 Viel Spass mit dem SerienRecorder!
 
