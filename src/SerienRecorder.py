@@ -113,16 +113,6 @@ def ReadConfigFile():
 	config.plugins.serienRec.showAllButtons = ConfigYesNo(default = False)
 	config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1,60))
 
-	# choices = [("Original", "Original"), ]
-	# try:
-	# 	t = list(os.walk("%simages" % serienRecMainPath))
-	# 	for x in t[0][1]:
-	# 		if x not in ("sender", "Original"):
-	# 			choices.append((x, x))
-	# except:
-	# 	writeErrorLog("   ReadConfigFile(): Error creating Picon-List")
-	# 	pass
-	# config.plugins.serienRec.piconPath = ConfigSelection(choices = choices, default="Original")
 	config.plugins.serienRec.piconPath = ConfigText(default="/usr/share/enigma2/picon/", fixed_size=False, visible_width=80)
 	
 	#config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
@@ -345,7 +335,6 @@ except:
 class PiconLoader:
 	def __init__(self):
 		self.nameCache = { }
-		#config.usage.configselection_piconspath.addNotifier(self.piconPathChanged, initial_call = False)
 		self.partnerbox = re.compile('1:0:[0-9a-fA-F]+:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+:http')
 
 	def getPicon(self, sRef):
@@ -6186,7 +6175,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 		self.setupModified = False
 		self.SkinType = config.plugins.serienRec.SkinType.value
-		#self.piconPath = config.plugins.serienRec.piconPath.value
 		
 		self.__C_JUSTPLAY__ = 0
 		self.__C_ZAPBEFORERECORD__ = 1
@@ -6577,11 +6565,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			if config.plugins.serienRec.ActionOnNew.value != "0":
 				self.list.append(getConfigListEntry("    auch bei manuellem Suchlauf:", config.plugins.serienRec.ActionOnNewManuell))
 				self.list.append(getConfigListEntry("    Einträge löschen die älter sind als X Tage:", config.plugins.serienRec.deleteOlderThan))
-				#self.list.append(getConfigListEntry("Serien-Planer und Sendetermine beim automatischen Suchlauf speichern:", config.plugins.serienRec.planerCacheEnabled))
-			#else:
-			#	self.list.append(getConfigListEntry("Sendetermine beim automatischen Suchlauf speichern:", config.plugins.serienRec.planerCacheEnabled))
-			#if config.plugins.serienRec.planerCacheEnabled.value:
-			#	self.list.append(getConfigListEntry("    X Tage im Voraus speichern:", config.plugins.serienRec.planerCacheSize))
 			if not isDreamboxOS:
 				self.list.append(getConfigListEntry("nach Änderungen Suchlauf beim Beenden starten:", config.plugins.serienRec.runAutocheckAtExit))
 		#if config.plugins.serienRec.updateInterval.value == 24:
@@ -6866,8 +6849,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		    config.plugins.serienRec.autochecktype :           ("Bei 'manuell' wird kein automatischer Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
 		                                                        "Bei 'zur gewählten Uhrzeit' wird der automatische Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
 		                                                        "Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer) - nicht verfügbar auf VU+ Boxen.", "1.3_Die_globalen_Einstellungen"),
-		    config.plugins.serienRec.planerCacheSize :         ("Es werden nur, für die eingestellte Anzahl Tage, Daten im Voraus heruntergeladen und gespeichert.", "Daten_speichern"),
-			config.plugins.serienRec.writeErrorLog:			   ("Bei 'ja' werden Verbindungs- und Lade-Fehler in einer eigenen Datei protokolliert.", "Das_Log"),
+		    config.plugins.serienRec.writeErrorLog:			   ("Bei 'ja' werden Verbindungs- und Lade-Fehler in einer eigenen Datei protokolliert.", "Das_Log"),
 		}			
 
 		# if config.plugins.serienRec.ActionOnNew.value != "0":
@@ -7014,25 +6996,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.databasePath.save()
 		config.plugins.serienRec.writeErrorLog.save()
 		configfile.save()
-
-		# if self.piconPath != config.plugins.serienRec.piconPath.value:
-		# 	if os.path.exists('%simages/sender' % serienRecMainPath):
-		# 		if os.path.islink('%simages/sender' % serienRecMainPath):
-		# 			os.unlink('%simages/sender' % serienRecMainPath)
-		# 		else:
-		# 			try:
-		# 				shutil.rmtree('%simages/sender' % serienRecMainPath)
-		# 			except:
-		# 				try:
-		# 					shutil.move('%simages/sender' % serienRecMainPath, '%simages/sender_old' % serienRecMainPath)
-		# 					shutil.rmtree('%simages/sender_old' % serienRecMainPath, True)
-		# 				except:
-		# 					pass
-		#
-		# 	try:
-		# 		os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
-		# 	except:
-		# 		config.plugins.serienRec.showPicons.value = False
 			
 		if self.SkinType != config.plugins.serienRec.SkinType.value:
 			SelectSkin()
@@ -8899,12 +8862,6 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 					picon = self.picloader.load(piconPath)
 					self.picloader.destroy()
 
-			# if config.plugins.serienRec.piconPath.value == "Original":
-			# 	self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
-			# 	picon = self.picloader.load("%simages/sender/%s.png" % (serienRecMainPath, Sender))
-			# 	self.picloader.destroy()
-			# else:
-			# 	picon = loadPNG("%simages/sender/%s.png" % (serienRecMainPath, Sender))
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80 * skinFactor, 40 * skinFactor, picon),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(icon)),
@@ -10179,20 +10136,9 @@ class serienRecMain(Screen, HelpableScreen):
 		if not initDB():
 			self.close()
 
-		# if not os.path.exists('%simages/sender' % serienRecMainPath):
-		# 	try:
-		# 		if os.path.islink('%simages/sender' % serienRecMainPath):
-		# 			os.unlink('%simages/sender' % serienRecMainPath)
-		# 		if os.path.exists('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value)):
-		# 			os.symlink('%simages/%s' % (serienRecMainPath, config.plugins.serienRec.piconPath.value), '%simages/sender' % serienRecMainPath)
-		# 		else:
-		# 			os.symlink('%simages/Original' % serienRecMainPath, '%simages/sender' % serienRecMainPath)
-		# 			config.plugins.serienRec.piconPath.value = "Original"
-		# 			config.plugins.serienRec.piconPath.save()
-		# 			configfile.save()
-		# 	except:
-		# 		config.plugins.serienRec.showPicons.value = False
-					
+		if not os.path.exists(config.plugins.serienRec.piconPath.value):
+			config.plugins.serienRec.showPicons.value = False
+
 		self.setupSkin()
 		
 		if config.plugins.serienRec.updateInterval.value == 24:
@@ -10672,14 +10618,6 @@ class serienRecMain(Screen, HelpableScreen):
 					picon = self.picloader.load(piconPath)
 					self.picloader.destroy()
 
-			# piconPath = "%simages/sender/%s.png" % (str(serienRecMainPath), str(sender))
-				# if fileExists(piconPath, 'r'):
-				# 	if config.plugins.serienRec.piconPath.value == "Original":
-				# 		self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
-				# 		picon = self.picloader.load(piconPath)
-				# 		self.picloader.destroy()
-				# 	else:
-				# 		picon = loadPNG(piconPath)
 			return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5 * skinFactor, 80 * skinFactor, 40 * skinFactor, picon),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 7 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageNeu)),
@@ -10926,9 +10864,10 @@ class serienRecMain(Screen, HelpableScreen):
 			self['popup_list'].up()
 
 	def nextPage(self):
-		self.page += 1
-		self.chooseMenuList.setList(map(self.buildList, []))
-		self.readWebpage(False)
+		if self.page < 4:
+			self.page += 1
+			self.chooseMenuList.setList(map(self.buildList, []))
+			self.readWebpage(False)
 
 	def backPage(self):
 		if not self.page < 1:

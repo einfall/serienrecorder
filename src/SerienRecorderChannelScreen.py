@@ -384,6 +384,10 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			]
 
 	def keyOK(self):
+		if self['list'].getCurrent() is None:
+			print "[SerienRecorder] Sender-Liste leer."
+			return
+
 		global runAutocheckAtExit
 		if self.modus == "list":
 			self.modus = "popup_list"

@@ -104,10 +104,12 @@ class checkGitHubUpdateScreen(Screen):
 		self.updateInfo = updateInfo
 		self.updateName = updateName
 		self.progress = 0
+		self.inProgres = False
 		self.downloadDone = False
 		self.downloadURL = downloadURL
 		self.downloadFileSize = downloadFileSize
 		self.filePath = None
+		self.console = eConsoleAppContainer()
 
 		self.progressTimer = eTimer()
 		if isDreamboxOS:
@@ -155,18 +157,25 @@ class checkGitHubUpdateScreen(Screen):
 		self['srlog'].pageUp()
 
 	def keyOK(self):
-		self.filePath = "/tmp/%s" % self.downloadURL.split('/')[-1]
-		self['status'].setText("Download wurde gestartet, bitte warten...")
-		self.progress = 0
-		self['progressslider'].setValue(self.progress)
-		self.startProgressTimer()
+		if self.inProgres:
+			return
+		else:
+			self.filePath = "/tmp/%s" % self.downloadURL.split('/')[-1]
+			self['status'].setText("Download wurde gestartet, bitte warten...")
+			self.progress = 0
+			self.inProgres = True
+			self['progressslider'].setValue(self.progress)
+			self.startProgressTimer()
 
-		if fileExists(self.filePath):
-			os.remove(self.filePath)
-		downloadPage(self.downloadURL, self.filePath).addCallback(self.downloadFinished).addErrback(self.downloadError)
+			if fileExists(self.filePath):
+				os.remove(self.filePath)
+			downloadPage(self.downloadURL, self.filePath).addCallback(self.downloadFinished).addErrback(self.downloadError)
 
 	def keyCancel(self):
 		self.close()
+
+	def cmdData(self, data):
+		self['srlog'].setText(data)
 
 	def updateProgressBar(self):
 		if self.downloadDone:
@@ -175,12 +184,12 @@ class checkGitHubUpdateScreen(Screen):
 				self.progress = 10
 		else:
 			if os.path.exists(self.filePath):
-				kBbytesDownloaded = int(os.path.getsize(self.filePath) / 1024)
+				kBytesDownloaded = int(os.path.getsize(self.filePath) / 1024)
 			else:
-				kBbytesDownloaded = 0
+				kBytesDownloaded = 0
 
-			self.progress = int((kBbytesDownloaded / self.downloadFileSize) * 100)
-			self['status'].setText("%s / %s kB (%s%%)" % (kBbytesDownloaded, self.downloadFileSize, self.progress))
+			self.progress = int((kBytesDownloaded / self.downloadFileSize) * 100)
+			self['status'].setText("%s / %s kB (%s%%)" % (kBytesDownloaded, self.downloadFileSize, self.progress))
 
 		self['progressslider'].setValue(self.progress)
 
@@ -202,15 +211,15 @@ class checkGitHubUpdateScreen(Screen):
 
 		if fileExists(self.filePath):
 			self['status'].setText("Installation wurde gestartet, bitte warten...")
-			appContainer = eConsoleAppContainer()
+
 			if isDreamboxOS:
-				appContainer.stdoutAvail.connect(self['srlog'])
-				appContainer.appClosed.connect(self.finishedPluginUpdate)
-				appContainer.execute("apt-get update && dpkg -i %s && apt-get -f install" % str(self.filePath))
+				self.console.appClosed.connect(self.finishedPluginUpdate)
+				self.console.dataAvail.connect(self.cmdData)
+				self.console.execute("apt-get update && dpkg -i %s && apt-get -f install" % str(self.filePath))
 			else:
-				appContainer.stdoutAvail.append(self['srlog'])
-				appContainer.appClosed.append(self.finishedPluginUpdate)
-				appContainer.execute("opkg update && opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.filePath))
+				self.console.appClosed.append(self.finishedPluginUpdate)
+				self.console.dataAvail.append(self.cmdData)
+				self.console.execute("opkg update && opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.filePath))
 		else:
 			self.downloadError()
 
@@ -221,6 +230,7 @@ class checkGitHubUpdateScreen(Screen):
 		self.close()
 
 	def finishedPluginUpdate(self, retval):
+		self.console.kill()
 		self.stopProgressTimer()
 		if fileExists(self.filePath):
 			os.remove(self.filePath)
