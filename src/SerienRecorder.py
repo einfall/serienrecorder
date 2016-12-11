@@ -338,6 +338,9 @@ class PiconLoader:
 		self.partnerbox = re.compile('1:0:[0-9a-fA-F]+:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+:http')
 
 	def getPicon(self, sRef):
+		if not sRef:
+			return None
+
 		pos = sRef.rfind(':')
 		pos2 = sRef.rfind(':', 0, pos)
 		if pos - pos2 == 1 or self.partnerbox.match(sRef) is not None:
@@ -1773,7 +1776,7 @@ def optimizePlanerData():
 					else:
 						break
 				for b in l:		
-					a.remove(b)
+					a0(b)
 		except:
 			pass
 
@@ -6569,12 +6572,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				self.list.append(getConfigListEntry("nach Änderungen Suchlauf beim Beenden starten:", config.plugins.serienRec.runAutocheckAtExit))
 		#if config.plugins.serienRec.updateInterval.value == 24:
 		if config.plugins.serienRec.autochecktype.value == "1":
-			self.list.append(getConfigListEntry("Aus Deep-StandBy aufwecken:", config.plugins.serienRec.wakeUpDSB))
+			self.list.append(getConfigListEntry("Aus Deep-Standby aufwecken:", config.plugins.serienRec.wakeUpDSB))
 		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
 			self.list.append(getConfigListEntry("Aktion nach dem automatischen Suchlauf:", config.plugins.serienRec.afterAutocheck))
 			if config.plugins.serienRec.setupType.value == "1":
 				if int(config.plugins.serienRec.afterAutocheck.value):
-					self.list.append(getConfigListEntry("    Timeout für (Deep-)StandBy-Abfrage (in Sek.):", config.plugins.serienRec.DSBTimeout))
+					self.list.append(getConfigListEntry("    Timeout für (Deep-)Standby-Abfrage (in Sek.):", config.plugins.serienRec.DSBTimeout))
 			
 		self.list.append(getConfigListEntry(""))
 		self.list.append(getConfigListEntry("---------  TIMER:  --------------------------------------------------------------------------------------------"))
