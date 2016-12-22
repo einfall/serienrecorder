@@ -10477,7 +10477,7 @@ class serienRecMain(Screen, HelpableScreen):
 				self['title'].setText("Lade Infos vom Speicher...")
 				self.processPlanerData(dayCache[key], True)
 			except:
-				writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten [%s]\n" % str(daypage), True)
+				writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten\n", True)
 		else:
 			self['title'].setText("Lade Infos vom Web...")
 			webChannels = getWebSenderAktiv()
@@ -10485,7 +10485,7 @@ class serienRecMain(Screen, HelpableScreen):
 				planerData = SeriesServer().doGetPlanerData(int(config.plugins.serienRec.screenplaner.value), int(self.page), webChannels)
 				self.processPlanerData(planerData, False)
 			except:
-				writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten [%s]\n" % str(daypage), True)
+				writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten\n", True)
 			
 	def processPlanerData(self, data, useCache=False):
 		if useCache:
