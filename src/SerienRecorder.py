@@ -16,6 +16,7 @@ from Screens.Screen import Screen
 from Plugins.Plugin import PluginDescriptor
 from twisted.web.client import getPage
 from twisted.web.client import downloadPage
+from HTMLParser import HTMLParser
 
 from Components.ServicePosition import ServicePositionGauge
 from Tools.NumericalTextInput import NumericalTextInput
@@ -38,6 +39,8 @@ import sys, os, base64, re, time, shutil, datetime, codecs, urllib, urllib2, ran
 from twisted.web import client, error as weberror
 from twisted.internet import reactor, defer
 from skin import parseColor, loadSkin, parseFont
+import imaplib
+import email
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
 	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
@@ -137,11 +140,20 @@ def ReadConfigFile():
 		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", "Manuell"), ("1", "zur gewählten Uhrzeit")], default = "0")
 	except:
 		config.plugins.serienRec.autochecktype = ConfigSelection(choices = [("0", "Manuell"), ("1", "zur gewählten Uhrzeit"), ("2", "nach EPGRefresh")], default = "0")
+	config.plugins.serienRec.readdatafromfiles = ConfigYesNo(default = False)
 	config.plugins.serienRec.updateInterval = ConfigInteger(24, (0,24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default = False)
 	config.plugins.serienRec.deltime = ConfigClock(default = (random.randint(1, 23)*3600)+time.timezone)
 	config.plugins.serienRec.maxDelayForAutocheck = ConfigInteger(15, (0,60))
 	config.plugins.serienRec.maxWebRequests = ConfigInteger(1, (1,99))
+	config.plugins.serienRec.tvplaner = ConfigYesNo(default = False)
+	config.plugins.serienRec.imap_server = ConfigText(default = "", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.imap_login = ConfigText(default = "", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.imap_password = ConfigText(default = "", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.imap_mailbox = ConfigText(default = "INBOX", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.imap_mail_subject = ConfigText(default = "TV Wunschliste TV-Planer", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.imap_mail_age = ConfigInteger(1, (0, 100))
+	config.plugins.serienRec.imap_check_interval = ConfigInteger(30, (0, 10000))
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
 	config.plugins.serienRec.globalFromTime = ConfigClock(default = 0+time.timezone)
 	config.plugins.serienRec.globalToTime = ConfigClock(default = (((23*60)+59)*60)+time.timezone)
@@ -659,8 +671,6 @@ def getDirname(serien_name, staffel):
 	cCursor.close()
 	return dirname, dirname_serie
 
-
-
 def CreateDirectory(serien_name, staffel):
 	(dirname, dirname_serie) = getDirname(serien_name, staffel)
 	if not fileExists(dirname):
@@ -731,6 +741,217 @@ def getTags(serien_name):
 	cCursor.close()
 	return tags
 
+def getEmailData():
+	# extract all html parts
+	def get_html(email_message_instance):
+	 maintype = email_message_instance.get_content_maintype()
+	 if maintype == 'multipart':
+		 for part in email_message_instance.get_payload():
+			 if part.get_content_type() == 'text/html':
+				 return part.get_payload()
+
+	writeLog("\n---------' Laden TV-Planer Email '---------------------------------------------------------------\n", True)
+	
+	# get emails
+	if len(config.plugins.serienRec.imap_server.value) == 0:
+		writeLog("TV-Planer: imap_server nicht gesetzt", True)
+		return None
+	
+	if len(config.plugins.serienRec.imap_login.value) == 0:
+		writeLog("TV-Planer: imap_login nicht gesetzt", True)
+		return None
+	
+	if len(config.plugins.serienRec.imap_password.value) == 0:
+		writeLog("TV-Planer: imap_password nicht gesetzt", True)
+		return None
+	
+	if len(config.plugins.serienRec.imap_mailbox.value) == 0:
+		writeLog("TV-Planer: imap_mailbox nicht gesetzt", True)
+		return None
+	
+	if len(config.plugins.serienRec.imap_mail_subject.value)  == 0:
+		writeLog("TV-Planer: imap_mail_subject nicht gesetzt", True)
+		return None
+	
+	if config.plugins.serienRec.imap_mail_age.value < 1 and config.plugins.serienRec.imap_mail_age.value > 100:
+		config.plugins.serienRec.imap_mail_age.value = 1
+	
+	try:
+		mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value)
+	
+	except imaplib.IMAP4.abort:
+		writeLog("TV-Planer: Verbindung zu %r fehlgeschlagen" % config.plugins.serienRec.imap_server.value, True)
+		return None
+	
+	try:
+		mail.login(config.plugins.serienRec.imap_login.value, config.plugins.serienRec.imap_password.value)
+		writeLog("TV-Planer: Angemeldet bei %r als %r" % (config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_login.value), True)
+	
+	except imaplib.IMAP4.error:
+		writeLog("TV-Planer: Anmeldung bei %r als %r fehlgeschlagen" % (config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_login.value), True)
+		return None
+	
+	try:
+		mail.select(config.plugins.serienRec.imap_mailbox.value)
+	
+	except imaplib.IMAP4.error:
+		writeLog("TV-Planer: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
+		return None
+	
+	date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
+	searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
+	searchstr = searchstr.format(date=date)
+	try:
+		result, data = mail.uid('search', None, searchstr)
+	except imaplib.IMAP4.error:
+		writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
+		writeLog("TV-Planer: %s" % searchstr, True)
+		return None
+	if len(data[0]) == 0:
+		writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
+		writeLog("TV-Planer: %s" % searchstr, True)
+		return None
+		
+	# get the latest email
+	latest_email_uid = data[0].split()[-1] 
+	# fetch the email body (RFC822) for the given UID
+	try:
+		result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
+	except:
+		writeLog("TV-Planer: Laden der Email fehlgeschlagen", True)
+		return None
+	
+	mail.logout()
+	# extract email message including headers and alternate payloads
+	email_message = email.message_from_string(data[0][1])
+	if len(email_message) == 0:
+		writeLog("TV-Planer: leere Email", True)
+		return None
+	
+	# get html of wunschliste
+	html = get_html(email_message)
+	if html is None or len(html) == 0:
+		writeLog("TV-Planer: leeres HTML", True)
+		return None
+	
+	# make one line and convert characters
+	html = html.replace('=\r\n', '').replace('\r\n','')
+	parser = HTMLParser()
+	html = parser.unescape(html).encode('utf-8')
+	if html is None or len(html) == 0:
+		writeLog("TV-Planer: leeres HTML nach HTMLParser", True)
+		return None
+	
+	# match date and time
+	#  <h3 style=3D"clear:both;margin:6px 0 2px 4px;font-size:15px;">TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 <span
+	date_regexp=re.compile('<h3.*?>TV-Planer.*?den (.*?) <span.*?> \(ab (.*?) Uhr')
+	liststarttime = date_regexp.findall(html)
+	
+	# match transmissions
+	# <tr><td style=3D"padding:4px 2px 2px 2px;vertical-align:top;width:60px;">22:05 Uhr</td>
+	#     <td style=3D"padding:2px;"><a href=3D"http://www.wunschliste.de/serie/blindspot">
+	#        <strong style=3D"font-size:15px;">Blindspot</strong>
+	#        </a><div style=3D"margin-top:2px;font-weight:bold;"><span style=3D"padding:1px;margin:0 0 1px 1px;background-color:#053357;color:#ffffff;" title=3D"Staffel">1</span>
+	#        <span style=3D"padding:1px;margin:0 0 1px 1px;background-color:#55cd0c;" title=3D"Episode">17</span>
+	#        <span style=3D"margin-left:4px;font-size:13px;">Schatzsuche</span>
+	#        <span style=3D"margin-left:4px;"><span style=3D"display:inline-block;padding:2px;margin-right:5px;font-size:11px;font-weight:bold;text-transform:uppercase;background:#ff5f01;color:#ffffff;white-space:nowrap;">FREE-TV NEU</span>
+	#        </span></div><div style=3D"margin-top:2px;font-size:11px;">Kurz bevor David starb hat er zur Feier ihres Jahrestages einen Tisch f&uuml;r sich und Patterson in deren Lieblings-Restaurant reserviert ...</div>
+	#        <div style=3D"margin-top:2px;font-size:11px;font-style:italic;">bis: 23.05 Uhr, L=C3=A4nge: 60 min.</div>
+	#        </td><td style=3D"padding:2px;width:70px;height:68px;text-align:center;"><img src=3D"http://www.imfernsehen.de/logos/hr/30.png" alt=3D"Sat.1" title=3D"Sat.1" width=3D"60">
+	#        <div style=3D"font-size:11px;font-weight:bold;text-align:center;">Sat.1</div>
+	#     </td>
+	# </tr>
+	transmission_regexp= re.compile('<tr><td.*?>([0-2][0-9]:.*?) Uhr</td><td style.*?><a.*?"(http.*?)".*?<strong.*?>(.*?)</strong>.*?Staffel">(.*?)<.*?Episode">(.*?)</span><span.*?>(.*?)</span>.*?<div.*?>(.*?)</div><div.*?>bis: (.*?) Uhr,.*?nge: (.*?) min.</div></td>.*?<div.*?>(.*?)</div></td></tr>')
+	transmissions = transmission_regexp.findall(html)
+	Series = set([])
+	for starttime, url, seriesname, season, episode, titel, description, endtime, duration, sender in transmissions:
+		Series.add((seriesname, url))
+		
+	def getKeySeries(item):
+					return item[0]
+					
+	Series = sorted(list(Series), key=getKeySeries)
+	
+	cCursor = dbSerRec.cursor()
+	for seriesname, url in Series:
+		cCursor.execute("SELECT Serie, Url  FROM SerienMarker WHERE LOWER(Serie)=?", (seriesname.lower(), ))
+		row = cCursor.fetchone()
+		if not row:
+			# marker isn't in database, creat new marker
+			# url stored in marker isn't the final one, it has to be corrected elsewhere
+			try:
+				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (seriesname, url))
+				dbSerRec.commit()
+			except:
+				writeLog('TV-Planer: Neue Serie %r konnte nicht gespeichert werden' % seriesname, True)
+		
+	cCursor.close()
+	
+	# prepare transmissions
+	# [ seriesName, channel, start, end, season, episode, title, '0' ]
+	# calculate start time of list in email
+	if len(liststarttime) != 1 or len(liststarttime[0]) != 2:
+		writeLog("TV-Planer: falsches Datumsformat", True)
+		return None
+		
+	(day, month, year) = liststarttime[0][0].split('.')
+	(hour, minute) = liststarttime[0][1].split(':')
+	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
+	
+	# generate dictionary with final transmissions
+	writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (liststarttime[0][0], liststarttime[0][1]))
+	transmissiondict = dict()
+	for starttime, url, seriesname, season, episode, titel, description, endtime, duration, channel in transmissions:
+		# seriesName
+		transmission = [ seriesname ]
+		# channel
+		Channel = []
+		cCursor = dbSerRec.cursor()
+		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (channel.lower(),))
+		row = cCursor.fetchone()
+		if row:
+			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = row
+			if altstbChannel == "":
+				altstbChannel = stbChannel
+				altstbRef = stbRef
+			elif stbChannel == "":
+				stbChannel = altstbChannel
+				stbRef = altstbRef
+			Channel.append((webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status))
+		cCursor.close()
+		if not Channel:
+			continue
+		transmission += [ Channel[0][1] ]
+		# start
+		(hour, minute) = starttime.split(':')
+		transmissionstart_unix = int(TimeHelpers.getRealUnixTime(minute, hour, day, month, year))
+		if transmissionstart_unix < liststarttime_unix:
+			transmissionstart_unix += (3600*24)
+		transmission += [ transmissionstart_unix ]
+		# end
+		(hour, minute) = endtime.split('.')
+		transmissionend_unix = int(TimeHelpers.getRealUnixTime(minute, hour, day, month, year))
+		if transmissionend_unix < liststarttime_unix:
+			transmissionend_unix += (3600*24)
+		transmission += [ transmissionend_unix ]
+		# season
+		transmission += [ season ]
+		# episode
+		transmission += [ episode ]
+		# title
+		transmission += [ titel ]
+		# last
+		transmission += [ '0' ]
+		# store in dictionary transmissiondict[seriesname] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
+		if seriesname in transmissiondict:
+			transmissiondict[seriesname] += [ transmission ]
+		else:
+			transmissiondict[seriesname] = [ transmission ]
+		writeLog("' %s - S%sE%s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel), True)
+	writeLog("\n", True)
+	
+	return transmissiondict
+
 def getSpecialsAllowed(serien_name):
 	global dbSerRec
 	cCursor = dbSerRec.cursor()
@@ -763,13 +984,20 @@ def getTimeSpan(serien_name):
 		toTime = (config.plugins.serienRec.globalToTime.value[0]*60)+config.plugins.serienRec.globalToTime.value[1]
 	cCursor.close()
 	
-	return (fromTime, toTime)	
+	return (fromTime, toTime)
 	
-def getMarker():
+# Serien may contain a list of selected series names
+def getMarker(Serien=None):
 	global dbSerRec
 	return_list = []
 	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays FROM SerienMarker ORDER BY Serie")
+	serienselect = ''
+	if Serien is not None and len(Serien) > 0:
+		serienselect = 'WHERE Serie IN ('
+		for i in range(len(Serien) - 1):
+			serienselect += "'" + Serien[i] + "',"
+		serienselect += "'" + Serien[-1] + "')"
+	cCursor.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays FROM SerienMarker " + serienselect + " ORDER BY Serie")
 	cMarkerList = cCursor.fetchall()
 	for row in cMarkerList:
 		(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays) = row
@@ -2753,8 +2981,20 @@ class serienRecCheckForRecording():
 		writeLog("Berücksichtige Ausstrahlungstermine zwischen %s und %s" % (search_start, search_end), True)
 		writeLog("Berücksichtige Wiederholungen zwischen %s und %s" % (search_start, search_rerun_end), True)
 		
-		## hier werden die wunschliste markers eingelesen vom serien marker
-		self.markers = getMarker()
+		# hier werden die wunschliste markers eingelesen
+		self.emailData = None
+		if config.plugins.serienRec.tvplaner.value and not self.manuell:
+			# When TV-Planer processing is enabled then the regular autocheck
+			# is only running for the transmissions received by email.
+			try:
+				self.emailData = getEmailData()
+			except:
+				self.emailData = None
+			writeLog("\n---------' Laden TV-Planer Email beendet '------------------------------------------------------\n", True)
+		if self.emailData is None:
+			self.markers = getMarker()
+		else:
+			self.markers = getMarker(self.emailData.keys())
 		self.count_url = 0
 		self.countTimer = 0
 		self.countTimerUpdate = 0
@@ -2767,33 +3007,117 @@ class serienRecCheckForRecording():
 			ds = defer.DeferredSemaphore(tokens=int(config.plugins.serienRec.maxWebRequests.value))
 		else:
 			ds = defer.DeferredSemaphore(tokens=1)
-
-		##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
-		#c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
-		#c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
-		downloads = []
-		webChannels = getWebSenderAktiv()
-
-		for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
-			self.countSerien += 1
-			if SerieEnabled:
-				# Download only if series is enabled
-				seriesID = getSeriesIDByURL(SerieUrl)
-				if 'Alle' in SerieSender:
-					markerChannels = webChannels
-				else:
-					markerChannels = SerieSender
-
-				self.countActivatedSeries += 1
-				download = retry(5, ds.run, self.download, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
-				download.addCallback(self.processTransmissions,serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
-				download.addErrback(self.dataError,SerieUrl)
-				downloads.append(download)
-
-		finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
+		# 
+		# In order to provide an emergency recording service when serien server is down or
+		# because Wunschliste isn't accessable, it is now possible to use the TV Wunschliste
+		# TV-Planer Infomails.
+		# 
+		# With an account at www.wunschliste.de it is possible to mark series to appear at
+		# "TV-Planer" screen. This screen shows the transmissions of up to a week in advance.
+		# In "Einstellungen" it is possible to enable Infomails about TV-Planer. This Infomails
+		# can now be used by SerienRecorder to create timers without any further access to
+		# Wunschliste, and therefore avoids hitting Wunschliste with the enormous
+		# internet traffic that was caused by the many boxes with SerienRecorder.
+		#
+		# Wunschliste Settings:
+		# - put your favourite series on TV-Planer
+		# - enable TV-Planer Infomails in "Einstellungen"
+		# - set Vorlauf (i.e. 1 day)
+		# - set Programmtag-Beginn (i.e. 5.00 Uhr)
+		# - set MailFormat to HTML+Text (currently only HTML emails are recognized)
+		#
+		# When this has been finished the first TV-Planer email will be received next day.
+		# 
+		# SerienRecorder Settings:
+		# - enable TVPlaner feature
+		# - set email server, login, password and possibly modify the other parameters
+		# - set the autocheck time to about 1 h after the time you receive the TV-planer emails
+		#
+		# Now every time the regular SerienRecorder autocheck runs, received 
+		# TV-Planer emails will be used to program timers, even no marker 
+		# has been created by SerienMarker before. The marker is created automatically, 
+		# except for the correct url.  
+		#
+		downloads = []
+		if config.plugins.serienRec.tvplaner.value and self.emailData != None and len(self.markers) > 0:
+			# check mailbox for TV-Planer EMail and create timer
+			writeLog("\n---------' Verarbeite TV-Planer Email '-----------------------------------------------------------\n", True)
+			webChannels = getWebSenderAktiv()
+			#print self.markers
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+				self.countSerien += 1
+				if SerieEnabled:
+					# Download only if series is enabled
+					if 'Alle' in SerieSender:
+						markerChannels = webChannels
+					else:
+						markerChannels = SerieSender
+					
+					self.countActivatedSeries += 1
+					download = retry(0, ds.run, self.downloadEmail, serienTitle, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
+					download.addCallback(self.processTransmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					download.addErrback(self.dataError,SerieUrl)
+					downloads.append(download)
+					
+			# run TV-Planer check
+			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
+		
+		# this is only for experts that have data files available in a directory
+		# TODO: use saved transmissions for programming timer
+		downloads = []
+		if config.plugins.serienRec.readdatafromfiles.value and len(self.markers) > 0:
+			# use this only when WL is down and you have copies of the webpages on disk in serienrecorder/data
+			##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
+			writeLog("\n---------' Verarbeite Daten von Dateien '---------------------------------------------------------------\n", True)
+			c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
+			c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+				self.countSerien += 1
+				if SerieEnabled:
+					# Download only if series is enabled
+					self.countActivatedSeries += 1
+					download = retry(5, ds.run, self.downloadFile, SerieUrl)
+					download.addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,excludedWeekdays)
+					download.addErrback(self.dataError,SerieUrl)
+					downloads.append(download)
+				
+			# run file data check
+			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
+		
+		# regular processing through serienrecorder server
+		# TODO: save all transmissions in files to protect from temporary serien server fails
+		#       data then will be read by the above file reader and used for timer programming 
+		downloads = []
+		if len(self.markers) > 0:
+			writeLog("\n---------' Verarbeite Daten vom Server '---------------------------------------------------------------\n", True)
+			webChannels = getWebSenderAktiv()
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+				self.countSerien += 1
+				if SerieEnabled:
+					# Download only if series is enabled
+					if 'Alle' in SerieSender:
+						markerChannels = webChannels
+					else:
+						markerChannels = SerieSender
+					
+					self.countActivatedSeries += 1
+					seriesID = getSeriesIDByURL(SerieUrl)
+					if seriesID is None:
+						# This is a marker created by TV Planer function. Ignore this marker 
+						# until a server function is available to get correct url by series name.
+						# When TV-Planer check is enabled TV-Planer timers were programmed already.
+						continue
+					download = retry(5, ds.run, self.downloadTransmission, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
+					download.addCallback(self.processTransmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					download.addErrback(self.dataError,SerieUrl)
+					downloads.append(download)
+			
+			# run server data check
+			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
+
 	@staticmethod
-	def download(seriesID, timeSpan, markerChannels):
+	def downloadTransmission(seriesID, timeSpan, markerChannels):
 		try:
 			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
 		except:
@@ -2940,7 +3264,219 @@ class serienRecCheckForRecording():
 			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays))
 			cCursorTmp.close()
 
+	# This has been included again to allow direct parsing of stored data files
+	# when serienserver is down.
+	# 
+	# TODO: remove timer programming and return same data as downloadTransmissions()
+	# 
+	def parseWebpage(self, data, c1, c2, serien_name, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
+		#data = processDownloadedData(data)
+		self.count_url += 1
+		raw = c1.findall(data)
+		raw2 = c2.findall(data)
+		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
+		#raw.sort(key=lambda t : time.strptime("%s %s" % (t[1],t[2]),"%d.%m %H.%M"))
+		def y(l):
+			(day, month) = l[1].split('.')
+			(start_hour, start_min) = l[2].split('.')
+			now = datetime.datetime.now()
+			if int(month) < now.month:
+				return time.mktime((int(now.year) + 1, int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
+			else:
+				return time.mktime((int(now.year), int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
+		raw.sort(key=y)
+		
+		# global termineCache
+		# termineCache.update({serien_name:raw})
+		
+		# check for parsing error
+		if not raw:
+			# parsing error -> nothing to do
+			return
+		
+		(fromTime, toTime) = getTimeSpan(serien_name)
+		if self.NoOfRecords < AnzahlAufnahmen:
+			self.NoOfRecords = AnzahlAufnahmen
+		
+		TimeSpan_time = int(future_time)
+		if config.plugins.serienRec.forceRecording.value:
+			TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
+		
+		# loop over all transmissions
+		for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
+			# umlaute umwandeln
+			#sender = decodeISO8859_1(sender, True)
+			sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
+			#title = decodeISO8859_1(title, True)
+			#staffel = decodeISO8859_1(staffel, True)
 			
+			# formatiere start/end-zeit
+			(day, month) = datum.split('.')
+			(start_hour, start_min) = startzeit.split('.')
+			(end_hour, end_min) = endzeit.split('.')
+			
+			start_unixtime = TimeHelpers.getUnixTimeAll(start_min, start_hour, day, month)
+			
+			if int(start_hour) > int(end_hour):
+				end_unixtime = TimeHelpers.getNextDayUnixtime(end_min, end_hour, day, month)
+			else:
+				end_unixtime = TimeHelpers.getUnixTimeAll(end_min, end_hour, day, month)
+			
+			# setze die vorlauf/nachlauf-zeit
+			(margin_before, margin_after) = getMargins(serien_name, sender)
+			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
+			
+			# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
+			#if config.plugins.serienRec.breakTimersuche.value and (int(start_unixtime) > int(TimeSpan_time)):
+			#		# We reached the maximal time range to look for transmissions, so we can break here
+			#		break
+			
+			if not config.plugins.serienRec.forceRecording.value:
+				if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
+					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
+					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
+					if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
+						continue
+			
+			# if there is no season or episode number it can be a special
+			# but if we have more than one special and wunschliste.de does not
+			# give us an episode number we are unable to differentiate between these specials
+			if not staffel and not episode:
+				staffel = "S"
+				episode = "0"
+			
+			# initialize strings
+			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
+			
+			# Process channel relevant data
+			
+			##############################
+			#
+			# CHECK
+			#
+			# ueberprueft welche sender aktiviert und eingestellt sind.
+			#
+			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
+			if stbChannel == "":
+				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel nicht gefunden ' -> ' %s '") % (label_serie, webChannel))
+				continue
+			
+			if int(status) == 0:
+				writeLogFilter("channels", _("[Serien Recorder] ' %s ' - STB-Channel deaktiviert -> ' %s '") % (label_serie, webChannel))
+				continue
+			
+			##############################
+			#
+			# CHECK
+			#
+			# ueberprueft ob der sender zum sender von der Serie aus dem serien marker passt.
+			#
+			serieAllowed = False
+			if 'Alle' in allowedSender:
+				serieAllowed = True
+			elif sender in allowedSender:
+				serieAllowed = True
+			
+			if not serieAllowed:
+				writeLogFilter("allowedSender", _("[Serien Recorder] ' %s ' - Sender nicht erlaubt -> %s -> %s") % (label_serie, sender, allowedSender))
+				continue
+			
+			##############################
+			#
+			# CHECK
+			#
+			# ueberprueft welche staffel(n) erlaubt sind
+			#
+			serieAllowed = False
+			if -2 in staffeln:                          	# 'Manuell'
+				serieAllowed = False
+			elif (-1 in staffeln) and (0 in staffeln):		# 'Alle'
+				serieAllowed = True
+			elif str(staffel).isdigit():
+				if int(staffel) == 0:
+					if str(episode).isdigit():
+						if int(episode) < int(AbEpisode):
+							if config.plugins.serienRec.writeLogAllowedSender.value:
+								liste = staffeln[:]
+								liste.sort()
+								liste.reverse()
+								if -1 in staffeln:
+									liste.remove(-1)
+									liste[0] = _("ab %s") % liste[0]
+								liste.reverse()
+								liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
+								writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Episode nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
+							continue
+						else:
+							serieAllowed = True
+				elif int(staffel) in staffeln:
+					serieAllowed = True
+				elif -1 in staffeln:		# 'folgende'
+					if int(staffel) >= max(staffeln):
+						serieAllowed = True
+			elif getSpecialsAllowed(serien_name):
+				serieAllowed = True
+			
+			vomMerkzettel = False
+			if not serieAllowed:
+				cCursorTmp = dbSerRec.cursor()
+				cCursorTmp.execute("SELECT * FROM Merkzettel WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serien_name.lower(), str(staffel).lower(), str(episode).zfill(2).lower()))
+				row = cCursorTmp.fetchone()
+				if row:
+					writeLog(_("[Serien Recorder] ' %s ' - Timer vom Merkzettel wird angelegt @ %s") % (label_serie, stbChannel), True)
+					serieAllowed = True
+					vomMerkzettel = True
+				cCursorTmp.close()
+			
+			if not serieAllowed:
+				#if config.plugins.serienRec.writeLogAllowedSender.value:
+				if False:
+					liste = staffeln[:]
+					liste.sort()
+					liste.reverse()
+					if -1 in staffeln:
+						liste.remove(-1)
+						liste[0] = _("ab %s") % liste[0]
+					liste.reverse()
+					if str(episode).isdigit():
+						if int(episode) < int(AbEpisode):
+							liste.insert(0, _("0 ab E%s") % str(AbEpisode).zfill(2))
+					if -2 in staffeln:
+						liste.remove(-2)
+						liste.insert(0, _("Manuell"))
+					writeLogFilter("allowedEpisodes", _("[Serien Recorder] ' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '") % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
+				continue
+			
+			##############################
+			#
+			# try to get eventID (eit) from epgCache
+			#
+			eit, new_end_unixtime, new_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
+			alt_eit, alt_end_unixtime, alt_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
+			
+			(dirname, dirname_serie) = getDirname(serien_name, staffel)
+			
+			cCursorTmp = dbTmp.cursor()
+			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays))
+			cCursorTmp.close()
+
+	def downloadFile(self, url):
+		#print "[Serien Recorder] call %s" % url
+		try:
+			pageFile = open("%sdata/" % serienRecMainPath + url.split("=")[1], "r")
+		except:
+			return None
+		text = pageFile.read()
+		pageFile.close()
+		return text
+
+	def downloadEmail(self, seriesName, timeSpan, markerChannels):
+		#print self.emailData[seriesName]
+		return self.emailData[seriesName]
+		
 	def createTimer(self, result=True):
 		dbTmp.commit()
 
@@ -4614,7 +5150,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				useAlternativeChannel = config.plugins.serienRec.useAlternativeChannel.value
 			
 			SerieAktiviert = True
-			if not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
+			if ErlaubteSTB is not None and not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
 				numberOfDeactivatedSeries += 1
 				SerieAktiviert = False
 
@@ -6397,6 +6933,11 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				config.plugins.serienRec.TimeSpanForRegularTimer.value = x
 			self.changedEntry()
 			
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_mail_age:
+			self.changedEntry()
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_check_interval:
+			self.changedEntry()
+		
 		if self['config'].instance.getCurrentIndex() >= (len(self.list) - 1):
 			self['config'].instance.moveSelectionTo(0)
 		else:
@@ -6425,6 +6966,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				config.plugins.serienRec.TimeSpanForRegularTimer.value = int(config.plugins.serienRec.checkfordays.value)
 			else:
 				config.plugins.serienRec.TimeSpanForRegularTimer.value = x
+			self.changedEntry()
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_mail_age:
+			self.changedEntry()
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_check_interval:
 			self.changedEntry()
 			
 		if self['config'].instance.getCurrentIndex() <= 1:
@@ -6467,6 +7012,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 													  #config.plugins.serienRec.updateInterval,
 													  config.plugins.serienRec.deltime,
 													  config.plugins.serienRec.maxDelayForAutocheck,
+													  config.plugins.serienRec.imap_server,
+													  config.plugins.serienRec.imap_login,
+													  config.plugins.serienRec.imap_password,
+													  config.plugins.serienRec.imap_mailbox,
+													  config.plugins.serienRec.imap_mail_subject,
+													  config.plugins.serienRec.imap_check_interval,
 													  #config.plugins.serienRec.maxWebRequests,
 													  config.plugins.serienRec.checkfordays,
 													  config.plugins.serienRec.globalFromTime,
@@ -6505,6 +7056,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 													  config.plugins.serienRec.deltime,
 													  config.plugins.serienRec.maxDelayForAutocheck,
 													  #config.plugins.serienRec.maxWebRequests,
+													  config.plugins.serienRec.imap_server,
+													  config.plugins.serienRec.imap_login,
+													  config.plugins.serienRec.imap_password,
+													  config.plugins.serienRec.imap_mailbox,
+													  config.plugins.serienRec.imap_mail_subject,
+													  config.plugins.serienRec.imap_check_interval,
 													  config.plugins.serienRec.checkfordays,
 													  config.plugins.serienRec.globalFromTime,
 													  config.plugins.serienRec.globalToTime,
@@ -6552,6 +7109,16 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			if config.plugins.serienRec.updateInterval.value == 24:
 				self.list.append(getConfigListEntry("    Uhrzeit für automatischen Suchlauf:", config.plugins.serienRec.deltime))
 				self.list.append(getConfigListEntry("    maximale Verzögerung für automatischen Suchlauf (Min.):", config.plugins.serienRec.maxDelayForAutocheck))
+#		self.list.append(getConfigListEntry("Lese Daten aus Dateien mit den Daten der Serienwebseite", config.plugins.serienRec.readdatafromfiles))
+		self.list.append(getConfigListEntry("Wunschliste TV-Planer EMails nutzen:", config.plugins.serienRec.tvplaner))
+		if config.plugins.serienRec.tvplaner.value:
+			self.list.append(getConfigListEntry("    IMAP Server:", config.plugins.serienRec.imap_server))
+			self.list.append(getConfigListEntry("    IMAP Login:", config.plugins.serienRec.imap_login))
+			self.list.append(getConfigListEntry("    IMAP Passwort:", config.plugins.serienRec.imap_password))
+			self.list.append(getConfigListEntry("    IMAP Mailbox:", config.plugins.serienRec.imap_mailbox))
+			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
+			self.list.append(getConfigListEntry("    maximales Alter der EMail (Tage):", config.plugins.serienRec.imap_mail_age))
+#			self.list.append(getConfigListEntry("    Mailbox alle <n> Minuten überprüfen:", config.plugins.serienRec.imap_check_interval))
 		self.list.append(getConfigListEntry("Timer für X Tage erstellen:", config.plugins.serienRec.checkfordays))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Früheste Zeit für Timer:", config.plugins.serienRec.globalFromTime))
@@ -6738,6 +7305,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.deltime :                 ("Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:%s Uhr)." % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2)), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.maxDelayForAutocheck :    ("Hier wird die Zeitspanne (in Minuten) eingestellt, innerhalb welcher der automatische Timer-Suchlauf ausgeführt wird. Diese Zeitspanne beginnt zu der oben eingestellten Uhrzeit.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.Autoupdate :              ("Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht.", "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.tvplaner :                ("Bei 'ja' frägt der SerienRecorder regelmäßig eine IMAP Mailbox ab und sucht nach EMails des TV Wunschlist TV-Planer", ""),
+			config.plugins.serienRec.imap_server :             ("Name des IMAP servers (z.B. imap.gmx.de)", "x"),
+			config.plugins.serienRec.imap_login :              ("Name des IMAP logins (z.B. abc@gmx.de)", "x"),
+			config.plugins.serienRec.imap_password :           ("Passwort des IMAP logins", "x"),
+			config.plugins.serienRec.imap_mailbox :            ("Name des Ordners in dem die EMails ankommen (z.B. INBOX)", "x"),
+			config.plugins.serienRec.imap_mail_subject :       ("Subject der TV-Planer EMails(default: TV Wunschliste TV-Planer)", "x"),
+			config.plugins.serienRec.imap_check_interval :     ("Die Mailbox wird alle <n> Minuten überprüft (default: 30)", "x"),
 			config.plugins.serienRec.databasePath :            ("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.", "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              ("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
 			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/')." % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "1.3_Die_globalen_Einstellungen"),
@@ -6915,6 +7489,15 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.seasonsubdirnumerlength.save()
 		config.plugins.serienRec.seasonsubdirfillchar.save()
 		config.plugins.serienRec.updateInterval.save()
+		config.plugins.serienRec.readdatafromfiles.save()
+		config.plugins.serienRec.tvplaner.save()
+		config.plugins.serienRec.imap_server.save()
+		config.plugins.serienRec.imap_login.save()
+		config.plugins.serienRec.imap_password.save()
+		config.plugins.serienRec.imap_mailbox.save()
+		config.plugins.serienRec.imap_mail_subject.save()
+		config.plugins.serienRec.imap_mail_age.save()
+		config.plugins.serienRec.imap_check_interval.save()
 		config.plugins.serienRec.checkfordays.save()
 		config.plugins.serienRec.AutoBackup.save()
 		config.plugins.serienRec.deleteBackupFilesOlderThan.save()
@@ -10488,6 +11071,8 @@ class serienRecMain(Screen, HelpableScreen):
 				writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten\n", True)
 			
 	def processPlanerData(self, data, useCache=False):
+		if not data or len(data) == 0:
+			return
 		if useCache:
 			(headDate, self.daylist) = data
 		else:
