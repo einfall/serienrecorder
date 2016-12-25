@@ -2542,6 +2542,8 @@ class serienRecCheckForRecording():
 		self.startCheck3()
 
 	def processPlanerData(self, data, markers, daypage):
+		if not data or len(data) == 0:
+			raise
 		daylist = [[],[],[]]
 
 		headDate = [data["date"]]
@@ -6207,10 +6209,17 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			webChannels = getWebSenderAktiv()
 		else:
 			webChannels = getMarkerChannels(self.serien_id)
-		transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+
+		try:
+			transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+		except:
+			transmissions = None
 		self.resultsEvents(transmissions)
 
 	def resultsEvents(self, transmissions):
+		if transmissions is None:
+			self['title'].setText("Fehler beim Abrufen der Termine für ' %s '" % self.serien_name)
+			return
 		self.sendetermine_list = []
 
 		#build unique dir list by season
@@ -6647,10 +6656,13 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			webChannels = getWebSenderAktiv()
 		else:
 			webChannels = getMarkerChannels(self.serien_id)
-		transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+
+		try:
+			transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+		except:
+			transmissions = None
 		self.resultsEvents(transmissions)
 
-		
 	def keyBlue(self):
 		self.session.openWithCallback(self.searchEvents, serienRecTimer)
 
@@ -7305,12 +7317,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.deltime :                 ("Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:%s Uhr)." % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2)), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.maxDelayForAutocheck :    ("Hier wird die Zeitspanne (in Minuten) eingestellt, innerhalb welcher der automatische Timer-Suchlauf ausgeführt wird. Diese Zeitspanne beginnt zu der oben eingestellten Uhrzeit.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.Autoupdate :              ("Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht.", "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.tvplaner :                ("Bei 'ja' frägt der SerienRecorder regelmäßig eine IMAP Mailbox ab und sucht nach EMails des TV Wunschlist TV-Planer", ""),
-			config.plugins.serienRec.imap_server :             ("Name des IMAP servers (z.B. imap.gmx.de)", "x"),
-			config.plugins.serienRec.imap_login :              ("Name des IMAP logins (z.B. abc@gmx.de)", "x"),
-			config.plugins.serienRec.imap_password :           ("Passwort des IMAP logins", "x"),
-			config.plugins.serienRec.imap_mailbox :            ("Name des Ordners in dem die EMails ankommen (z.B. INBOX)", "x"),
-			config.plugins.serienRec.imap_mail_subject :       ("Subject der TV-Planer EMails(default: TV Wunschliste TV-Planer)", "x"),
+			config.plugins.serienRec.tvplaner :                ("Bei 'ja' ruft der SerienRecorder regelmäßig eine IMAP Mailbox ab und sucht nach E-Mails des Wunschliste TV-Planers", ""),
+			config.plugins.serienRec.imap_server :             ("Name des IMAP Servers (z.B. imap.gmx.de)", "x"),
+			config.plugins.serienRec.imap_login :              ("Benutzername des IMAP Accounts (z.B. abc@gmx.de)", "x"),
+			config.plugins.serienRec.imap_password :           ("Passwort des IMAP Accounts", "x"),
+			config.plugins.serienRec.imap_mailbox :            ("Name des Ordners in dem die E-Mails ankommen (z.B. INBOX)", "x"),
+			config.plugins.serienRec.imap_mail_subject :       ("Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)", "x"),
 			config.plugins.serienRec.imap_check_interval :     ("Die Mailbox wird alle <n> Minuten überprüft (default: 30)", "x"),
 			config.plugins.serienRec.databasePath :            ("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.", "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              ("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
@@ -11072,6 +11084,7 @@ class serienRecMain(Screen, HelpableScreen):
 			
 	def processPlanerData(self, data, useCache=False):
 		if not data or len(data) == 0:
+			self['title'].setText("Fehler beim Abrufen der SerienPlaner-Daten")
 			return
 		if useCache:
 			(headDate, self.daylist) = data
