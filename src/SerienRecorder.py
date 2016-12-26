@@ -750,7 +750,7 @@ def getEmailData():
 			 if part.get_content_type() == 'text/html':
 				 return part.get_payload()
 
-	writeLog("\n---------' Laden TV-Planer Email '---------------------------------------------------------------\n", True)
+	writeLog("\n---------' Laden TV-Planer E-Mail '---------------------------------------------------------------\n", True)
 	
 	# get emails
 	if len(config.plugins.serienRec.imap_server.value) == 0:
@@ -818,14 +818,14 @@ def getEmailData():
 	try:
 		result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
 	except:
-		writeLog("TV-Planer: Laden der Email fehlgeschlagen", True)
+		writeLog("TV-Planer: Laden der E-Mail fehlgeschlagen", True)
 		return None
 	
 	mail.logout()
 	# extract email message including headers and alternate payloads
 	email_message = email.message_from_string(data[0][1])
 	if len(email_message) == 0:
-		writeLog("TV-Planer: leere Email", True)
+		writeLog("TV-Planer: leere E-Mail", True)
 		return None
 	
 	# get html of wunschliste
@@ -2992,7 +2992,7 @@ class serienRecCheckForRecording():
 				self.emailData = getEmailData()
 			except:
 				self.emailData = None
-			writeLog("\n---------' Laden TV-Planer Email beendet '------------------------------------------------------\n", True)
+			writeLog("\n---------' Laden TV-Planer E-Mail beendet '------------------------------------------------------\n", True)
 		if self.emailData is None:
 			self.markers = getMarker()
 		else:
@@ -3044,7 +3044,7 @@ class serienRecCheckForRecording():
 		downloads = []
 		if config.plugins.serienRec.tvplaner.value and self.emailData != None and len(self.markers) > 0:
 			# check mailbox for TV-Planer EMail and create timer
-			writeLog("\n---------' Verarbeite TV-Planer Email '-----------------------------------------------------------\n", True)
+			writeLog("\n---------' Verarbeite TV-Planer E-Mail '-----------------------------------------------------------\n", True)
 			webChannels = getWebSenderAktiv()
 			#print self.markers
 			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
@@ -6197,23 +6197,27 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		print self.serie_url
 
-		raw = re.findall(".*?(\d+)", self.serie_url)
-		self.serien_id = raw[0]
-		print self.serien_id
+		transmissions = None
 
-		getCover(self, self.serien_name, self.serien_id)
+		if self.serie_url:
+			raw = re.findall(".*?(\d+)", self.serie_url)
+			self.serien_id = raw[0]
+			print self.serien_id
 
-		if self.FilterMode is 0:
-			webChannels = []
-		elif self.FilterMode is 1:
-			webChannels = getWebSenderAktiv()
-		else:
-			webChannels = getMarkerChannels(self.serien_id)
+			getCover(self, self.serien_name, self.serien_id)
 
-		try:
-			transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
-		except:
-			transmissions = None
+			if self.FilterMode is 0:
+				webChannels = []
+			elif self.FilterMode is 1:
+				webChannels = getWebSenderAktiv()
+			else:
+				webChannels = getMarkerChannels(self.serien_id)
+
+			try:
+				transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+			except:
+				transmissions = None
+
 		self.resultsEvents(transmissions)
 
 	def resultsEvents(self, transmissions):
@@ -7122,14 +7126,14 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				self.list.append(getConfigListEntry("    Uhrzeit für automatischen Suchlauf:", config.plugins.serienRec.deltime))
 				self.list.append(getConfigListEntry("    maximale Verzögerung für automatischen Suchlauf (Min.):", config.plugins.serienRec.maxDelayForAutocheck))
 #		self.list.append(getConfigListEntry("Lese Daten aus Dateien mit den Daten der Serienwebseite", config.plugins.serienRec.readdatafromfiles))
-		self.list.append(getConfigListEntry("Wunschliste TV-Planer EMails nutzen:", config.plugins.serienRec.tvplaner))
+		self.list.append(getConfigListEntry("Wunschliste TV-Planer E-Mails nutzen:", config.plugins.serienRec.tvplaner))
 		if config.plugins.serienRec.tvplaner.value:
 			self.list.append(getConfigListEntry("    IMAP Server:", config.plugins.serienRec.imap_server))
 			self.list.append(getConfigListEntry("    IMAP Login:", config.plugins.serienRec.imap_login))
 			self.list.append(getConfigListEntry("    IMAP Passwort:", config.plugins.serienRec.imap_password))
 			self.list.append(getConfigListEntry("    IMAP Mailbox:", config.plugins.serienRec.imap_mailbox))
 			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
-			self.list.append(getConfigListEntry("    maximales Alter der EMail (Tage):", config.plugins.serienRec.imap_mail_age))
+			self.list.append(getConfigListEntry("    maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
 #			self.list.append(getConfigListEntry("    Mailbox alle <n> Minuten überprüfen:", config.plugins.serienRec.imap_check_interval))
 		self.list.append(getConfigListEntry("Timer für X Tage erstellen:", config.plugins.serienRec.checkfordays))
 		if config.plugins.serienRec.setupType.value == "1":

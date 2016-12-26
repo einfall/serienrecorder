@@ -17,6 +17,9 @@ class SeriesServer:
 		if xmlrpclib is not None:
 			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_URL, verbose=False)
 
+	def getSeriesID(self, seriesName):
+		return self.server.sp.cache.getID(seriesName)
+
 	def getSeriesInfo(self, seriesID):
 		seriesInfo = self.server.sp.cache.getSeriesInfo(seriesID)
 		infoText = ""
