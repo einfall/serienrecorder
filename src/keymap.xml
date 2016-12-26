@@ -60,7 +60,8 @@
 		<key id="KEY_MENU" mapto="menu_long" flags="l" />
 		<key id="KEY_SPACE" mapto="menu" flags="mr" />
 		
-		<key id="KEY_INFO" mapto="info" flags="m" />
+		<key id="KEY_INFO" mapto="info" flags="b" />
+		<key id="KEY_INFO" mapto="info_long" flags="l" />
 		
 		<key id="KEY_CHANNELUP" mapto="nextBouquet" flags="m" />
 		<key id="KEY_CHANNELDOWN" mapto="prevBouquet" flags="m" />

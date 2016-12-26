@@ -148,8 +148,12 @@ def ReadConfigFile():
 	config.plugins.serienRec.maxWebRequests = ConfigInteger(1, (1,99))
 	config.plugins.serienRec.tvplaner = ConfigYesNo(default = False)
 	config.plugins.serienRec.imap_server = ConfigText(default = "", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.imap_server_ssl = ConfigYesNo(default = True)
+	config.plugins.serienRec.imap_server_port = ConfigInteger(993, (1,65535))
 	config.plugins.serienRec.imap_login = ConfigText(default = "", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.imap_login_hidden = ConfigText(default = "", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.imap_password = ConfigText(default = "", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.imap_password_hidden = ConfigText(default = "", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.imap_mailbox = ConfigText(default = "INBOX", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.imap_mail_subject = ConfigText(default = "TV Wunschliste TV-Planer", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.imap_mail_age = ConfigInteger(1, (0, 100))
@@ -741,6 +745,30 @@ def getTags(serien_name):
 	cCursor.close()
 	return tags
 
+def encode(key, clear):
+	enc = []
+	for i in range(len(clear)):
+		key_c = key[i % len(key)]
+		enc_c = chr((ord(clear[i]) + ord(key_c)) % 256)
+		enc.append(enc_c)
+	return base64.urlsafe_b64encode("".join(enc))
+
+def decode(key, enc):
+	dec = []
+	enc = base64.urlsafe_b64decode(enc)
+	for i in range(len(enc)):
+		key_c = key[i % len(key)]
+		dec_c = chr((256 + ord(enc[i]) - ord(key_c)) % 256)
+		dec.append(dec_c)
+	return "".join(dec)
+
+def getmac(interface):
+	try:
+		mac = open('/sys/class/net/'+interface+'/address').readline()
+	except:
+		mac = "00:00:00:00:00:00"
+	return mac[0:17]
+
 def getEmailData():
 	# extract all html parts
 	def get_html(email_message_instance):
@@ -757,11 +785,11 @@ def getEmailData():
 		writeLog("TV-Planer: imap_server nicht gesetzt", True)
 		return None
 	
-	if len(config.plugins.serienRec.imap_login.value) == 0:
+	if len(config.plugins.serienRec.imap_login_hidden.value) == 0:
 		writeLog("TV-Planer: imap_login nicht gesetzt", True)
 		return None
 	
-	if len(config.plugins.serienRec.imap_password.value) == 0:
+	if len(config.plugins.serienRec.imap_password_hidden.value) == 0:
 		writeLog("TV-Planer: imap_password nicht gesetzt", True)
 		return None
 	
@@ -777,20 +805,24 @@ def getEmailData():
 		config.plugins.serienRec.imap_mail_age.value = 1
 	
 	try:
-		mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value)
+		if config.plugins.serienRec.imap_server_ssl.value:
+			mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_server_port.value)
+		else:
+			mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_server_port.value)
 	
 	except imaplib.IMAP4.abort:
-		writeLog("TV-Planer: Verbindung zu %r fehlgeschlagen" % config.plugins.serienRec.imap_server.value, True)
+		writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
 		return None
 	
 	try:
-		mail.login(config.plugins.serienRec.imap_login.value, config.plugins.serienRec.imap_password.value)
-		writeLog("TV-Planer: Angemeldet bei %r als %r" % (config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_login.value), True)
+		mail.login(decode(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value), decode(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+		print "[serienrecorder]: imap login ok"
 	
 	except imaplib.IMAP4.error:
-		writeLog("TV-Planer: Anmeldung bei %r als %r fehlgeschlagen" % (config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_login.value), True)
+		writeLog("TV-Planer: Anmeldung auf Server fehlgeschlagen", True)
+		print "[serienrecorder]: imap login failed"
 		return None
-	
+
 	try:
 		mail.select(config.plugins.serienRec.imap_mailbox.value)
 	
@@ -803,10 +835,12 @@ def getEmailData():
 	searchstr = searchstr.format(date=date)
 	try:
 		result, data = mail.uid('search', None, searchstr)
+	
 	except imaplib.IMAP4.error:
 		writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
 		writeLog("TV-Planer: %s" % searchstr, True)
 		return None
+	
 	if len(data[0]) == 0:
 		writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
 		writeLog("TV-Planer: %s" % searchstr, True)
@@ -846,6 +880,13 @@ def getEmailData():
 	#  <h3 style=3D"clear:both;margin:6px 0 2px 4px;font-size:15px;">TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 <span
 	date_regexp=re.compile('<h3.*?>TV-Planer.*?den (.*?) <span.*?> \(ab (.*?) Uhr')
 	liststarttime = date_regexp.findall(html)
+	if len(liststarttime) == 0:
+		date_regexp=re.compile('<h3.*?>TV-Planer.*?den (.*?) <span.o*?>')
+		liststarttime = date_regexp.findall(html)
+		if len(liststarttime) == 0:
+			writeLog("TV-Planer: falsches Datumsformat")
+			return None
+		liststarttime[0].append("00:00")
 	
 	# match transmissions
 	# <tr><td style=3D"padding:4px 2px 2px 2px;vertical-align:top;width:60px;">22:05 Uhr</td>
@@ -906,6 +947,7 @@ def getEmailData():
 		transmission = [ seriesname ]
 		# channel
 		Channel = []
+		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
 		cCursor = dbSerRec.cursor()
 		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (channel.lower(),))
 		row = cCursor.fetchone()
@@ -948,7 +990,6 @@ def getEmailData():
 		else:
 			transmissiondict[seriesname] = [ transmission ]
 		writeLog("' %s - S%sE%s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel), True)
-	writeLog("\n", True)
 	
 	return transmissiondict
 
@@ -2208,11 +2249,13 @@ class serienRecCheckForRecording():
 	instance = None
 	epgrefresh_instance = None
 
-	def __init__(self, session, manuell):
+	def __init__(self, session, manuell, tvplaner_manuell=False):
 		assert not serienRecCheckForRecording.instance, "Go is a singleton class!"
 		serienRecCheckForRecording.instance = self
 		self.session = session
 		self.manuell = manuell
+		self.tvplaner_manuell = tvplaner_manuell
+		print "1__init__ tvplaner_manuell: ", tvplaner_manuell
 		self.newSeriesOrEpisodesFound = False
 		self.color_print = "\033[93m"
 		self.color_end = "\33[0m"
@@ -2302,7 +2345,7 @@ class serienRecCheckForRecording():
 			print "[SerienRecorder] checkRecTimer manuell."
 			global runAutocheckAtExit
 			runAutocheckAtExit = False
-			self.startCheck(True)
+			self.startCheck(True, self.tvplaner_manuell)
 		else:
 			try:
 				from Plugins.Extensions.EPGRefresh.EPGRefresh import epgrefresh
@@ -2331,10 +2374,12 @@ class serienRecCheckForRecording():
 			deltatime = abs(1440 - acttime + deltime)
 		return deltatime
 
-	def startCheck(self, amanuell=False):
-		self.manuell = amanuell
+	def startCheck(self, manuell=False, tvplaner_manuell=False):
+		self.manuell = manuell
+		self.tvplaner_manuell = tvplaner_manuell
 		print "%s[SerienRecorder] settings:%s" % (self.color_print, self.color_end)
-		print "manuell:", amanuell
+		print "manuell:", manuell
+		print "tvplaner_manuell:", tvplaner_manuell
 		print "uhrzeit check:", config.plugins.serienRec.timeUpdate.value
 
 		lt = time.localtime()
@@ -2749,7 +2794,7 @@ class serienRecCheckForRecording():
 					title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 					(dirname, dirname_serie) = getDirname(serien_name, staffel)
 					for event_entry in event_matches:
-						writeLog("Versuche Timer zu aktualisieren: ' %s - %s '" % (title, dirname))
+						writeLog("' %s - %s '" % (title, dirname))
 						eit = int(event_entry[1])
 						start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
 						end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
@@ -2983,14 +3028,13 @@ class serienRecCheckForRecording():
 		
 		# hier werden die wunschliste markers eingelesen
 		self.emailData = None
-		if config.plugins.serienRec.tvplaner.value and not self.manuell:
-			# When TV-Planer processing is enabled then the regular autocheck
+		if config.plugins.serienRec.tvplaner.value and (not self.manuell or self.tvplaner_manuell):
+			# When TV-Planer processing is enabled then regular autocheck
 			# is only running for the transmissions received by email.
 			try:
 				self.emailData = getEmailData()
 			except:
 				self.emailData = None
-			writeLog("\n---------' Laden TV-Planer Email beendet '------------------------------------------------------\n", True)
 		if self.emailData is None:
 			self.markers = getMarker()
 		else:
@@ -3056,16 +3100,15 @@ class serienRecCheckForRecording():
 					
 					self.countActivatedSeries += 1
 					download = retry(0, ds.run, self.downloadEmail, serienTitle, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
-					download.addCallback(self.processTransmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
-					download.addErrback(self.dataError,SerieUrl)
+					download.addErrback(self.dataError, SerieUrl)
+					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					download.addErrback(self.dataError, SerieUrl)
 					downloads.append(download)
 					
-			# run TV-Planer check
-			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
+			download.addCallbacks(self.createTimer, self.dataError)
 		
 		# this is only for experts that have data files available in a directory
 		# TODO: use saved transmissions for programming timer
-		downloads = []
 		if config.plugins.serienRec.readdatafromfiles.value and len(self.markers) > 0:
 			# use this only when WL is down and you have copies of the webpages on disk in serienrecorder/data
 			##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
@@ -3077,7 +3120,7 @@ class serienRecCheckForRecording():
 				if SerieEnabled:
 					# Download only if series is enabled
 					self.countActivatedSeries += 1
-					download = retry(5, ds.run, self.downloadFile, SerieUrl)
+					download = retry(1, ds.run, self.downloadFile, SerieUrl)
 					download.addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,excludedWeekdays)
 					download.addErrback(self.dataError,SerieUrl)
 					downloads.append(download)
@@ -3086,9 +3129,8 @@ class serienRecCheckForRecording():
 			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
 		
 		# regular processing through serienrecorder server
-		# TODO: save all transmissions in files to protect from temporary serien server fails
-		#       data then will be read by the above file reader and used for timer programming 
-		downloads = []
+		# TODO: save all transmissions in files to protect from temporary SerienServer fails
+		#       data will be read by the above file reader and used for timer programming 
 		if len(self.markers) > 0:
 			writeLog("\n---------' Verarbeite Daten vom Server '---------------------------------------------------------------\n", True)
 			webChannels = getWebSenderAktiv()
@@ -3102,33 +3144,82 @@ class serienRecCheckForRecording():
 						markerChannels = SerieSender
 					
 					self.countActivatedSeries += 1
+					print SerieUrl
 					seriesID = getSeriesIDByURL(SerieUrl)
 					if seriesID is None:
-						# This is a marker created by TV Planer function. Ignore this marker 
-						# until a server function is available to get correct url by series name.
-						# When TV-Planer check is enabled TV-Planer timers were programmed already.
-						continue
-					download = retry(5, ds.run, self.downloadTransmission, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
-					download.addCallback(self.processTransmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+						# This is a marker created by TV Planer function - fix url
+						seriesID = SeriesServer().getSeriesID(serienTitle)
+						print seriesID
+						Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
+						cCursor = dbSerRec.cursor()
+						try:
+							cCursor.execute("UPDATE SerienMarker SET Url=? WHERE Serie=?", (Url, serienTitle))
+							dbSerRec.commit()
+							writeLog("' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url), True)
+						except:
+							writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
+						cCursor.close()
+					
+					download = retry(1, ds.run, self.downloadTransmissions, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
+					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
 					download.addErrback(self.dataError,SerieUrl)
 					downloads.append(download)
 			
-			# run server data check
 			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
+			
+		self.checkFinal()
+	
+	def checkFinal(self):
+		print "checkFinal"
+		# final processing
+		if config.plugins.serienRec.longLogFileName.value:
+			shutil.copy(logFile, logFileSave)
+		
+		# trigger read of log file
+		global autoCheckFinished
+		autoCheckFinished = True
+		print "checkFinal: autoCheckFinished"
+		if config.plugins.serienRec.autochecktype.value == "1":
+			lt = time.localtime()
+			deltatime = self.getNextAutoCheckTimer(lt)
+			writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+		
+	def checkFinalError(self):
+		print "checkFinal"
+		# final processing
+		if config.plugins.serienRec.longLogFileName.value:
+			shutil.copy(logFile, logFileSave)
+		
+		# trigger read of log file
+		global autoCheckFinished
+		autoCheckFinished = True
+		print "checkFinal: autoCheckFinished"
+		if config.plugins.serienRec.autochecktype.value == "1":
+			lt = time.localtime()
+			deltatime = self.getNextAutoCheckTimer(lt)
+			writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+
+		# in den deep-standby fahren.
+		self.askForDSB()
+		
 
 	@staticmethod
-	def downloadTransmission(seriesID, timeSpan, markerChannels):
+	def downloadTransmissions(seriesID, timeSpan, markerChannels):
+		#print "downloadTransmission"
 		try:
 			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
 		except:
+			print "downloadTransmissions: failed"
 			transmissions = None
 		return transmissions
 
-	def processTransmissions(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
+	def processTransmission(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
+		#print "processTransmissions"
 		self.count_url += 1
 
 		if data is None:
-			writeLog("Fehler beim Abrufen und Verarbeiten der Ausstrahlungstermine [%s]\n" % serien_name, True)
+			writeLog("Fehler beim Abrufen und Verarbeiten der Ausstrahlungstermine [%s]" % serien_name, True)
+			#print "processTransmissions: no Data"
 			return
 
 		(fromTime, toTime) = getTimeSpan(serien_name)
@@ -3263,6 +3354,7 @@ class serienRecCheckForRecording():
 			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays))
 			cCursorTmp.close()
+			#print "processTransmission exit"
 
 	# This has been included again to allow direct parsing of stored data files
 	# when serienserver is down.
@@ -3467,20 +3559,21 @@ class serienRecCheckForRecording():
 		#print "[Serien Recorder] call %s" % url
 		try:
 			pageFile = open("%sdata/" % serienRecMainPath + url.split("=")[1], "r")
+			text = pageFile.read()
+			pageFile.close()
 		except:
-			return None
-		text = pageFile.read()
-		pageFile.close()
+			text = None
 		return text
 
 	def downloadEmail(self, seriesName, timeSpan, markerChannels):
-		#print self.emailData[seriesName]
+		#print "downloadEmail"
 		return self.emailData[seriesName]
 		
 	def createTimer(self, result=True):
+		#print "createTimer"
 		dbTmp.commit()
 
-		writeLog("\n", True)
+		#writeLog("\n", True)
 		# versuche deaktivierte Timer zu erstellen
 		self.activateTimer()
 		
@@ -3527,22 +3620,9 @@ class serienRecCheckForRecording():
 			newSeasonOrEpisodeMessage = ""
 			if self.newSeriesOrEpisodesFound:
 				newSeasonOrEpisodeMessage = "\n\nNeuer Serien- oder Staffelbeginn gefunden"
-
+			
 			Notifications.AddPopup("SerienRecorder Suchlauf für neue Timer wurde beendet.\n\n%s%s" % (statisticMessage, newSeasonOrEpisodeMessage), MessageBox.TYPE_INFO, timeout=10, id="Suchlauf wurde beendet")
-
-		if config.plugins.serienRec.longLogFileName.value:
-			shutil.copy(logFile, logFileSave)
 		
-		global autoCheckFinished
-		autoCheckFinished = True
-
-		if config.plugins.serienRec.autochecktype.value == "1":
-			lt = time.localtime()
-			deltatime = self.getNextAutoCheckTimer(lt)
-			writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
-
-		# in den deep-standby fahren.
-		self.askForDSB()
 		return result
 
 	def askForDSB(self):
@@ -4149,16 +4229,8 @@ class serienRecCheckForRecording():
 			writeLog("Es ist ein Fehler aufgetreten  - die Daten konnten nicht abgerufen werden: (%s)" % error, True)
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   Url: %s" % (error, url))
 		else:
-			# Only a createTimer error results in askForDSB and autoCheckFinished
 			writeLog("Es ist ein Fehler aufgetreten  - die Daten konnten nicht verarbeitet werden: (%s)" % error, True)
 			writeErrorLog("   serienRecCheckForRecording(): %s\n   createTimer()" % error)
-			if config.plugins.serienRec.longLogFileName.value:
-				shutil.copy(logFile, logFileSave)
-
-			global autoCheckFinished
-			autoCheckFinished = True
-
-			self.askForDSB()
 
 class serienRecTimer(Screen, HelpableScreen):
 	def __init__(self, session):
@@ -4349,7 +4421,7 @@ class serienRecTimer(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.readTimer()
@@ -4597,12 +4669,13 @@ class serienRecTimer(Screen, HelpableScreen):
 			self.close(False)
 
 class serienRecRunAutoCheck(Screen, HelpableScreen):
-	def __init__(self, session, manuell=True):
+	def __init__(self, session, manuell=True, tvplaner_manuell=False):
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.manuell = manuell
-
+		self.tvplaner_manuell = tvplaner_manuell
+		print "0__init__ tvplaner_manuell:", tvplaner_manuell
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
@@ -4719,31 +4792,35 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.startCheck()
 
 	def startCheck(self):
 		# Log Reload Timer
+		print "startCheck timer"
 		self.readLogTimer = eTimer()
 		if isDreamboxOS:
 			self.readLogTimer_conn = self.readLogTimer.timeout.connect(self.readLog)
 		else:
 			self.readLogTimer.callback.append(self.readLog)
+		global autoCheckFinished
+		autoCheckFinished = False
 		self.readLogTimer.start(2500)
 		self.readLog()
-
 		self.timer_default.start(0)
 
 	def realStartCheck(self):
 		self.timer_default.stop()
 		if self.manuell:
+			print "realStartCheck"
 			global autoCheckFinished
 			autoCheckFinished = False
-			serienRecCheckForRecording(self.session, True)
+			serienRecCheckForRecording(self.session, True, self.tvplaner_manuell)
 
 	def readLog(self):
+		print "readLog called"
 		global autoCheckFinished
 		if autoCheckFinished or not self.manuell:
 			if self.readLogTimer:
@@ -4762,6 +4839,7 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 				if count != 0:
 					self['config'].moveToIndex(int(count-1))
 		else:
+			print "[SerienRecorder] waiting"
 			self.points += " ."
 			self['title'].setText("Suche nach neuen Timern läuft.%s" % self.points)
 					
@@ -4826,6 +4904,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				"yellow"   : (self.keyYellow, "Sendetermine für ausgewählte Serien anzeigen"),
 				"blue"	   : (self.keyBlue, "Ansicht Timer-Liste öffnen"),
 				"info"	   : (self.keyCheck, "Suchlauf für Timer starten"),
+				"info_long": (self.keyCheckLong, "Suchlauf für TV-Planer Timer starten"),
 				"left"     : (self.keyLeft, "zur vorherigen Seite blättern"),
 				"right"    : (self.keyRight, "zur nächsten Seite blättern"),
 				"up"       : (self.keyUp, "eine Zeile nach oben"),
@@ -4854,6 +4933,7 @@ class serienRecMarker(Screen, HelpableScreen):
 				"yellow"   : (self.keyYellow, "Sendetermine für ausgewählte Serien anzeigen"),
 				"blue"	   : (self.keyBlue, "Ansicht Timer-Liste öffnen"),
 				"info"	   : (self.keyCheck, "Suchlauf für Timer starten"),
+				"info_long": (self.keyCheckLong, "Suchlauf für TV-Planer Timer starten"),
 				"left"     : (self.keyLeft, "zur vorherigen Seite blättern"),
 				"right"    : (self.keyRight, "zur nächsten Seite blättern"),
 				"up"       : (self.keyUp, "eine Zeile nach oben"),
@@ -5084,7 +5164,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.readSerienMarker()
@@ -5229,6 +5309,19 @@ class serienRecMarker(Screen, HelpableScreen):
 
 		if self.modus == "menu_list":
 			self.session.open(serienRecRunAutoCheck, True)
+
+	def keyCheckLong(self):
+		check = self['menu_list'].getCurrent()
+		if check is None:
+			print "[SerienRecorder] Serien Marker leer."
+			return
+		
+		if not config.plugins.serienRec.tvplaner.value:
+			print "[SerienRecorder] TV-Planer nicht aktiviert"
+			return
+			
+		if self.modus == "menu_list":
+			self.session.open(serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
 
 	def keyOK(self):
 		if self.modus == "popup_list":
@@ -5852,7 +5945,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.searchSerie()
@@ -6185,7 +6278,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.searchEvents()
@@ -6932,10 +7025,11 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			else:
 				config.plugins.serienRec.TimeSpanForRegularTimer.value = x
 			self.changedEntry()
-			
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_mail_age:
 			self.changedEntry()
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_check_interval:
+			self.changedEntry()
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_server_port:
 			self.changedEntry()
 		
 		if self['config'].instance.getCurrentIndex() >= (len(self.list) - 1):
@@ -6970,6 +7064,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_mail_age:
 			self.changedEntry()
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_check_interval:
+			self.changedEntry()
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_server_port:
 			self.changedEntry()
 			
 		if self['config'].instance.getCurrentIndex() <= 1:
@@ -7013,6 +7109,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 													  config.plugins.serienRec.deltime,
 													  config.plugins.serienRec.maxDelayForAutocheck,
 													  config.plugins.serienRec.imap_server,
+													  config.plugins.serienRec.imap_server_port,
 													  config.plugins.serienRec.imap_login,
 													  config.plugins.serienRec.imap_password,
 													  config.plugins.serienRec.imap_mailbox,
@@ -7057,6 +7154,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 													  config.plugins.serienRec.maxDelayForAutocheck,
 													  #config.plugins.serienRec.maxWebRequests,
 													  config.plugins.serienRec.imap_server,
+													  config.plugins.serienRec.imap_server_port,
 													  config.plugins.serienRec.imap_login,
 													  config.plugins.serienRec.imap_password,
 													  config.plugins.serienRec.imap_mailbox,
@@ -7113,6 +7211,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.list.append(getConfigListEntry("Wunschliste TV-Planer EMails nutzen:", config.plugins.serienRec.tvplaner))
 		if config.plugins.serienRec.tvplaner.value:
 			self.list.append(getConfigListEntry("    IMAP Server:", config.plugins.serienRec.imap_server))
+			self.list.append(getConfigListEntry("    IMAP Server SSL:", config.plugins.serienRec.imap_server_ssl))
+			self.list.append(getConfigListEntry("    IMAP Server Port:", config.plugins.serienRec.imap_server_port))
 			self.list.append(getConfigListEntry("    IMAP Login:", config.plugins.serienRec.imap_login))
 			self.list.append(getConfigListEntry("    IMAP Passwort:", config.plugins.serienRec.imap_password))
 			self.list.append(getConfigListEntry("    IMAP Mailbox:", config.plugins.serienRec.imap_mailbox))
@@ -7260,7 +7360,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.piconPath:
 			start_dir = config.plugins.serienRec.piconPath.value
 			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Picon-Verzeichnis auswählen")
-
+			
 	def selectedMediaFile(self, res):
 		if res is not None:
 			if self['config'].getCurrent()[1] == config.plugins.serienRec.savetopath:
@@ -7306,8 +7406,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.maxDelayForAutocheck :    ("Hier wird die Zeitspanne (in Minuten) eingestellt, innerhalb welcher der automatische Timer-Suchlauf ausgeführt wird. Diese Zeitspanne beginnt zu der oben eingestellten Uhrzeit.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.Autoupdate :              ("Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.tvplaner :                ("Bei 'ja' frägt der SerienRecorder regelmäßig eine IMAP Mailbox ab und sucht nach EMails des TV Wunschlist TV-Planer", ""),
-			config.plugins.serienRec.imap_server :             ("Name des IMAP servers (z.B. imap.gmx.de)", "x"),
-			config.plugins.serienRec.imap_login :              ("Name des IMAP logins (z.B. abc@gmx.de)", "x"),
+			config.plugins.serienRec.imap_server :             ("Name des IMAP servers (z.B. imap.gmx.de)", ""),
+			config.plugins.serienRec.imap_server_ssl :         ("Zugriff über SSL (Port kein SSL = 143, Port SSL = 993", ""),
+			config.plugins.serienRec.imap_server_port :        ("Portnummer für den Zugriff", ""),
+			config.plugins.serienRec.imap_login :              ("Name des IMAP logins (z.B. abc@gmx.de)", ""),
 			config.plugins.serienRec.imap_password :           ("Passwort des IMAP logins", "x"),
 			config.plugins.serienRec.imap_mailbox :            ("Name des Ordners in dem die EMails ankommen (z.B. INBOX)", "x"),
 			config.plugins.serienRec.imap_mail_subject :       ("Subject der TV-Planer EMails(default: TV Wunschliste TV-Planer)", "x"),
@@ -7492,8 +7594,20 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.readdatafromfiles.save()
 		config.plugins.serienRec.tvplaner.save()
 		config.plugins.serienRec.imap_server.save()
+		config.plugins.serienRec.imap_server_ssl.save()
+		config.plugins.serienRec.imap_server_port.save()
+		if config.plugins.serienRec.imap_login.value != "*":
+			print "secure login"
+			config.plugins.serienRec.imap_login_hidden.value = encode(getmac("eth0"), config.plugins.serienRec.imap_login.value)
+			config.plugins.serienRec.imap_login.value = "*"
 		config.plugins.serienRec.imap_login.save()
+		config.plugins.serienRec.imap_login_hidden.save()
+		if config.plugins.serienRec.imap_password.value != "*":
+			print "secure passwort"
+			config.plugins.serienRec.imap_password_hidden.value = encode(getmac("eth0"), config.plugins.serienRec.imap_password.value)
+			config.plugins.serienRec.imap_password.value = "*"
 		config.plugins.serienRec.imap_password.save()
+		config.plugins.serienRec.imap_password_hidden.save()
 		config.plugins.serienRec.imap_mailbox.save()
 		config.plugins.serienRec.imap_mail_subject.save()
 		config.plugins.serienRec.imap_mail_age.save()
@@ -8618,7 +8732,7 @@ class serienRecReadLog(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.readLog()
@@ -8799,7 +8913,7 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.readConflicts()
@@ -9094,7 +9208,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		else:
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.readAdded()
@@ -9528,7 +9642,7 @@ class serienRecShowSeasonBegins(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.readProposal()
@@ -9913,7 +10027,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.readWishlist()
@@ -10283,7 +10397,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.getData()
@@ -10447,7 +10561,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 		else:
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.getData()
@@ -10620,7 +10734,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.getVideos()
@@ -11017,7 +11131,7 @@ class serienRecMain(Screen, HelpableScreen):
 		else:	
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False)
+					serienRecCheckForRecording(self.session, False, False)
 			if result[1]:
 				self.readWebpage()
 
@@ -11027,7 +11141,7 @@ class serienRecMain(Screen, HelpableScreen):
 		global refreshTimer
 		if not refreshTimer:
 			if config.plugins.serienRec.timeUpdate.value:
-				serienRecCheckForRecording(self.session, False)
+				serienRecCheckForRecording(self.session, False, False)
 
 		if self.isChannelsListEmpty():
 			print "[SerienRecorder] Channellist is empty !"
@@ -11428,6 +11542,9 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def keyCheck(self):
 		self.session.openWithCallback(self.readWebpage, serienRecRunAutoCheck, True)
+
+	def keyCheckLong(self):
+		self.session.openWithCallback(self.readWebpage, serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
 		
 	def keyLeft(self):
 		if self.modus == "list":
@@ -11487,9 +11604,9 @@ class serienRecMain(Screen, HelpableScreen):
 			if runAutocheckAtExit and config.plugins.serienRec.runAutocheckAtExit.value:
 				singleTimer = eTimer()
 				if isDreamboxOS:
-					singleTimer_conn = singleTimer.timeout.connect(serienRecCheckForRecording(self.session, True))
+					singleTimer_conn = singleTimer.timeout.connect(serienRecCheckForRecording(self.session, True, False))
 				else:
-					singleTimer.callback.append(serienRecCheckForRecording(self.session, True))
+					singleTimer.callback.append(serienRecCheckForRecording(self.session, True, False))
 				singleTimer.start(10000, True)
 			
 			#self.hide()
@@ -11576,7 +11693,7 @@ def autostart(reason, **kwargs):
 		writeLog("\nSerienRecorder Start: %s" % uhrzeit, True)
 
 		def startAutoCheckTimer():
-			serienRecCheckForRecording(session, False)
+			serienRecCheckForRecording(session, False, False)
 
 		#if initDB():
 		if config.plugins.serienRec.autochecktype.value in ("1", "2") and config.plugins.serienRec.timeUpdate.value:
@@ -11587,7 +11704,7 @@ def autostart(reason, **kwargs):
 			else:
 				startTimer.callback.append(startAutoCheckTimer)
 			startTimer.start(60 * 1000, True)
-			#serienRecCheckForRecording(session, False)
+			#serienRecCheckForRecording(session, False, False)
 		else:
 			print color_print+"[SerienRecorder] Auto-Check: AUS"+color_end
 
