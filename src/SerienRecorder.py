@@ -158,6 +158,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.imap_mail_subject = ConfigText(default = "TV Wunschliste TV-Planer", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.imap_mail_age = ConfigInteger(1, (0, 100))
 	config.plugins.serienRec.imap_check_interval = ConfigInteger(30, (0, 10000))
+	config.plugins.serienRec.tvplaner_create_marker = ConfigYesNo(default = True)
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
 	config.plugins.serienRec.globalFromTime = ConfigClock(default = 0+time.timezone)
 	config.plugins.serienRec.globalToTime = ConfigClock(default = (((23*60)+59)*60)+time.timezone)
@@ -889,7 +890,7 @@ def getEmailData():
 			writeLog("TV-Planer: falsches Datumsformat")
 			return None
 		liststarttime = [ ( liststarttime[0], "00:00") ]
-	
+	print "[serienrecorder] Date = %r" % liststarttime
 	# match transmissions
 	# <tr><td style=3D"padding:4px 2px 2px 2px;vertical-align:top;width:60px;">22:05 Uhr</td>
 	#     <td style=3D"padding:2px;"><a href=3D"http://www.wunschliste.de/serie/blindspot">
@@ -915,20 +916,20 @@ def getEmailData():
 					
 	Series = sorted(list(Series), key=getKeySeries)
 	
-	cCursor = dbSerRec.cursor()
-	for seriesname, url in Series:
-		cCursor.execute("SELECT Serie, Url  FROM SerienMarker WHERE LOWER(Serie)=?", (seriesname.lower(), ))
-		row = cCursor.fetchone()
-		if not row:
-			# marker isn't in database, creat new marker
-			# url stored in marker isn't the final one, it is corrected later
-			try:
-				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (seriesname, url))
-				dbSerRec.commit()
-			except:
-				writeLog('TV-Planer: Neue Serie %r konnte nicht gespeichert werden' % seriesname, True)
-		
-	cCursor.close()
+	if config.plugins.serienRec.tvplaner_create_marker.value:
+		cCursor = dbSerRec.cursor()
+		for seriesname, url in Series:
+			cCursor.execute("SELECT Serie, Url  FROM SerienMarker WHERE LOWER(Serie)=?", (seriesname.lower(), ))
+			row = cCursor.fetchone()
+			if not row:
+				# marker isn't in database, creat new marker
+				# url stored in marker isn't the final one, it is corrected later
+				try:
+					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (seriesname, url))
+					dbSerRec.commit()
+				except:
+					writeLog('TV-Planer: Neue Serie %r konnte nicht gespeichert werden' % seriesname, True)
+		cCursor.close()
 	
 	# prepare transmissions
 	# [ seriesName, channel, start, end, season, episode, title, '0' ]
@@ -943,6 +944,7 @@ def getEmailData():
 	
 	# generate dictionary with final transmissions
 	writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (liststarttime[0][0], liststarttime[0][1]))
+	print "Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (liststarttime[0][0], liststarttime[0][1])
 	transmissiondict = dict()
 	for starttime, url, seriesname, season, episode, titel, description, endtime, duration, channel in transmissions:
 		# seriesName
@@ -1051,7 +1053,7 @@ def getMarker(Serien=None):
 		row2 = cTmp.fetchone()
 		if row2:
 			(ErlaubteSTB,) = row2
-			if not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
+			if ErlaubteSTB is not None and not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
 				SerieEnabled = False
 		else:
 			cTmp.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
@@ -3038,6 +3040,8 @@ class serienRecCheckForRecording():
 			try:
 				self.emailData = getEmailData()
 			except:
+				writeLog("TV-Planer Verarbeitung fehlgeschlagen!", True)
+				print "TV-Planer exception!"
 				self.emailData = None
 		if self.emailData is None:
 			self.markers = getMarker()
@@ -3158,6 +3162,12 @@ class serienRecCheckForRecording():
 								cCursor.execute("UPDATE SerienMarker SET Url=? WHERE Serie=?", (Url, serienTitle))
 								dbSerRec.commit()
 								writeLog("' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url), True)
+								erlaubteSTB = 0xFFFF
+								if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
+									erlaubteSTB = 0
+									erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+								cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
+								dbSerRec.commit()
 							except:
 								writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
 							cCursor.close()
@@ -5541,9 +5551,10 @@ class serienRecMarker(Screen, HelpableScreen):
 				row = cCursor.fetchone()
 				if row:
 					(ID, ErlaubteSTB) = row
-					ErlaubteSTB ^= (1 << (int(config.plugins.serienRec.BoxID.value) - 1)) 
-					cCursor.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=? WHERE ID=?", (ErlaubteSTB, ID))
-					dbSerRec.commit()
+					if ErlaubteSTB is not None:
+						ErlaubteSTB ^= (1 << (int(config.plugins.serienRec.BoxID.value) - 1)) 
+						cCursor.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=? WHERE ID=?", (ErlaubteSTB, ID))
+						dbSerRec.commit()
 					self.readSerienMarker(self.selected_serien_name)
 				cCursor.close()
 					
@@ -7234,6 +7245,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("    IMAP Mailbox:", config.plugins.serienRec.imap_mailbox))
 			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
 			self.list.append(getConfigListEntry("    maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
+			self.list.append(getConfigListEntry("    Neue Serien Marker erzeugen:", config.plugins.serienRec.tvplaner_create_marker))
 #			self.list.append(getConfigListEntry("    Mailbox alle <n> Minuten überprüfen:", config.plugins.serienRec.imap_check_interval))
 		self.list.append(getConfigListEntry("Timer für X Tage erstellen:", config.plugins.serienRec.checkfordays))
 		if config.plugins.serienRec.setupType.value == "1":
@@ -7430,6 +7442,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.imap_mailbox :            ("Name des Ordners in dem die E-Mails ankommen (z.B. INBOX)", "x"),
 			config.plugins.serienRec.imap_mail_subject :       ("Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)", "x"),
 			config.plugins.serienRec.imap_check_interval :     ("Die Mailbox wird alle <n> Minuten überprüft (default: 30)", "x"),
+			config.plugins.serienRec.tvplaner_create_marker :  ("Bei 'ja' werden nicht vorhandene Serien Marker automatisch erzeugt", "x"),
 			config.plugins.serienRec.databasePath :            ("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.", "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              ("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
 			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/')." % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "1.3_Die_globalen_Einstellungen"),
@@ -7628,6 +7641,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.imap_mail_subject.save()
 		config.plugins.serienRec.imap_mail_age.save()
 		config.plugins.serienRec.imap_check_interval.save()
+		config.plugins.serienRec.tvplaner_create_marker.save()
 		config.plugins.serienRec.checkfordays.save()
 		config.plugins.serienRec.AutoBackup.save()
 		config.plugins.serienRec.deleteBackupFilesOlderThan.save()
@@ -11665,7 +11679,7 @@ def getAllMarkers():
 	for row in cCursor:
 		(seriesName,allowedSTB) = row
 		seriesActivated = True
-		if not (allowedSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
+		if allowedSTB is not None and not (allowedSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
 			seriesActivated = False
 		markers[seriesName] = seriesActivated
 	cCursor.close()
