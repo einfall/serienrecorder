@@ -778,7 +778,7 @@ def getEmailData():
 			 if part.get_content_type() == 'text/html':
 				 return part.get_payload()
 
-	writeLog("\n---------' Laden TV-Planer Email '---------------------------------------------------------------\n", True)
+	writeLog("\n---------' Laden TV-Planer E-Mail '---------------------------------------------------------------\n", True)
 	
 	# get emails
 	if len(config.plugins.serienRec.imap_server.value) == 0:
@@ -852,14 +852,14 @@ def getEmailData():
 	try:
 		result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
 	except:
-		writeLog("TV-Planer: Laden der Email fehlgeschlagen", True)
+		writeLog("TV-Planer: Laden der E-Mail fehlgeschlagen", True)
 		return None
 	
 	mail.logout()
 	# extract email message including headers and alternate payloads
 	email_message = email.message_from_string(data[0][1])
 	if len(email_message) == 0:
-		writeLog("TV-Planer: leere Email", True)
+		writeLog("TV-Planer: leere E-Mail", True)
 		return None
 	
 	# get html of wunschliste
@@ -2587,6 +2587,8 @@ class serienRecCheckForRecording():
 		self.startCheck3()
 
 	def processPlanerData(self, data, markers, daypage):
+		if not data or len(data) == 0:
+			raise
 		daylist = [[],[],[]]
 
 		headDate = [data["date"]]
@@ -3086,7 +3088,7 @@ class serienRecCheckForRecording():
 		downloads = []
 		if config.plugins.serienRec.tvplaner.value and self.emailData != None and len(self.markers) > 0:
 			# check mailbox for TV-Planer EMail and create timer
-			writeLog("\n---------' Verarbeite TV-Planer Email '-----------------------------------------------------------\n", True)
+			writeLog("\n---------' Verarbeite TV-Planer E-Mail '-----------------------------------------------------------\n", True)
 			webChannels = getWebSenderAktiv()
 			#print self.markers
 			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
@@ -6288,22 +6290,33 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		print self.serie_url
 
-		raw = re.findall(".*?(\d+)", self.serie_url)
-		self.serien_id = raw[0]
-		print self.serien_id
+		transmissions = None
 
-		getCover(self, self.serien_name, self.serien_id)
+		if self.serie_url:
+			raw = re.findall(".*?(\d+)", self.serie_url)
+			self.serien_id = raw[0]
+			print self.serien_id
 
-		if self.FilterMode is 0:
-			webChannels = []
-		elif self.FilterMode is 1:
-			webChannels = getWebSenderAktiv()
-		else:
-			webChannels = getMarkerChannels(self.serien_id)
-		transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+			getCover(self, self.serien_name, self.serien_id)
+
+			if self.FilterMode is 0:
+				webChannels = []
+			elif self.FilterMode is 1:
+				webChannels = getWebSenderAktiv()
+			else:
+				webChannels = getMarkerChannels(self.serien_id)
+
+			try:
+				transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+			except:
+				transmissions = None
+
 		self.resultsEvents(transmissions)
 
 	def resultsEvents(self, transmissions):
+		if transmissions is None:
+			self['title'].setText("Fehler beim Abrufen der Termine für ' %s '" % self.serien_name)
+			return
 		self.sendetermine_list = []
 
 		#build unique dir list by season
@@ -6740,10 +6753,13 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			webChannels = getWebSenderAktiv()
 		else:
 			webChannels = getMarkerChannels(self.serien_id)
-		transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+
+		try:
+			transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+		except:
+			transmissions = None
 		self.resultsEvents(transmissions)
 
-		
 	def keyBlue(self):
 		self.session.openWithCallback(self.searchEvents, serienRecTimer)
 
@@ -7208,7 +7224,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				self.list.append(getConfigListEntry("    Uhrzeit für automatischen Suchlauf:", config.plugins.serienRec.deltime))
 				self.list.append(getConfigListEntry("    maximale Verzögerung für automatischen Suchlauf (Min.):", config.plugins.serienRec.maxDelayForAutocheck))
 #		self.list.append(getConfigListEntry("Lese Daten aus Dateien mit den Daten der Serienwebseite", config.plugins.serienRec.readdatafromfiles))
-		self.list.append(getConfigListEntry("Wunschliste TV-Planer EMails nutzen:", config.plugins.serienRec.tvplaner))
+		self.list.append(getConfigListEntry("Wunschliste TV-Planer E-Mails nutzen:", config.plugins.serienRec.tvplaner))
 		if config.plugins.serienRec.tvplaner.value:
 			self.list.append(getConfigListEntry("    IMAP Server:", config.plugins.serienRec.imap_server))
 			self.list.append(getConfigListEntry("    IMAP Server SSL:", config.plugins.serienRec.imap_server_ssl))
@@ -7217,7 +7233,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("    IMAP Passwort:", config.plugins.serienRec.imap_password))
 			self.list.append(getConfigListEntry("    IMAP Mailbox:", config.plugins.serienRec.imap_mailbox))
 			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
-			self.list.append(getConfigListEntry("    maximales Alter der EMail (Tage):", config.plugins.serienRec.imap_mail_age))
+			self.list.append(getConfigListEntry("    maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
 #			self.list.append(getConfigListEntry("    Mailbox alle <n> Minuten überprüfen:", config.plugins.serienRec.imap_check_interval))
 		self.list.append(getConfigListEntry("Timer für X Tage erstellen:", config.plugins.serienRec.checkfordays))
 		if config.plugins.serienRec.setupType.value == "1":
@@ -7405,14 +7421,14 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.deltime :                 ("Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:%s Uhr)." % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2)), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.maxDelayForAutocheck :    ("Hier wird die Zeitspanne (in Minuten) eingestellt, innerhalb welcher der automatische Timer-Suchlauf ausgeführt wird. Diese Zeitspanne beginnt zu der oben eingestellten Uhrzeit.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.Autoupdate :              ("Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht.", "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.tvplaner :                ("Bei 'ja' frägt der SerienRecorder regelmäßig eine IMAP Mailbox ab und sucht nach EMails des TV Wunschlist TV-Planer", ""),
-			config.plugins.serienRec.imap_server :             ("Name des IMAP servers (z.B. imap.gmx.de)", ""),
-			config.plugins.serienRec.imap_server_ssl :         ("Zugriff über SSL (Port kein SSL = 143, Port SSL = 993", ""),
+			config.plugins.serienRec.tvplaner :                ("Bei 'ja' ruft der SerienRecorder regelmäßig eine IMAP Mailbox ab und sucht nach E-Mails des Wunschliste TV-Planers", ""),
+			config.plugins.serienRec.imap_server :             ("Name des IMAP Servers (z.B. imap.gmx.de)", "x"),
+			config.plugins.serienRec.imap_server_ssl :         ("Zugriff über SSL (Port ohne SSL = 143, Port mit SSL = 993", ""),
 			config.plugins.serienRec.imap_server_port :        ("Portnummer für den Zugriff", ""),
-			config.plugins.serienRec.imap_login :              ("Name des IMAP logins (z.B. abc@gmx.de)", ""),
-			config.plugins.serienRec.imap_password :           ("Passwort des IMAP logins", "x"),
-			config.plugins.serienRec.imap_mailbox :            ("Name des Ordners in dem die EMails ankommen (z.B. INBOX)", "x"),
-			config.plugins.serienRec.imap_mail_subject :       ("Subject der TV-Planer EMails(default: TV Wunschliste TV-Planer)", "x"),
+			config.plugins.serienRec.imap_login :              ("Benutzername des IMAP Accounts (z.B. abc@gmx.de)", "x"),
+			config.plugins.serienRec.imap_password :           ("Passwort des IMAP Accounts", "x"),
+			config.plugins.serienRec.imap_mailbox :            ("Name des Ordners in dem die E-Mails ankommen (z.B. INBOX)", "x"),
+			config.plugins.serienRec.imap_mail_subject :       ("Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)", "x"),
 			config.plugins.serienRec.imap_check_interval :     ("Die Mailbox wird alle <n> Minuten überprüft (default: 30)", "x"),
 			config.plugins.serienRec.databasePath :            ("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.", "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              ("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
@@ -11186,6 +11202,7 @@ class serienRecMain(Screen, HelpableScreen):
 			
 	def processPlanerData(self, data, useCache=False):
 		if not data or len(data) == 0:
+			self['title'].setText("Fehler beim Abrufen der SerienPlaner-Daten")
 			return
 		if useCache:
 			(headDate, self.daylist) = data
