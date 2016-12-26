@@ -845,7 +845,7 @@ def getEmailData():
 		writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
 		writeLog("TV-Planer: %s" % searchstr, True)
 		return None
-		
+	
 	# get the latest email
 	latest_email_uid = data[0].split()[-1] 
 	# fetch the email body (RFC822) for the given UID
@@ -881,12 +881,14 @@ def getEmailData():
 	date_regexp=re.compile('<h3.*?>TV-Planer.*?den (.*?) <span.*?> \(ab (.*?) Uhr')
 	liststarttime = date_regexp.findall(html)
 	if len(liststarttime) == 0:
-		date_regexp=re.compile('<h3.*?>TV-Planer.*?den (.*?) <span.o*?>')
+	# ab 0:00 Uhr
+		#<h3 style=3D"clear:both;margin:6px 0 2px 4px;font-size:15px;">TV-Planer =f=C3=BCr Dienstag, den 27.12.2016 <span style=3D"font-weight:normal;"></s=pan></h3>
+		date_regexp=re.compile('<h3.*?>TV-Planer.*?den (.*?) <span.*?>')
 		liststarttime = date_regexp.findall(html)
-		if len(liststarttime) == 0:
+		if len(liststarttime) != 1:
 			writeLog("TV-Planer: falsches Datumsformat")
 			return None
-		liststarttime[0].append("00:00")
+		liststarttime = [ ( liststarttime[0], "00:00") ]
 	
 	# match transmissions
 	# <tr><td style=3D"padding:4px 2px 2px 2px;vertical-align:top;width:60px;">22:05 Uhr</td>
@@ -919,7 +921,7 @@ def getEmailData():
 		row = cCursor.fetchone()
 		if not row:
 			# marker isn't in database, creat new marker
-			# url stored in marker isn't the final one, it has to be corrected elsewhere
+			# url stored in marker isn't the final one, it is corrected later
 			try:
 				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (seriesname, url))
 				dbSerRec.commit()
@@ -3090,7 +3092,6 @@ class serienRecCheckForRecording():
 			# check mailbox for TV-Planer EMail and create timer
 			writeLog("\n---------' Verarbeite TV-Planer E-Mail '-----------------------------------------------------------\n", True)
 			webChannels = getWebSenderAktiv()
-			#print self.markers
 			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
 				self.countSerien += 1
 				if SerieEnabled:
@@ -3146,22 +3147,21 @@ class serienRecCheckForRecording():
 						markerChannels = SerieSender
 					
 					self.countActivatedSeries += 1
-					print SerieUrl
 					seriesID = getSeriesIDByURL(SerieUrl)
-					if seriesID is None:
+					if seriesID is None or seriesID == 0:
 						# This is a marker created by TV Planer function - fix url
 						seriesID = SeriesServer().getSeriesID(serienTitle)
-						print seriesID
-						Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
-						cCursor = dbSerRec.cursor()
-						try:
-							cCursor.execute("UPDATE SerienMarker SET Url=? WHERE Serie=?", (Url, serienTitle))
-							dbSerRec.commit()
-							writeLog("' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url), True)
-						except:
-							writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
-						cCursor.close()
-					
+						if seriesID != 0:
+							Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
+							cCursor = dbSerRec.cursor()
+							try:
+								cCursor.execute("UPDATE SerienMarker SET Url=? WHERE Serie=?", (Url, serienTitle))
+								dbSerRec.commit()
+								writeLog("' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url), True)
+							except:
+								writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
+							cCursor.close()
+							
 					download = retry(1, ds.run, self.downloadTransmissions, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
 					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
 					download.addErrback(self.dataError,SerieUrl)
