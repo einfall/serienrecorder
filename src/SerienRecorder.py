@@ -10852,7 +10852,7 @@ class serienRecMain(Screen, HelpableScreen):
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-			#"5"		: (self.test, "-"),
+			"5"		: (self.test, "-"),
 		}, -1)
 		self.helpList[0][2].sort()
 		
@@ -11007,15 +11007,41 @@ class serienRecMain(Screen, HelpableScreen):
 		updateMenuKeys(self)
 		
 	def test(self):
-		remoteUrl = "http://www.google.de"
-		version = "1.0.0"
-		SERIES_SERVER_URL = 'http://192.168.23.21:82/proxy/cache.php'
+		try:
+			if config.plugins.serienRec.imap_server_ssl.value:
+				mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
+										 config.plugins.serienRec.imap_server_port.value)
+			else:
+				mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value,
+									 config.plugins.serienRec.imap_server_port.value)
 
-		server = xmlrpclib.ServerProxy(SERIES_SERVER_URL, verbose=False)
-		print 'getWebChannels:', server.sp.cache.getWebChannels()
+		except imaplib.IMAP4.abort:
+			writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
+			return None
 
-		#self.session.open(SerienRecorderUpdateScreen, remoteUrl, version)
-			
+		try:
+			mail.login(decode(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
+					   decode(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+
+		except imaplib.IMAP4.error:
+			writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
+			return None
+
+		try:
+			import string
+
+			writeLog("Mailboxes:", True)
+			result, data = mail.list('""', '*')
+			if result == 'OK':
+				for item in data[:]:
+					x = item.split()
+					mailbox = string.join(x[2:])
+					writeLog("%s" % mailbox, True)
+		except imaplib.IMAP4.error:
+			writeLog("IMAP Check: Abrufen der Mailboxen fehlgeschlagen", True)
+		mail.logout()
+		self.session.open(MessageBox, "IMAP Mailboxes abgerufen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
+
 	def getImdblink2(self, data):
 		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 		if ilink:
