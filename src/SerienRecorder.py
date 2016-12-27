@@ -868,113 +868,179 @@ def getEmailData():
 	if html is None or len(html) == 0:
 		writeLog("TV-Planer: leeres HTML", True)
 		return None
+
+	# class used for parsing TV-Planer html		
+	class TVPlaner_HTMLParser(HTMLParser):
+		def __init__(self):
+			HTMLParser.__init__(self)
+			self.state = 'start'
+			self.date = ()
+			self.transmission = []
+			self.transmissions = []
+		def handle_starttag(self, tag, attrs):
+			# print "Encountered a start tag:", tag, attrs
+			if self.state == 'start' and tag == 'h3':
+				self.state = 'date_h3'
+			elif self.state == 'date_h3_time' and tag == 'span':
+				self.state = 'time_span'
+			elif self.state == 'transmission_table' and tag == 'table':
+				self.state = 'transmission'
+			elif self.state == 'transmission' and tag == 'tr':
+				self.state = 'transmission_start'
+			elif self.state == 'transmission_start' and tag == 'strong':
+				# next day - reset
+				self.state = 'transmission'
+			elif self.state == 'transmission_serie' and tag == 'strong':
+				self.data = ''
+			elif self.state == 'transmission_season' and tag == 'span' :
+				for name, value in attrs:
+					if name == 'title' and value == 'Episode':
+						self.transmission.append('')
+						self.state = 'transmission_episode'
+						break
+
+		def handle_endtag(self, tag):
+			# print "Encountered an end tag :", tag
+			if self.state == 'transmission_end' and tag == 'tr':
+				self.transmissions.append(tuple(self.transmission))
+				self.transmission = []
+				self.state = 'transmission'
+			elif self.state == 'time_span' and tag == 'span':
+				# no time - starting at 00:00 Uhr
+				self.date = ( self.date, '00:00' )
+				self.state = 'transmission_table'
+			elif self.state == 'transmission_serie' and tag == 'strong':
+				# append collected data
+				self.transmission.append(self.data)
+				self.state = 'transmission_season'
+
+		def handle_data(self, data):
+			# print "Encountered some data  : %r" % data
+			if self.state == 'date_h3':
+				# match date
+				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 '
+				date_regexp=re.compile('TV-Planer.*?den (.*?) ')
+				self.date = date_regexp.findall(data)[0]
+				self.state = 'date_h3_time'
+			elif self.state == 'time_span':
+				# match time
+				# ' (ab 05:00 Uhr)'
+				time_regexp=re.compile(' \(ab (.*?) Uhr')
+				self.date = ( self.date, time_regexp.findall(data)[0] )
+				self.state = 'transmission_table'
+			elif self.state == 'transmission_start':
+				# match start time
+				time_regexp=re.compile('(.*?) Uhr')
+				time = time_regexp.findall(data)
+				if len(time) > 0:
+					self.transmission.append(time[0])
+					self.state = 'transmission_serie'
+				else:
+					self.state = 'error'
+			elif self.state == 'transmission_serie':
+				# match serie
+				self.data += data
+			elif self.state == 'transmission_season':
+				# match season
+				self.transmission.append(data)
+				self.state = 'transmission_episode'
+			elif self.state == 'transmission_episode':
+				# match episode
+				self.transmission.append(data)
+				self.state = 'transmission_title'
+			elif self.state == 'transmission_title':
+				# match title
+				self.transmission.append(data)
+				self.state = 'transmission_desc'
+			elif self.state == 'transmission_desc':
+				# match description
+				if data != 'FREE-TV NEU':
+					self.transmission.append(data)
+					self.state = 'transmission_endtime'
+			elif self.state == 'transmission_endtime':
+				# match end time
+				time_regexp=re.compile('bis: (.*?) Uhr.*')
+				time = time_regexp.findall(data)
+				if len(time) > 0:
+					self.transmission.append(time[0])
+					self.state = 'transmission_sender'
+				else:
+					self.state = 'error'
+			elif self.state == 'transmission_sender':
+				# match sender
+				self.transmission.append(data)
+				self.state = 'transmission_end'
 	
 	# make one line and convert characters
-	html = html.replace('=\r\n', '').replace('\r\n','')
-	parser = HTMLParser()
+	html = html.replace('=\r\n', '').replace('\r\n','').replace('=3D', '=')
+	
+	parser = TVPlaner_HTMLParser()
 	html = parser.unescape(html).encode('utf-8')
 	if html is None or len(html) == 0:
 		writeLog("TV-Planer: leeres HTML nach HTMLParser", True)
 		return None
-	
-	# match date and time
-	#  <h3 style=3D"clear:both;margin:6px 0 2px 4px;font-size:15px;">TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 <span
-	date_regexp=re.compile('<h3.*?>TV-Planer.*?den (.*?) <span.*?> \(ab (.*?) Uhr')
-	liststarttime = date_regexp.findall(html)
-	if len(liststarttime) == 0:
-	# ab 0:00 Uhr
-		#<h3 style=3D"clear:both;margin:6px 0 2px 4px;font-size:15px;">TV-Planer =f=C3=BCr Dienstag, den 27.12.2016 <span style=3D"font-weight:normal;"></s=pan></h3>
-		date_regexp=re.compile('<h3.*?>TV-Planer.*?den (.*?) <span.*?>')
-		liststarttime = date_regexp.findall(html)
-		if len(liststarttime) != 1:
-			writeLog("TV-Planer: falsches Datumsformat")
-			return None
-		liststarttime = [ ( liststarttime[0], "00:00") ]
-	print "[serienrecorder] Date = %r" % liststarttime
-	# match transmissions
-	# <tr><td style=3D"padding:4px 2px 2px 2px;vertical-align:top;width:60px;">22:05 Uhr</td>
-	#     <td style=3D"padding:2px;"><a href=3D"http://www.wunschliste.de/serie/blindspot">
-	#        <strong style=3D"font-size:15px;">Blindspot</strong>
-	#        </a><div style=3D"margin-top:2px;font-weight:bold;"><span style=3D"padding:1px;margin:0 0 1px 1px;background-color:#053357;color:#ffffff;" title=3D"Staffel">1</span>
-	#        <span style=3D"padding:1px;margin:0 0 1px 1px;background-color:#55cd0c;" title=3D"Episode">17</span>
-	#        <span style=3D"margin-left:4px;font-size:13px;">Schatzsuche</span>
-	#        <span style=3D"margin-left:4px;"><span style=3D"display:inline-block;padding:2px;margin-right:5px;font-size:11px;font-weight:bold;text-transform:uppercase;background:#ff5f01;color:#ffffff;white-space:nowrap;">FREE-TV NEU</span>
-	#        </span></div><div style=3D"margin-top:2px;font-size:11px;">Kurz bevor David starb hat er zur Feier ihres Jahrestages einen Tisch f&uuml;r sich und Patterson in deren Lieblings-Restaurant reserviert ...</div>
-	#        <div style=3D"margin-top:2px;font-size:11px;font-style:italic;">bis: 23.05 Uhr, L=C3=A4nge: 60 min.</div>
-	#        </td><td style=3D"padding:2px;width:70px;height:68px;text-align:center;"><img src=3D"http://www.imfernsehen.de/logos/hr/30.png" alt=3D"Sat.1" title=3D"Sat.1" width=3D"60">
-	#        <div style=3D"font-size:11px;font-weight:bold;text-align:center;">Sat.1</div>
-	#     </td>
-	# </tr>
-	transmission_regexp= re.compile('<tr><td.*?>([0-2][0-9]:.*?) Uhr</td><td style.*?><a.*?"(http.*?)".*?<strong.*?>(.*?)</strong>.*?Staffel">(.*?)<.*?Episode">(.*?)</span><span.*?>(.*?)</span>.*?<div.*?>(.*?)</div><div.*?>bis: (.*?) Uhr,.*?nge: (.*?) min.</div></td>.*?<div.*?>(.*?)</div></td></tr>')
-	transmissions = transmission_regexp.findall(html)
-	Series = set([])
-	for starttime, url, seriesname, season, episode, titel, description, endtime, duration, sender in transmissions:
-		Series.add((seriesname, url))
-		
-	def getKeySeries(item):
-					return item[0]
-					
-	Series = sorted(list(Series), key=getKeySeries)
-	
-	if config.plugins.serienRec.tvplaner_create_marker.value:
-		cCursor = dbSerRec.cursor()
-		for seriesname, url in Series:
-			cCursor.execute("SELECT Serie, Url  FROM SerienMarker WHERE LOWER(Serie)=?", (seriesname.lower(), ))
-			row = cCursor.fetchone()
-			if not row:
-				# marker isn't in database, creat new marker
-				# url stored in marker isn't the final one, it is corrected later
-				try:
-					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (seriesname, url))
-					dbSerRec.commit()
-				except:
-					writeLog('TV-Planer: Neue Serie %r konnte nicht gespeichert werden' % seriesname, True)
-		cCursor.close()
+	try:
+		parser.feed(html)
+		print parser.date
+		print parser.transmissions
+	except:
+		writeLog("TV-Planer: HTML Parsing schlug fehl", True)
+		return None
 	
 	# prepare transmissions
-	# [ seriesName, channel, start, end, season, episode, title, '0' ]
-	# calculate start time of list in email
-	if len(liststarttime) != 1 or len(liststarttime[0]) != 2:
+	# [ ( seriesName, channel, start, end, season, episode, title, '0' ) ]
+	# calculate start time and end time of list in E-Mail
+	if len(parser.date) != 2:
 		writeLog("TV-Planer: falsches Datumsformat", True)
 		return None
-		
-	(day, month, year) = liststarttime[0][0].split('.')
-	(hour, minute) = liststarttime[0][1].split(':')
+	(day, month, year) = parser.date[0].split('.')
+	(hour, minute) = parser.date[1].split(':')
 	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
-	
 	# generate dictionary with final transmissions
-	writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (liststarttime[0][0], liststarttime[0][1]))
-	print "Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (liststarttime[0][0], liststarttime[0][1])
+	writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (parser.date[0], parser.date[1]))
+	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (parser.date[0], parser.date[1])
 	transmissiondict = dict()
-	for starttime, url, seriesname, season, episode, titel, description, endtime, duration, channel in transmissions:
+	for starttime, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
 		# seriesName
 		transmission = [ seriesname ]
 		# channel
-		Channel = []
 		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (channel.lower(),))
-		row = cCursor.fetchone()
-		if row:
-			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = row
-			if altstbChannel == "":
-				altstbChannel = stbChannel
-				altstbRef = stbRef
-			elif stbChannel == "":
-				stbChannel = altstbChannel
-				stbRef = altstbRef
-			Channel.append((webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status))
-		cCursor.close()
-		if not Channel:
-			continue
-		transmission += [ Channel[0][1] ]
-		# start
+		transmission += [ channel ]
+#		Channel = []
+#		cCursor = dbSerRec.cursor()
+#		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (channel.lower(),))
+#		row = cCursor.fetchone()
+#		if row:
+#			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = row
+#			if altstbChannel == "":
+#				altstbChannel = stbChannel
+#				altstbRef = stbRef
+#			elif stbChannel == "":
+#				stbChannel = altstbChannel
+#				stbRef = altstbRef
+#			Channel.append((webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status))
+#		else:
+#			writeLog("TV-Planer: STB-Sender für %r nicht gefunden" % channel, True)
+#			print "[SerienRecorder] ' %s - S%sE%s - %s - %r -> STB sender not found'" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, webChannel)
+#			continue
+#		cCursor.close()
+#		if not Channel:
+#			writeLog("TV-Planer: STB-Sender für %r nicht gefunden" % channel, True)
+#			print "[SerienRecorder] ' %s - S%sE%s - %s - %r -> STB sender not found'" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, webChannel)
+#			continue
+#		try:
+#			transmission += [ Channel[0][1] ]
+#		except:
+#			writeLog("TV-Planer: STB-Sender für %r nicht gefunden, %r" % (channel, Channel), True)
+#			print "[SerienRecorder] ' %s - S%sE%s - %s - %r -> STB sender not found'" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, webChannel)
+#			continue
+		# start time
 		(hour, minute) = starttime.split(':')
 		transmissionstart_unix = int(TimeHelpers.getRealUnixTime(minute, hour, day, month, year))
 		if transmissionstart_unix < liststarttime_unix:
 			transmissionstart_unix += (3600*24)
 		transmission += [ transmissionstart_unix ]
-		# end
+		# end time
 		(hour, minute) = endtime.split('.')
 		transmissionend_unix = int(TimeHelpers.getRealUnixTime(minute, hour, day, month, year))
 		if transmissionend_unix < liststarttime_unix:
@@ -993,7 +1059,26 @@ def getEmailData():
 			transmissiondict[seriesname] += [ transmission ]
 		else:
 			transmissiondict[seriesname] = [ transmission ]
-		writeLog("' %s - S%sE%s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel), True)
+		writeLog("' %s - S%sE%s - %s - %r '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel), True)
+		print "[SerienRecorder] ' %s - S%sE%s - %s - %r '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel)
+	
+	if config.plugins.serienRec.tvplaner_create_marker.value:
+		cCursor = dbSerRec.cursor()
+		for seriesname in transmissiondict.keys():
+			cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (seriesname.lower(),))
+			row = cCursor.fetchone()
+			if not row:
+				# marker isn't in database, creat new marker
+				# url stored in marker isn't the final one, it is corrected later
+				try:
+					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (seriesname, 'url'))
+					dbSerRec.commit()
+					writeLog("' %s - Serien Marker erzeugt '" % seriesname, True)
+					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % seriesname
+				except:
+					writeLog("' %s - Serien Marker konnte nicht erzeugt werden '" % seriesname, True)
+					print "[SerienRecorder] ' %s - Serien Marker konnte nicht erzeugt werden '" % seriesname
+		cCursor.close()
 	
 	return transmissiondict
 
@@ -1040,13 +1125,13 @@ def getMarker(Serien=None):
 	if Serien is not None and len(Serien) > 0:
 		serienselect = 'WHERE Serie IN ('
 		for i in range(len(Serien) - 1):
-			serienselect += "'" + Serien[i] + "',"
-		serienselect += "'" + Serien[-1] + "')"
+			serienselect += '"' + Serien[i] + '",'
+		serienselect += '"' + Serien[-1] + '")'
+	print "[SerienRecorder] %s" % serienselect
 	cCursor.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays FROM SerienMarker " + serienselect + " ORDER BY Serie")
 	cMarkerList = cCursor.fetchall()
 	for row in cMarkerList:
 		(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays) = row
-		
 		SerieEnabled = True
 		cTmp = dbSerRec.cursor()
 		cTmp.execute("SELECT ErlaubteSTB FROM STBAuswahl WHERE ID=?", (ID,))
@@ -2411,7 +2496,7 @@ class serienRecCheckForRecording():
 
 		cCursor.execute("SELECT * FROM SerienMarker")
 		row = cCursor.fetchone()
-		if not row:
+		if not row and not config.plugins.serienRec.tvplaner and not config.plugins.serienRec.tvplaner_create_marker:
 			writeLog("\n---------' Starte Auto-Check um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
 			print "[SerienRecorder] check: Tabelle SerienMarker leer."
 			writeLog("Es sind keine Serien-Marker vorhanden - Auto-Check kann nicht ausgeführt werden.", True)
@@ -3154,23 +3239,36 @@ class serienRecCheckForRecording():
 					seriesID = getSeriesIDByURL(SerieUrl)
 					if seriesID is None or seriesID == 0:
 						# This is a marker created by TV Planer function - fix url
+						print "[SerienRecorder] fix seriesID for %r" % serienTitle
 						seriesID = SeriesServer().getSeriesID(serienTitle)
+						print "[SerienRecorder] seriesID = %r" % str(seriesID)
+						cCursor = dbSerRec.cursor()
 						if seriesID != 0:
 							Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
-							cCursor = dbSerRec.cursor()
+							print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
 							try:
-								cCursor.execute("UPDATE SerienMarker SET Url=? WHERE Serie=?", (Url, serienTitle))
+								cCursor.execute("UPDATE SerienMarker SET Url=? WHERE LOWER(Serie)=?", (Url, serienTitle.lower()))
 								dbSerRec.commit()
 								writeLog("' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url), True)
+								print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url)
+							except:
+								writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
+								print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url)
+						else:
+							try:
+								cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (serienTitle.lower(),))
 								erlaubteSTB = 0xFFFF
 								if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
 									erlaubteSTB = 0
 									erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
 								cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
 								dbSerRec.commit()
+								writeLog("' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB), True)
+								print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB)
 							except:
-								writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
-							cCursor.close()
+								writeLog("' %s - TV-Planer erlaubte STB -> Update %d failed '" % (serienTitle, erlaubteSTB), True)
+								print "[SerienRecorder] ' %s - TV-Planer erlaubt STB -> Update %d failed '" % (serienTitle, erlaubteSTB)
+						cCursor.close()
 							
 					download = retry(1, ds.run, self.downloadTransmissions, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
 					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
@@ -6304,24 +6402,33 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		transmissions = None
 
 		if self.serie_url:
-			raw = re.findall(".*?(\d+)", self.serie_url)
-			self.serien_id = raw[0]
-			print self.serien_id
-
-			getCover(self, self.serien_name, self.serien_id)
-
-			if self.FilterMode is 0:
-				webChannels = []
-			elif self.FilterMode is 1:
-				webChannels = getWebSenderAktiv()
+			self.serien_id = getSeriesIDByURL(SerieUrl)
+			if self.serien_id is None or self.serien_id == 0:
+				# This is a marker created by TV Planer function - get id from server
+				try:
+					self.serien_id = SeriesServer().getSeriesID(self.serien_name)
+				except:
+					self.serien_id = 0
+			
+			if self.serien_id != 0:
+				print self.serien_id
+				
+				getCover(self, self.serien_name, self.serien_id)
+				
+				if self.FilterMode is 0:
+					webChannels = []
+				elif self.FilterMode is 1:
+					webChannels = getWebSenderAktiv()
+				else:
+					webChannels = getMarkerChannels(self.serien_id)
+				
+				try:
+					transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
+				except:
+					transmissions = None
 			else:
-				webChannels = getMarkerChannels(self.serien_id)
-
-			try:
-				transmissions = SeriesServer().doGetTransmissions(self.serien_id, 0, webChannels)
-			except:
 				transmissions = None
-
+		
 		self.resultsEvents(transmissions)
 
 	def resultsEvents(self, transmissions):
