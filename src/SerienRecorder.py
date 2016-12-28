@@ -815,6 +815,10 @@ def getEmailData():
 		writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
 		return None
 	
+	except imaplib.IMAP4.error:
+		writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
+		return None
+	
 	try:
 		mail.login(decode(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value), decode(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
 		print "[serienrecorder]: imap login ok"
@@ -895,7 +899,7 @@ def getEmailData():
 			elif self.state == 'transmission_season' and tag == 'span' :
 				for name, value in attrs:
 					if name == 'title' and value == 'Episode':
-						self.transmission.append('')
+						self.transmission.append('0')
 						self.state = 'transmission_episode'
 						break
 
@@ -954,7 +958,7 @@ def getEmailData():
 				self.state = 'transmission_desc'
 			elif self.state == 'transmission_desc':
 				# match description
-				if data != 'FREE-TV NEU':
+				if data != 'FREE-TV NEU' and data != "NEU":
 					self.transmission.append(data)
 					self.state = 'transmission_endtime'
 			elif self.state == 'transmission_endtime':
@@ -1002,10 +1006,13 @@ def getEmailData():
 	transmissiondict = dict()
 	for starttime, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
 		# seriesName
-		transmission = [ seriesname ]
+		#	staffeln = str(staffeln).replace("[","").replace("]","").replace("'","").replace('"',"")
+		#	sender = str(sender).replace("[","").replace("]","").replace("'","").replace('"',"")
+		#seriesname = 
+		transmission = [ doReplaces(seriesname) ]
 		# channel
 		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
-		transmission += [ channel ]
+		transmission += [ doReplaces(channel) ]
 #		Channel = []
 #		cCursor = dbSerRec.cursor()
 #		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (channel.lower(),))
@@ -1051,7 +1058,7 @@ def getEmailData():
 		# episode
 		transmission += [ episode ]
 		# title
-		transmission += [ titel ]
+		transmission += [ doReplaces(titel) ]
 		# last
 		transmission += [ '0' ]
 		# store in dictionary transmissiondict[seriesname] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
@@ -3145,84 +3152,10 @@ class serienRecCheckForRecording():
 		else:
 			ds = defer.DeferredSemaphore(tokens=1)
 		
-		# 
-		# In order to provide an emergency recording service when serien server is down or
-		# because Wunschliste isn't accessable, it is now possible to use the TV Wunschliste
-		# TV-Planer Infomails.
-		# 
-		# With an account at www.wunschliste.de it is possible to mark series to appear at
-		# "TV-Planer" screen. This screen shows the transmissions of up to a week in advance.
-		# In "Einstellungen" it is possible to enable Infomails about TV-Planer. This Infomails
-		# can now be used by SerienRecorder to create timers without any further access to
-		# Wunschliste, and therefore avoids hitting Wunschliste with the enormous
-		# internet traffic that was caused by the many boxes with SerienRecorder.
-		#
-		# Wunschliste Settings:
-		# - put your favourite series on TV-Planer
-		# - enable TV-Planer Infomails in "Einstellungen"
-		# - set Vorlauf (i.e. 1 day)
-		# - set Programmtag-Beginn (i.e. 5.00 Uhr)
-		# - set MailFormat to HTML+Text (currently only HTML emails are recognized)
-		#
-		# When this has been finished the first TV-Planer email will be received next day.
-		# 
-		# SerienRecorder Settings:
-		# - enable TVPlaner feature
-		# - set email server, login, password and possibly modify the other parameters
-		# - set the autocheck time to about 1 h after the time you receive the TV-planer emails
-		#
-		# Now every time the regular SerienRecorder autocheck runs, received 
-		# TV-Planer emails will be used to program timers, even no marker 
-		# has been created by SerienMarker before. The marker is created automatically, 
-		# except for the correct url.  
-		#
-		downloads = []
-		if config.plugins.serienRec.tvplaner.value and self.emailData != None and len(self.markers) > 0:
-			# check mailbox for TV-Planer EMail and create timer
-			writeLog("\n---------' Verarbeite TV-Planer E-Mail '-----------------------------------------------------------\n", True)
-			webChannels = getWebSenderAktiv()
-			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
-				self.countSerien += 1
-				if SerieEnabled:
-					# Download only if series is enabled
-					if 'Alle' in SerieSender:
-						markerChannels = webChannels
-					else:
-						markerChannels = SerieSender
-					
-					self.countActivatedSeries += 1
-					download = retry(0, ds.run, self.downloadEmail, serienTitle, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
-					download.addErrback(self.dataError, SerieUrl)
-					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
-					download.addErrback(self.dataError, SerieUrl)
-					downloads.append(download)
-					
-			download.addCallbacks(self.createTimer, self.dataError)
-		
-		# this is only for experts that have data files available in a directory
-		# TODO: use saved transmissions for programming timer
-		if config.plugins.serienRec.readdatafromfiles.value and len(self.markers) > 0:
-			# use this only when WL is down and you have copies of the webpages on disk in serienrecorder/data
-			##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
-			writeLog("\n---------' Verarbeite Daten von Dateien '---------------------------------------------------------------\n", True)
-			c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
-			c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
-			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
-				self.countSerien += 1
-				if SerieEnabled:
-					# Download only if series is enabled
-					self.countActivatedSeries += 1
-					download = retry(1, ds.run, self.downloadFile, SerieUrl)
-					download.addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,excludedWeekdays)
-					download.addErrback(self.dataError,SerieUrl)
-					downloads.append(download)
-				
-			# run file data check
-			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
-		
 		# regular processing through serienrecorder server
 		# TODO: save all transmissions in files to protect from temporary SerienServer fails
-		#       data will be read by the above file reader and used for timer programming 
+		#       data will be read by the file reader below and used for timer programming 
+		downloads = []
 		if len(self.markers) > 0:
 			writeLog("\n---------' Verarbeite Daten vom Server '---------------------------------------------------------------\n", True)
 			webChannels = getWebSenderAktiv()
@@ -3276,7 +3209,80 @@ class serienRecCheckForRecording():
 					downloads.append(download)
 			
 			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
-			
+		# 
+		# In order to provide an emergency recording service when serien server is down or
+		# because Wunschliste isn't accessable, it is now possible to use the TV Wunschliste
+		# TV-Planer Infomails.
+		# 
+		# With an account at www.wunschliste.de it is possible to mark series to appear at
+		# "TV-Planer" screen. This screen shows the transmissions of up to a week in advance.
+		# In "Einstellungen" it is possible to enable Infomails about TV-Planer. This Infomails
+		# can now be used by SerienRecorder to create timers without any further access to
+		# Wunschliste, and therefore avoids hitting Wunschliste with the enormous
+		# internet traffic that was caused by the many boxes with SerienRecorder.
+		#
+		# Wunschliste Settings:
+		# - put your favourite series on TV-Planer
+		# - enable TV-Planer Infomails in "Einstellungen"
+		# - set Vorlauf (i.e. 1 day)
+		# - set Programmtag-Beginn (i.e. 5.00 Uhr)
+		# - set MailFormat to HTML+Text (currently only HTML emails are recognized)
+		#
+		# When this has been finished the first TV-Planer email will be received next day.
+		# 
+		# SerienRecorder Settings:
+		# - enable TVPlaner feature
+		# - set email server, login, password and possibly modify the other parameters
+		# - set the autocheck time to about 1 h after the time you receive the TV-planer emails
+		#
+		# Now every time the regular SerienRecorder autocheck runs, received 
+		# TV-Planer emails will be used to program timers, even no marker 
+		# has been created by SerienMarker before. The marker is created automatically, 
+		# except for the correct url.  
+		#
+		if config.plugins.serienRec.tvplaner.value and self.emailData != None and len(self.markers) > 0:
+			# check mailbox for TV-Planer EMail and create timer
+			writeLog("\n---------' Verarbeite TV-Planer E-Mail '-----------------------------------------------------------\n", True)
+			webChannels = getWebSenderAktiv()
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+				self.countSerien += 1
+				if SerieEnabled:
+					# Download only if series is enabled
+					if 'Alle' in SerieSender:
+						markerChannels = webChannels
+					else:
+						markerChannels = SerieSender
+					
+					self.countActivatedSeries += 1
+					download = retry(0, ds.run, self.downloadEmail, serienTitle, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
+					download.addErrback(self.dataError, SerieUrl)
+					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					download.addErrback(self.dataError, SerieUrl)
+					downloads.append(download)
+					
+			download.addCallbacks(self.createTimer, self.dataError)
+		
+		# this is only for experts that have data files available in a directory
+		# TODO: use saved transmissions for programming timer
+		if config.plugins.serienRec.readdatafromfiles.value and len(self.markers) > 0:
+			# use this only when WL is down and you have copies of the webpages on disk in serienrecorder/data
+			##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
+			writeLog("\n---------' Verarbeite Daten von Dateien '---------------------------------------------------------------\n", True)
+			c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
+			c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+				self.countSerien += 1
+				if SerieEnabled:
+					# Download only if series is enabled
+					self.countActivatedSeries += 1
+					download = retry(1, ds.run, self.downloadFile, SerieUrl)
+					download.addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,excludedWeekdays)
+					download.addErrback(self.dataError,SerieUrl)
+					downloads.append(download)
+				
+			# run file data check
+			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
+		
 		self.checkFinal()
 	
 	def checkFinal(self):
@@ -3294,24 +3300,8 @@ class serienRecCheckForRecording():
 			deltatime = self.getNextAutoCheckTimer(lt)
 			writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 		
-	def checkFinalError(self):
-		print "checkFinal"
-		# final processing
-		if config.plugins.serienRec.longLogFileName.value:
-			shutil.copy(logFile, logFileSave)
-		
-		# trigger read of log file
-		global autoCheckFinished
-		autoCheckFinished = True
-		print "checkFinal: autoCheckFinished"
-		if config.plugins.serienRec.autochecktype.value == "1":
-			lt = time.localtime()
-			deltatime = self.getNextAutoCheckTimer(lt)
-			writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
-
 		# in den deep-standby fahren.
 		self.askForDSB()
-		
 
 	@staticmethod
 	def downloadTransmissions(seriesID, timeSpan, markerChannels):
@@ -6402,7 +6392,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		transmissions = None
 
 		if self.serie_url:
-			self.serien_id = getSeriesIDByURL(SerieUrl)
+			self.serien_id = getSeriesIDByURL(self.serie_url)
 			if self.serien_id is None or self.serien_id == 0:
 				# This is a marker created by TV Planer function - get id from server
 				try:
