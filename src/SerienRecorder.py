@@ -689,7 +689,7 @@ def CreateDirectory(serien_name, staffel):
 
 	if fileExists(dirname):
 		if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
-			shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolderjpg" % dirname_serie)
+			shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
 		if config.plugins.serienRec.seasonsubdir.value:
 			if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
 				seasonsubdirfillchar = ' '
