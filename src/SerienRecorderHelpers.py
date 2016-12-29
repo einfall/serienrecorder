@@ -123,6 +123,12 @@ class TimeHelpers:
 		return datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes)).strftime("%s")
 
 	@classmethod
+	def getRealUnixTimeWithDayOffset(cls, minutes, hour, day, month, year, AddDays):
+		date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
+		date += datetime.timedelta(days=AddDays)
+		return date.strftime("%s")
+		
+	@classmethod
 	def allowedTimeRange(cls, fromTime, toTime, start_time, end_time):
 		if fromTime < toTime:
 			if start_time < end_time:

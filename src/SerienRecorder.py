@@ -1053,15 +1053,15 @@ def getEmailData():
 #			continue
 		# start time
 		(hour, minute) = starttime.split(':')
-		transmissionstart_unix = int(TimeHelpers.getRealUnixTime(minute, hour, day, month, year))
+		transmissionstart_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
 		if transmissionstart_unix < liststarttime_unix:
-			transmissionstart_unix += (3600*24)
+			transmissionstart_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
 		transmission += [ transmissionstart_unix ]
 		# end time
 		(hour, minute) = endtime.split('.')
-		transmissionend_unix = int(TimeHelpers.getRealUnixTime(minute, hour, day, month, year))
+		transmissionend_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
 		if transmissionend_unix < liststarttime_unix:
-			transmissionend_unix += (3600*24)
+			transmissionend_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
 		transmission += [ transmissionend_unix ]
 		# season
 		if season == '':
