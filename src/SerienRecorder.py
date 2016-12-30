@@ -11151,6 +11151,27 @@ class serienRecMain(Screen, HelpableScreen):
 					writeLog("%s" % mailbox, True)
 		except imaplib.IMAP4.error:
 			writeLog("IMAP Check: Abrufen der Mailboxen fehlgeschlagen", True)
+
+		try:
+			mail.select(config.plugins.serienRec.imap_mailbox.value)
+
+		except imaplib.IMAP4.error:
+			writeLog("TV-Planer: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
+			mail.logout()
+			return None
+
+		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
+		searchstr = '(ALL SINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
+		searchstr = searchstr.format(date=date)
+		try:
+			result, data = mail.uid('search', None, searchstr)
+			writeLog("IMAP-Check: %s" % result, True)
+
+		except imaplib.IMAP4.error:
+			writeLog("IMAP Check: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(
+				config.plugins.serienRec.imap_mail_age.value), True)
+			writeLog("IMAP Check: %s" % searchstr, True)
+
 		mail.logout()
 		self.session.open(MessageBox, "IMAP Mailboxes abgerufen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
 
