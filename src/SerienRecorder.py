@@ -838,6 +838,7 @@ def getEmailData():
 	date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
 	searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
 	searchstr = searchstr.format(date=date)
+	searchstr = searchstr.replace('Mrz', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
 	try:
 		result, data = mail.uid('search', None, searchstr)
 	
@@ -11164,7 +11165,7 @@ class serienRecMain(Screen, HelpableScreen):
 			return None
 
 		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
-		searchstr = '(ALL SINCE {date} SUBJECT "' + config.plugins.serienRec.imap_mail_subject.value + '")'
+		searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
 		searchstr = searchstr.format(date=date)
 		searchstr = searchstr.replace('Mrz', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
 		writeLog("IMAP Check: %s" % searchstr, True)
