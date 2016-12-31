@@ -11161,16 +11161,17 @@ class serienRecMain(Screen, HelpableScreen):
 			return None
 
 		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
-		searchstr = '(ALL SINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
+		searchstr = '(ALL SINCE {date} SUBJECT "' + config.plugins.serienRec.imap_mail_subject.value + '")'
 		searchstr = searchstr.format(date=date)
 		try:
 			result, data = mail.uid('search', None, searchstr)
-			writeLog("IMAP-Check: %s" % result, True)
+			writeLog("IMAP Check: %s (%d)" % (result, len(data[0])), True)
 
 		except imaplib.IMAP4.error:
 			writeLog("IMAP Check: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(
 				config.plugins.serienRec.imap_mail_age.value), True)
 			writeLog("IMAP Check: %s" % searchstr, True)
+			writeLog("IMAP Check: %s" % mail.error, True)
 
 		mail.logout()
 		self.session.open(MessageBox, "IMAP Mailboxes abgerufen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
