@@ -3254,10 +3254,11 @@ class serienRecCheckForRecording():
 		# has been created by SerienMarker before. The marker is created automatically, 
 		# except for the correct url.  
 		#
-		if config.plugins.serienRec.tvplaner.value and self.emailData != None and len(self.markers) > 0:
+		if config.plugins.serienRec.tvplaner.value and self.emailData is not None and len(self.markers) > 0:
 			# check mailbox for TV-Planer EMail and create timer
 			writeLog("\n---------' Verarbeite TV-Planer E-Mail '-----------------------------------------------------------\n", True)
 			webChannels = getWebSenderAktiv()
+			download = None
 			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
 				self.countSerien += 1
 				if SerieEnabled:
@@ -3273,8 +3274,9 @@ class serienRecCheckForRecording():
 					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
 					download.addErrback(self.dataError, SerieUrl)
 					downloads.append(download)
-					
-			download.addCallbacks(self.createTimer, self.dataError)
+
+			if download:
+				download.addCallbacks(self.createTimer, self.dataError)
 		
 		# this is only for experts that have data files available in a directory
 		# TODO: use saved transmissions for programming timer
@@ -11037,6 +11039,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self.session.openWithCallback(self.checkForUpdate, ShowSplashScreen, config.plugins.serienRec.showversion.value)
 
 	def checkForUpdate(self):
+		writeLog("Called checkForUpdate", True)
 		if config.plugins.serienRec.Autoupdate.value:
 			checkGitHubUpdate(self.session).checkForUpdate()
 
@@ -11163,6 +11166,8 @@ class serienRecMain(Screen, HelpableScreen):
 		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
 		searchstr = '(ALL SINCE {date} SUBJECT "' + config.plugins.serienRec.imap_mail_subject.value + '")'
 		searchstr = searchstr.format(date=date)
+		searchstr = searchstr.replace('Mrz', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
+		writeLog("IMAP Check: %s" % searchstr, True)
 		try:
 			result, data = mail.uid('search', None, searchstr)
 			writeLog("IMAP Check: %s (%d)" % (result, len(data[0])), True)
@@ -11170,8 +11175,7 @@ class serienRecMain(Screen, HelpableScreen):
 		except imaplib.IMAP4.error:
 			writeLog("IMAP Check: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(
 				config.plugins.serienRec.imap_mail_age.value), True)
-			writeLog("IMAP Check: %s" % searchstr, True)
-			writeLog("IMAP Check: %s" % mail.error, True)
+			writeLog("IMAP Check: %s" % mail.error.message, True)
 
 		mail.logout()
 		self.session.open(MessageBox, "IMAP Mailboxes abgerufen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
@@ -11327,6 +11331,7 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def startScreen(self):
 		print "[SerienRecorder] version %s is running..." % config.plugins.serienRec.showversion.value
+		writeLog("Called startScreen", True)
 		
 		global refreshTimer
 		if not refreshTimer:
@@ -11346,7 +11351,9 @@ class serienRecMain(Screen, HelpableScreen):
 		if not showMainScreen:
 			self.keyCancel()
 			self.close()
+			return
 
+		writeLog("Called readWebpage", True)
 		self.loading = True
 			
 		global dayCache
