@@ -15,7 +15,7 @@ class SeriesServer:
 	def __init__(self):
 		# Check dependencies
 		if xmlrpclib is not None:
-			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_URL, verbose=False)
+			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_URL)
 
 	def getSeriesID(self, seriesName):
 		return self.server.sp.cache.getID(seriesName)
@@ -142,3 +142,6 @@ class SeriesServer:
 			resultList.append([seriesName.encode('utf-8'), event['channel'].encode('utf-8'), event['start'], event['end'], event['season'], event['episode'], event['title'].encode('utf-8'), "0"])
 
 		return resultList
+
+	def doGetSeasonBegins(self, webChannels):
+		return self.server.sp.cache.getSeasonBegins(webChannels)

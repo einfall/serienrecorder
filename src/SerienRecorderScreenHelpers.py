@@ -422,9 +422,6 @@ class serienRecBaseScreen():
 				if config.plugins.serienRec.timeUpdate.value:
 					SerienRecorder.serienRecCheckForRecording(self.session, False)
 
-			if result[1]:
-				self.showChannels()
-
 	def keyLeft(self):
 		self[self.modus].pageUp()
 

@@ -84,6 +84,7 @@ from SerienRecorderSeriesServer import *
 from SerienRecorderChannelScreen import *
 from SerienRecorderScreenHelpers import *
 from SerienRecorderEpisodesScreen import *
+from SerienRecorderShowSeasonBeginsScreen import *
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
@@ -187,8 +188,6 @@ def ReadConfigFile():
 	config.plugins.serienRec.writeLogTimerDebug = ConfigYesNo(default = True)
 	config.plugins.serienRec.writeLogVersion = ConfigYesNo(default = True)
 	config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default = True)
-	config.plugins.serienRec.ActionOnNew = ConfigSelection(choices = [("0", "keine"), ("1", "benachrichten"), ("4", "suchen")], default="0")
-	config.plugins.serienRec.ActionOnNewManuell = ConfigYesNo(default = True)
 	config.plugins.serienRec.deleteOlderThan = ConfigInteger(7, (1,99))
 	config.plugins.serienRec.planerCacheEnabled = ConfigYesNo(default = True)
 	config.plugins.serienRec.planerCacheSize = ConfigInteger((int(config.plugins.serienRec.checkfordays.value)), (1,4))
@@ -229,7 +228,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.firstscreen = ConfigSelection(choices = [("0","SerienPlaner"), ("1", "SerienMarker")], default="0")
 	
 	# interne
-	config.plugins.serienRec.version = NoSave(ConfigText(default="032"))
+	config.plugins.serienRec.version = NoSave(ConfigText(default="034"))
 	config.plugins.serienRec.showversion = NoSave(ConfigText(default=SerienRecorderHelpers.SRVERSION))
 	config.plugins.serienRec.screenmode = ConfigInteger(0, (0,2))
 	config.plugins.serienRec.screenplaner = ConfigInteger(1, (1,5))
@@ -237,7 +236,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.addedListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.wishListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
-	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.2"))
+	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.4"))
 
 	# Override settings for maxWebRequests, AutoCheckInterval and due to restrictions of Wunschliste.de
 	config.plugins.serienRec.maxWebRequests.setValue(1)
@@ -348,47 +347,6 @@ except:
 	
 	
 #---------------------------------- Common Functions ------------------------------------------
-
-class PiconLoader:
-	def __init__(self):
-		self.nameCache = { }
-		self.partnerbox = re.compile('1:0:[0-9a-fA-F]+:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+:http')
-
-	def getPicon(self, sRef):
-		if not sRef:
-			return None
-
-		pos = sRef.rfind(':')
-		pos2 = sRef.rfind(':', 0, pos)
-		if pos - pos2 == 1 or self.partnerbox.match(sRef) is not None:
-			sRef = sRef[:pos2].replace(':', '_')
-		else:
-			sRef = sRef[:pos].replace(':', '_')
-		pngname = self.nameCache.get(sRef, "")
-		if pngname == "":
-			pngname = self.findPicon(sRef)
-			if pngname != "":
-				self.nameCache[sRef] = pngname
-			if pngname == "": # no picon for service found
-				pngname = self.nameCache.get("default", "")
-				if pngname == "": # no default yet in cache..
-					pngname = self.findPicon("picon_default")
-					if pngname != "":
-						self.nameCache["default"] = pngname
-		if fileExists(pngname):
-			return pngname
-		else:
-			return None
-
-	def findPicon(self, sRef):
-		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, sRef)
-		if not fileExists(pngname):
-			pngname = ""
-		return pngname
-
-	def piconPathChanged(self, configElement = None):
-		self.nameCache.clear()
-
 
 def retry(times, func, *args, **kwargs):
 	"""retry a defer function
@@ -773,11 +731,11 @@ def getmac(interface):
 def getEmailData():
 	# extract all html parts
 	def get_html(email_message_instance):
-	 maintype = email_message_instance.get_content_maintype()
-	 if maintype == 'multipart':
-		 for part in email_message_instance.get_payload():
-			 if part.get_content_type() == 'text/html':
-				 return part.get_payload()
+		maintype = email_message_instance.get_content_maintype()
+		if maintype == 'multipart':
+			for part in email_message_instance.get_payload():
+				if part.get_content_type() == 'text/html':
+					return part.get_payload()
 
 	writeLog("\n---------' Laden TV-Planer E-Mail '---------------------------------------------------------------\n", True)
 	
@@ -1301,15 +1259,7 @@ def initDB():
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS dbInfo (Key TEXT NOT NULL UNIQUE, 
 														   Value TEXT NOT NULL DEFAULT "")''') 
 
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, 
-																		  Staffel TEXT, 
-																		  Sender TEXT NOT NULL, 
-																		  StaffelStart TEXT NOT NULL, 
-																		  UTCStaffelStart INTEGER, 
-																		  Url TEXT NOT NULL, 
-																		  CreationFlag INTEGER DEFAULT 1)''') 
-
-		cCursor.execute('''CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE, 
+		cCursor.execute('''CREATE TABLE IF NOT EXISTS Channels (WebChannel TEXT NOT NULL UNIQUE,
 																STBChannel TEXT NOT NULL DEFAULT "", 
 																ServiceRef TEXT NOT NULL DEFAULT "", 
 																alternativSTBChannel TEXT NOT NULL DEFAULT "", 
@@ -1403,6 +1353,14 @@ def initDB():
 			return False
 
 		if not dbVersionMatch:
+			try:
+				cCursor = dbSerRec.cursor()
+				cCursor.execute('DROP TABLE NeuerStaffelbeginn')
+				dbSerRec.commit()
+				cCursor.close()
+			except:
+				pass
+
 			try:
 				cCursor = dbSerRec.cursor()
 				cCursor.execute('ALTER TABLE SerienMarker ADD AbEpisode INTEGER DEFAULT 0')
@@ -1563,15 +1521,7 @@ def updateDB():
 															   EventID INTEGER DEFAULT 0,
 															   TimerAktiviert INTEGER DEFAULT 1)''')
 
-	cNew.execute('''CREATE TABLE IF NOT EXISTS NeuerStaffelbeginn (Serie TEXT NOT NULL, 
-																   Staffel TEXT, 
-																   Sender TEXT NOT NULL, 
-																   StaffelStart TEXT NOT NULL, 
-																   UTCStaffelStart INTEGER, 
-																   Url TEXT NOT NULL, 
-																   CreationFlag INTEGER DEFAULT 1)''') 
-
-	cNew.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
+	cNew.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE,
 															   StartZeitstempel INTEGER NOT NULL, 
 															   webChannel TEXT NOT NULL)''')
 
@@ -1584,7 +1534,6 @@ def updateDB():
 
 	cNew.execute("ATTACH DATABASE '%sSerienRecorder_old.db' AS 'dbOLD'" % config.plugins.serienRec.databasePath.value)
 	cNew.execute("INSERT INTO Channels SELECT * FROM dbOLD.Channels ORDER BY WebChannel")
-	cNew.execute("INSERT INTO NeuerStaffelbeginn SELECT * FROM dbOLD.NeuerStaffelbeginn")
 	cNew.execute("INSERT INTO AngelegteTimer SELECT * FROM dbOLD.AngelegteTimer")
 	cNew.execute("INSERT INTO TimerKonflikte SELECT * FROM dbOLD.TimerKonflikte")
 	cNew.execute("INSERT INTO Merkzettel SELECT * FROM dbOLD.Merkzettel")
@@ -1757,33 +1706,6 @@ def updateDB():
 			ErlaubterSenderNew = decodeISO8859_1(ErlaubterSender)
 			cTmp = dbSerRec.cursor()
 			cTmp.execute("UPDATE OR IGNORE SenderAuswahl SET ErlaubterSender=? WHERE ErlaubterSender=?", (ErlaubterSenderNew,ErlaubterSender))
-			cTmp.close()
-			
-	cCursor.close()
-	dbSerRec.commit()
-	dbSerRec.text_factory = f
-		
-	# Codierung NeuerStaffelbeginn korrigieren
-	f = dbSerRec.text_factory
-	dbSerRec.text_factory = str
-	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT Serie,Sender FROM NeuerStaffelbeginn")
-	for row in cCursor:
-		(Serie,Sender) = row
-		try:
-			SerieNew = Serie.decode("utf-8")
-		except:
-			SerieNew = decodeISO8859_1(Serie)
-			cTmp = dbSerRec.cursor()
-			cTmp.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET Serie=? WHERE Serie=?", (SerieNew,Serie))
-			cTmp.close()
-			
-		try:
-			SenderNew = Sender.decode('utf-8')
-		except:
-			SenderNew = decodeISO8859_1(Sender)
-			cTmp = dbSerRec.cursor()
-			cTmp.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET Sender=? WHERE Sender=?", (SenderNew,Sender))
 			cTmp.close()
 			
 	cCursor.close()
@@ -2051,33 +1973,6 @@ def ImportFilesToDB():
 		cCursor.close()
 		dbSerRec.commit()
 		dbSerRec.text_factory = f
-		
-	# Codierung NeuerStaffelbeginn korrigieren
-	f = dbSerRec.text_factory
-	dbSerRec.text_factory = str
-	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT Serie,Sender FROM NeuerStaffelbeginn")
-	for row in cCursor:
-		(Serie,Sender) = row
-		try:
-			SerieNew = Serie.decode("utf-8")
-		except:
-			SerieNew = decodeISO8859_1(Serie)
-			cTmp = dbSerRec.cursor()
-			cTmp.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET Serie=? WHERE Serie=?", (SerieNew,Serie))
-			cTmp.close()
-			
-		try:
-			SenderNew = Sender.decode('utf-8')
-		except:
-			SenderNew = decodeISO8859_1(Sender)
-			cTmp = dbSerRec.cursor()
-			cTmp.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET Sender=? WHERE Sender=?", (SenderNew,Sender))
-			cTmp.close()
-			
-	cCursor.close()
-	dbSerRec.commit()
-	dbSerRec.text_factory = f
 
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("VACUUM")
@@ -2675,7 +2570,7 @@ class serienRecCheckForRecording():
 		
 		
 		# suche nach neuen Serien, Covern und Planer-Cache
-		if ((config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value)) or ((not self.manuell) and (config.plugins.serienRec.firstscreen.value == "0") and config.plugins.serienRec.planerCacheEnabled.value):
+		if (not self.manuell) and (config.plugins.serienRec.firstscreen.value == "0") and config.plugins.serienRec.planerCacheEnabled.value:
 			self.startCheck2()
 		else:
 			self.startCheck3()
@@ -2724,71 +2619,6 @@ class serienRecCheckForRecording():
 			staffel = event["season"]
 			episode = event["episode"]
 			serien_id = event["id"]
-
-			if (config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value):
-				if str(episode).isdigit():
-					if int(episode) == 1:
-						if not serien_name_lower in markers:
-							cCursor = dbSerRec.cursor()
-							cCursor.execute("SELECT * FROM NeuerStaffelbeginn WHERE LOWER(Serie)=? AND LOWER(Staffel)=?", (serien_name.lower(), str(staffel).lower()))
-							row = cCursor.fetchone()
-							if not row:
-								data = (serien_name, staffel, sender, headDate[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id)
-								cCursor.execute("INSERT OR IGNORE INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url) VALUES (?, ?, ?, ?, ?, ?)", data)
-								dbSerRec.commit()
-
-								if not self.manuell:
-									self.newSeriesOrEpisodesFound = True
-									if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
-										self.MessageList.append(("Der SerienRecorder hat Serien- / Staffelbeginn gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'", MessageBox.TYPE_INFO, -1, "Neue Episode"))
-										Notifications.AddPopup("Der SerienRecorder hat Serien- / Staffelbeginn gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'", MessageBox.TYPE_INFO, timeout=-1, id="Neue Episode")
-							cCursor.close()
-
-						else:
-							cCursor = dbSerRec.cursor()
-							if str(staffel).isdigit():
-								cCursor.execute("SELECT ID, AlleStaffelnAb FROM SerienMarker WHERE LOWER(Serie)=? AND AlleStaffelnAb>=0 AND AlleStaffelnAb<=?", (serien_name.lower(), staffel))
-								row = cCursor.fetchone()
-								if row:
-									(ID, AlleStaffelnAb) = row
-									staffeln = []
-									cCursor.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
-									cStaffelList = cCursor.fetchall()
-									if len(cStaffelList) > 0:
-										staffeln = zip(*cStaffelList)[0]
-									if not staffel in staffeln:
-										cCursor = dbSerRec.cursor()
-										cCursor.execute("SELECT * FROM NeuerStaffelbeginn WHERE LOWER(Serie)=? AND LOWER(Staffel)=?", (serien_name.lower(), str(staffel).lower()))
-										row = cCursor.fetchone()
-										if not row:
-											data = (serien_name, staffel, sender, headDate[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id, "2")
-											cCursor.execute("INSERT OR IGNORE INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag) VALUES (?, ?, ?, ?, ?, ?, ?)", data)
-											dbSerRec.commit()
-
-											if not self.manuell:
-												self.newSeriesOrEpisodesFound = True
-												if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
-													self.MessageList.append(("Der SerienRecorder hat Serien- / Staffelbeginn gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'", MessageBox.TYPE_INFO, -1, "Neue Episode"))
-													Notifications.AddPopup("Der SerienRecorder hat Serien- / Staffelbeginn gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'", MessageBox.TYPE_INFO, timeout=-1, id="Neue Episode")
-							else:
-								cCursor.execute("SELECT TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=? AND TimerForSpecials=0", (serien_name.lower(),))
-								row = cCursor.fetchone()
-								if not row:
-									cCursor = dbSerRec.cursor()
-									cCursor.execute("SELECT * FROM NeuerStaffelbeginn WHERE LOWER(Serie)=? AND LOWER(Staffel)=?", (serien_name.lower(), str(staffel).lower()))
-									row = cCursor.fetchone()
-									if not row:
-										data = (serien_name, staffel, sender, headDate[0], UTCDatum, "http://www.wunschliste.de/epg_print.pl?s=%s" % serien_id, "2")
-										cCursor.execute("INSERT OR IGNORE INTO NeuerStaffelbeginn (Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag) VALUES (?, ?, ?, ?, ?, ?, ?)", data)
-										dbSerRec.commit()
-
-										if not self.manuell:
-											self.newSeriesOrEpisodesFound = True
-											if config.plugins.serienRec.ActionOnNew.value in ("1", "3"):
-												self.MessageList.append(("Der SerienRecorder hat Serien- / Staffelbeginn gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'", MessageBox.TYPE_INFO, -1, "Neue Episode"))
-												Notifications.AddPopup("Der SerienRecorder hat Serien- / Staffelbeginn gefunden.\nDetaillierte Information im SerienRecorder mit Taste '3'", MessageBox.TYPE_INFO, timeout=-1, id="Neue Episode")
-
-							cCursor.close()
 
 			if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
 				serienTimers = [timer for timer in timers if timer[0] == serien_name_lower]
@@ -2846,23 +2676,6 @@ class serienRecCheckForRecording():
 	def postProcessPlanerData(self):
 		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
 			writePlanerData()
-			
-		if (config.plugins.serienRec.ActionOnNew.value != "0") and ((not self.manuell) or config.plugins.serienRec.ActionOnNewManuell.value):
-			cCursor = dbSerRec.cursor()
-			cCursor.execute("SELECT Serie, Staffel, StaffelStart FROM NeuerStaffelbeginn WHERE CreationFlag>0 ORDER BY UTCStaffelStart")
-			for row in cCursor:
-				(Serie, Staffel, StaffelStart) = row
-				if str(Staffel).isdigit():
-					writeLog("%d. Staffel von '%s' beginnt am %s" % (int(Staffel), Serie, StaffelStart), True)
-				else:
-					writeLog("Staffel %s von '%s' beginnt am %s" % (Staffel, Serie, StaffelStart), True)
-
-			if config.plugins.serienRec.ActionOnNew.value != "0":
-				lt = datetime.datetime.now() - datetime.timedelta(days=config.plugins.serienRec.deleteOlderThan.value)
-				cCursor.execute("DELETE FROM NeuerStaffelbeginn WHERE UTCStaffelStart<=?", (lt.strftime("%s"),))
-				
-			dbSerRec.commit()
-			cCursor.close()
 
 	def adjustEPGtimes(self, current_time):
 		cTimer = dbSerRec.cursor()
@@ -7239,7 +7052,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.changedEntry()
 			self['config'].instance.moveSelectionTo(int(config.plugins.serienRec.setupType.value) + 1)
 		else:
-			if self['config'].getCurrent()[1] in (config.plugins.serienRec.forceRecording, config.plugins.serienRec.ActionOnNew): self.setInfoText()
+			if self['config'].getCurrent()[1] == config.plugins.serienRec.forceRecording:
+				self.setInfoText()
 			if self['config'].getCurrent()[1] not in (config.plugins.serienRec.setupType,
 													  config.plugins.serienRec.savetopath,
 													  config.plugins.serienRec.seasonsubdirnumerlength,
@@ -7284,7 +7098,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.changedEntry()
 			self['config'].instance.moveSelectionTo(int(config.plugins.serienRec.setupType.value) + 1)
 		else:
-			if self['config'].getCurrent()[1] in (config.plugins.serienRec.forceRecording, config.plugins.serienRec.ActionOnNew): self.setInfoText()
+			if self['config'].getCurrent()[1] == config.plugins.serienRec.forceRecording:
+				self.setInfoText()
 			if self['config'].getCurrent()[1] not in (config.plugins.serienRec.savetopath,
 													  config.plugins.serienRec.seasonsubdirnumerlength,
 													  config.plugins.serienRec.coverPath,
@@ -7373,10 +7188,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen einschränken:", config.plugins.serienRec.selectNoOfTuners))
 			if config.plugins.serienRec.selectNoOfTuners.value:
 				self.list.append(getConfigListEntry("    maximale Anzahl der zu benutzenden Tuner:", config.plugins.serienRec.tuner))
-			self.list.append(getConfigListEntry("Aktion bei neuer Serie/Staffel:", config.plugins.serienRec.ActionOnNew))
-			if config.plugins.serienRec.ActionOnNew.value != "0":
-				self.list.append(getConfigListEntry("    auch bei manuellem Suchlauf:", config.plugins.serienRec.ActionOnNewManuell))
-				self.list.append(getConfigListEntry("    Einträge löschen die älter sind als X Tage:", config.plugins.serienRec.deleteOlderThan))
 			if not isDreamboxOS:
 				self.list.append(getConfigListEntry("nach Änderungen Suchlauf beim Beenden starten:", config.plugins.serienRec.runAutocheckAtExit))
 		#if config.plugins.serienRec.updateInterval.value == 24:
@@ -7582,13 +7393,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.selectNoOfTuners :        ("Bei 'ja' wird die Anzahl der vom SR benutzten Tuner für gleichzeitige Aufnahmen begrenzt.\n"
                                                                 "Bei 'nein' werden alle verfügbaren Tuner für Timer benutzt, die Überprüfung ob noch ein weiterer Timer erzeugt werden kann, übernimmt enigma2.", "Anzahl_der_Tuner"),
 			config.plugins.serienRec.tuner :                   ("Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten.", "Anzahl_der_Tuner"),
-			config.plugins.serienRec.ActionOnNew :             ("Wird eine neue Staffel oder Serie gefunden (d.h. Folge 1), wird die hier eingestellt Aktion ausgeführt:\n"
-			                                                    "  - 'keine': Es wird nicht nach neuen Serien/Staffeln gesucht.\n"
-																"  - 'benachrichtigen': Wurde eine neue Serie oder Staffel gefunden wirde eine Nachricht eingeblendet.\n"
-																"  - 'suchen': Es wird nur eine Suche durchgeführt, die Ergebnisse können über Taste 3 abgerufen werden.", "Aktion_bei_neuer_Staffel"),
-			config.plugins.serienRec.ActionOnNewManuell :      ("Bei 'nein' wird bei manuell gestarteten Suchläufen NICHT nach Staffel-/Serienstarts gesucht.", "Aktion_bei_neuer_Staffel"),
-			config.plugins.serienRec.deleteOlderThan :         ("Staffel-/Serienstarts die älter als die hier eingestellte Anzahl von Tagen (also vor dem %s) sind, werden beim Timer-Suchlauf automatisch aus der Datenbank entfernt "
-																"und auch nicht mehr angezeigt." % time.strftime("%d.%m.%Y", time.localtime(int(time.time()) - (int(config.plugins.serienRec.deleteOlderThan.value) * 86400))), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.runAutocheckAtExit :      ("Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Sendern und/oder Markern Änderungen vorgenommen wurden, "
 			                                                    "die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Sender zugewiesen, etc.)", "Suchlauf_beim_Beenden"),
 			config.plugins.serienRec.wakeUpDSB :               ("Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
@@ -7674,16 +7478,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		    config.plugins.serienRec.writeErrorLog:			   ("Bei 'ja' werden Verbindungs- und Lade-Fehler in einer eigenen Datei protokolliert.", "Das_Log"),
 		}			
 
-		# if config.plugins.serienRec.ActionOnNew.value != "0":
-		# 	self.HilfeTexte.update({
-		# 		config.plugins.serienRec.planerCacheEnabled : ("Bei 'ja' werden beim automatischen Suchlauf die Daten für den Serienplaner und die Sendetermine geladen und gespeichert. "
-		# 													   "Die Speicherung der Serienplaner-Daten erfolgt nicht, wenn der Suchlauf manuell gestartet wurde.", "Daten_speichern")
-		# 	})
-		# else:
-		# 	self.HilfeTexte.update({
-		# 		config.plugins.serienRec.planerCacheEnabled : ("Bei 'ja' werden beim automatischen Suchlauf die Sendetermine geladen und gespeichert.", "Daten_speichern")
-		# 	})
-
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
 		except:
@@ -7714,13 +7508,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.wakeUpDSB.value = False
 
 		if config.plugins.serienRec.planerCacheSize.value > 4:
-			config.plugins.serienRec.planerCacheSize.value = 4
-
-		if config.plugins.serienRec.ActionOnNew.value != "0" or config.plugins.serienRec.firstscreen.value == "0":
-			config.plugins.serienRec.planerCacheEnabled.value = True
-			config.plugins.serienRec.planerCacheSize.value = 4
-		else:
-			config.plugins.serienRec.planerCacheEnabled.value = False
 			config.plugins.serienRec.planerCacheSize.value = 4
 
 		config.plugins.serienRec.BoxID.save()
@@ -7787,8 +7574,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.writeLogTimerDebug.save()
 		config.plugins.serienRec.writeLogVersion.save()
 		config.plugins.serienRec.confirmOnDelete.save()
-		config.plugins.serienRec.ActionOnNew.save()
-		config.plugins.serienRec.ActionOnNewManuell.save()
 		config.plugins.serienRec.deleteOlderThan.save()
 		config.plugins.serienRec.runAutocheckAtExit.save()
 		config.plugins.serienRec.planerCacheEnabled.save()
@@ -7845,9 +7630,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			SelectSkin()
 			setSkinProperties(self)
 
-		if config.plugins.serienRec.ActionOnNew.value in ("2", "3"):
-			self.session.open(MessageBox, "Die Einstellung 'Aktion bei neuer Serie/Staffel' ist so eingestellt, dass automatisch neue Serien-Marker für jede gefundene neue Serie/Staffel angelegt werden. Dies kann zu sehr vielen Serien-Markern bzw. Timern und Aufnahmen führen.", MessageBox.TYPE_INFO)
-			
 		global serienRecDataBase
 		if serienRecDataBase == "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value:
 			self.close((True, self.setupModified, True))
@@ -9538,428 +9320,6 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.session.openWithCallback(self.callDeleteMsg, MessageBox, "Sollen die Änderungen gespeichert werden?", MessageBox.TYPE_YESNO, default = True)
 		else:
 			self.close()
-
-class serienRecShowSeasonBegins(Screen, HelpableScreen):
-	def __init__(self, session):
-		Screen.__init__(self, session)
-		HelpableScreen.__init__(self)
-		self.session = session
-		self.picload = ePicLoad()
-		self.ErrorMsg = "unbekannt"
-		self.piconLoader = PiconLoader()
-
-		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok"    : (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"red"	: (self.keyRed, "ausgewählten Eintrag löschen"),
-			"yellow": (self.keyYellow, "umschalten alle/nur zukünftige anzeigen"),
-			"blue"	: (self.keyBlue, "alle Einträge aus der Liste endgültig löschen"),
-			"left"  : (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right" : (self.keyRight, "zur nächsten Seite blättern"),
-			"up"    : (self.keyUp, "eine Zeile nach oben"),
-			"down"  : (self.keyDown, "eine Zeile nach unten"),
-			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
-			"startTeletext"       : (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
-			"startTeletext_long"  : (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
-			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
-			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
-			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
-			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-		}, -1)
-		self.helpList[0][2].sort()
-
-		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
-			"displayHelp"      : self.showHelp,
-			"displayHelp_long" : self.showManual,
-		}, 0)
-
-		self.filter = config.plugins.serienRec.serienRecShowSeasonBegins_filter.value
-
-		self.setupSkin()
-
-		self.changesMade = False
-		self.proposalList = []
-		self.serviceRefs = getActiveServiceRefs()
-		self.onLayoutFinish.append(self.readProposal)
-		self.onClose.append(self.__onClose)
-		self.onLayoutFinish.append(self.setSkinProperties)
-
-	def callHelpAction(self, *args):
-		HelpableScreen.callHelpAction(self, *args)
-		
-	def setSkinProperties(self):
-		setSkinProperties(self)
-
-		self['text_red'].setText("Eintrag löschen")
-		self['text_ok'].setText("Marker hinzufügen")
-		if self.filter:
-			self['text_yellow'].setText("Zeige alle")
-		else:
-			self['text_yellow'].setText("Zeige nur neue")
-		self['text_blue'].setText("Liste leeren")
-
-		self.num_bt_text[3][0] = buttonText_na
-			
-		self.displayTimer = None
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
-		else:
-			self.displayMode = 2
-			self.updateMenuKeys()
-		
-			self.displayTimer = eTimer()
-			if isDreamboxOS:
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-			
-	def setupSkin(self):
-		self.skin = None
-		InitSkin(self)
-		
-		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(int(50*skinFactor))
-		self['menu_list'] = self.chooseMenuList
-		self['menu_list'].show()
-
-		if config.plugins.serienRec.showCover.value:
-			self['cover'].show()
-		global showAllButtons
-		if not showAllButtons:
-			self['bt_red'].show()
-			self['bt_ok'].show()
-			self['bt_yellow'].show()
-			self['bt_blue'].show()
-			self['bt_exit'].show()
-			self['bt_text'].show()
-			self['bt_info'].show()
-			self['bt_menu'].show()
-			
-			self['text_red'].show()
-			self['text_ok'].show()
-			self['text_yellow'].show()
-			self['text_blue'].show()
-			self['text_0'].show()
-			self['text_1'].show()
-			self['text_2'].show()
-			self['text_3'].show()
-			self['text_4'].show()
-
-	def updateMenuKeys(self):
-		updateMenuKeys(self)
-		
-	def readProposal(self):
-		self.proposalList = []
-		markers = getAllMarkers()
-		cCursor = dbSerRec.cursor()
-		if self.filter:
-			now = datetime.datetime.now()
-			current_time = datetime.datetime(now.year, now.month, now.day, 00, 00).strftime("%s")
-			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE UTCStaffelStart >= ? GROUP BY Serie, Staffel", (current_time, ))
-		else:
-			cCursor.execute("SELECT Serie, Staffel, Sender, StaffelStart, UTCStaffelStart, Url, CreationFlag FROM NeuerStaffelbeginn WHERE CreationFlag=? OR CreationFlag>=1 GROUP BY Serie, Staffel", (self.filter, ))
-		for row in cCursor:
-			# 0 = no marker, 1 = active marker, 2 = deactive marker
-			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = row
-			if Serie.lower() in markers:
-				CreationFlag = 2 if markers[Serie.lower()] else 3
-			self.proposalList.append((Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag))
-		cCursor.close()
-		
-		self['title'].setText("Neue Serie(n) / Staffel(n):")
-		
-		self.proposalList.sort(key=lambda x: time.strptime(x[3].split(",")[1].strip(), "%d.%m.%Y"))
-		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
-		self.getCover()
-			
-	def buildList(self, entry):
-		(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = entry
-
-		icon = imageNone = "%simages/black.png" % serienRecMainPath
-		imageNeu = "%simages/neu.png" % serienRecMainPath
-
-		if CreationFlag == 2:
-			setFarbe = parseColor('green').argb()
-		elif CreationFlag == 3:
-			setFarbe = parseColor('red').argb()
-		elif str(Staffel).isdigit() and int(Staffel) == 0:
-			setFarbe = parseColor('grey').argb()
-		else:
-			setFarbe = parseColor('foreground').argb()
-
-		if str(Staffel).isdigit() and int(Staffel) == 1:
-			icon = imageNeu
-
-		Staffel = "S%sE01" % str(Staffel).zfill(2)
-		WochenTag=["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
-		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+", %d.%m.%Y", time.localtime(int(UTCTime)))
-
-		if config.plugins.serienRec.showPicons.value:
-			picon = imageNone
-			if Sender:
-				piconPath = self.piconLoader.getPicon(self.serviceRefs.get(Sender))
-				if piconPath:
-					self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
-					picon = self.picloader.load(piconPath)
-					self.picloader.destroy()
-
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80 * skinFactor, 40 * skinFactor, picon),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(icon)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb(), parseColor('yellow').argb()),
-				(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, parseColor('yellow').argb(), parseColor('yellow').argb())
-				]
-		else:
-			return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30 * skinFactor, 30 * skinFactor, loadPNG(icon)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
-				(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb(), parseColor('yellow').argb()),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, parseColor('yellow').argb(), parseColor('yellow').argb())
-				]
-
-	def readLogFile(self):
-		self.session.open(serienRecReadLog)
-		
-	def serieInfo(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			return
-		url = self['menu_list'].getCurrent()[0][5]
-		serien_id = getSeriesIDByURL(url)
-		if serien_id > 0:
-			serien_name = self['menu_list'].getCurrent()[0][0]
-			self.session.open(serienRecShowInfo, serien_name, serien_id)
-
-	def showConflicts(self):
-		self.session.open(serienRecShowConflicts)
-		
-	def showWishlist(self):
-		self.session.open(serienRecWishlist)
-
-	def youtubeSearch(self):
-		if epgTranslatorInstalled:
-			check = self['menu_list'].getCurrent()
-			if check is None:
-				return
-
-			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[SerienRecorder] starte youtube suche für %s" % serien_name
-			self.session.open(searchYouTube, serien_name)
-		else:
-			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
-
-	def WikipediaSearch(self):
-		if WikipediaInstalled:
-			check = self['menu_list'].getCurrent()
-			if check is None:
-				return
-
-			serien_name = self['menu_list'].getCurrent()[0][0]
-			print "[SerienRecorder] starte Wikipedia Suche für %s" % serien_name
-			self.session.open(wikiSearch, serien_name)
-		else:
-			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
-
-	def showManual(self):
-		if OperaBrowserInstalled:
-			self.session.open(Browser, SR_OperatingManual, True)
-		elif DMMBrowserInstalled:
-			self.session.open(Browser, True, SR_OperatingManual)
-		else:
-			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
-			
-	def showAbout(self):
-		self.session.open(serienRecAboutScreen)
-				
-	def recSetup(self):
-		self.session.openWithCallback(self.setupClose, serienRecSetup)
-
-	def setupClose(self, result):
-		if not result[2]:
-			self.close()
-		else:	
-			if result[0]:
-				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False, False)
-
-			if result[1]:
-				self.readProposal()
-				
-	def getCover(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			return
-
-		serien_name = self['menu_list'].getCurrent()[0][0]
-		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][5])
-		self.ErrorMsg = "'getCover()'"
-		getCover(self, serien_name, serien_id)
-
-	def keyRed(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			print "[SerienRecorder] Proposal-DB leer."
-			return
-		else:
-			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = self['menu_list'].getCurrent()[0]
-			cCursor = dbSerRec.cursor()
-			data = (Serie, Staffel, Sender, Datum) 
-			cCursor.execute("DELETE FROM NeuerStaffelbeginn WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?", data)
-			dbSerRec.commit()
-			cCursor.close()
-			self.readProposal()
-
-	def keyOK(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			print "[SerienRecorder] Proposal-DB leer."
-			return
-		else:
-			(Serie, Staffel, Sender, Datum, UTCTime, Url, CreationFlag) = self['menu_list'].getCurrent()[0]
-			if CreationFlag:
-				(ID, AbStaffel, AlleSender) = self.checkMarker(Serie)
-				if ID > 0:
-					cCursor = dbSerRec.cursor()
-					if str(Staffel).isdigit():
-						if AbStaffel > Staffel:
-							cCursor.execute("SELECT * FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel=?", (ID, Staffel))
-							row = cCursor.fetchone()
-							if not row:
-								cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, Staffel))
-								cCursor.execute("SELECT * FROM StaffelAuswahl WHERE ID=? ORDER DESC BY ErlaubteStaffel", (ID,))
-								staffel_Liste = cCursor.fetchall()
-								for row in staffel_Liste:
-									(ID, ErlaubteStaffel) = row
-									if AbStaffel == (ErlaubteStaffel + 1):
-										AbStaffel = ErlaubteStaffel
-									else:
-										break
-								cCursor.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=? WHERE ID=?", (AbStaffel, ID))
-								cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel>=?", (ID, AbStaffel))
-					else:
-						cCursor.execute("UPDATE OR IGNORE SerienMarker SET TimerForSpecials=1 WHERE ID=?", (ID,))
-					
-					if not AlleSender:
-						cCursor.execute("SELECT * FROM SenderAuswahl WHERE ID=? AND ErlaubterSender=?", (ID, Sender))
-						row = cCursor.fetchone()
-						if not row:
-							cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
-					
-					dbSerRec.commit()
-					cCursor.close()
-				else:
-					cCursor = dbSerRec.cursor()
-					if config.plugins.serienRec.defaultStaffel.value == "0":
-						cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, 0, 1, -1)", (Serie, Url))
-						ID = cCursor.lastrowid
-					else:
-						if str(Staffel).isdigit():
-							cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, ?, ?, -1)", (Serie, Url, AbStaffel, AlleSender))
-							ID = cCursor.lastrowid
-							cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, Staffel))
-						else:
-							cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, ?, -1, 1)", (Serie, Url, AbStaffel, AlleSender))
-							ID = cCursor.lastrowid
-						cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
-					erlaubteSTB = 0xFFFF
-					if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
-						erlaubteSTB = 0
-						erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
-					cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
-					dbSerRec.commit()
-					cCursor.close()
-
-				cCursor = dbSerRec.cursor()
-				data = (Serie, Staffel, Sender, Datum) 
-				cCursor.execute("UPDATE OR IGNORE NeuerStaffelbeginn SET CreationFlag=2 WHERE Serie=? AND Staffel=? AND Sender=? AND StaffelStart=?", data)
-				dbSerRec.commit()
-				cCursor.close()
-				self.changesMade = True
-				global runAutocheckAtExit
-				runAutocheckAtExit = True
-				if config.plugins.serienRec.openMarkerScreen.value:
-					self.session.open(serienRecMarker, Serie)
-				
-			self.readProposal()
-		
-	def keyYellow(self):
-		if not self.filter:
-			self.filter = True
-			self['text_yellow'].setText("Zeige alle")
-		else:
-			self.filter = False
-			self['text_yellow'].setText("Zeige nur neue")
-		self.readProposal()
-		config.plugins.serienRec.serienRecShowSeasonBegins_filter.value = self.filter
-		config.plugins.serienRec.serienRecShowSeasonBegins_filter.save()
-		configfile.save()
-		
-	def keyBlue(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			print "[SerienRecorder] Proposal-DB leer."
-			return
-		else:
-			if config.plugins.serienRec.confirmOnDelete.value:
-				self.session.openWithCallback(self.callDeleteMsg, MessageBox, "Soll die Liste wirklich geleert werden?", MessageBox.TYPE_YESNO, default = False)
-			else:
-				cCursor = dbSerRec.cursor()
-				cCursor.execute("DELETE FROM NeuerStaffelbeginn")
-				dbSerRec.commit()
-				cCursor.close()
-				self.readProposal()
-
-	def callDeleteMsg(self, answer):
-		if answer:
-			cCursor = dbSerRec.cursor()
-			cCursor.execute("DELETE FROM NeuerStaffelbeginn")
-			dbSerRec.commit()
-			cCursor.close()
-			self.readProposal()
-		else:
-			return
-			
-	def checkMarker(self, mSerie):
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT ID, AlleStaffelnAb, alleSender FROM SerienMarker WHERE LOWER(Serie)=?", (mSerie.lower(),))
-		row = cCursor.fetchone()
-		if not row:
-			row = (0, 999999, 0)
-		cCursor.close()
-		return row
-
-	def keyLeft(self):
-		self['menu_list'].pageUp()
-		self.getCover()
-
-	def keyRight(self):
-		self['menu_list'].pageDown()
-		self.getCover()
-
-	def keyDown(self):
-		self['menu_list'].down()
-		self.getCover()
-
-	def keyUp(self):
-		self['menu_list'].up()
-		self.getCover()
-
-	def __onClose(self):
-		if self.displayTimer:
-			self.displayTimer.stop()
-			self.displayTimer = None
-
-	def keyCancel(self):
-		if config.plugins.serienRec.refreshViews.value:
-			self.close(self.changesMade)
-		else:
-			self.close(False)
 
 class serienRecWishlist(Screen, HelpableScreen):
 	def __init__(self, session):

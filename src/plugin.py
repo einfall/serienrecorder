@@ -12,6 +12,7 @@ import SerienRecorderAboutScreen
 import SerienRecorderChannelScreen
 import SerienRecorderSplashScreen
 import SerienRecorderStartupInfoScreen
+import SerienRecorderShowSeasonBeginsScreen
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 
@@ -26,7 +27,8 @@ def SRstart(session, **kwargs):
 	                  ('SerienRecorderAboutScreen', SerienRecorderAboutScreen),
 	                  ('SerienRecorderChannelScreen', SerienRecorderChannelScreen),
 	                  ('SerienRecorderSplashScreen', SerienRecorderSplashScreen),
-	                  ('SerienRecorderStartupInfoScreen', SerienRecorderStartupInfoScreen)):
+	                  ('SerienRecorderStartupInfoScreen', SerienRecorderStartupInfoScreen),
+					  ('SerienRecorderShowSeasonBeginScreen', SerienRecorderShowSeasonBeginsScreen)):
 		if fileExists(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0])):
 			if (int(os.path.getmtime(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0]))) < int(
 					os.path.getmtime(os.path.join(serienRecMainPath, "%s.py" % file_name[0])))):

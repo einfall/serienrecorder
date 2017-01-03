@@ -372,3 +372,50 @@ class imdbVideo():
 	@staticmethod
 	def dataError(error):
 		return None
+
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# Picon loader
+#
+# ----------------------------------------------------------------------------------------------------------------------
+
+class PiconLoader:
+	def __init__(self):
+		self.nameCache = { }
+		self.partnerbox = re.compile('1:0:[0-9a-fA-F]+:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+:http')
+
+	def getPicon(self, sRef):
+		if not sRef:
+			return None
+
+		pos = sRef.rfind(':')
+		pos2 = sRef.rfind(':', 0, pos)
+		if pos - pos2 == 1 or self.partnerbox.match(sRef) is not None:
+			sRef = sRef[:pos2].replace(':', '_')
+		else:
+			sRef = sRef[:pos].replace(':', '_')
+		pngname = self.nameCache.get(sRef, "")
+		if pngname == "":
+			pngname = self.findPicon(sRef)
+			if pngname != "":
+				self.nameCache[sRef] = pngname
+			if pngname == "": # no picon for service found
+				pngname = self.nameCache.get("default", "")
+				if pngname == "": # no default yet in cache..
+					pngname = self.findPicon("picon_default")
+					if pngname != "":
+						self.nameCache["default"] = pngname
+		if fileExists(pngname):
+			return pngname
+		else:
+			return None
+
+	@staticmethod
+	def findPicon(sRef):
+		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, sRef)
+		if not fileExists(pngname):
+			pngname = ""
+		return pngname
+
+	def piconPathChanged(self, configElement = None):
+		self.nameCache.clear()
