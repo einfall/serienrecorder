@@ -10400,7 +10400,6 @@ class serienRecMain(Screen, HelpableScreen):
 		self.session.openWithCallback(self.checkForUpdate, ShowSplashScreen, config.plugins.serienRec.showversion.value)
 
 	def checkForUpdate(self):
-		writeLog("Called checkForUpdate", True)
 		if config.plugins.serienRec.Autoupdate.value:
 			checkGitHubUpdate(self.session).checkForUpdate()
 
@@ -10692,8 +10691,7 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def startScreen(self):
 		print "[SerienRecorder] version %s is running..." % config.plugins.serienRec.showversion.value
-		writeLog("Called startScreen", True)
-		
+
 		global refreshTimer
 		if not refreshTimer:
 			if config.plugins.serienRec.timeUpdate.value:
@@ -10714,7 +10712,6 @@ class serienRecMain(Screen, HelpableScreen):
 			self.close()
 			return
 
-		writeLog("Called readWebpage", True)
 		self.loading = True
 			
 		global dayCache
