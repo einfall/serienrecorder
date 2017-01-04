@@ -140,12 +140,12 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		if str(Staffel).isdigit() and int(Staffel) == 1:
 			icon = imageNeu
 
-		Staffel = "S%sE01" % str(Staffel).zfill(2)
+		Staffel = "Staffel %s" % str(Staffel)
 		WochenTag = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+ ", %d.%m.%Y", time.localtime(int(UTCTime)))
 
 		if config.plugins.serienRec.showPicons.value:
-			picon = imageNone
+			picon = loadPNG(imageNone)
 			if Sender:
 				piconPath = self.piconLoader.getPicon(self.serviceRefs.get(Sender))
 				if piconPath:
