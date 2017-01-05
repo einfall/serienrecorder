@@ -840,6 +840,8 @@ def getEmailData():
 			self.date = ()
 			self.transmission = []
 			self.transmissions = []
+			self.season = ''
+			self.episode = ''
 		def handle_starttag(self, tag, attrs):
 			# print "Encountered a start tag:", tag, attrs
 			if self.state == 'start' and tag == 'h3':
@@ -855,13 +857,23 @@ def getEmailData():
 				self.state = 'transmission'
 			elif self.state == 'transmission_serie' and tag == 'strong':
 				self.data = ''
-			elif self.state == 'transmission_season' and tag == 'span' :
+			elif self.state == 'transmission_serieend' and tag == 'span' :
+				found = False
 				for name, value in attrs:
-					if name == 'title' and value == 'Episode':
-						self.transmission.append('')
+					if name == 'title' and value == 'Staffel':
+						found = True
+						self.state = 'transmission_season'
+						break
+					elif name == 'title' and value == 'Episode':
+						found = True
 						self.state = 'transmission_episode'
 						break
-
+				if not found:
+					self.transmission.append(self.season)
+					self.transmission.append(self.episode)
+					self.season = self.episode = ''
+					self.state = 'transmission_title'
+		
 		def handle_endtag(self, tag):
 			# print "Encountered an end tag :", tag
 			if self.state == 'transmission_end' and tag == 'tr':
@@ -875,17 +887,7 @@ def getEmailData():
 			elif self.state == 'transmission_serie' and tag == 'strong':
 				# append collected data
 				self.transmission.append(self.data)
-				self.state = 'transmission_season'
-			elif self.state == 'transmission_season' and tag == 'div':
-				# no season and no episode
-				# title has been already pushed as season - insert empty season and episode before last
-				self.transmission.insert(self.transmission[-1], '')
-				self.transmission.insert(self.transmission[-1], '')
-				self.state = 'transmission_desc'
-			elif self.state == 'transmission_episode' and tag == 'div':
-				# season but no episode
-				self.transmission.append('')
-				self.state = 'transmission_title'
+				self.state = 'transmission_serieend'
 
 		def handle_data(self, data):
 			# print "Encountered some data  : %r" % data
@@ -915,12 +917,12 @@ def getEmailData():
 				self.data += data
 			elif self.state == 'transmission_season':
 				# match season
-				self.transmission.append(data)
-				self.state = 'transmission_episode'
+				self.season = data
+				self.state = 'transmission_serieend'
 			elif self.state == 'transmission_episode':
 				# match episode
-				self.transmission.append(data)
-				self.state = 'transmission_title'
+				self.episode = data
+				self.state = 'transmission_serieend'
 			elif self.state == 'transmission_title':
 				# match title
 				self.transmission.append(data)
@@ -928,8 +930,18 @@ def getEmailData():
 			elif self.state == 'transmission_desc':
 				# match description
 				if data != 'FREE-TV NEU' and data != "NEU":
-					self.transmission.append(data)
-					self.state = 'transmission_endtime'
+					# may be empty description
+					time_regexp=re.compile('bis: (.*?) Uhr.*')
+					time = time_regexp.findall(data)
+					if len(time) > 0:
+						# add empty description
+						self.transmission.append('')
+						# add end time
+						self.transmission.append(time[0])
+						self.state = 'transmission_sender'
+					else:
+						self.transmission.append(data)
+						self.state = 'transmission_endtime'
 			elif self.state == 'transmission_endtime':
 				# match end time
 				time_regexp=re.compile('bis: (.*?) Uhr.*')
@@ -976,40 +988,13 @@ def getEmailData():
 	for starttime, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
 		if season == '' and episode == '':
 			# this is probably a movie - ignore for now
+			writeLog("' %s - %s - %r - Aufnahme von Filmen wird derzeit nicht unterstützt '" % (seriesname, titel, channel), True)
 			continue
 		
 		transmission = [ doReplaces(seriesname) ]
 		# channel
 		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
 		transmission += [ doReplaces(channel) ]
-#		Channel = []
-#		cCursor = dbSerRec.cursor()
-#		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (channel.lower(),))
-#		row = cCursor.fetchone()
-#		if row:
-#			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = row
-#			if altstbChannel == "":
-#				altstbChannel = stbChannel
-#				altstbRef = stbRef
-#			elif stbChannel == "":
-#				stbChannel = altstbChannel
-#				stbRef = altstbRef
-#			Channel.append((webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status))
-#		else:
-#			writeLog("TV-Planer: STB-Sender für %r nicht gefunden" % channel, True)
-#			print "[SerienRecorder] ' %s - S%sE%s - %s - %r -> STB sender not found'" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, webChannel)
-#			continue
-#		cCursor.close()
-#		if not Channel:
-#			writeLog("TV-Planer: STB-Sender für %r nicht gefunden" % channel, True)
-#			print "[SerienRecorder] ' %s - S%sE%s - %s - %r -> STB sender not found'" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, webChannel)
-#			continue
-#		try:
-#			transmission += [ Channel[0][1] ]
-#		except:
-#			writeLog("TV-Planer: STB-Sender für %r nicht gefunden, %r" % (channel, Channel), True)
-#			print "[SerienRecorder] ' %s - S%sE%s - %s - %r -> STB sender not found'" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, webChannel)
-#			continue
 		# start time
 		(hour, minute) = starttime.split(':')
 		transmissionstart_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
@@ -1039,8 +1024,8 @@ def getEmailData():
 			transmissiondict[seriesname] += [ transmission ]
 		else:
 			transmissiondict[seriesname] = [ transmission ]
-		writeLog("' %s - S%sE%s - %s - %r '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel), True)
-		print "[SerienRecorder] ' %s - S%sE%s - %s - %r '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel)
+		writeLog("' %s - S%sE%s - %s - %s - %s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel, datetime.date.fromtimestamp(float(transmissionstart_unix)).strftime("%d.%m.%Y"), datetime.date.fromtimestamp(float(transmissionend_unix)).strftime("%d.%m.%Y")), True)
+		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel, datetime.date.fromtimestamp(float(transmissionstart_unix)).strftime("%d.%m.%Y"), datetime.date.fromtimestamp(float(transmissionend_unix)).strftime("%d.%m.%Y"))
 	
 	if config.plugins.serienRec.tvplaner_create_marker.value:
 		cCursor = dbSerRec.cursor()
@@ -2513,9 +2498,15 @@ class serienRecCheckForRecording():
 		dbSerRec.commit()
 		cCursor.close()
 		
-		if self.manuell:
+		if self.tvplaner_manuell and config.plugins.serienRec.tvplaner.value:
+			print "\n---------' Starte Auto-Check um %s (TV-Planer manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
+			writeLog("\n---------' Starte Auto-Check um %s (TV-Planer manuell) '-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
+		elif self.manuell:
 			print "\n---------' Starte Auto-Check um %s (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
 			writeLog("\n---------' Starte Auto-Check um %s (manuell) '-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
+		elif config.plugins.serienRec.tvplaner.value:
+			print "\n---------' Starte Auto-Check um %s (TV-Planer auto) '-------------------------------------------------------------------------------" % self.uhrzeit
+			writeLog("\n---------' Starte Auto-Check um %s (TV-Planer auto) '-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
 		else:
 			print "\n---------' Starte Auto-Check um %s (auto)'-------------------------------------------------------------------------------" % self.uhrzeit
 			writeLog("\n---------' Starte Auto-Check um %s (auto)'-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
@@ -3006,29 +2997,44 @@ class serienRecCheckForRecording():
 						cCursor = dbSerRec.cursor()
 						if seriesID != 0:
 							Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
-							print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
-							try:
-								cCursor.execute("UPDATE SerienMarker SET Url=? WHERE LOWER(Serie)=?", (Url, serienTitle.lower()))
-								dbSerRec.commit()
-								writeLog("' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url), True)
-								print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url)
-							except:
-								writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
-								print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url)
-							try:
-								cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (serienTitle.lower(),))
-								erlaubteSTB = 0xFFFF
-								if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
-									erlaubteSTB = 0
-									erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
-								cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
-#								cCursor.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?) ON DUPLICATE KEY UPDATE ErlaubteSTB=?", (cCursor.lastrowid, erlaubteSTB, erlaubteSTB))
-								dbSerRec.commit()
-								writeLog("' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB), True)
-								print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB)
-							except:
-								writeLog("' %s - TV-Planer erlaubte STB -> Update %d failed '" % (serienTitle, erlaubteSTB), True)
-								print "[SerienRecorder] ' %s - TV-Planer erlaubt STB -> Update %d failed '" % (serienTitle, erlaubteSTB)
+							# look if Series with this ID already exists
+							cCursor.execute("SELECT Serie FROM SerienMarker WHERE Url=?", (Url,))
+							row = cCursor.fetchone()
+							if row:
+								# Series was already in database with different name - remove new duplicate marker
+								writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
+								print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
+								cCursor.execute("DELETE FROM SerienMarker WHERE Serie=? AND Url='url'", (serienTitle,))
+								# Update TV-Planer E-Mail and current marker
+								tm = self.emailData[serienTitle]
+								tm[0][0] = row[0]
+								self.emailData[row[0]] = tm
+								del self.emailData[serienTitle]
+								serienTitle = row[0]
+							else:
+								print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
+								try:
+									cCursor.execute("UPDATE SerienMarker SET Url=? WHERE LOWER(Serie)=?", (Url, serienTitle.lower()))
+									dbSerRec.commit()
+									writeLog("' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url), True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url)
+								except:
+									writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url)
+								try:
+									cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (serienTitle.lower(),))
+									erlaubteSTB = 0xFFFF
+									if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
+										erlaubteSTB = 0
+										erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+									cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
+	#								cCursor.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?) ON DUPLICATE KEY UPDATE ErlaubteSTB=?", (cCursor.lastrowid, erlaubteSTB, erlaubteSTB))
+									dbSerRec.commit()
+									writeLog("' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB), True)
+									print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB)
+								except:
+									writeLog("' %s - TV-Planer erlaubte STB -> Update %d failed '" % (serienTitle, erlaubteSTB), True)
+									print "[SerienRecorder] ' %s - TV-Planer erlaubt STB -> Update %d failed '" % (serienTitle, erlaubteSTB)
 						cCursor.close()
 							
 					download = retry(1, ds.run, self.downloadTransmissions, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
@@ -3073,7 +3079,7 @@ class serienRecCheckForRecording():
 			writeLog("\n---------' Verarbeite TV-Planer E-Mail '-----------------------------------------------------------\n", True)
 			webChannels = getWebSenderAktiv()
 			download = None
-			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in getMarker(self.emailData.keys()):
 				self.countSerien += 1
 				if SerieEnabled:
 					# Download only if series is enabled
