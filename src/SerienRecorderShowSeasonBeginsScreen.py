@@ -188,7 +188,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		check = self[self.modus].getCurrent()
 		if check is None:
 			return
-		url = self[self.modus].getCurrent()[0][5]
+		url = self[self.modus].getCurrent()[0][4]
 		serien_id = getSeriesIDByURL(url)
 		if serien_id > 0:
 			serien_name = self[self.modus].getCurrent()[0][0]
