@@ -840,8 +840,8 @@ def getEmailData():
 			self.date = ()
 			self.transmission = []
 			self.transmissions = []
-			self.season = ''
-			self.episode = ''
+			self.season = '0'
+			self.episode = '0'
 		def handle_starttag(self, tag, attrs):
 			# print "Encountered a start tag:", tag, attrs
 			if self.state == 'start' and tag == 'h3':
@@ -871,7 +871,7 @@ def getEmailData():
 				if not found:
 					self.transmission.append(self.season)
 					self.transmission.append(self.episode)
-					self.season = self.episode = ''
+					self.season = self.episode = '0'
 					self.state = 'transmission_title'
 		
 		def handle_endtag(self, tag):
@@ -966,8 +966,8 @@ def getEmailData():
 		return None
 	try:
 		parser.feed(html)
-		print parser.date
-		print parser.transmissions
+#		print parser.date
+#		print parser.transmissions
 	except:
 		writeLog("TV-Planer: HTML Parsing schlug fehl", True)
 		return None
@@ -986,12 +986,12 @@ def getEmailData():
 	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (parser.date[0], parser.date[1])
 	transmissiondict = dict()
 	for starttime, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
-		if season == '' and episode == '':
-			# this is probably a movie - ignore for now
-			writeLog("' %s - %s - %r - Aufnahme von Filmen wird derzeit nicht unterstützt '" % (seriesname, titel, channel), True)
-			continue
+#		if season == '' and episode == '':
+#			# this is probably a movie - ignore for now
+#			writeLog("' %s - %s - %r - Aufnahme von Filmen wird derzeit nicht unterstützt '" % (seriesname, titel, channel), True)
+#			continue
 		
-		transmission = [ doReplaces(seriesname) ]
+		transmission = [ re.sub(r"\[.*\]", "", doReplaces(seriesname)).strip() ]
 		# channel
 		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
 		transmission += [ doReplaces(channel) ]
@@ -1013,7 +1013,7 @@ def getEmailData():
 		transmission += [ season ]
 		# episode
 		if episode == '':
-			episode = '00'
+			episode = '0'
 		transmission += [ episode ]
 		# title
 		transmission += [ doReplaces(titel) ]
@@ -1024,8 +1024,8 @@ def getEmailData():
 			transmissiondict[seriesname] += [ transmission ]
 		else:
 			transmissiondict[seriesname] = [ transmission ]
-		writeLog("' %s - S%sE%s - %s - %s - %s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel, datetime.date.fromtimestamp(float(transmissionstart_unix)).strftime("%d.%m.%Y"), datetime.date.fromtimestamp(float(transmissionend_unix)).strftime("%d.%m.%Y")), True)
-		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel, datetime.date.fromtimestamp(float(transmissionstart_unix)).strftime("%d.%m.%Y"), datetime.date.fromtimestamp(float(transmissionend_unix)).strftime("%d.%m.%Y"))
+		writeLog("' %s - S%sE%s - %s - %s - %s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix)))), True)
+		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))))
 	
 	if config.plugins.serienRec.tvplaner_create_marker.value:
 		cCursor = dbSerRec.cursor()
@@ -3028,13 +3028,17 @@ class serienRecCheckForRecording():
 										erlaubteSTB = 0
 										erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
 									cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
-	#								cCursor.execute("INSERT INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?) ON DUPLICATE KEY UPDATE ErlaubteSTB=?", (cCursor.lastrowid, erlaubteSTB, erlaubteSTB))
 									dbSerRec.commit()
 									writeLog("' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB), True)
 									print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB)
 								except:
 									writeLog("' %s - TV-Planer erlaubte STB -> Update %d failed '" % (serienTitle, erlaubteSTB), True)
 									print "[SerienRecorder] ' %s - TV-Planer erlaubt STB -> Update %d failed '" % (serienTitle, erlaubteSTB)
+						else:
+							writeLog("' %s - TV-Planer Marker ohne SerienID -> ignoriert '" % (serienTitle,), True)
+							print "[SerienRecorder] ' %s - TV-Planer Marker ohne SerienID -> ignoriert '" % (serienTitle,)
+							continue
+						
 						cCursor.close()
 							
 					download = retry(1, ds.run, self.downloadTransmissions, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
@@ -3150,7 +3154,8 @@ class serienRecCheckForRecording():
 		return transmissions
 
 	def processTransmission(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
-		#print "processTransmissions"
+		#print "processTransmissions: %r" % serien_name
+		#print data
 		self.count_url += 1
 
 		if data is None:
@@ -3170,7 +3175,7 @@ class serienRecCheckForRecording():
 		for current_serien_name, sender, startzeit, endzeit, staffel, episode, title, status in data:
 			start_unixtime = startzeit
 			end_unixtime = endzeit
-
+			
 			# setze die vorlauf/nachlauf-zeit
 			(margin_before, margin_after) = getMargins(serien_name, sender)
 			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
@@ -3181,6 +3186,7 @@ class serienRecCheckForRecording():
 					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
 					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
 					if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
+						print "processTransmissions time range ignore: %r" % serien_name
 						continue
 
 			# if there is no season or episode number it can be a special
@@ -3290,7 +3296,7 @@ class serienRecCheckForRecording():
 			sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 			cCursorTmp.execute(sql, (current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays))
 			cCursorTmp.close()
-			#print "processTransmission exit"
+		#print "processTransmissions exit: %r" % serien_name
 
 	# This has been included again to allow direct parsing of stored data files
 	# when serienserver is down.
@@ -3502,8 +3508,12 @@ class serienRecCheckForRecording():
 		return text
 
 	def downloadEmail(self, seriesName, timeSpan, markerChannels):
-		#print "downloadEmail"
-		return self.emailData[seriesName]
+		channels = { x : x for x in markerChannels }
+		transmissions = []
+		for transmission in self.emailData[seriesName]:
+			if transmission[1] in channels:
+				transmissions.append(transmission)
+		return transmissions
 		
 	def createTimer(self, result=True):
 		#print "createTimer"
@@ -3606,7 +3616,7 @@ class serienRecCheckForRecording():
 		cTmp.execute("SELECT * FROM (SELECT SerieName, Staffel, Episode, Title, COUNT(*) AS Anzahl FROM GefundeneFolgen WHERE AnzahlAufnahmen>? GROUP BY SerieName, Staffel, Episode, Title) ORDER BY Anzahl", (NoOfRecords,))
 		for row in cTmp:
 			(serien_name, staffel, episode, title, anzahl) = row
-
+			#print "searchTimer: %r" % serien_name
 			cCursor = dbSerRec.cursor()
 			cCursor.execute("SELECT preferredChannel, useAlternativeChannel FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
 			row = cCursor.fetchone()
@@ -3695,6 +3705,7 @@ class serienRecCheckForRecording():
 		cTmp.close()
 					
 	def searchTimer2(self, serien_name, staffel, episode, title, optionalText, usedChannel, dirname):				
+		#print "searchTimer2: %r" % serien_name
 		# prepare postprocessing for forced recordings
 		forceRecordings = []
 		forceRecordings_W = []
