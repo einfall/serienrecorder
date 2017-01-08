@@ -3082,10 +3082,10 @@ class serienRecCheckForRecording():
 				if SerieEnabled:
 					# Download only if series is enabled
 					if 'Alle' in SerieSender:
-						markerChannels = webChannels
+						markerChannels = { x : x for x in webChannels }
 					else:
-						markerChannels = SerieSender
-					
+						markerChannels = { x : x for x in SerieSender }
+					# markerChannels contains dictionary of all allowed senders
 					self.countActivatedSeries += 1
 					download = retry(0, ds.run, self.downloadEmail, serienTitle, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
 					download.addErrback(self.dataError, SerieUrl)
@@ -3502,10 +3502,9 @@ class serienRecCheckForRecording():
 		return text
 
 	def downloadEmail(self, seriesName, timeSpan, markerChannels):
-		channels = { x : x for x in markerChannels }
 		transmissions = []
 		for transmission in self.emailData[seriesName]:
-			if transmission[1] in channels:
+			if transmission[1] in markerChannels:
 				transmissions.append(transmission)
 		return transmissions
 		
