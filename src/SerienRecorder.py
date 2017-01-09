@@ -1002,7 +1002,7 @@ def getEmailData():
 		# end time
 		(hour, minute) = endtime.split('.')
 		transmissionend_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
-		if transmissionend_unix < liststarttime_unix:
+		if transmissionend_unix < transmissionstart_unix:
 			transmissionend_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
 		transmission += [ transmissionend_unix ]
 		# season
@@ -1018,29 +1018,29 @@ def getEmailData():
 		# last
 		transmission += [ '0' ]
 		# store in dictionary transmissiondict[seriesname] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
-		if seriesname in transmissiondict:
-			transmissiondict[seriesname] += [ transmission ]
+		if re.sub(r"\[.*\]", "", seriesname).strip() in transmissiondict:
+			transmissiondict[re.sub(r"\[.*\]", "", seriesname).strip()] += [ transmission ]
 		else:
-			transmissiondict[seriesname] = [ transmission ]
-		writeLog("' %s - S%sE%s - %s - %s - %s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix)))), True)
-		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s '" % (seriesname, str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))))
+			transmissiondict[re.sub(r"\[.*\]", "", seriesname).strip()] = [ transmission ]
+		writeLog("' %s - S%sE%s - %s - %s - %s - %s '" % (transmission[0], str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix)))), True)
+		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s '" % (transmission[0], str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))))
 	
 	if config.plugins.serienRec.tvplaner_create_marker.value:
 		cCursor = dbSerRec.cursor()
 		for seriesname in transmissiondict.keys():
-			cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (seriesname.lower(),))
+			cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (doReplaces(seriesname).lower(),))
 			row = cCursor.fetchone()
 			if not row:
 				# marker isn't in database, creat new marker
 				# url stored in marker isn't the final one, it is corrected later
 				try:
-					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (seriesname, 'url'))
+					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (doReplaces(seriesname), 'url'))
 					dbSerRec.commit()
-					writeLog("' %s - Serien Marker erzeugt '" % seriesname, True)
-					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % seriesname
+					writeLog("' %s - Serien Marker erzeugt '" % doReplaces(seriesname), True)
+					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
 				except:
-					writeLog("' %s - Serien Marker konnte nicht erzeugt werden '" % seriesname, True)
-					print "[SerienRecorder] ' %s - Serien Marker konnte nicht erzeugt werden '" % seriesname
+					writeLog("' %s - Serien Marker konnte nicht erzeugt werden '" % doReplaces(seriesname), True)
+					print "[SerienRecorder] ' %s - Serien Marker konnte nicht erzeugt werden '" % doReplaces(seriesname)
 		cCursor.close()
 	
 	return transmissiondict
@@ -1088,8 +1088,8 @@ def getMarker(Serien=None):
 	if Serien is not None and len(Serien) > 0:
 		serienselect = 'WHERE Serie IN ('
 		for i in range(len(Serien) - 1):
-			serienselect += '"' + Serien[i] + '",'
-		serienselect += '"' + Serien[-1] + '")'
+			serienselect += '"' + doReplaces(Serien[i]) + '",'
+		serienselect += '"' + doReplaces(Serien[-1]) + '")'
 	print "[SerienRecorder] %s" % serienselect
 	cCursor.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays FROM SerienMarker " + serienselect + " ORDER BY Serie")
 	cMarkerList = cCursor.fetchall()
@@ -2987,9 +2987,17 @@ class serienRecCheckForRecording():
 						# This is a marker created by TV Planer function - fix url
 						print "[SerienRecorder] fix seriesID for %r" % serienTitle
 						seriesID = SeriesServer().getSeriesID(serienTitle)
-						print "[SerienRecorder] seriesID = %r" % str(seriesID)
+						if seriesID is None or seriesID == 0:
+							# search original title in email data
+							for key in self.emailData.keys():
+								if self.emailData[key][0][0] == serienTitle:
+									seriesID = SeriesServer().getSeriesID(key)
+									print "[SerienRecorder] %r seriesID = %r" % (key, str(seriesID))
+									break
+						else:
+							print "[SerienRecorder] %r seriesID = %r" % (serienTitle, str(seriesID))
 						cCursor = dbSerRec.cursor()
-						if seriesID != 0:
+						if seriesID != 0 and seriesID is not None:
 							Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
 							# look if Series with this ID already exists
 							cCursor.execute("SELECT Serie FROM SerienMarker WHERE Url=?", (Url,))
@@ -3503,6 +3511,10 @@ class serienRecCheckForRecording():
 
 	def downloadEmail(self, seriesName, timeSpan, markerChannels):
 		transmissions = []
+		for key in self.emailData.keys():
+			if self.emailData[key][0][0] == seriesName:
+				seriesName = key
+				break
 		for transmission in self.emailData[seriesName]:
 			if transmission[1] in markerChannels:
 				transmissions.append(transmission)
