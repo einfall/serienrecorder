@@ -3022,25 +3022,21 @@ class serienRecCheckForRecording():
 								except:
 									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0]), True)
 									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0])
-								if row[0] != row[0].doReplace():
+								if row[0] != doReplaces(row[0]).strip():
 									# old series title - rename
 									try:
+										# update name in database
 										cCursor.execute("UPDATE SerienMarker SET Serie=? WHERE Url=?", (serienTitle, Url))
 										dbSerRec.commit()
-										writeLog("' %s - SerienMarker %s -> %s - Korrektur erfolgreich '" % (serienTitle, row[0], SerienTitle), True)
+										writeLog("' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle), True)
 										writeLog("' %s - neue Timer nutzen neuen Namen '" % (serienTitle, ), True)
-										print "[SerienRecorder] ' %s - SerienMarker %s -> %s - Korrektur erfolgreich '" % (serienTitle, row[0], SerienTitle)
+										print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle)
+										# get settings of old marker
+										(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = getMarker([ serienTitle ])[0]
 									except:
-										writeLog("' %s - SerienMarker %s -> %s - Korrektur fehlgeschlagen '" % (serienTitle, row[0], SerienTitle), True)
-										writeLog("' %s - bitte SerienMarker %s manuell löschen '" % (serienTitle, row[0]), True)
-										print "[SerienRecorder] ' %s - SerienMarker %s -> %s - Korrektur fehlgeschlagen '" % (serienTitle, row[0], SerienTitle)
-									
-								# Update TV-Planer E-Mail and current marker
-								tm = self.emailData[serienTitleOrig]
-								if tm is not None:
-									tm[0][0] = doReplace(row[0])
-									self.emailData[serienTitleOrig] = tm
-									serienTitle = doReplace(row[0])
+										writeLog("' %s - SerienMarker %r -> %r - Korrektur fehlgeschlagen '" % (serienTitle, row[0], serienTitle), True)
+										writeLog("' %s - bitte SerienMarker %r manuell löschen '" % (serienTitle, row[0]), True)
+										print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur fehlgeschlagen '" % (serienTitle, row[0], serienTitle)
 							else:
 								print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
 								try:
