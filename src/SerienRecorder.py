@@ -855,6 +855,8 @@ def getEmailData():
 				self.state = 'transmission'
 			elif self.state == 'transmission_serie' and tag == 'strong':
 				self.data = ''
+			elif self.state == 'transmission_title' and tag == 'span':
+				self.data = ''
 			elif self.state == 'transmission_serieend' and tag == 'span' :
 				found = False
 				for name, value in attrs:
@@ -885,7 +887,16 @@ def getEmailData():
 			elif self.state == 'transmission_serie' and tag == 'strong':
 				# append collected data
 				self.transmission.append(self.data)
+				self.data = ''
 				self.state = 'transmission_serieend'
+			elif self.state == 'transmission_title' and tag == 'span':
+				# append collected data
+				self.transmission.append(self.data)
+				self.data = ''
+				self.state = 'transmission_desc'
+			elif self.state == 'transmission' and tag == 'table':
+				# processing finished without error
+				self.state = 'finished'
 
 		def handle_data(self, data):
 			# print "Encountered some data  : %r" % data
@@ -923,8 +934,7 @@ def getEmailData():
 				self.state = 'transmission_serieend'
 			elif self.state == 'transmission_title':
 				# match title
-				self.transmission.append(data)
-				self.state = 'transmission_desc'
+				self.data += data
 			elif self.state == 'transmission_desc':
 				# match description
 				if data != 'FREE-TV NEU' and data != "NEU":
@@ -955,7 +965,7 @@ def getEmailData():
 				self.state = 'transmission_end'
 	
 	# make one line and convert characters
-	html = html.replace('=\r\n', '').replace('\r\n','').replace('=3D', '=')
+	html = html.replace('=\r\n', '').replace('\r','').replace('\n', '').replace('=3D', '=')
 	
 	parser = TVPlaner_HTMLParser()
 	html = parser.unescape(html).encode('utf-8')
@@ -967,9 +977,13 @@ def getEmailData():
 #		print parser.date
 #		print parser.transmissions
 	except:
-		writeLog("TV-Planer: HTML Parsing schlug fehl", True)
+		writeLog("TV-Planer: HTML Parsing abgebrochen", True)
 		return None
 	
+	if parser.state != "finished":
+		writeLog("TV-Planer: HTML Parsing mit Fehler beendet", True)
+		return None
+		
 	# prepare transmissions
 	# [ ( seriesName, channel, start, end, season, episode, title, '0' ) ]
 	# calculate start time and end time of list in E-Mail
@@ -984,11 +998,6 @@ def getEmailData():
 	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (parser.date[0], parser.date[1])
 	transmissiondict = dict()
 	for starttime, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
-#		if season == '' and episode == '':
-#			# this is probably a movie - ignore for now
-#			writeLog("' %s - %s - %r - Aufnahme von Filmen wird derzeit nicht unterstützt '" % (seriesname, titel, channel), True)
-#			continue
-		
 		transmission = [ re.sub(r"\[.*\]", "", doReplaces(seriesname)).strip() ]
 		# channel
 		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
@@ -2986,12 +2995,14 @@ class serienRecCheckForRecording():
 					if seriesID is None or seriesID == 0:
 						# This is a marker created by TV Planer function - fix url
 						print "[SerienRecorder] fix seriesID for %r" % serienTitle
+						serienTitleOrig = serienTitle
 						seriesID = SeriesServer().getSeriesID(serienTitle)
 						if seriesID is None or seriesID == 0:
 							# search original title in email data
 							for key in self.emailData.keys():
 								if self.emailData[key][0][0] == serienTitle:
 									seriesID = SeriesServer().getSeriesID(key)
+									serienTitleOrig = key
 									print "[SerienRecorder] %r seriesID = %r" % (key, str(seriesID))
 									break
 						else:
@@ -3004,25 +3015,42 @@ class serienRecCheckForRecording():
 							row = cCursor.fetchone()
 							if row:
 								# Series was already in database with different name - remove new duplicate marker
-								writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
-								print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
-								cCursor.execute("DELETE FROM SerienMarker WHERE Serie=? AND Url='url'", (serienTitle,))
+								try:
+									cCursor.execute("DELETE FROM SerienMarker WHERE Serie=? AND Url='url'", (serienTitle,))
+									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
+								except:
+									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0]), True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0])
+								if row[0] != row[0].doReplace():
+									# old series title - rename
+									try:
+										cCursor.execute("UPDATE SerienMarker SET Serie=? WHERE Url=?", (serienTitle, Url))
+										dbSerRec.commit()
+										writeLog("' %s - SerienMarker %s -> %s - Korrektur erfolgreich '" % (serienTitle, row[0], SerienTitle), True)
+										writeLog("' %s - neue Timer nutzen neuen Namen '" % (serienTitle, ), True)
+										print "[SerienRecorder] ' %s - SerienMarker %s -> %s - Korrektur erfolgreich '" % (serienTitle, row[0], SerienTitle)
+									except:
+										writeLog("' %s - SerienMarker %s -> %s - Korrektur fehlgeschlagen '" % (serienTitle, row[0], SerienTitle), True)
+										writeLog("' %s - bitte SerienMarker %s manuell löschen '" % (serienTitle, row[0]), True)
+										print "[SerienRecorder] ' %s - SerienMarker %s -> %s - Korrektur fehlgeschlagen '" % (serienTitle, row[0], SerienTitle)
+									
 								# Update TV-Planer E-Mail and current marker
-								tm = self.emailData[serienTitle]
-								tm[0][0] = row[0]
-								self.emailData[row[0]] = tm
-								del self.emailData[serienTitle]
-								serienTitle = row[0]
+								tm = self.emailData[serienTitleOrig]
+								if tm is not None:
+									tm[0][0] = doReplace(row[0])
+									self.emailData[serienTitleOrig] = tm
+									serienTitle = doReplace(row[0])
 							else:
 								print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
 								try:
 									cCursor.execute("UPDATE SerienMarker SET Url=? WHERE LOWER(Serie)=?", (Url, serienTitle.lower()))
 									dbSerRec.commit()
-									writeLog("' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url), True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Update'" % (serienTitle, Url)
+									writeLog("' %s - TV-Planer Marker -> Url %s - Korrektur erfolgreich '" % (serienTitle, Url), True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Korrektur erfolgreich '" % (serienTitle, Url)
 								except:
-									writeLog("' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url), True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Update failed '" % (serienTitle, Url)
+									writeLog("' %s - TV-Planer Marker -> Url %s - Korrektur fehlgeschlagen ' " % (serienTitle, Url), True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Korrektur fehlgeschlagen '" % (serienTitle, Url)
 								try:
 									cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (serienTitle.lower(),))
 									erlaubteSTB = 0xFFFF
