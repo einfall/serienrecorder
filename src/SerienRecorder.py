@@ -3027,15 +3027,16 @@ class serienRecCheckForRecording():
 									try:
 										# update name in database
 										cCursor.execute("UPDATE SerienMarker SET Serie=? WHERE Url=?", (serienTitle, Url))
-										dbSerRec.commit()
 										writeLog("' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle), True)
+										cCursor.execute("UPDATE AngelegteTimer SET Serie=? WHERE Serie=?", (serienTitle, row[0]))
 										writeLog("' %s - neue Timer nutzen neuen Namen '" % (serienTitle, ), True)
 										print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle)
+										dbSerRec.commit()
 										# get settings of old marker
 										(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = getMarker([ serienTitle ])[0]
 									except:
 										writeLog("' %s - SerienMarker %r -> %r - Korrektur fehlgeschlagen '" % (serienTitle, row[0], serienTitle), True)
-										writeLog("' %s - bitte SerienMarker %r manuell löschen '" % (serienTitle, row[0]), True)
+										writeLog("' %s - bitte SerienMarker %r manuell löschen und Timer korrigieren '" % (serienTitle, row[0]), True)
 										print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur fehlgeschlagen '" % (serienTitle, row[0], serienTitle)
 							else:
 								print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
