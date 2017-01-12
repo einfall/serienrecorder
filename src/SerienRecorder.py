@@ -2999,12 +2999,21 @@ class serienRecCheckForRecording():
 						seriesID = SeriesServer().getSeriesID(serienTitle)
 						if seriesID is None or seriesID == 0:
 							# search original title in email data
-							for key in self.emailData.keys():
-								if self.emailData[key][0][0] == serienTitle:
-									seriesID = SeriesServer().getSeriesID(key)
-									serienTitleOrig = key
-									print "[SerienRecorder] %r seriesID = %r" % (key, str(seriesID))
-									break
+							found = False
+							if self.emailData is not None:
+								for key in self.emailData.keys():
+									if self.emailData[key][0][0] == serienTitle:
+										seriesID = SeriesServer().getSeriesID(key)
+										serienTitleOrig = key
+										found = True
+										print "[SerienRecorder] %r seriesID = %r" % (key, str(seriesID))
+										break
+								if not found:
+									writeLog("' %s - TV-Planer Marker nicht in E-Mail gefunden '" % serienTitle, True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker nicht in E-mail gefunden '" % serienTitle
+							else:
+									writeLog("' %s - TV-Planer Marker kann nur während TV-Planer Lauf korrigiert werden '" % serienTitle, True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker kann nur während TV-Planer Lauf korrigiert werden '" % serienTitle
 						else:
 							print "[SerienRecorder] %r seriesID = %r" % (serienTitle, str(seriesID))
 						cCursor = dbSerRec.cursor()
@@ -4880,8 +4889,8 @@ class serienRecMarker(Screen, HelpableScreen):
 				"green"    : (self.keyGreen, "zur Senderauswahl"),
 				"yellow"   : (self.keyYellow, "Sendetermine für ausgewählte Serien anzeigen"),
 				"blue"	   : (self.keyBlue, "Ansicht Timer-Liste öffnen"),
-				"info"	   : (self.keyCheck, "Suchlauf für Timer starten"),
-				"info_long": (self.keyCheckLong, "Suchlauf für TV-Planer Timer starten"),
+				"info"	   : (self.keyCheck, "Suchlauf für Timer mit TV-Planer starten"),
+				"info_long": (self.keyCheckLong, "Suchlauf für Timer starten"),
 				"left"     : (self.keyLeft, "zur vorherigen Seite blättern"),
 				"right"    : (self.keyRight, "zur nächsten Seite blättern"),
 				"up"       : (self.keyUp, "eine Zeile nach oben"),
@@ -5282,7 +5291,7 @@ class serienRecMarker(Screen, HelpableScreen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 49 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText)
 			]
 
-	def keyCheck(self):
+	def keyCheckLong(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
 			print "[SerienRecorder] Serien Marker leer."
@@ -5291,16 +5300,12 @@ class serienRecMarker(Screen, HelpableScreen):
 		if self.modus == "menu_list":
 			self.session.open(serienRecRunAutoCheck, True)
 
-	def keyCheckLong(self):
+	def keyCheck(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
 			print "[SerienRecorder] Serien Marker leer."
 			return
 		
-		if not config.plugins.serienRec.tvplaner.value:
-			print "[SerienRecorder] TV-Planer nicht aktiviert"
-			return
-			
 		if self.modus == "menu_list":
 			self.session.open(serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
 
@@ -10370,8 +10375,8 @@ class serienRecMain(Screen, HelpableScreen):
 			"green"	: (self.keyGreen, "Ansicht Sender-Zuordnung öffnen"),
 			"yellow": (self.keyYellow, "Ansicht Serien-Marker öffnen"),
 			"blue"	: (self.keyBlue, "Ansicht Timer-Liste öffnen"),
-			"info" 	: (self.keyCheck, "Suchlauf für Timer starten"),
-			"info_lang" 	: (self.keyCheckLong, "Suchlauf für Timer mit TV-Planer starten"),
+			"info" 	: (self.keyCheck, "Suchlauf für Timer mit TV-Planer starten"),
+			"info_long" 	: (self.keyCheckLong, "Suchlauf für Timer starten"),
 			"menu"	: (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"nextBouquet" : (self.nextPage, "Serienplaner des nächsten Tages laden"),
 			"prevBouquet" : (self.backPage, "Serienplaner des vorherigen Tages laden"),
@@ -11111,10 +11116,10 @@ class serienRecMain(Screen, HelpableScreen):
 	def keyBlue(self):
 		self.session.openWithCallback(self.readPlanerData, serienRecTimer)
 
-	def keyCheck(self):
+	def keyCheckLong(self):
 		self.session.openWithCallback(self.readPlanerData, serienRecRunAutoCheck, True)
 
-	def keyCheckLong(self):
+	def keyCheck(self):
 		self.session.openWithCallback(self.readPlanerData, serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
 		
 	def keyLeft(self):
