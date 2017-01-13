@@ -160,6 +160,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.imap_mail_age = ConfigInteger(1, (0, 100))
 	config.plugins.serienRec.imap_check_interval = ConfigInteger(30, (0, 10000))
 	config.plugins.serienRec.tvplaner_create_marker = ConfigYesNo(default = True)
+	config.plugins.serienRec.tvplaner_movies = ConfigYesNo(default = True)
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
 	config.plugins.serienRec.globalFromTime = ConfigClock(default = 0+time.timezone)
 	config.plugins.serienRec.globalToTime = ConfigClock(default = (((23*60)+59)*60)+time.timezone)
@@ -853,6 +854,14 @@ def getEmailData():
 			elif self.state == 'transmission_start' and tag == 'strong':
 				# next day - reset
 				self.state = 'transmission'
+			elif self.state == 'transmission_url' and tag == 'a':
+				url = ''
+				for name, value in attrs:
+					if name == 'href':
+						url = value
+						break;
+				self.transmission.append(url)
+				self.state = 'transmission_serie'
 			elif self.state == 'transmission_serie' and tag == 'strong':
 				self.data = ''
 			elif self.state == 'transmission_title' and tag == 'span':
@@ -877,6 +886,7 @@ def getEmailData():
 		def handle_endtag(self, tag):
 			# print "Encountered an end tag :", tag
 			if self.state == 'transmission_end' and tag == 'tr':
+				print self.transmission
 				self.transmissions.append(tuple(self.transmission))
 				self.transmission = []
 				self.state = 'transmission'
@@ -918,7 +928,7 @@ def getEmailData():
 				time = time_regexp.findall(data)
 				if len(time) > 0:
 					self.transmission.append(time[0])
-					self.state = 'transmission_serie'
+					self.state = 'transmission_url'
 				else:
 					self.state = 'error'
 			elif self.state == 'transmission_serie':
@@ -937,19 +947,19 @@ def getEmailData():
 				self.data += data
 			elif self.state == 'transmission_desc':
 				# match description
-				if data != 'FREE-TV NEU' and data != "NEU":
+				if data.startswith('bis:'):
 					# may be empty description
 					time_regexp=re.compile('bis: (.*?) Uhr.*')
 					time = time_regexp.findall(data)
 					if len(time) > 0:
-						# add empty description
 						self.transmission.append('')
-						# add end time
 						self.transmission.append(time[0])
 						self.state = 'transmission_sender'
 					else:
-						self.transmission.append(data)
-						self.state = 'transmission_endtime'
+						self.state = 'error'
+				elif data != 'FREE-TV NEU' and data != "NEU":
+					self.transmission.append(data)
+					self.state = 'transmission_endtime'
 			elif self.state == 'transmission_endtime':
 				# match end time
 				time_regexp=re.compile('bis: (.*?) Uhr.*')
@@ -997,8 +1007,17 @@ def getEmailData():
 	writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (parser.date[0], parser.date[1]))
 	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (parser.date[0], parser.date[1])
 	transmissiondict = dict()
-	for starttime, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
-		transmission = [ re.sub(r"\[.*\]", "", doReplaces(seriesname)).strip() ]
+	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
+		if url.startswith('http://www.wunschliste.de/spielfilm'):
+			if not config.plugins.serienRec.tvplaner_movies.value:
+				writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % (seriesname), True)
+				print "' %s - Filmaufzeichnung ist deaktiviert '" % (seriesname)
+				continue
+			type = '[ Film ]'
+		else:
+			type = '[ Serie ]'
+		
+		transmission = [ doReplaces(seriesname) ]
 		# channel
 		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
 		transmission += [ doReplaces(channel) ]
@@ -1026,13 +1045,15 @@ def getEmailData():
 		transmission += [ doReplaces(titel) ]
 		# last
 		transmission += [ '0' ]
+		# url
+		transmission += [ url ]
 		# store in dictionary transmissiondict[seriesname] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
-		if re.sub(r"\[.*\]", "", seriesname).strip() in transmissiondict:
-			transmissiondict[re.sub(r"\[.*\]", "", seriesname).strip()] += [ transmission ]
+		if seriesname in transmissiondict:
+			transmissiondict[seriesname] += [ transmission ]
 		else:
-			transmissiondict[re.sub(r"\[.*\]", "", seriesname).strip()] = [ transmission ]
-		writeLog("' %s - S%sE%s - %s - %s - %s - %s '" % (transmission[0], str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix)))), True)
-		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s '" % (transmission[0], str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))))
+			transmissiondict[seriesname] = [ transmission ]
+		writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), type), True)
+		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), type)
 	
 	if config.plugins.serienRec.tvplaner_create_marker.value:
 		cCursor = dbSerRec.cursor()
@@ -1042,8 +1063,12 @@ def getEmailData():
 			if not row:
 				# marker isn't in database, creat new marker
 				# url stored in marker isn't the final one, it is corrected later
+				if config.plugins.serienRec.tvplaner_movies.value and transmissiondict[seriesname][0][-1].startswith('http://www.wunschliste.de/spielfilm'):
+					url = transmissiondict[seriesname][0][-1] 
+				else: 
+					url = 'url'
 				try:
-					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (doReplaces(seriesname), 'url'))
+					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (doReplaces(seriesname), url))
 					dbSerRec.commit()
 					writeLog("' %s - Serien Marker erzeugt '" % doReplaces(seriesname), True)
 					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
@@ -2982,6 +3007,9 @@ class serienRecCheckForRecording():
 			writeLog("\n---------' Verarbeite Daten vom Server '---------------------------------------------------------------\n", True)
 			webChannels = getWebSenderAktiv()
 			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+				if SerieUrl.startswith('http://www.wunschliste.de/spielfilm'):
+					print "[SerienRecorder] ' %s - TV-Planer Film wird ignoriert '" % serienTitle
+					continue
 				self.countSerien += 1
 				if SerieEnabled:
 					# Download only if series is enabled
@@ -3031,14 +3059,14 @@ class serienRecCheckForRecording():
 								except:
 									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0]), True)
 									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0])
-								if row[0] != doReplaces(row[0]).strip():
+								if row[0] != serienTitle:
 									# old series title - rename
 									try:
 										# update name in database
 										cCursor.execute("UPDATE SerienMarker SET Serie=? WHERE Url=?", (serienTitle, Url))
 										writeLog("' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle), True)
 										cCursor.execute("UPDATE AngelegteTimer SET Serie=? WHERE Serie=?", (serienTitle, row[0]))
-										writeLog("' %s - neue Timer nutzen neuen Namen '" % (serienTitle, ), True)
+										writeLog("' %s - Timer nutzen neuen Namen '" % (serienTitle, ), True)
 										print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle)
 										dbSerRec.commit()
 										# get settings of old marker
@@ -3164,6 +3192,17 @@ class serienRecCheckForRecording():
 	def checkFinal(self):
 		print "checkFinal"
 		# final processing
+		if config.plugins.serienRec.tvplaner_movies.value:
+			# remove all serien marker created for movies
+			cCursor = dbSerRec.cursor()
+			try:
+				cCursor.execute("DELETE FROM SerienMarker WHERE Url LIKE 'http://www.wunschliste.de/spielfilm%'", ())
+				print "[SerienRecorder] ' TV-Planer FilmMarker gelöscht '"
+			except:
+				writeLog("' TV-Planer FilmMarker löschen fehlgeschlagen '", True)
+				print "[SerienRecorder] ' TV-Planer FilmMarker löschen fehlgeschlagen '"
+			cCursor.close()
+		
 		if config.plugins.serienRec.longLogFileName.value:
 			shutil.copy(logFile, logFileSave)
 		
@@ -3551,7 +3590,7 @@ class serienRecCheckForRecording():
 				break
 		for transmission in self.emailData[seriesName]:
 			if transmission[1] in markerChannels:
-				transmissions.append(transmission)
+				transmissions.append(transmission[0:-1])
 		return transmissions
 		
 	def createTimer(self, result=True):
@@ -5296,18 +5335,17 @@ class serienRecMarker(Screen, HelpableScreen):
 		if check is None:
 			print "[SerienRecorder] Serien Marker leer."
 			return
-
 		if self.modus == "menu_list":
-			self.session.open(serienRecRunAutoCheck, True)
+			self.session.openWithCallback(self.readSerienMarker, serienRecRunAutoCheck, True)
+		self.readSerienMarker()
 
 	def keyCheck(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
 			print "[SerienRecorder] Serien Marker leer."
 			return
-		
 		if self.modus == "menu_list":
-			self.session.open(serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
+			self.session.openWithCallback(self.readSerienMarker, serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
 
 	def keyOK(self):
 		if self.modus == "popup_list":
@@ -7231,6 +7269,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
 			self.list.append(getConfigListEntry("    maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
 			self.list.append(getConfigListEntry("    Neue Serien Marker erzeugen:", config.plugins.serienRec.tvplaner_create_marker))
+			self.list.append(getConfigListEntry("    Filme aufnehmen:", config.plugins.serienRec.tvplaner_movies))
 #			self.list.append(getConfigListEntry("    Mailbox alle <n> Minuten überprüfen:", config.plugins.serienRec.imap_check_interval))
 		self.list.append(getConfigListEntry("Timer für X Tage erstellen:", config.plugins.serienRec.checkfordays))
 		if config.plugins.serienRec.setupType.value == "1":
@@ -7426,6 +7465,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.imap_mail_subject :       ("Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)", "x"),
 			config.plugins.serienRec.imap_check_interval :     ("Die Mailbox wird alle <n> Minuten überprüft (default: 30)", "x"),
 			config.plugins.serienRec.tvplaner_create_marker :  ("Bei 'ja' werden nicht vorhandene Serien Marker automatisch erzeugt", "x"),
+			config.plugins.serienRec.tvplaner_movies :         ("Bei 'ja' werden Filme aufgenommen", "x"),
 			config.plugins.serienRec.databasePath :            ("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.", "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              ("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
 			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/')." % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "1.3_Die_globalen_Einstellungen"),
@@ -7604,6 +7644,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.imap_mail_age.save()
 		config.plugins.serienRec.imap_check_interval.save()
 		config.plugins.serienRec.tvplaner_create_marker.save()
+		config.plugins.serienRec.tvplaner_movies.save()
 		config.plugins.serienRec.checkfordays.save()
 		config.plugins.serienRec.AutoBackup.save()
 		config.plugins.serienRec.deleteBackupFilesOlderThan.save()
@@ -11121,7 +11162,7 @@ class serienRecMain(Screen, HelpableScreen):
 
 	def keyCheck(self):
 		self.session.openWithCallback(self.readPlanerData, serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
-		
+
 	def keyLeft(self):
 		if self.modus == "list":
 			self['menu_list'].pageUp()
