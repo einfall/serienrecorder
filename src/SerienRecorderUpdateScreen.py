@@ -78,9 +78,9 @@ class checkGitHubUpdateScreen(Screen):
 
 	skin = """
 		<screen name="SerienRecorderUpdateCheck" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20">
-			<widget name="headline" position="20,20" size="600,40" foregroundColor="red" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
-			<widget name="srlog" position="5,100" size="%d,%d" font="Regular;21" valign="top" halign="left" foregroundColor="white" transparent="1" zPosition="5"/>
-			<widget name="progressslider" position="5,%d" size="%d,25" borderWidth="1" zPosition="1" backgroundColor="dark"/>
+			<widget name="headline" position="20,20" size="600,40" foregroundColor="#00ff4a3c" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+			<widget name="srlog" position="5,100" size="%d,%d" font="Regular;21" valign="top" halign="left" foregroundColor="#FFFFFF" transparent="1" zPosition="5"/>
+			<widget name="progressslider" position="5,%d" size="%d,25" borderWidth="1" zPosition="1" backgroundColor="#00242424"/>
 			<widget name="status" position="5,%d" size="%d,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
 			<widget name="separator" position="%d,%d" size="%d,5" backgroundColor="#00808080" zPosition="6" />
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />

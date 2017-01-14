@@ -18,7 +18,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 
 	skin = """
 		<screen name="SerienRecorderAbout" position="%d,%d" size="650,400" title="%s" >
-			<widget name="pluginInfo" position="5,5" size="640,390" valign="center" halign="center" zPosition="5" transparent="1" foregroundColor="white" font="Regular;18"/>
+			<widget name="pluginInfo" position="5,5" size="640,390" valign="center" halign="center" zPosition="5" transparent="1" foregroundColor="#FFFFFF" font="Regular;18"/>
 		</screen>""" % ((DESKTOP_WIDTH - 650) / 2, (DESKTOP_HEIGHT - 400) / 2, _("Über SerienRecorder"))
 
 	def __init__(self,session):
@@ -28,7 +28,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 		self["actions"] = ActionMap(["SerienRecorderActions"], dict(cancel=self.exit, ok=self.exit), -1)
 
 		self.info =("SerienRecorder for Enigma2 (Version %s)\n"
-		            "(c) 2014-2016 by einfall, w22754 and MacDisein\n"
+		            "(c) 2014-2017 by einfall, w22754, MacDisein and egn\n"
 					"\n"
 					"For more info:\n"
 					"http://tinyurl.com/puafaaz\n"
