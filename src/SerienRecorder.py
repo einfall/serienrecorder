@@ -160,7 +160,12 @@ def ReadConfigFile():
 	config.plugins.serienRec.imap_mail_age = ConfigInteger(0, (0, 100))
 	config.plugins.serienRec.imap_check_interval = ConfigInteger(30, (0, 10000))
 	config.plugins.serienRec.tvplaner_create_marker = ConfigYesNo(default = True)
+	config.plugins.serienRec.tvplaner_series = ConfigYesNo(default = True)
+	config.plugins.serienRec.tvplaner_series_activeSTB = ConfigYesNo(default = False)
 	config.plugins.serienRec.tvplaner_movies = ConfigYesNo(default = True)
+	config.plugins.serienRec.tvplaner_movies_filepath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
+	config.plugins.serienRec.tvplaner_movies_createsubdir = ConfigYesNo(default = False)
+	config.plugins.serienRec.tvplaner_movies_activeSTB = ConfigYesNo(default = False)
 	config.plugins.serienRec.tvplaner_full_check = ConfigYesNo(default = False)
 	config.plugins.serienRec.tvplaner_last_full_check = ConfigInteger(0)
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
@@ -605,7 +610,7 @@ def getDirname(serien_name, staffel):
 	else:
 		seasonsubdirfillchar = config.plugins.serienRec.seasonsubdirfillchar.value
 	cCursor = dbSerRec.cursor()
-	cCursor.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
+	cCursor.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Url FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
 	row = cCursor.fetchone()
 	if not row:
 		dirname = config.plugins.serienRec.savetopath.value
@@ -616,28 +621,36 @@ def getDirname(serien_name, staffel):
 			if config.plugins.serienRec.seasonsubdir.value:
 				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 	else: 
-		(dirname, seasonsubdir) = row
+		(dirname, seasonsubdir, url) = row
+		if url.startswith('http://www.wunschliste.de/spielfilm'):
+			isSerie = False
+			path = config.plugins.serienRec.tvplaner_movies_filepath.value
+			isCreateSubDir = config.plugins.serienRec.tvplaner_movies_createsubdir.value
+		else:
+			isSerie = True
+			path = config.plugins.serienRec.savetopath.value
+			isCreateSubDir = config.plugins.serienRec.seriensubdir.value
 		if dirname:
 			if not re.search('.*?/\Z', dirname):
 				dirname = "%s/" % dirname
 			dirname_serie = dirname
-			if ((seasonsubdir == -1) and config.plugins.serienRec.seasonsubdir.value) or (seasonsubdir == 1):
+			if (isSerie and (seasonsubdir == -1) and isCreateSubDir or (seasonsubdir == 1):
 				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		else:
-			dirname = config.plugins.serienRec.savetopath.value
+			dirname = path
 			dirname_serie = dirname
-			if config.plugins.serienRec.seriensubdir.value:
+			if isCreateSubDir:
 				dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 				dirname_serie = dirname
-				if config.plugins.serienRec.seasonsubdir.value:
+				if isSerie and isCreateSubDir:
 					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		
 	cCursor.close()
 	return dirname, dirname_serie
 
-def CreateDirectory(serien_name, staffel):
+def CreateDirectory(serien_name, staffel, cover_only = False):
 	(dirname, dirname_serie) = getDirname(serien_name, staffel)
-	if not fileExists(dirname):
+	if not fileExists(dirname) and not cover_only:
 		print "[SerienRecorder] Erstelle Verzeichnis %s" % dirname
 		writeLog("Erstelle Verzeichnis: ' %s '" % dirname)
 		try:
@@ -656,9 +669,7 @@ def CreateDirectory(serien_name, staffel):
 				seasonsubdirfillchar = config.plugins.serienRec.seasonsubdirfillchar.value
 			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname):
 				shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname)
-
-
-
+	
 def getMargins(serien_name, webSender):
 	global dbSerRec
 	cCursor = dbSerRec.cursor()
@@ -1061,8 +1072,16 @@ def getEmailData():
 				print "' %s - Filmaufzeichnung ist deaktiviert '" % (seriesname)
 				continue
 			type = '[ Film ]'
-		else:
+		elif url.startswith('http://www.wunschliste.de/serie'):
+			if not config.plugins.serienRec.tvplaner_series.value:
+				writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname), True)
+				print "' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname)
+				continue
 			type = '[ Serie ]'
+		else:
+			writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
+			print "' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname)
+			continue
 		
 		transmission = [ doReplaces(seriesname) ]
 		# channel
@@ -1119,9 +1138,22 @@ def getEmailData():
 					dbSerRec.commit()
 					writeLog("' %s - Serien Marker erzeugt '" % doReplaces(seriesname), True)
 					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
+					try:
+						erlaubteSTB = 0xFFFF
+						if url == 'url' and config.plugins.serienRec.tvplaner_series_activeSTB.value or url != 'url' and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+							erlaubteSTB = 0
+							erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
+						cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
+						dbSerRec.commit()
+						writeLog("' %s - TV-Planer erlaubte STB -> Update %d '" % (doReplaces(seriesname), erlaubteSTB), True)
+						print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d '" % (doReplaces(seriesname), erlaubteSTB)
+					except:
+						writeLog("' %s - TV-Planer erlaubte STB -> Update %d failed '" % (doReplaces(seriesname), erlaubteSTB), True)
+						print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d failed '" % (doReplaces(seriesname), erlaubteSTB)
 				except:
 					writeLog("' %s - Serien Marker konnte nicht erzeugt werden '" % doReplaces(seriesname), True)
 					print "[SerienRecorder] ' %s - Serien Marker konnte nicht erzeugt werden '" % doReplaces(seriesname)
+
 		cCursor.close()
 	
 	return transmissiondict
@@ -2998,11 +3030,6 @@ class serienRecCheckForRecording():
 		cCursor.close()
 		
 	def startCheck3(self):
-		cTmp = dbTmp.cursor()
-		cTmp.execute("DELETE FROM GefundeneFolgen")
-		dbTmp.commit()
-		cTmp.close()
-		
 		# read channels
 		self.senderListe = {}
 		for s in self.readSenderListe():
@@ -3110,6 +3137,7 @@ class serienRecCheckForRecording():
 							print "[SerienRecorder] %r seriesID = %r" % (serienTitle, str(seriesID))
 						cCursor = dbSerRec.cursor()
 						if seriesID != 0 and seriesID is not None:
+							getCover(self, serienTitle, seriesID)
 							Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
 							# look if Series with this ID already exists
 							cCursor.execute("SELECT Serie FROM SerienMarker WHERE Url=?", (Url,))
@@ -3118,7 +3146,7 @@ class serienRecCheckForRecording():
 								# Series was already in database with different name - remove new duplicate marker
 								try:
 									cCursor.execute("DELETE FROM SerienMarker WHERE Serie=? AND Url='url'", (serienTitle,))
-									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
+									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird wieder aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
 									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
 								except:
 									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0]), True)
@@ -3149,19 +3177,6 @@ class serienRecCheckForRecording():
 								except:
 									writeLog("' %s - TV-Planer Marker -> Url %s - Korrektur fehlgeschlagen ' " % (serienTitle, Url), True)
 									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Korrektur fehlgeschlagen '" % (serienTitle, Url)
-								try:
-									cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (serienTitle.lower(),))
-									erlaubteSTB = 0xFFFF
-									if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
-										erlaubteSTB = 0
-										erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
-									cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
-									dbSerRec.commit()
-									writeLog("' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB), True)
-									print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d '" % (serienTitle, erlaubteSTB)
-								except:
-									writeLog("' %s - TV-Planer erlaubte STB -> Update %d failed '" % (serienTitle, erlaubteSTB), True)
-									print "[SerienRecorder] ' %s - TV-Planer erlaubt STB -> Update %d failed '" % (serienTitle, erlaubteSTB)
 						else:
 							writeLog("' %s - TV-Planer Marker ohne SerienID -> ignoriert '" % (serienTitle,), True)
 							print "[SerienRecorder] ' %s - TV-Planer Marker ohne SerienID -> ignoriert '" % (serienTitle,)
@@ -3264,7 +3279,7 @@ class serienRecCheckForRecording():
 		print "checkFinal"
 		# final processing
 		if config.plugins.serienRec.tvplaner_movies.value:
-			# remove all serien marker created for movies
+			# remove all serien markers created for movies
 			cCursor = dbSerRec.cursor()
 			try:
 				cCursor.execute("DELETE FROM SerienMarker WHERE Url LIKE 'http://www.wunschliste.de/spielfilm%'", ())
@@ -3324,6 +3339,9 @@ class serienRecCheckForRecording():
 		for current_serien_name, sender, startzeit, endzeit, staffel, episode, title, status in data:
 			start_unixtime = startzeit
 			end_unixtime = endzeit
+			
+			# install missing covers
+			CreateDirectory(current_serien_name, staffel, True)
 			
 			# setze die vorlauf/nachlauf-zeit
 			(margin_before, margin_after) = getMargins(serien_name, sender)
@@ -6647,7 +6665,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 						writeLog("Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '" % (serien_name, seasonEpisodeString))
 						TimerDone = self.doTimer(params, config.plugins.serienRec.forceManualRecording.value)
 					if TimerDone:
-						# erstellt das serien verzeichnis
+						# erstellt das serien verzeichnis und kopiert das Cover in das Verzeichnis
 						CreateDirectory(serien_name, staffel)
 
 			writeLog("Es wurde(n) %s Timer erstellt." % str(self.countTimer), True)
@@ -7129,7 +7147,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			text = "Keine Information verfügbar."
 		self["config_information_text"].setText(text)
 		
-		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
+		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.tvplaner_movies_filepath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
 		else:
@@ -7145,7 +7163,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			text = "Keine Information verfügbar."
 		self["config_information_text"].setText(text)
 		
-		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
+		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.tvplaner_movies_filepath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
 		else:
@@ -7181,7 +7199,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			text = "Keine Information verfügbar."
 		self["config_information_text"].setText(text)
 		
-		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
+		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.tvplaner_movies_filepath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
 		else:
@@ -7217,7 +7235,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			text = "Keine Information verfügbar."
 		self["config_information_text"].setText(text)
 		
-		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
+		if self['config'].getCurrent()[1] in (config.plugins.serienRec.savetopath, config.plugins.serienRec.tvplaner_movies_filepath, config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath, config.plugins.serienRec.databasePath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
 		else:
@@ -7240,6 +7258,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				self.setInfoText()
 			if self['config'].getCurrent()[1] not in (config.plugins.serienRec.setupType,
 													  config.plugins.serienRec.savetopath,
+													  config.plugins.serienRec.tvplaner_movies_filepath,
 													  config.plugins.serienRec.seasonsubdirnumerlength,
 													  config.plugins.serienRec.coverPath,
 													  config.plugins.serienRec.BackupPath,
@@ -7285,6 +7304,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			if self['config'].getCurrent()[1] == config.plugins.serienRec.forceRecording:
 				self.setInfoText()
 			if self['config'].getCurrent()[1] not in (config.plugins.serienRec.savetopath,
+													  config.plugins.serienRec.tvplaner_movies_filepath,
 													  config.plugins.serienRec.seasonsubdirnumerlength,
 													  config.plugins.serienRec.coverPath,
 													  config.plugins.serienRec.BackupPath,
@@ -7322,7 +7342,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("ID der Box:", config.plugins.serienRec.BoxID))
 			self.list.append(getConfigListEntry("Neue Serien-Marker nur auf dieser Box aktivieren:", config.plugins.serienRec.activateNewOnThisSTBOnly))
 		self.list.append(getConfigListEntry("Umfang der Einstellungen:", config.plugins.serienRec.setupType))
-		self.list.append(getConfigListEntry("Speicherort der Aufnahmen:", config.plugins.serienRec.savetopath))
+		self.list.append(getConfigListEntry("Speicherort der Serienaufnahmen:", config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
 		if config.plugins.serienRec.seriensubdir.value:
 			self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", config.plugins.serienRec.seasonsubdir))
@@ -7359,9 +7379,16 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
 			self.list.append(getConfigListEntry("    maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
 #			self.list.append(getConfigListEntry("    Neue Serien Marker erzeugen:", config.plugins.serienRec.tvplaner_create_marker))
-			self.list.append(getConfigListEntry("    Filme aufnehmen:", config.plugins.serienRec.tvplaner_movies))
-			self.list.append(getConfigListEntry("    Voller Suchlauf einmal pro Erstellungszeitraum:", config.plugins.serienRec.tvplaner_full_check))
 #			self.list.append(getConfigListEntry("    Mailbox alle <n> Minuten überprüfen:", config.plugins.serienRec.imap_check_interval))
+			self.list.append(getConfigListEntry("    Voller Suchlauf mindestens einmal im Erstellungszeitraum:", config.plugins.serienRec.tvplaner_full_check))
+			self.list.append(getConfigListEntry("    Serien aufnehmen:", config.plugins.serienRec.tvplaner_series))
+			if config.plugins.serienRec.tvplaner_series.value:
+				self.list.append(getConfigListEntry("        Neue TV-Planer Serien nur auf dieser Box aktivieren:", config.plugins.serienRec.tvplaner_series_activeSTB))
+			self.list.append(getConfigListEntry("    Filme aufnehmen:", config.plugins.serienRec.tvplaner_movies))
+			if config.plugins.serienRec.tvplaner_movies.value:
+				self.list.append(getConfigListEntry("        Neue TV-Planer Filme nur auf dieser Box aktivieren:", config.plugins.serienRec.tvplaner_movies_activeSTB))
+				self.list.append(getConfigListEntry("        Speicherort für Filme:", config.plugins.serienRec.tvplaner_movies_filepath))
+				self.list.append(getConfigListEntry("        Unterverzeichnis für jeden Film:", config.plugins.serienRec.tvplaner_movies_createsubdir))
 		self.list.append(getConfigListEntry("Timer für X Tage erstellen:", config.plugins.serienRec.checkfordays))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Früheste Zeit für Timer:", config.plugins.serienRec.globalFromTime))
@@ -7485,7 +7512,11 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if self['config'].getCurrent()[1] == config.plugins.serienRec.savetopath:
 			#start_dir = "/media/hdd/movie/"
 			start_dir = config.plugins.serienRec.savetopath.value
-			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Aufnahme-Verzeichnis auswählen")
+			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Aufnahme-Verzeichnis für Serien auswählen")
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.tvplaner_movies_filepath:
+			#start_dir = "/media/hdd/movie/"
+			start_dir = config.plugins.serienRec.tvplaner_movies_filepath.value
+			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Aufnahme-Verzeichnis für Filme auswählen")
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.LogFilePath:
 			start_dir = config.plugins.serienRec.LogFilePath.value
 			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "LogFile-Verzeichnis auswählen")
@@ -7507,6 +7538,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			if self['config'].getCurrent()[1] == config.plugins.serienRec.savetopath:
 				print res
 				config.plugins.serienRec.savetopath.value = res
+				self.changedEntry()
+			if self['config'].getCurrent()[1] == config.plugins.serienRec.tvplaner_movies_filepath:
+				print res
+				config.plugins.serienRec.tvplaner_movies_filepath.value = res
 				self.changedEntry()
 			elif self['config'].getCurrent()[1] == config.plugins.serienRec.LogFilePath:
 				print res
@@ -7537,7 +7572,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 																"für die der Marker aktiviert ist.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.activateNewOnThisSTBOnly: ("Bei 'ja' werden neue Serien-Marker nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.setupType :               ("Hier kann die Komplexität des Einstellungs-Menüs eingestellt werden.", "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.savetopath :              ("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen gespeichert werden.", "Speicherort_der_Aufnahme"),
+			config.plugins.serienRec.savetopath :              ("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Serien gespeichert werden.", "Speicherort_der_Aufnahme"),
 			config.plugins.serienRec.seriensubdir :            ("Bei 'ja' wird für jede Serien ein eigenes Unterverzeichnis (z.B.\n'%s<Serien_Name>/') für die Aufnahmen erstellt." % config.plugins.serienRec.savetopath.value, "Serien_Verzeichnis_anlegen"),
 			config.plugins.serienRec.seasonsubdir :            ("Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-Verzeichnis (z.B.\n"
 			                                                    "'%s<Serien_Name>/Season %s') erstellt." % (config.plugins.serienRec.savetopath.value, str("1").zfill(config.plugins.serienRec.seasonsubdirnumerlength.value)), "Staffel_Verzeichnis_anlegen"),
@@ -7556,7 +7591,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.imap_mail_subject :       ("Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)", ""),
 			config.plugins.serienRec.imap_check_interval :     ("Die Mailbox wird alle <n> Minuten überprüft (default: 30)", ""),
 			config.plugins.serienRec.tvplaner_create_marker :  ("Bei 'ja' werden nicht vorhandene Serien Marker automatisch erzeugt", ""),
+			config.plugins.serienRec.tvplaner_series :         ("Bei 'ja' werden Serien aufgenommen", ""),
+			config.plugins.serienRec.tvplaner_series_activeSTB: ("Bei 'ja' werden neue TV-Planer Serien nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.", ""),
 			config.plugins.serienRec.tvplaner_movies :         ("Bei 'ja' werden Filme aufgenommen", ""),
+			config.plugins.serienRec.tvplaner_movies_activeSTB: ("Bei 'ja' werden neue TV-Planer Filme nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.", ""),
+			config.plugins.serienRec.tvplaner_movies_filepath :("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Filmen gespeichert werden.", "Speicherort_der_Aufnahme"),
+			config.plugins.serienRec.tvplaner_movies_createsubdir :            ("Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis (z.B.\n'%s<Filmname>/') für die Aufnahmen erstellt." % config.plugins.serienRec.tvplaner_movies_filepath.value, ""), 	
 			config.plugins.serienRec.tvplaner_full_check :     ("Bei 'ja' wird vor dem Erreichen der eingestellten Zahl von Aufnahmetagen wieder ein voller Suchlauf gestartet", ""),
 			config.plugins.serienRec.databasePath :            ("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.", "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              ("Bei 'ja' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
@@ -7734,7 +7774,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.imap_mail_age.save()
 		config.plugins.serienRec.imap_check_interval.save()
 		config.plugins.serienRec.tvplaner_create_marker.save()
+		config.plugins.serienRec.tvplaner_series.save()
+		config.plugins.serienRec.tvplaner_series_activeSTB.save()
 		config.plugins.serienRec.tvplaner_movies.save()
+		config.plugins.serienRec.tvplaner_movies_activeSTB.save()
+		config.plugins.serienRec.tvplaner_movies_filepath.save()
+		config.plugins.serienRec.tvplaner_movies_createsubdir.save()
 		config.plugins.serienRec.tvplaner_full_check.save()
 		if config.plugins.serienRec.tvplaner_full_check.value:
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
