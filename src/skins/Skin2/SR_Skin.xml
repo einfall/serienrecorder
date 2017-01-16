@@ -13,7 +13,7 @@
 	<widget name="Web_Channel" position="100,45" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
 	<widget name="STB_Channel" position="410,45" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
 	<widget name="alt_STB_Channel" position="720,45" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
-	<widget name="separator" position="60,80" size="850,2" backgroundColor="grey" zPosition="6" />
+	<widget name="separator" position="60,80" size="850,2" backgroundColor="#00aaaaaa" zPosition="6" />
 
 	<widget name="list" position="60,80" size="850,582" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel25_1200.png" />
 	<widget name="popup_list2" position="920,10" size="310,320" backgroundColor="#00181d20" zPosition="10" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel25_1200.png" />

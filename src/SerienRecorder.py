@@ -2077,7 +2077,7 @@ def ImportFilesToDB():
 	
 	return True
 
-def writePlanerData():
+def writePlanerData(planerType):
 	if not os.path.exists("%stmp/" % serienRecMainPath):
 		try:
 			os.makedirs("%stmp/" % serienRecMainPath)
@@ -2085,11 +2085,11 @@ def writePlanerData():
 			pass
 	if os.path.isdir("%stmp/" % serienRecMainPath):
 		try:
-			os.chmod("%stmp/planer_%s" % (serienRecMainPath, config.plugins.serienRec.screenplaner.value), 0o666)
+			os.chmod("%stmp/planer_%s" % (serienRecMainPath, str(planerType)), 0o666)
 		except:
 			pass
 
-		f = open("%stmp/planer_%s" % (serienRecMainPath, config.plugins.serienRec.screenplaner.value), "wb")
+		f = open("%stmp/planer_%s" % (serienRecMainPath, str(planerType)), "wb")
 		try:
 			p = pickle.Pickler(f, 2)
 			global dayCache
@@ -2099,15 +2099,15 @@ def writePlanerData():
 		f.close()
 
 		try:
-			os.chmod("%stmp/planer_%s" % (serienRecMainPath, config.plugins.serienRec.screenplaner.value), 0o666)
+			os.chmod("%stmp/planer_%s" % (serienRecMainPath, str(planerType)), 0o666)
 		except:
 			pass
 
-def loadPlanerData():
+def loadPlanerData(planerType):
 	global dayCache
 	dayCache.clear()
 	
-	planerFile = "%stmp/planer_%s" % (serienRecMainPath, config.plugins.serienRec.screenplaner.value)
+	planerFile = "%stmp/planer_%s" % (serienRecMainPath, str(planerType))
 	if fileExists(planerFile):
 		f = open(planerFile, "rb")
 		try:
@@ -2127,7 +2127,8 @@ def loadPlanerData():
 		except:
 			pass
 
-		optimizePlanerData()
+		if planerType == 1:
+			optimizePlanerData()
 		
 def optimizePlanerData():
 	if time.strftime('%H.%M', datetime.datetime.now().timetuple()) < '01.00':
@@ -2147,7 +2148,7 @@ def optimizePlanerData():
 					else:
 						break
 				for b in l:		
-					a(b)
+					a.remove(b)
 		except:
 			pass
 
@@ -2773,7 +2774,7 @@ class serienRecCheckForRecording():
 
 	def postProcessPlanerData(self):
 		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
-			writePlanerData()
+			writePlanerData(1)
 
 	def adjustEPGtimes(self, current_time):
 		cTimer = dbSerRec.cursor()
@@ -10924,7 +10925,7 @@ class serienRecMain(Screen, HelpableScreen):
 			return
 
 		self.loading = True
-		loadPlanerData()
+		loadPlanerData(config.plugins.serienRec.screenplaner.value)
 			
 		global dayCache
 		if answer:
@@ -11038,7 +11039,7 @@ class serienRecMain(Screen, HelpableScreen):
 				global dayCache
 				dayCache.update({key:(headDate, self.daylist)})
 				if config.plugins.serienRec.planerCacheEnabled.value:
-					writePlanerData()
+					writePlanerData(1)
 				
 		self.loading = False
 
@@ -11094,7 +11095,7 @@ class serienRecMain(Screen, HelpableScreen):
 				global dayCache
 				dayCache.update({key: (headDate, self.daylist)})
 				if config.plugins.serienRec.planerCacheEnabled.value:
-					writePlanerData()
+					writePlanerData(2)
 
 		self.loading = False
 		self['title'].setText("")
@@ -11261,6 +11262,7 @@ class serienRecMain(Screen, HelpableScreen):
 			else:
 				config.plugins.serienRec.screenplaner.value = 1
 			config.plugins.serienRec.screenplaner.save()
+			configfile.save()
 			self.readPlanerData(False)
 
 	@staticmethod
