@@ -634,7 +634,7 @@ def getDirname(serien_name, staffel):
 			if not re.search('.*?/\Z', dirname):
 				dirname = "%s/" % dirname
 			dirname_serie = dirname
-			if (isSerie and (seasonsubdir == -1) and isCreateSubDir or (seasonsubdir == 1):
+			if isSerie and (seasonsubdir == -1) and isCreateSubDir or (seasonsubdir == 1):
 				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		else:
 			dirname = path
@@ -1129,10 +1129,7 @@ def getEmailData():
 			if not row:
 				# marker isn't in database, creat new marker
 				# url stored in marker isn't the final one, it is corrected later
-				if config.plugins.serienRec.tvplaner_movies.value and transmissiondict[seriesname][0][-1].startswith('http://www.wunschliste.de/spielfilm'):
-					url = transmissiondict[seriesname][0][-1] 
-				else: 
-					url = 'url'
+				url = transmissiondict[seriesname][0][-1] 
 				try:
 					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (doReplaces(seriesname), url))
 					dbSerRec.commit()
@@ -1140,7 +1137,7 @@ def getEmailData():
 					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
 					try:
 						erlaubteSTB = 0xFFFF
-						if url == 'url' and config.plugins.serienRec.tvplaner_series_activeSTB.value or url != 'url' and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+						if url.startswith('http://www.wunschliste.de/serie') and config.plugins.serienRec.tvplaner_series_activeSTB.value or url.startswith('http://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
 							erlaubteSTB = 0
 							erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
 						cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
@@ -3116,7 +3113,7 @@ class serienRecCheckForRecording():
 						# This is a marker created by TV Planer function - fix url
 						print "[SerienRecorder] fix seriesID for %r" % serienTitle
 						serienTitleOrig = serienTitle
-						seriesID = SeriesServer().getSeriesID(serienTitle)
+						seriesID = SeriesServer().getIDByFSID(SerieUrl[str.rindex(SerieUrl, '/')+1:])
 						if seriesID is None or seriesID == 0:
 							# search original title in email data
 							found = False
@@ -3138,15 +3135,18 @@ class serienRecCheckForRecording():
 							print "[SerienRecorder] %r seriesID = %r" % (serienTitle, str(seriesID))
 						cCursor = dbSerRec.cursor()
 						if seriesID != 0 and seriesID is not None:
-							getCover(self, serienTitle, seriesID)
+							getCover(None, serienTitle, seriesID)
 							Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
 							# look if Series with this ID already exists
 							cCursor.execute("SELECT Serie FROM SerienMarker WHERE Url=?", (Url,))
 							row = cCursor.fetchone()
 							if row:
-								# Series was already in database with different name - remove new duplicate marker
+								# Series was already in database with different name - remove duplicate marker of TV-Planer and STBAuswahl
 								try:
-									cCursor.execute("DELETE FROM SerienMarker WHERE Serie=? AND Url='url'", (serienTitle,))
+									cCursor.execute("SELECT ID FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
+									rowTVPlaner = cCursor.fetchone()
+									cCursor.execute("DELETE FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
+									cCursor.execute("DELETE FROM STBAuswahl WHERE ID=?", (rowTVPlaner[0],))
 									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird wieder aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
 									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
 								except:

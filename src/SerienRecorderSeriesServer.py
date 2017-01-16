@@ -20,6 +20,9 @@ class SeriesServer:
 	def getSeriesID(self, seriesName):
 		return self.server.sp.cache.getID(seriesName)
 
+	def getIDByFSID(self, fsID):
+		return self.server.sp.cache.getIDByFSID(fsID)
+
 	def getSeriesInfo(self, seriesID):
 		seriesInfo = self.server.sp.cache.getSeriesInfo(seriesID)
 		infoText = ""
