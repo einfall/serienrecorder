@@ -623,26 +623,27 @@ def getDirname(serien_name, staffel):
 	else: 
 		(dirname, seasonsubdir, url) = row
 		if url.startswith('http://www.wunschliste.de/spielfilm'):
-			isSerie = False
 			path = config.plugins.serienRec.tvplaner_movies_filepath.value
-			isCreateSubDir = config.plugins.serienRec.tvplaner_movies_createsubdir.value
+			isCreateSerienSubDir = config.plugins.serienRec.tvplaner_movies_createsubdir.value
+			isCreateSeasonSubDir = False
 		else:
-			isSerie = True
 			path = config.plugins.serienRec.savetopath.value
-			isCreateSubDir = config.plugins.serienRec.seriensubdir.value
+			isCreateSerienSubDir = config.plugins.serienRec.seriensubdir.value
+			isCreateSeasonSubDir = config.plugins.serienRec.seasonsubdir.value
 		if dirname:
 			if not re.search('.*?/\Z', dirname):
 				dirname = "%s/" % dirname
 			dirname_serie = dirname
-			if isSerie and (seasonsubdir == -1) and isCreateSubDir or (seasonsubdir == 1):
+			if (seasonsubdir == -1) and isCreateSeasonSubDir or (seasonsubdir == 1):
 				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+			isCreateSeasonSubDir = False
 		else:
 			dirname = path
 			dirname_serie = dirname
-			if isCreateSubDir:
+			if isCreateSerienSubDir:
 				dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 				dirname_serie = dirname
-				if isSerie and isCreateSubDir:
+				if isCreateSeasonSubDir:
 					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		
 	cCursor.close()
