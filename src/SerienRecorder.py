@@ -295,6 +295,7 @@ coverToShow = None
 runAutocheckAtExit = False
 startTimer = None
 startTimerConnection = None
+transmissionFailed = False
 
 dayCache = {}
 
@@ -3088,6 +3089,8 @@ class serienRecCheckForRecording():
 		#       data will be read by the file reader below and used for timer programming 
 		if len(self.markers) > 0:
 			downloads = []
+			global transmissionFailed
+			transmissionFailed = False
 			cTmp = dbTmp.cursor()
 			cTmp.execute("DELETE FROM GefundeneFolgen")
 			dbTmp.commit()
@@ -3299,6 +3302,12 @@ class serienRecCheckForRecording():
 				writeLog("' TV-Planer FilmMarker löschen fehlgeschlagen '", True)
 				print "[SerienRecorder] ' TV-Planer FilmMarker löschen fehlgeschlagen '"
 			cCursor.close()
+			global transmissionFailed
+			if transmissionFailed: 
+				# always do fullcheck after transmission error
+				config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
+				config.plugins.serienRec.tvplaner_last_full_check.save()
+				configfile.save()
 		
 		if config.plugins.serienRec.longLogFileName.value:
 			shutil.copy(logFile, logFileSave)
@@ -3312,7 +3321,10 @@ class serienRecCheckForRecording():
 			deltatime = self.getNextAutoCheckTimer(lt)
 			writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 			if config.plugins.serienRec.tvplaner_full_check:
-				writeLog("Verbleibende Zeit bis zum nächsten vollen Auto-Check: %d Tage" % (((int(config.plugins.serienRec.tvplaner_last_full_check.value) + (int(config.plugins.serienRec.checkfordays.value) - 1) * 86400) - int(time.time())) / 86400), True)
+				autoCheckDays = ((int(config.plugins.serienRec.tvplaner_last_full_check.value) + (int(config.plugins.serienRec.checkfordays.value) - 1) * 86400) - int(time.time())) / 86400
+				if autoCheckDays < 0:
+					autoCheckDays = 0
+				writeLog("Verbleibende Zeit bis zum nächsten vollen Auto-Check: %d Tage" % autoCheckDays, True)
 		
 		# in den deep-standby fahren.
 		self.askForDSB()
@@ -3324,6 +3336,8 @@ class serienRecCheckForRecording():
 			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
 		except:
 			print "downloadTransmissions: failed"
+			global transmissionFailed
+			transmissionFailed = True
 			transmissions = None
 		return transmissions
 
@@ -6239,6 +6253,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		self.serien_cover = serien_cover
 		self.skin = None
 		self.serien_id = 0
+		self.ErrorMsg = ''
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, "umschalten ausgewählter Sendetermin aktiviert/deaktiviert"),
