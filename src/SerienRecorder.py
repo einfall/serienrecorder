@@ -412,7 +412,7 @@ def getCover(self, serien_name, serien_id):
 			getCoverDataError("failed", self, serien_nameCover)
 
 def getCoverDataError(error, self, serien_nameCover):
-	if self is not None: 
+	if self is not None and self.ErrorMsg: 
 		writeLog("Fehler bei: %s (%s)" % (self.ErrorMsg, serien_nameCover), True)
 		writeErrorLog("   getCover(): %s\n   Serie: %s\n   %s" % (error, serien_nameCover, self.ErrorMsg))
 		print "[SerienRecorder] Fehler bei: %s" % self.ErrorMsg
