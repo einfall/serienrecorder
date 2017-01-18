@@ -100,7 +100,10 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.timer_default.stop()
 
 		webChannels = getWebSenderAktiv()
-		self.transmissions = SeriesServer().doGetSeasonBegins(webChannels)
+		try:
+			self.transmissions = SeriesServer().doGetSeasonBegins(webChannels)
+		except:
+			print "[SerienRecorder]: Abfrage beim SerienServer doGetSeasonBegins() fehlgeschlagen"
 		self.buildProposalList()
 
 		self['title'].setText("%d neue Serien/Staffeln gefunden:" % len(self.proposalList))
