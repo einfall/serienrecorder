@@ -20,7 +20,7 @@ class SeriesServer:
 	def getSeriesID(self, seriesName):
 		try:
 			return self.server.sp.cache.getID(seriesName)
-		except
+		except:
 			return 0
 
 	def getIDByFSID(self, fsID):
