@@ -18,15 +18,23 @@ class SeriesServer:
 			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_URL)
 
 	def getSeriesID(self, seriesName):
-		return self.server.sp.cache.getID(seriesName)
+		try:
+			return self.server.sp.cache.getID(seriesName)
+		except
+			return 0
 
 	def getIDByFSID(self, fsID):
-		return self.server.sp.cache.getIDByFSID(fsID)
+		try:
+			return self.server.sp.cache.getIDByFSID(fsID)
+		except:
+			return 0
 
 	def getSeriesInfo(self, seriesID):
-		seriesInfo = self.server.sp.cache.getSeriesInfo(seriesID)
 		infoText = ""
-
+		try:
+			seriesInfo = self.server.sp.cache.getSeriesInfo(seriesID)
+		except:
+			return infoText
 		# Title
 		if 'title' in seriesInfo:
 			infoText += seriesInfo['title']
@@ -74,9 +82,11 @@ class SeriesServer:
 		return infoText
 
 	def getEpisodeInfo(self, url):
-		episodeInfo = self.server.sp.cache.getEpisodeInfo(url)
 		infoText = ""
-
+		try:
+			episodeInfo = self.server.sp.cache.getEpisodeInfo(url)
+		except:
+			return infoText
 		if 'season' in episodeInfo and 'episode' in episodeInfo:
 			infoText += "Staffel: %s, Episode: %s\n" % (episodeInfo['season'], episodeInfo['episode'])
 
@@ -123,8 +133,11 @@ class SeriesServer:
 		return resultList
 
 	def doGetCoverURL(self, seriesID, seriesName):
-		return self.server.sp.cache.getCoverURL(int(seriesID), seriesName)
-
+		try:
+			return self.server.sp.cache.getCoverURL(int(seriesID), seriesName)
+		except:
+			return ''
+			
 	def doGetWebChannels(self):
 		return self.server.sp.cache.getWebChannels()
 

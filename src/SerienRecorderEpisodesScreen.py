@@ -161,6 +161,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.page in self.episodes_list_cache:
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 		else:
+			self.ErrorMsg = ''
 			SerienRecorder.getCover(self, self.serien_name, self.serien_id)
 			episodes = SeriesServer().doGetEpisodes(int(self.serien_id), int(self.page))
 			self.resultsEpisodes(episodes)
