@@ -636,7 +636,6 @@ def getDirname(serien_name, staffel):
 			dirname_serie = dirname
 			if (seasonsubdir == -1) and isCreateSeasonSubDir or (seasonsubdir == 1):
 				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
-			isCreateSeasonSubDir = False
 		else:
 			dirname = path
 			dirname_serie = dirname
