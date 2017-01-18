@@ -3113,7 +3113,12 @@ class serienRecCheckForRecording():
 						# This is a marker created by TV Planer function - fix url
 						print "[SerienRecorder] fix seriesID for %r" % serienTitle
 						serienTitleOrig = serienTitle
-						seriesID = SeriesServer().getIDByFSID(SerieUrl[str.rindex(SerieUrl, '/')+1:])
+						try:
+							seriesID = SeriesServer().getIDByFSID(SerieUrl[str.rindex(SerieUrl, '/')+1:])
+						except:
+							writeLog("' %s - Abfrage der SerienID bei SerienServer fehlgeschlagen - ignored '" % serienTitle, True)
+							print "' %s - Abfrage der SerienID bei SerienServer fehlgeschlagen - ignored '" % serienTitle
+							continue
 						if seriesID is None or seriesID == 0:
 							# search original title in email data
 							found = False
@@ -3135,7 +3140,11 @@ class serienRecCheckForRecording():
 							print "[SerienRecorder] %r seriesID = %r" % (serienTitle, str(seriesID))
 						cCursor = dbSerRec.cursor()
 						if seriesID != 0 and seriesID is not None:
-							getCover(None, serienTitle, seriesID)
+							try:
+								getCover(None, serienTitle, seriesID)
+							except:
+								writeLog("' %s - Abruf des Covers fehlgeschlagen - ignored '" % serienTitle, True)
+								print "' %s - Abruf des Covers fehlgeschlagen - ignored '" % serienTitle
 							Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
 							# look if Series with this ID already exists
 							cCursor.execute("SELECT Serie FROM SerienMarker WHERE Url=?", (Url,))
