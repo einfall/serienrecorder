@@ -41,6 +41,7 @@ from twisted.internet import reactor, defer
 from skin import parseColor, loadSkin, parseFont
 import imaplib
 import email
+import quopri
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
 	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
@@ -1101,6 +1102,7 @@ def getEmailData():
 			print "' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname)
 			continue
 		
+		# series
 		transmission = [ doReplaces(seriesname) ]
 		# channel
 		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
@@ -1126,7 +1128,7 @@ def getEmailData():
 			episode = '0'
 		transmission += [ episode ]
 		# title
-		transmission += [ doReplaces(titel) ]
+		transmission += [ doReplaces(quopri.decodestring(titel)) ]
 		# last
 		transmission += [ '0' ]
 		# url
@@ -1136,8 +1138,8 @@ def getEmailData():
 			transmissiondict[seriesname] += [ transmission ]
 		else:
 			transmissiondict[seriesname] = [ transmission ]
-		writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), type), True)
-		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(season).zfill(2), str(episode).zfill(2), titel, channel, time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), type)
+		writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), type), True)
+		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), type)
 	
 	if config.plugins.serienRec.tvplaner_create_marker.value:
 		cCursor = dbSerRec.cursor()
@@ -3132,34 +3134,14 @@ class serienRecCheckForRecording():
 					if seriesID is None or seriesID == 0:
 						# This is a marker created by TV Planer function - fix url
 						print "[SerienRecorder] fix seriesID for %r" % serienTitle
-						serienTitleOrig = serienTitle
 						try:
 							seriesID = SeriesServer().getIDByFSID(SerieUrl[str.rindex(SerieUrl, '/')+1:])
 						except:
 							writeLog("' %s - Abfrage der SerienID bei SerienServer fehlgeschlagen - ignored '" % serienTitle, True)
 							print "' %s - Abfrage der SerienID bei SerienServer fehlgeschlagen - ignored '" % serienTitle
 							continue
-						if seriesID is None or seriesID == 0:
-							# search original title in email data
-							found = False
-							if self.emailData is not None:
-								for key in self.emailData.keys():
-									if self.emailData[key][0][0] == serienTitle:
-										seriesID = SeriesServer().getSeriesID(key)
-										serienTitleOrig = key
-										found = True
-										print "[SerienRecorder] %r seriesID = %r" % (key, str(seriesID))
-										break
-								if not found:
-									writeLog("' %s - TV-Planer Marker nicht in E-Mail gefunden '" % serienTitle, True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker nicht in E-mail gefunden '" % serienTitle
-							else:
-									writeLog("' %s - TV-Planer Marker kann nur während TV-Planer Lauf korrigiert werden '" % serienTitle, True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker kann nur während TV-Planer Lauf korrigiert werden '" % serienTitle
-						else:
-							print "[SerienRecorder] %r seriesID = %r" % (serienTitle, str(seriesID))
 						cCursor = dbSerRec.cursor()
-						if seriesID != 0 and seriesID is not None:
+						if seriesID is not None and seriesID != 0:
 							try:
 								getCover(None, serienTitle, seriesID)
 							except:
@@ -6470,7 +6452,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			if self.serien_id is None or self.serien_id == 0:
 				# This is a marker created by TV Planer function - get id from server
 				try:
-					self.serien_id = SeriesServer().getSeriesID(self.serien_name)
+					self.serien_id = SeriesServer().getIDByFSID(self.serie_url[str.rindex(self.serie_url, '/')+1:])
 				except:
 					self.serien_id = 0
 			
