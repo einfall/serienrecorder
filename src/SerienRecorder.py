@@ -848,7 +848,9 @@ def getEmailData():
 	# class used for parsing TV-Planer html
 	# States and Changes
 	# ------------------
+	# [error] || [finished] -> [state]
 	# [start]: <h3> -> [date_h3]
+	# [start]: data && '.*TV-Planer.*?den (.*?) ' -> <date> -> [date_h3_time]
 	# [date_h3]: >date< -> [date_h3_time]
 	# [date_h3_time]: <span> -> [time_span]
 	# [time_span]: >time<  -> [transmission_table]
@@ -969,12 +971,27 @@ def getEmailData():
 
 		def handle_data(self, data):
 			# print "Encountered some data  : %r" % data
-			if self.state == 'date_h3':
+			if self.state == 'finished' or self.state == 'error':
+				# do nothing
+				self.state = self.state
+			elif self.state == 'start':
 				# match date
 				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 '
-				date_regexp=re.compile('TV-Planer.*?den (.*?) ')
-				self.date = date_regexp.findall(data)[0]
-				self.state = 'date_h3_time'
+				print 'start: %r' % data
+				date_regexp=re.compile('.*TV-Planer.*?den (.*?) ')
+				result = date_regexp.findall(data)
+				if result:
+					self.date = result[0]
+					self.state = 'date_h3_time'
+			elif self.state == 'date_h3':
+				# match date
+				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 '
+				result = date_regexp.findall(data)
+				if result:
+					self.date = result[0]
+					self.state = 'date_h3_time'
+				else:
+					self.state = 'error'
 			elif self.state == 'time_span':
 				# match time
 				# ' (ab 05:00 Uhr)'
