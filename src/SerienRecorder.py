@@ -850,10 +850,8 @@ def getEmailData():
 	# States and Changes
 	# ------------------
 	# [error] || [finished] -> [state]
-	# [start]: <h3> -> [date_h3]
-	# [start]: data && '.*TV-Planer.*?den (.*?) ' -> <date> -> [date_h3_time]
-	# [date_h3]: >date< -> [date_h3_time]
-	# [date_h3_time]: <span> -> [time_span]
+	# [start]: data && '.*TV-Planer.*?den (.*?) ' -> <date> -> [date_time]
+	# [date_time]: <span> -> [time_span]
 	# [time_span]: >time<  -> [transmission_table]
 	# [time_span]: </span> -> 0:00 -> [transmission_table]
 	# [transmission_table]: <table> -> [transmission]
@@ -894,9 +892,7 @@ def getEmailData():
 			self.episode = '0'
 		def handle_starttag(self, tag, attrs):
 			# print "Encountered a start tag:", tag, attrs
-			if self.state == 'start' and tag == 'h3':
-				self.state = 'date_h3'
-			elif self.state == 'date_h3_time' and tag == 'span':
+			if self.state == 'date_time' and tag == 'span':
 				self.state = 'time_span'
 			elif self.state == 'transmission_table' and tag == 'table':
 				self.state = 'transmission'
@@ -962,7 +958,6 @@ def getEmailData():
 				self.state = 'transmission_desc'
 			elif self.state == 'transmission_desc' and tag == 'div':
 				# append collected data
-				print 'transmission_desc div_end: %r' % self.data
 				self.transmission.append(self.data)
 				self.data = ''
 				self.state = 'transmission_endtime'
@@ -978,21 +973,11 @@ def getEmailData():
 			elif self.state == 'start':
 				# match date
 				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 '
-				print 'start: %r' % data
 				date_regexp=re.compile('.*TV-Planer.*?den (.*?) ')
 				result = date_regexp.findall(data)
 				if result:
 					self.date = result[0]
-					self.state = 'date_h3_time'
-			elif self.state == 'date_h3':
-				# match date
-				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 '
-				result = date_regexp.findall(data)
-				if result:
-					self.date = result[0]
-					self.state = 'date_h3_time'
-				else:
-					self.state = 'error'
+					self.state = 'date_time'
 			elif self.state == 'time_span':
 				# match time
 				# ' (ab 05:00 Uhr)'
@@ -10750,7 +10735,7 @@ class serienRecMain(Screen, HelpableScreen):
 				mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value,
 									 config.plugins.serienRec.imap_server_port.value)
 
-		except imaplib.IMAP4.abort:
+		except:
 			writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
 			return None
 
