@@ -850,10 +850,9 @@ def getEmailData():
 	# States and Changes
 	# ------------------
 	# [error] || [finished] -> [state]
-	# [start]: data && '.*TV-Planer.*?den (.*?) ' -> <date> -> [date_time]
-	# [date_time]: <span> -> [time_span]
-	# [time_span]: >time<  -> [transmission_table]
-	# [time_span]: </span> -> 0:00 -> [transmission_table]
+	# [start]: data && '.*TV-Planer.*?den (.*?)' -> <date> -> [time]
+	# [time]: data && '\(ab (.*?) Uhr' -> <time> -> [transmission_table]
+	# [time]: </div> -> 0:00 -> [transmission_table]
 	# [transmission_table]: <table> -> [transmission]
 	# [transmission]: <tr> -> [transmission_start]
 	# [transmission]: </table> -> [finished]
@@ -892,8 +891,10 @@ def getEmailData():
 			self.episode = '0'
 		def handle_starttag(self, tag, attrs):
 			# print "Encountered a start tag:", tag, attrs
-			if self.state == 'date_time' and tag == 'span':
-				self.state = 'time_span'
+			if self.state == 'time' and tag == 'table':
+				# no time - starting at 00:00 Uhr
+				self.date = ( self.date, '00:00' )
+				self.state = "transmission"
 			elif self.state == 'transmission_table' and tag == 'table':
 				self.state = 'transmission'
 			elif self.state == 'transmission' and tag == 'tr':
@@ -939,10 +940,6 @@ def getEmailData():
 				self.transmissions.append(tuple(self.transmission))
 				self.transmission = []
 				self.state = 'transmission'
-			elif self.state == 'time_span' and tag == 'span':
-				# no time - starting at 00:00 Uhr
-				self.date = ( self.date, '00:00' )
-				self.state = 'transmission_table'
 			elif self.state == 'transmission_serie' and tag == 'strong':
 				# append collected data
 				self.transmission.append(self.data)
@@ -972,18 +969,20 @@ def getEmailData():
 				self.state = self.state
 			elif self.state == 'start':
 				# match date
-				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016 '
-				date_regexp=re.compile('.*TV-Planer.*?den (.*?) ')
+				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016'
+				date_regexp=re.compile('.*TV-Planer.*?den ([0-3][0-9]\.[0-1][0-9]\.20[0-9][0-9])')
 				result = date_regexp.findall(data)
 				if result:
 					self.date = result[0]
-					self.state = 'date_time'
-			elif self.state == 'time_span':
+					self.state = 'time'
+			elif self.state == 'time':
 				# match time
-				# ' (ab 05:00 Uhr)'
-				time_regexp=re.compile(' \(ab (.*?) Uhr')
-				self.date = ( self.date, time_regexp.findall(data)[0] )
-				self.state = 'transmission_table'
+				# '(ab 05:00 Uhr)'
+				time_regexp=re.compile('ab (.*?) Uhr')
+				result = time_regexp.findall(data)
+				if result:
+					self.date = ( self.date, result[0] )
+					self.state = 'transmission_table'
 			elif self.state == 'transmission_start':
 				# match start time
 				time_regexp=re.compile('(.*?) Uhr')
