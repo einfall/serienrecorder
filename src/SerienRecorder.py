@@ -6967,7 +6967,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			#"deleteBackward": (self.keyDelBackward, "---"),
 			"nextBouquet":	(self.bouquetPlus, "zur vorherigen Seite blättern"),
 			"prevBouquet":	(self.bouquetMinus, "zur nächsten Seite blättern"),
-			"8"	: (self.imaptest, "Testet die IMAP Einstellungen"),
+			#"8"	: (self.imaptest, "Testet die IMAP Einstellungen"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -7061,7 +7061,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if not showAllButtons:
 			self['text_0'].setText("Abbrechen")
 			self['text_1'].setText("About")
-			self['text_3'].setText("IMAP-Test")
+			#self['text_3'].setText("IMAP-Test")
 
 			self['bt_red'].show()
 			self['bt_green'].show()
@@ -7070,7 +7070,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
-			self['bt_8'].show()
+			#self['bt_8'].show()
 			self['bt_menu'].show()
 
 			self['text_red'].show()
@@ -7080,13 +7080,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
-			self['text_3'].show()
+			#self['text_3'].show()
 
 		else:
 			self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
 								[buttonText_na, buttonText_na, "About"],
 								[buttonText_na, buttonText_na, buttonText_na],
-								[buttonText_na, buttonText_na, "IMAP-Test"],
+								[buttonText_na, buttonText_na, buttonText_na],
 								[buttonText_na, buttonText_na, "Sender zuordnen"])
 
 	def showManual(self):
@@ -7936,70 +7936,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 	def openChannelSetup(self):
 		self.session.openWithCallback(self.changedEntry, serienRecMainChannelEdit)
-
-	def imaptest(self):
-		try:
-			if config.plugins.serienRec.imap_server_ssl.value:
-				mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
-										 config.plugins.serienRec.imap_server_port.value)
-			else:
-				mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value,
-									 config.plugins.serienRec.imap_server_port.value)
-
-		except:
-			self.session.open(MessageBox, "Verbindung zum E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
-			return None
-
-		try:
-			mail.login(decode(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-					   decode(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
-
-		except imaplib.IMAP4.error:
-			self.session.open(MessageBox, "Anmeldung am E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
-			return None
-
-		try:
-			import string
-
-			writeLog("Postfächer:", True)
-			result, data = mail.list('""', '*')
-			if result == 'OK':
-				for item in data[:]:
-					x = item.split()
-					mailbox = string.join(x[2:])
-					writeLog("%s" % mailbox, True)
-		except imaplib.IMAP4.error:
-			self.session.open(MessageBox, "Abrufen der Postfächer vom E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen", True)
-
-		try:
-			mail.select(config.plugins.serienRec.imap_mailbox.value)
-
-		except imaplib.IMAP4.error:
-			self.session.open(MessageBox, "Postfach [%r] nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
-			mail.logout()
-			return None
-
-		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
-		searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
-		searchstr = searchstr.format(date=date)
-		searchstr = searchstr.replace('Mrz', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
-		writeLog("IMAP Check: %s" % searchstr, True)
-		try:
-			result, data = mail.uid('search', None, searchstr)
-			writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
-
-		except imaplib.IMAP4.error:
-			self.session.open(MessageBox, "Fehler beim Abrufen der TV-Planer E-Mail", MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Fehler beim Abrufen der Mailbox", True)
-			writeLog("IMAP Check: %s" % mail.error.message, True)
-
-		mail.logout()
-		self.session.open(MessageBox, "IMAP Test abgeschlossen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
-
 
 	def keyCancel(self):
 		if self.setupModified:
@@ -10669,7 +10605,7 @@ class serienRecMain(Screen, HelpableScreen):
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-			#"5"		: (self.test, "-"),
+			"5"		: (self.imaptest, "-"),
 		}, -1)
 		self.helpList[0][2].sort()
 		
@@ -10728,6 +10664,69 @@ class serienRecMain(Screen, HelpableScreen):
 		else:
 			self.onFirstExecBegin.append(self.startScreen)
 		self.onClose.append(self.__onClose)
+
+	def imaptest(self):
+		try:
+			if config.plugins.serienRec.imap_server_ssl.value:
+				mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
+										 config.plugins.serienRec.imap_server_port.value)
+			else:
+				mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value,
+									 config.plugins.serienRec.imap_server_port.value)
+
+		except:
+			self.session.open(MessageBox, "Verbindung zum E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
+			return None
+
+		try:
+			mail.login(decode(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
+					   decode(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+
+		except imaplib.IMAP4.error:
+			self.session.open(MessageBox, "Anmeldung am E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
+			return None
+
+		try:
+			import string
+
+			writeLog("Postfächer:", True)
+			result, data = mail.list('""', '*')
+			if result == 'OK':
+				for item in data[:]:
+					x = item.split()
+					mailbox = string.join(x[2:])
+					writeLog("%s" % mailbox, True)
+		except imaplib.IMAP4.error:
+			self.session.open(MessageBox, "Abrufen der Postfächer vom E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen", True)
+
+		try:
+			mail.select(config.plugins.serienRec.imap_mailbox.value)
+
+		except imaplib.IMAP4.error:
+			self.session.open(MessageBox, "Postfach [%r] nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
+			mail.logout()
+			return None
+
+		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
+		searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
+		searchstr = searchstr.format(date=date)
+		searchstr = searchstr.replace('Mrz', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
+		writeLog("IMAP Check: %s" % searchstr, True)
+		try:
+			result, data = mail.uid('search', None, searchstr)
+			writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
+
+		except imaplib.IMAP4.error:
+			self.session.open(MessageBox, "Fehler beim Abrufen der TV-Planer E-Mail", MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Fehler beim Abrufen der Mailbox", True)
+			writeLog("IMAP Check: %s" % mail.error.message, True)
+
+		mail.logout()
+		self.session.open(MessageBox, "IMAP Test abgeschlossen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
 
 	def showInfoText(self):
 		self.session.openWithCallback(self.startScreen, ShowStartupInfo)
