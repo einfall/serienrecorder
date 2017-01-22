@@ -3303,7 +3303,7 @@ class serienRecCheckForRecording():
 			lt = time.localtime()
 			deltatime = self.getNextAutoCheckTimer(lt)
 			writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
-			if config.plugins.serienRec.tvplaner_full_check:
+			if config.plugins.serienRec.tvplaner_full_check.value:
 				autoCheckDays = ((int(config.plugins.serienRec.tvplaner_last_full_check.value) + (int(config.plugins.serienRec.checkfordays.value) - 1) * 86400) - int(time.time())) / 86400
 				if autoCheckDays < 0:
 					autoCheckDays = 0
