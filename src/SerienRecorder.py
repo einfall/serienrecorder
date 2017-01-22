@@ -4497,7 +4497,9 @@ class serienRecTimer(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				self.session.open(serienRecShowInfo, serien_name, serien_id[0])
+				#self.session.open(serienRecShowInfo, serien_name, serien_id[0])
+				self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+								  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -5220,7 +5222,9 @@ class serienRecMarker(Screen, HelpableScreen):
 		serien_url = self['menu_list'].getCurrent()[0][1]
 		serien_id = getSeriesIDByURL(serien_url)
 		if serien_id:
-			self.session.open(serienRecShowInfo, serien_name, serien_id)
+			#self.session.open(serienRecShowInfo, serien_name, serien_id)
+			self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+							  MessageBox.TYPE_INFO, timeout=10)
 
 	def episodeList(self):
 		if self.modus == "menu_list":
@@ -5232,7 +5236,9 @@ class serienRecMarker(Screen, HelpableScreen):
 			serien_url = self['menu_list'].getCurrent()[0][1]
 			serien_id = getSeriesIDByURL(serien_url)
 			if serien_id:
-				self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s" % serien_id, self.serien_nameCover)
+				#self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s" % serien_id, self.serien_nameCover)
+				self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+								  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -6025,7 +6031,9 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		serien_id = self['menu_list'].getCurrent()[0][2]
 		serien_name = self['menu_list'].getCurrent()[0][0]
 
-		self.session.open(serienRecShowInfo, serien_name, serien_id)
+		#self.session.open(serienRecShowInfo, serien_name, serien_id)
+		self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+					  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -6369,7 +6377,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 		serien_id = getSeriesIDByURL(self.serie_url)
 		if serien_id:
-			self.session.open(serienRecShowInfo, self.serien_name, serien_id)
+			#self.session.open(serienRecShowInfo, self.serien_name, serien_id)
+			self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+							  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -6957,6 +6967,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			#"deleteBackward": (self.keyDelBackward, "---"),
 			"nextBouquet":	(self.bouquetPlus, "zur vorherigen Seite blättern"),
 			"prevBouquet":	(self.bouquetMinus, "zur nächsten Seite blättern"),
+			"8"	: (self.imaptest, "Testet die IMAP Einstellungen"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -7050,6 +7061,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if not showAllButtons:
 			self['text_0'].setText("Abbrechen")
 			self['text_1'].setText("About")
+			self['text_3'].setText("IMAP-Test")
 
 			self['bt_red'].show()
 			self['bt_green'].show()
@@ -7058,6 +7070,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
+			self['bt_8'].show()
+			self['bt_menu'].show()
 
 			self['text_red'].show()
 			self['text_green'].show()
@@ -7066,12 +7080,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
-			self['bt_menu'].show()
+			self['text_3'].show()
+
 		else:
 			self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
 								[buttonText_na, buttonText_na, "About"],
 								[buttonText_na, buttonText_na, buttonText_na],
-								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, "IMAP-Test"],
 								[buttonText_na, buttonText_na, "Sender zuordnen"])
 
 	def showManual(self):
@@ -7922,6 +7937,70 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 	def openChannelSetup(self):
 		self.session.openWithCallback(self.changedEntry, serienRecMainChannelEdit)
 
+	def imaptest(self):
+		try:
+			if config.plugins.serienRec.imap_server_ssl.value:
+				mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
+										 config.plugins.serienRec.imap_server_port.value)
+			else:
+				mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value,
+									 config.plugins.serienRec.imap_server_port.value)
+
+		except:
+			self.session.open(MessageBox, "Verbindung zum E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
+			return None
+
+		try:
+			mail.login(decode(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
+					   decode(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+
+		except imaplib.IMAP4.error:
+			self.session.open(MessageBox, "Anmeldung am E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
+			return None
+
+		try:
+			import string
+
+			writeLog("Postfächer:", True)
+			result, data = mail.list('""', '*')
+			if result == 'OK':
+				for item in data[:]:
+					x = item.split()
+					mailbox = string.join(x[2:])
+					writeLog("%s" % mailbox, True)
+		except imaplib.IMAP4.error:
+			self.session.open(MessageBox, "Abrufen der Postfächer vom E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen", True)
+
+		try:
+			mail.select(config.plugins.serienRec.imap_mailbox.value)
+
+		except imaplib.IMAP4.error:
+			self.session.open(MessageBox, "Postfach [%r] nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
+			mail.logout()
+			return None
+
+		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
+		searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
+		searchstr = searchstr.format(date=date)
+		searchstr = searchstr.replace('Mrz', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
+		writeLog("IMAP Check: %s" % searchstr, True)
+		try:
+			result, data = mail.uid('search', None, searchstr)
+			writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
+
+		except imaplib.IMAP4.error:
+			self.session.open(MessageBox, "Fehler beim Abrufen der TV-Planer E-Mail", MessageBox.TYPE_INFO, timeout=10)
+			writeLog("IMAP Check: Fehler beim Abrufen der Mailbox", True)
+			writeLog("IMAP Check: %s" % mail.error.message, True)
+
+		mail.logout()
+		self.session.open(MessageBox, "IMAP Test abgeschlossen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
+
+
 	def keyCancel(self):
 		if self.setupModified:
 			self.save()
@@ -8013,7 +8092,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.enable_vps = ConfigYesNo(default = False)
 			self.enable_vps_savemode = ConfigYesNo(default = False)
 
-		self.preferredChannel = ConfigSelection(choices = [("1", "Standard"), ("2", "Alternativ")], default=str(preferredChannel))
+		self.preferredChannel = ConfigSelection(choices = [("1", "Standard"), ("0", "Alternativ")], default=str(preferredChannel))
 		self.useAlternativeChannel = ConfigSelection(choices = [("-1", "gemäß Setup (dzt. %s)" % str(config.plugins.serienRec.useAlternativeChannel.value).replace("True", "ja").replace("False", "nein")), ("0", "nein"), ("1", "ja")], default=str(useAlternativeChannel))
 
 		# excluded weekdays
@@ -9324,7 +9403,9 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if row:
 			(url, ) = row
 			serien_id = getSeriesIDByURL(url)
-			self.session.open(serienRecShowInfo, serien_name, serien_id)
+			#self.session.open(serienRecShowInfo, serien_name, serien_id)
+			self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+						  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -9726,7 +9807,9 @@ class serienRecWishlist(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = getSeriesIDByURL(url)
 			if serien_id:
-				self.session.open(serienRecShowInfo, serien_name, serien_id)
+				#self.session.open(serienRecShowInfo, serien_name, serien_id)
+				self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+								  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -10325,6 +10408,9 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 				self.getData()
 
 	def getData(self):
+		self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!", MessageBox.TYPE_INFO, timeout=10)
+		self.close()
+
 		try:
 			infoText = SeriesServer().getEpisodeInfo(self.serieUrl)
 		except:
@@ -10464,7 +10550,9 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 		check = self['menu_list'].getCurrent()
 		if check is None:
 			return
-		self.session.open(serienRecShowInfo, self.serien_name, self.serien_id)
+		#self.session.open(serienRecShowInfo, self.serien_name, self.serien_id)
+		self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+						  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -10581,7 +10669,7 @@ class serienRecMain(Screen, HelpableScreen):
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-			"5"		: (self.test, "-"),
+			#"5"		: (self.test, "-"),
 		}, -1)
 		self.helpList[0][2].sort()
 		
@@ -10730,69 +10818,13 @@ class serienRecMain(Screen, HelpableScreen):
 		updateMenuKeys(self)
 		
 	def test(self):
-		try:
-			if config.plugins.serienRec.imap_server_ssl.value:
-				mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
-										 config.plugins.serienRec.imap_server_port.value)
-			else:
-				mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value,
-									 config.plugins.serienRec.imap_server_port.value)
-
-		except:
-			writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
-			return None
-
-		try:
-			mail.login(decode(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-					   decode(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
-
-		except imaplib.IMAP4.error:
-			writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
-			return None
-
-		try:
-			import string
-
-			writeLog("Mailboxes:", True)
-			result, data = mail.list('""', '*')
-			if result == 'OK':
-				for item in data[:]:
-					x = item.split()
-					mailbox = string.join(x[2:])
-					writeLog("%s" % mailbox, True)
-		except imaplib.IMAP4.error:
-			writeLog("IMAP Check: Abrufen der Mailboxen fehlgeschlagen", True)
-
-		try:
-			mail.select(config.plugins.serienRec.imap_mailbox.value)
-
-		except imaplib.IMAP4.error:
-			writeLog("IMAP Check: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
-			mail.logout()
-			return None
-
-		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
-		searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
-		searchstr = searchstr.format(date=date)
-		searchstr = searchstr.replace('Mrz', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
-		writeLog("IMAP Check: %s" % searchstr, True)
-		try:
-			result, data = mail.uid('search', None, searchstr)
-			writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
-
-		except imaplib.IMAP4.error:
-			writeLog("IMAP Check: Fehler beim Abrufen der Mailbox", True)
-			writeLog("IMAP Check: %s" % mail.error.message, True)
-
-		mail.logout()
-		self.session.open(MessageBox, "IMAP Mailboxes abgerufen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
+		i = 0
 
 	def getImdblink2(self, data):
 		ilink = re.findall('<a href="(http://www.imdb.com/title/.*?)"', data, re.S)
 		if ilink:
 			print ilink
-			serien_name = self['menu_list'].getCurrent()[0][6]
-			serien_id = self['menu_list'].getCurrent()[0][14]
+			(serien_name, serien_id) = self.getSeriesNameID()
 			self.session.open(serienRecShowImdbVideos, ilink[0], serien_name, serien_id)
 
 	def reloadSerienplaner(self):
@@ -10831,10 +10863,10 @@ class serienRecMain(Screen, HelpableScreen):
 		if check is None:
 			return
 
-		serien_id = self['menu_list'].getCurrent()[0][14]
-		serien_name = self['menu_list'].getCurrent()[0][6]
-		
-		self.session.open(serienRecShowInfo, serien_name, serien_id)
+		(serien_name, serien_id) = self.getSeriesNameID()
+		#self.session.open(serienRecShowInfo, serien_name, serien_id)
+		self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+					  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -10851,7 +10883,7 @@ class serienRecMain(Screen, HelpableScreen):
 			if check is None:
 				return
 
-			serien_name = self['menu_list'].getCurrent()[0][6]
+			(serien_name, serien_id) = self.getSeriesNameID()
 			print "[SerienRecorder] starte youtube suche für %s" % serien_name
 			self.session.open(searchYouTube, serien_name)
 		else:
@@ -11205,15 +11237,13 @@ class serienRecMain(Screen, HelpableScreen):
 				return
 
 			if config.plugins.serienRec.screenplaner.value == 1:
-				serien_name = self['menu_list'].getCurrent()[0][6]
 				sender = self['menu_list'].getCurrent()[0][7]
 				staffel = self['menu_list'].getCurrent()[0][8]
-				serien_id = self['menu_list'].getCurrent()[0][14]
 			else:
-				serien_name = self['menu_list'].getCurrent()[0][0]
 				sender = None
 				staffel = None
-				serien_id = self['menu_list'].getCurrent()[0][2]
+
+			(serien_name, serien_id) = self.getSeriesNameID()
 
 			cCursor = dbSerRec.cursor()
 			cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
@@ -11257,12 +11287,7 @@ class serienRecMain(Screen, HelpableScreen):
 		if check is None:
 			return
 
-		if config.plugins.serienRec.screenplaner.value == 1:
-			serien_name = self['menu_list'].getCurrent()[0][6]
-			serien_id = self['menu_list'].getCurrent()[0][14]
-		else:
-			serien_name = self['menu_list'].getCurrent()[0][0]
-			serien_id = self['menu_list'].getCurrent()[0][2]
+		(serien_name, serien_id) = self.getSeriesNameID()
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 		
@@ -11275,6 +11300,16 @@ class serienRecMain(Screen, HelpableScreen):
 			config.plugins.serienRec.screenplaner.save()
 			configfile.save()
 			self.readPlanerData(False)
+
+	def getSeriesNameID(self):
+		if config.plugins.serienRec.screenplaner.value == 1:
+			serien_name = self['menu_list'].getCurrent()[0][6]
+			serien_id = self['menu_list'].getCurrent()[0][14]
+		else:
+			serien_name = self['menu_list'].getCurrent()[0][0]
+			serien_id = self['menu_list'].getCurrent()[0][2]
+
+		return (serien_name, serien_id)
 
 	@staticmethod
 	def isChannelsListEmpty():

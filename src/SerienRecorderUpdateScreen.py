@@ -34,6 +34,9 @@ class checkGitHubUpdate:
 		self.session = session
 
 	def checkForUpdate(self):
+		import ssl
+		if hasattr(ssl, '_create_unverified_context'):
+			ssl._create_default_https_context = ssl._create_unverified_context
 		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
 		try:
 			conn.request(url="/repos/einfall/serienrecorder/releases", method="GET", headers={

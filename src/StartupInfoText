@@ -44,41 +44,22 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.3.0:
+CHANGE-LOG v3.4.0:
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
 
 Neue Funktionen:
-	- Serien-Planer Ansicht holt jetzt die Daten vom Serien-Server
-	- Episoden Ansicht holt die Daten jetzt vom Serien-Server 
-	- Sendetermine werden beim Auto-Check jetzt vom Serien-Server geholt
-	- Serien-Planer Cache wird jetzt beim Auto-Check auch aus den Daten vom Serien-Server befüllt
-	- Daten für Serien-/Staffelstart werden beim Auto-Check jetzt vom Serien-Server geholt
-	- Cover im Staffelverzeichnis bekommt jetzt die Bezeichnung "folder.jpg" damit funktioniert das Cover sowohl für EMC wie auch VTI Movielist (alte Cover werden nicht automatisch gelöscht)
-	- Sendetermine Cache entfernt
-	- "Sender zuordnen" kann jetzt in den globalen Einstellungen über die MENÜ Taste aufgerufen werden
-	- Betaversionen können nicht mehr für Updates ausgewählt werden
+	- Wunschliste TV-Planer E-Mails empfangen und auswerten als Backup und Entlastung des SerienServers (Vielen Dank an egn für die Implementierung)
+	- Tagesplaner und Top (als Ersatz für den Serien-Planer) - Daten werden jetzt vom SerienServer generiert 
 	
 Änderungen:
-	- Logfile umbenannt (log = SerienRecorder.log, log_old = SerienRecorder.old.log)
-	- Logzeilen Prefix [SerienRecorder] entfernt - reduziert die Größe des Logs
-	- Verständlichkeit der Logeinträge verbessert
-	- In der Sendetermine Ansicht wurden die Symbole durch Farben ersetzt (blau = Timer für Episode vorhanden, grün = Episode in der Datenbank, rot = Episode noch nicht vorhanden, gelb = Episode auf der Festplatte)
-	- Geänderte Farben in der Serien-Planer Ansicht (blau = Episode 1, grün = aktiver Serien-Marker, rot = deaktivierter Serien-Marker)
-	- Geänderte Farben in der Serien-/Staffelstart Ansicht (grün = aktiver Serien-Marker, rot = deaktivierter Serien-Marker, grau = Serie ohne Staffel [S00E01])
-	- Geänderte Icons in der Serien-/Staffelstart Ansicht (Serien die neu beginnen, also S01E01, bekommen jetzt ein "Neu" Icon)
-	- Es werden jetzt nur noch die SR Backup Ordner gelöscht (Namens-Schema wird geprüft)
-	- Bezeichnung "Channel" durch "Sender" ersetzt	
-	- Planer Cache ist jetzt nicht mehr konfigurierbar (er wird automatisch gefüllt wenn der SerienRecorder entweder mit der Planer-Ansicht gestartet wird oder wenn "Aktion bei neuer Serie/Staffel" aktiv ist)
-	- Picons (Senderlogos) sind jetzt nicht mehr Bestandteil des SR. Der Pfad zu dem im Image installierten Picons kann jetzt ausgewählt werden.
-	- Einige Optionen unter "Optimierungen" in den Einstellungen wurden entfernt, weil sie jetzt von Serien-Server übernommen werden
-	- Geänderte Tasten in der Timer-Liste Ansicht (blau = Alle neuen Timer löschen, 9 = Alle Timer aus der Datenbank löschen)
+	- Serien-/Staffelstarts werden jetzt aus den Daten des SerienServers generiert
+	- Farbnamen in den Skins durch Farbcodes ersetzt um Probleme mit dem VTI 11 zu vermeiden
 
 Bugfixes:
-	- Schaltjahr Bug behoben
-	- Problem mit Backup Timern behoben
-	- Problem mit Event-Programmierungen behoben
-	- Die Option "Verwende bevorzugte Senderliste" in den Serien-Marker Einstellungen bricht jetzt ab, wenn der Sender nicht in der Liste ist
+	- Schreibfehler beim folder.jpg behoben
+	- Verbessertes Exception Handling um Abstürze wegen fehlender Daten zu verhindern
+	- Wird der SerienRecorder in der Serien-Marker Ansicht gestartet wurden beim Verlassen immer Daten der Serien-Planer Ansicht geladen, das hat das Beenden verzögert
 	
 Viel Spass mit dem SerienRecorder!
 
