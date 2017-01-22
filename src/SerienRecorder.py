@@ -863,6 +863,7 @@ def getEmailData():
 	# [transmission_serie]: </strong> -> serie -> [transmission_serieend]
 	# [transmission_serieend]: <span> -> title == 'Staffel' -> [transmission_season]
 	# [transmission_serieend]: <span> -> title == 'Episode' -> [transmission_episode]
+	# [transmission_serieend]: <span> -> title == 'xxx' -> [transmission_transmission_serieend]
 	# [transmission_serieend]: <span> -> title != 'Staffel' and title != 'Episode' ->
 	#                          Staffel = Episode = '0' -> [transmission_title]
 	# [transmission_season]: >season< -> [transmission_serieend]
@@ -926,6 +927,9 @@ def getEmailData():
 					elif name == 'title' and value == 'Episode':
 						found = True
 						self.state = 'transmission_episode'
+						break
+					elif name == 'title':
+						found = True
 						break
 				if not found:
 					self.transmission.append(self.season)
