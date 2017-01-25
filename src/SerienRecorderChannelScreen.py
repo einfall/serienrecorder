@@ -594,7 +594,6 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		if not answer:
 			return
 		cCursor = SerienRecorder.dbSerRec.cursor()
-		cCursor.execute("DELETE FROM NeuerStaffelbeginn WHERE LOWER(Sender)=?", (self.selected_sender.lower(),))
 		cCursor.execute("DELETE FROM SenderAuswahl WHERE LOWER(ErlaubterSender)=?", (self.selected_sender.lower(),))
 		cCursor.execute("DELETE FROM Channels WHERE LOWER(WebChannel)=?", (self.selected_sender.lower(),))
 		SerienRecorder.dbSerRec.commit()
