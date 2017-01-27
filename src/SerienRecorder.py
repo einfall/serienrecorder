@@ -2457,9 +2457,9 @@ class serienRecCheckForRecording():
 		if config.plugins.serienRec.autochecktype.value == "0":
 			writeLog("Auto-Check ist deaktiviert - nur manuelle Timersuche", True)
 		elif config.plugins.serienRec.autochecktype.value == "1":
-			writeLog("Auto-Check wird zur gewählten Uhrzeit gestartet", True)
+			writeLog("Auto-Check ist aktiviert - er wird zur gewählten Uhrzeit gestartet", True)
 		elif config.plugins.serienRec.autochecktype.value == "2":
-			writeLog("Auto-Check wird nach dem EPGRefresh ausgeführt", True)
+			writeLog("Auto-Check ist aktiviert - er wird nach dem EPGRefresh ausgeführt", True)
 
 		if not self.manuell and config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
@@ -2730,9 +2730,9 @@ class serienRecCheckForRecording():
 		daylist = [[]]
 
 		headDate = [data["date"]]
-		txt = headDate[0].split(",")
-		(day, month, year) = txt[1].split(".")
-		UTCDatum = TimeHelpers.getRealUnixTime(0, 0, day, month, year)
+		#txt = headDate[0].split(",")
+		#(day, month, year) = txt[1].split(".")
+		#UTCDatum = TimeHelpers.getRealUnixTime(0, 0, day, month, year)
 
 		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
 			timers = getTimer(daypage)
@@ -2876,8 +2876,8 @@ class serienRecCheckForRecording():
 						except Exception:
 							print "[SerienRecorder] Modifying enigma2 Timer failed:", title, serien_time
 							writeLog("' %s ' - Timeraktualisierung fehlgeschlagen @ %s" % (title, webChannel), True)
-						if not timerUpdated:
-							writeLog("   Timer muss nicht aktualisiert werden @ %s" % webChannel, True)
+						#if not timerUpdated:
+						#	writeLog("   Timer muss nicht aktualisiert werden @ %s" % webChannel, True)
 						break
 						
 			dbSerRec.commit()
@@ -7002,7 +7002,13 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 		if readConfig:
 			ReadConfigFile()
-			
+
+		self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
+							[buttonText_na, buttonText_na, "About"],
+							[buttonText_na, buttonText_na, buttonText_na],
+							[buttonText_na, buttonText_na, buttonText_na],
+							[buttonText_na, buttonText_na, "Sender zuordnen"])
+
 		self.setupSkin()
 		global showAllButtons
 		if showAllButtons:
@@ -7105,13 +7111,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['text_0'].show()
 			self['text_1'].show()
 			#self['text_3'].show()
-
-		else:
-			self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
-								[buttonText_na, buttonText_na, "About"],
-								[buttonText_na, buttonText_na, buttonText_na],
-								[buttonText_na, buttonText_na, buttonText_na],
-								[buttonText_na, buttonText_na, "Sender zuordnen"])
 
 	def showManual(self):
 		if OperaBrowserInstalled:
