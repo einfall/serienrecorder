@@ -27,7 +27,7 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.4.1-beta'
+SRVERSION = '3.4.3-beta'
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes

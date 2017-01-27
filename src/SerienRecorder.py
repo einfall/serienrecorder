@@ -860,14 +860,17 @@ def getEmailData():
 	# [transmission_url]: <a> -> url = href -> [transmission_serie]
 	# [transmission_serie]: <strong> -> serie = ''
 	# [transmission_serie]: serie += >serie<
-	# [transmission_serie]: </strong> -> serie -> [transmission_serieend]
-	# [transmission_serieend]: <span> -> title == 'Staffel' -> [transmission_season]
-	# [transmission_serieend]: <span> -> title == 'Episode' -> [transmission_episode]
-	# [transmission_serieend]: <span> -> title == 'xxx' -> [transmission_transmission_serieend]
-	# [transmission_serieend]: <span> -> title != 'Staffel' and title != 'Episode' ->
-	#                          Staffel = Episode = '0' -> [transmission_title]
-	# [transmission_season]: >season< -> [transmission_serieend]
-	# [transmission_episode]: >episode< -> [transmission_serieend]
+	# [transmission_serie]: </strong> -> serie -> [transmission_serie_end]
+	# [transmission_serie_end]: <span> -> title == 'Staffel' -> [transmission_season]
+	# [transmission_serie_end]: <span> -> title == 'Episode' -> [transmission_episode]
+	# [transmission_serie_end]: <span> -> title == 'xxx' -> [transmission_transmission_serie_end]
+	# [transmission_serie_end]: <span> -> title != 'Staffel' and title != 'Episode' ->
+	#                          save transmission, Staffel = Episode = '0' -> [transmission_title]
+	# [transmission_title_end]: <span> -> title == 'Staffel' -> recover transmission, [transmission_season]
+	# [transmission_title_end]: <span> -> title == 'Episode' -> recover transmission, [transmission_episode]
+	# [transmission_title_end]: <span> -> title == 'xxx' -> -> recover transmission, [transmission_serie_end]
+	# [transmission_season]: >season< -> [transmission_serie_end]
+	# [transmission_episode]: >episode< -> [transmission_serie_end]
 	# [transmission_title]: <span> -> title = ''
 	# [transmission_title]: title += >title<
 	# [transmission_title]: </span> -> [transmission_title_end]
@@ -887,6 +890,7 @@ def getEmailData():
 			self.state = 'start'
 			self.date = ()
 			self.transmission = []
+			self.transmission_save = []
 			self.transmissions = []
 			self.season = '0'
 			self.episode = '0'
@@ -917,7 +921,7 @@ def getEmailData():
 				self.data = ''
 			elif self.state == 'transmission_desc' and tag == 'div':
 				self.data = ''
-			elif self.state == 'transmission_serieend' and tag == 'span' :
+			elif self.state == 'transmission_serie_end' and tag == 'span' :
 				found = False
 				for name, value in attrs:
 					if name == 'title' and value == 'Staffel':
@@ -932,10 +936,30 @@ def getEmailData():
 						found = True
 						break
 				if not found:
+					# do copy by creating new object for later recovery
+					self.transmission_save = self.transmission + []
 					self.transmission.append(self.season)
 					self.transmission.append(self.episode)
 					self.season = self.episode = '0'
 					self.state = 'transmission_title'
+			elif self.state == 'transmission_title_end' and tag == 'span' :
+				found = False
+				for name, value in attrs:
+					if name == 'title' and value == 'Staffel':
+						found = True
+						self.state = 'transmission_season'
+						break
+					elif name == 'title' and value == 'Episode':
+						found = True
+						self.state = 'transmission_episode'
+						break
+					elif name == 'title':
+						found = True
+						break
+				if found:
+					# do copy by creating new object for recovery
+					self.transmission = self.transmission_save + []
+					self.transmission_save = []
 		
 		def handle_endtag(self, tag):
 			# print "Encountered an end tag :", tag
@@ -948,7 +972,7 @@ def getEmailData():
 				# append collected data
 				self.transmission.append(self.data)
 				self.data = ''
-				self.state = 'transmission_serieend'
+				self.state = 'transmission_serie_end'
 			elif self.state == 'transmission_title' and tag == 'span':
 				# append collected data
 				self.transmission.append(self.data)
@@ -1002,11 +1026,11 @@ def getEmailData():
 			elif self.state == 'transmission_season':
 				# match season
 				self.season = data
-				self.state = 'transmission_serieend'
+				self.state = 'transmission_serie_end'
 			elif self.state == 'transmission_episode':
 				# match episode
 				self.episode = data
-				self.state = 'transmission_serieend'
+				self.state = 'transmission_serie_end'
 			elif self.state == 'transmission_title':
 				# match title
 				self.data += data
