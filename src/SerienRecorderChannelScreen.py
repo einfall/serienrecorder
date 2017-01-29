@@ -65,6 +65,12 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			"displayHelp_long" : self.showManual,
 		}, 0)
 
+		global showAllButtons
+		if config.plugins.serienRec.SkinType.value in ("", "AtileHD"):
+			showAllButtons = False
+		else:
+			showAllButtons = True
+
 		self.setupSkin()
 
 		self.modus = "list"

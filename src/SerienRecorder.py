@@ -216,6 +216,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.defaultStaffel = ConfigSelection(choices = [("0","'Alle'"), ("1", "'Manuell'")], default="0")
 	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default = True)
 	config.plugins.serienRec.runAutocheckAtExit = ConfigYesNo(default = False)
+	config.plugins.serienRec.downloadCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default = False)
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default = True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default = True)
@@ -258,8 +259,14 @@ def ReadConfigFile():
 	config.plugins.serienRec.updateInterval.save()
 	if config.plugins.serienRec.planerCacheSize.value > 4:
 		config.plugins.serienRec.planerCacheSize.value = 4
+	config.plugins.serienRec.planerCacheSize.save()
 	if config.plugins.serienRec.screenplaner.value > 2:
 		config.plugins.serienRec.screenplaner.value = 1
+	config.plugins.serienRec.screenplaner.save()
+
+	if config.plugins.serienRec.showCover.value:
+		config.plugins.serienRec.downloadCover.value = True
+	config.plugins.serienRec.downloadCover.save()
 
 	configfile.save()
 	
@@ -381,14 +388,14 @@ def retry(times, func, *args, **kwargs):
 	return deferred
 
 def getCover(self, serien_name, serien_id):
-	if not config.plugins.serienRec.showCover.value:
+	if not config.plugins.serienRec.downloadCover.value:
 		return
 
 	serien_name = serien_name.encode('utf-8')
 	serien_nameCover = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)
 	png_serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
 
-	if self is not None: 
+	if self is not None and config.plugins.serienRec.showCover.value:
 		self['cover'].hide()
 		global coverToShow
 		coverToShow = serien_nameCover
@@ -404,7 +411,8 @@ def getCover(self, serien_name, serien_id):
 		os.rename(png_serien_nameCover, serien_nameCover)
 
 	if fileExists(serien_nameCover):
-		if self is not None: showCover(serien_nameCover, self, serien_nameCover)
+		if self is not None and config.plugins.serienRec.showCover.value:
+			showCover(serien_nameCover, self, serien_nameCover)
 	elif serien_id:
 		try:
 			posterURL = SeriesServer().doGetCoverURL(int(serien_id), serien_name)
@@ -427,7 +435,7 @@ def getCoverDataError(error, self, serien_nameCover):
 	print error
 
 def showCover(data, self, serien_nameCover, force_show=True):
-	if self is not None: 
+	if self is not None and config.plugins.serienRec.showCover.value:
 		if not force_show:
 			global coverToShow
 			if coverToShow == serien_nameCover:
@@ -661,7 +669,8 @@ def CreateDirectory(serien_name, staffel, cover_only = False):
 			if e.error != 17:
 				raise
 
-	if fileExists(dirname):
+	# Copy cover only if path exists and series sub dir is activated
+	if fileExists(dirname) and config.plugins.serienRec.seriensubdir.value:
 		if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
 			shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
 		if config.plugins.serienRec.seasonsubdir.value:
@@ -2848,7 +2857,6 @@ class serienRecCheckForRecording():
 					title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 					(dirname, dirname_serie) = getDirname(serien_name, staffel)
 					for event_entry in event_matches:
-						writeLog("' %s - %s '" % (title, dirname))
 						eit = int(event_entry[1])
 						start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
 						end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
@@ -2857,6 +2865,7 @@ class serienRecCheckForRecording():
 
 						timerUpdated = False
 						if str(staffel) is 'S' and str(episode) is '0':
+							writeLog("' %s - %s '" % (title, dirname))
 							writeLog("   Timer kann nicht aktualisiert werden @ %s" % webChannel, True)
 							break
 
@@ -2865,19 +2874,17 @@ class serienRecCheckForRecording():
 							timerUpdated = self.updateTimer(recordHandler.timer_list, cTimer, eit, end_unixtime, episode,
 							                              new_serien_title, serien_name, serien_time,
 							                              staffel, start_unixtime, stbRef, title,
-							                              webChannel)
+							                              dirname)
 
 							if not timerUpdated:
 								# suche in deaktivierten Timern
 								timerUpdated = self.updateTimer(recordHandler.processed_timers, cTimer, eit, end_unixtime, episode,
 							                              new_serien_title, serien_name, serien_time,
 							                              staffel, start_unixtime, stbRef, title,
-							                              webChannel)
+							                              dirname)
 						except Exception:
 							print "[SerienRecorder] Modifying enigma2 Timer failed:", title, serien_time
 							writeLog("' %s ' - Timeraktualisierung fehlgeschlagen @ %s" % (title, webChannel), True)
-						#if not timerUpdated:
-						#	writeLog("   Timer muss nicht aktualisiert werden @ %s" % webChannel, True)
 						break
 						
 			dbSerRec.commit()
@@ -2886,7 +2893,7 @@ class serienRecCheckForRecording():
 		cCursor.close()
 		cTimer.close()
 
-	def updateTimer(self, timer_list, cTimer, eit, end_unixtime, episode, new_serien_title, serien_name, serien_time, staffel, start_unixtime, stbRef, title, webChannel):
+	def updateTimer(self, timer_list, cTimer, eit, end_unixtime, episode, new_serien_title, serien_name, serien_time, staffel, start_unixtime, stbRef, title, dirname):
 		timerUpdated = False
 		for timer in timer_list:
 			if timer and timer.service_ref:
@@ -2935,20 +2942,31 @@ class serienRecCheckForRecording():
 					timer.description = timer_description
 					updateDescription = True
 
-				if updateEIT or updateStartTime or updateName or updateDescription:
+				# Directory
+				updateDirectory = False
+				old_dirname = timer.dirname
+				if timer.dirname != dirname:
+					CreateDirectory(serien_name, staffel)
+					timer.dirname = dirname
+					updateDirectory = True
+
+				if updateEIT or updateStartTime or updateName or updateDescription or updateDirectory:
+					writeLog("' %s - %s '" % (title, dirname))
 					NavigationInstance.instance.RecordTimer.saveTimer()
 					sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=?"
 					cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
 					new_start = time.strftime("%d.%m - %H:%M", time.localtime(int(start_unixtime)))
 					old_start = time.strftime("%d.%m - %H:%M", time.localtime(int(serien_time)))
 					if updateStartTime:
-						writeLog("   Startzeit wurde aktualisiert von %s auf %s @ %s" % (old_start, new_start, webChannel), True)
+						writeLog("   Startzeit wurde aktualisiert von %s auf %s" % (old_start, new_start), True)
 					if updateEIT:
-						writeLog("   Event ID wurde aktualisiert von %s auf %s @ %s" % (str(old_eit), str(eit), webChannel), True)
+						writeLog("   Event ID wurde aktualisiert von %s auf %s" % (str(old_eit), str(eit)), True)
 					if updateName:
-						writeLog("   Name wurde aktualisiert von %s auf %s @ %s" % (old_timername, timer_name, webChannel), True)
+						writeLog("   Name wurde aktualisiert von %s auf %s" % (old_timername, timer_name), True)
 					if updateDescription:
-						writeLog("   Beschreibung wurde aktualisiert von %s auf %s @ %s" % (old_timerdescription, timer_description, webChannel), True)
+						writeLog("   Beschreibung wurde aktualisiert von %s auf %s" % (old_timerdescription, timer_description), True)
+					if updateDirectory:
+						writeLog("   Verzeichnis wurde aktualisiert von %s auf %s" % (old_dirname, dirname), True)
 					self.countTimerUpdate += 1
 					timerUpdated = True
 				break
@@ -7509,9 +7527,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("Zeige Picons:", config.plugins.serienRec.showPicons))
 			if config.plugins.serienRec.showPicons.value:
 				self.list.append(getConfigListEntry("    Verzeichnis mit Picons:", config.plugins.serienRec.piconPath))
-			self.list.append(getConfigListEntry("Zeige Cover:", config.plugins.serienRec.showCover))
-			if config.plugins.serienRec.showCover.value:
+			self.list.append(getConfigListEntry("Cover herunterladen:", config.plugins.serienRec.downloadCover))
+			if config.plugins.serienRec.downloadCover.value:
 				self.list.append(getConfigListEntry("    Speicherort der Cover:", config.plugins.serienRec.coverPath))
+				self.list.append(getConfigListEntry("    Zeige Cover:", config.plugins.serienRec.showCover))
 			self.list.append(getConfigListEntry("Korrektur der Schriftgröße in Listen:", config.plugins.serienRec.listFontsize))
 			self.list.append(getConfigListEntry("Sortierung der Serien-Marker:", config.plugins.serienRec.markerSort))
 			self.list.append(getConfigListEntry("Anzahl der wählbaren Staffeln im Menü Serien-Marker:", config.plugins.serienRec.max_season))
@@ -7714,6 +7733,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 										                        "falls der Timer auf dem bevorzugten Sender nicht angelegt werden kann.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.showPicons :              ("Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.piconPath :               ("Wählen Sie das Verzeichnis aus dem die Sender-Logos geladen werden sollen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.", "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.downloadCover :           ("Bei 'nein' werden keine Cover heruntergeladen und angezeigt.\n"
+																"Bei 'ja' werden Cover heruntergeladen.\n"
+																"  - Wenn 'Zeige Cover' auf 'ja' steht, werden alle Cover heruntergeladen.\n"
+																"  - Wenn 'Zeige Cover' auf 'nein' steht, werden beim Auto-Check nur Cover der Serien-Marker heruntergeladen.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.showCover :               ("Bei 'nein' werden keine Cover angezeigt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.listFontsize :            ("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.intensiveTimersuche :     ("Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.", "intensive_Suche"),
@@ -7792,6 +7815,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 		if config.plugins.serienRec.planerCacheSize.value > 4:
 			config.plugins.serienRec.planerCacheSize.value = 4
+
+		if not config.plugins.serienRec.downloadCover.value:
+			config.plugins.serienRec.showCover.value = False
 
 		config.plugins.serienRec.BoxID.save()
 		config.plugins.serienRec.activateNewOnThisSTBOnly.save()
@@ -7882,6 +7908,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.openMarkerScreen.save()
 		config.plugins.serienRec.showPicons.save()
 		config.plugins.serienRec.piconPath.save()
+		config.plugins.serienRec.downloadCover.save()
 		config.plugins.serienRec.showCover.save()
 		config.plugins.serienRec.listFontsize.save()
 		config.plugins.serienRec.intensiveTimersuche.save()

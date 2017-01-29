@@ -16,6 +16,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.ErrorMsg = "unbekannt"
 		self.piconLoader = PiconLoader()
 		self.picloader = None
+		self.filter = False
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok": (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
@@ -25,6 +26,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			"up": (self.keyUp, "eine Zeile nach oben"),
 			"down": (self.keyDown, "eine Zeile nach unten"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
+			"yellow": (self.keyYellow, "Zeige nur Serien-Starts"),
 			"startTeletext": (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
 			"startTeletext_long": (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
 			"0"	: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
@@ -62,6 +64,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		setSkinProperties(self)
 
 		self['text_ok'].setText("Marker hinzufügen")
+		self['text_yellow'].setText("Zeige Serienstarts")
 
 		self.num_bt_text[3][0] = buttonText_na
 		super(self.__class__, self).setSkinProperties()
@@ -75,12 +78,14 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		global showAllButtons
 		if not showAllButtons:
 			self['bt_ok'].show()
+			self['bt_yellow'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			#self['bt_info'].show()
 			self['bt_menu'].show()
 
 			self['text_ok'].show()
+			self['text_yellow'].show()
 			self['text_0'].show()
 			#self['text_1'].show()
 			#self['text_2'].show()
@@ -107,16 +112,19 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		except:
 			print "[SerienRecorder]: Abfrage beim SerienServer doGetSeasonBegins() fehlgeschlagen"
 
-		self['title'].setText("%d neue Serien/Staffeln gefunden:" % len(self.proposalList))
-		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
-		if self['menu_list'].getCurrent():
-			serien_name = self[self.modus].getCurrent()[0][0]
-			super(self.__class__, self).getCover(serien_name)
-
 	def buildProposalList(self):
 		markers = getAllMarkers()
 		self.proposalList = []
+
+		if self.filter:
+			self['text_yellow'].setText("Serien-/Staffelstarts")
+		else:
+			self['text_yellow'].setText("Zeige Serienstarts")
+
 		for event in self.transmissions['events']:
+			if self.filter and str(event['season']).isdigit() and int(event['season']) > 1:
+				continue
+
 			seriesName = event['name'].encode('utf-8')
 			lowerCaseSeriesName = seriesName.lower()
 
@@ -127,6 +135,16 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 			url = "http://www.wunschliste.de/epg_print.pl?s=%d" % event['id']
 			self.proposalList.append([seriesName, event['season'], event['channel'].encode('utf-8'), event['start'], url, markerFlag])
+
+		if self.filter:
+			self['title'].setText("%d neue Serien gefunden:" % len(self.proposalList))
+		else:
+			self['title'].setText("%d neue Serien/Staffeln gefunden:" % len(self.proposalList))
+
+		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
+		if self['menu_list'].getCurrent():
+			serien_name = self[self.modus].getCurrent()[0][0]
+			super(self.__class__, self).getCover(serien_name)
 
 	def buildList(self, entry):
 		(Serie, Staffel, Sender, UTCTime, Url, MarkerFlag) = entry
@@ -293,6 +311,13 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			row = (0, 999999, 0)
 		cCursor.close()
 		return row
+
+	def keyYellow(self):
+		if self.filter:
+			self.filter = False
+		else:
+			self.filter = True
+		self.buildProposalList()
 
 	def keyLeft(self):
 		self[self.modus].pageUp()
