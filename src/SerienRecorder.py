@@ -890,7 +890,7 @@ def getEmailData():
 	# [transmission_desc]: desc += >desc<
 	# [transmission_desc]: </div> -> desc -> [transmission_endtime]
 	# [transmission_endtime]: >endtime< -> [transmission_sender] | [error]
-	# [transmission_sender]: >sender< -> [transmission_end]
+	# [transmission_sender]: <img> sender = title -> [transmission_end]
 	# [transmission_end]: </tr> -> [transmission]
 	# 
 	class TVPlaner_HTMLParser(HTMLParser):
@@ -969,6 +969,13 @@ def getEmailData():
 					# do copy by creating new object for recovery
 					self.transmission = self.transmission_save + []
 					self.transmission_save = []
+			elif self.state == 'transmission_sender' and tag == 'img':
+				# match sender
+				for name, value in attrs:
+					if name == 'title':
+						self.transmission.append(value)
+						break
+				self.state = 'transmission_end'
 		
 		def handle_endtag(self, tag):
 			# print "Encountered an end tag :", tag
