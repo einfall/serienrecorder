@@ -216,7 +216,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.defaultStaffel = ConfigSelection(choices = [("0","'Alle'"), ("1", "'Manuell'")], default="0")
 	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default = True)
 	config.plugins.serienRec.runAutocheckAtExit = ConfigYesNo(default = False)
-	config.plugins.serienRec.downloadCover = ConfigYesNo(default=False)
+	config.plugins.serienRec.downloadCover = ConfigYesNo(default = False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default = False)
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default = True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default = True)
@@ -1375,16 +1375,29 @@ def addToAddedList(seriesName, fromEpisode, toEpisode, season, episodeTitle):
 
 def initDB():
 	global dbSerRec
+	global serienRecDataBase
 
 	# If database is at old default location (SerienRecorder plugin folder) we have to move the db to new default location
 	if fileExists("%sSerienRecorder.db" % serienRecMainPath):
 		shutil.move("%sSerienRecorder.db" % serienRecMainPath, serienRecDataBase)
+
+	if not fileExists(serienRecDataBase):
+		config.plugins.serienRec.databasePath.value = "/etc/enigma2"
+		config.plugins.serienRec.databasePath.save()
+		configfile.save()
+		writeLog("Datenbankpfad nicht gefunden, auf Standardpfad zurückgesetzt!")
+		print "Datenbankpfad nicht gefunden, auf Standardpfad zurückgesetzt!"
+		Notifications.AddPopup(
+			"SerienRecorder Datenbank wurde nicht gefunden.\nDer Standardpfad für die Datenbank wurde wiederhergestellt!",
+			MessageBox.TYPE_INFO, timeout=10)
+		serienRecDataBase = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
 
 	try:
 		dbSerRec = sqlite3.connect(serienRecDataBase)
 		dbSerRec.text_factory = lambda x: str(x.decode("utf-8"))
 	except:
 		writeLog("Fehler beim Initialisieren der Datenbank")
+		print "Fehler beim Initialisieren der Datenbank"
 		Notifications.AddPopup("SerienRecorder Datenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!", MessageBox.TYPE_INFO, timeout=10)
 		return False
 
@@ -1458,7 +1471,6 @@ def initDB():
 		dbSerRec.commit()
 		cCursor.close()
 
-		ImportFilesToDB()
 	else:
 		dbVersionMatch = False
 		dbIncompatible = False
@@ -1851,270 +1863,6 @@ def updateDB():
 	dbSerRec.commit()
 	cCursor.close()
 	
-def ImportFilesToDB():
-	channelFile = "%schannels" % serienRecMainPath
-	addedFile = "%sadded" % serienRecMainPath
-	timerFile = "%stimer" % serienRecMainPath
-	markerFile = "%smarker" % serienRecMainPath
-
-	if fileExists(channelFile):
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT * FROM Channels")
-		row = cCursor.fetchone()
-		if not row:
-			cCursor.execute("DELETE FROM Channels")
-			readChannel = open(channelFile, "r")
-			for rawData in readChannel.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(webChannel, stbChannel, stbRef, status) = data[0]
-				if stbChannel == "Nicht gefunden":
-					stbChannel = ""
-				if stbRef == "serviceref":
-					stbRef = ""
-				cCursor.execute("INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)", (webChannel, stbChannel, stbRef, status))
-			readChannel.close()
-		dbSerRec.commit()
-		cCursor.close()
-		
-		shutil.move(channelFile, "%s_old" % channelFile)
-		#os.remove(channelFile)
-		
-		# Codierung Channels korrigieren
-		f = dbSerRec.text_factory
-		dbSerRec.text_factory = str
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps FROM Channels")
-		for row in cCursor:
-			(WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps) = row
-			try:
-				WebChannelNew = WebChannel.decode('utf-8')
-			except:
-				WebChannelNew = decodeISO8859_1(WebChannel)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute ("DELETE FROM Channels WHERE WebChannel=?", (WebChannel,))
-				sql = "INSERT OR IGNORE INTO Channels (WebChannel,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps) VALUES (?,?,?,?,?,?,?,?,?)"
-				cTmp.execute(sql, (WebChannelNew,STBChannel,ServiceRef,alternativSTBChannel,alternativServiceRef,Erlaubt,Vorlaufzeit,Nachlaufzeit,vps))
-				cTmp.close()
-
-			try:
-				STBChannelNew = STBChannel.decode('utf-8')
-			except:
-				STBChannelNew = decodeISO8859_1(STBChannel)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute("UPDATE OR IGNORE Channels SET STBChannel=? WHERE STBChannel=?", (STBChannelNew,STBChannel))
-				cTmp.close()
-				
-		cCursor.close()
-		dbSerRec.commit()
-		dbSerRec.text_factory = f
-
-	if fileExists(addedFile):
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT * FROM AngelegteTimer")
-		row = cCursor.fetchone()
-		if not row:
-			readAdded = open(addedFile, "r")
-			for rawData in readAdded.readlines():
-				data = rawData.strip().rsplit(" ", 1)
-				serie = data[0]
-				try:
-					data = re.findall('"S(.*?)E(.*?)"', '"%s"' % data[1], re.S)
-				except:
-					continue
-				(staffel, episode) = data[0]
-				if str(staffel).isdigit():
-					staffel = int(staffel)
-				cCursor.execute('INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, "", 0, "", "")', (serie, staffel, episode))
-			readAdded.close()
-		dbSerRec.commit()
-		cCursor.close()
-		
-		shutil.move(addedFile, "%s_old" % addedFile)
-		#os.remove(addedFile)
-
-		# Codierung AngelegteTimer korrigieren
-		f = dbSerRec.text_factory
-		dbSerRec.text_factory = str
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT Serie, Titel FROM AngelegteTimer")
-		for row in cCursor:
-			(Serie,Titel) = row
-			try:
-				SerieNew = Serie.decode('utf-8')
-			except:
-				SerieNew = decodeISO8859_1(Serie)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute("UPDATE OR IGNORE AngelegteTimer SET Serie=? WHERE Serie=?", (SerieNew,Serie))
-				cTmp.close()
-				
-			try:
-				TitelNew = Titel.decode('utf-8')
-			except:
-				TitelNew = decodeISO8859_1(Titel)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute("UPDATE OR IGNORE AngelegteTimer SET Titel=? WHERE Titel=?", (TitelNew,Titel))
-				cTmp.close()
-				
-		cCursor.close()
-		dbSerRec.commit()
-		dbSerRec.text_factory = f
-
-	if fileExists(timerFile):
-		cCursor = dbSerRec.cursor()
-		readTimer = open(timerFile, "r")
-		for rawData in readTimer.readlines():
-			data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-			(serie, xtitle, start_time, stbRef, webChannel) = data[0]
-			data = re.findall('"S(.*?)E(.*?) - (.*?)"', '"%s"' % xtitle, re.S)
-			(staffel, episode, title) = data[0]
-			if str(staffel).isdigit():
-				staffel = int(staffel)
-			cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (serie.lower(), str(staffel).lower(), episode.lower()))
-			if not cCursor.fetchone():
-				sql = "INSERT OR IGNORE INTO AngelegteTimer (Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel) VALUES (?, ?, ?, ?, ?, ?, ?)"
-				cCursor.execute(sql, (serie, staffel, episode, title, start_time, stbRef, webChannel))
-			else:
-				sql = "UPDATE OR IGNORE AngelegteTimer SET Titel=?, StartZeitstempel=?, ServiceRef=?, webChannel=? WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?"
-				cCursor.execute(sql, (title, start_time, stbRef, webChannel, serie.lower(), str(staffel).lower(), episode.lower()))
-		readTimer.close()
-		dbSerRec.commit()
-		cCursor.close()
-		
-		shutil.move(timerFile, "%s_old" % timerFile)
-		#os.remove(timerFile)
-		
-		# Codierung AngelegteTimer korrigieren
-		f = dbSerRec.text_factory
-		dbSerRec.text_factory = str
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT Serie,Titel,webChannel FROM AngelegteTimer")
-		for row in cCursor:
-			(Serie,Titel,webChannel) = row
-			try:
-				SerieNew = Serie.decode('utf-8')
-			except:
-				SerieNew = decodeISO8859_1(Serie)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute("UPDATE OR IGNORE AngelegteTimer SET Serie=? WHERE Serie=?", (SerieNew,Serie))
-				cTmp.close()
-				
-			try:
-				TitelNew = Titel.decode('utf-8')
-			except:
-				TitelNew = decodeISO8859_1(Titel)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute("UPDATE OR IGNORE AngelegteTimer SET Titel=? WHERE Titel=?", (TitelNew,Titel))
-				cTmp.close()
-				
-			try:
-				webChannelNew = webChannel.decode('utf-8')
-			except:
-				webChannelNew = decodeISO8859_1(webChannel)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute("UPDATE OR IGNORE AngelegteTimer SET webChannel=? WHERE webChannel=?", (webChannelNew,webChannel))
-				cTmp.close()
-				
-		cCursor.close()
-		dbSerRec.commit()
-		dbSerRec.text_factory = f
-		
-	if fileExists(markerFile):
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT * FROM SerienMarker")
-		row = cCursor.fetchone()
-		if not row:
-			readMarker = open(markerFile, "r")
-			for rawData in readMarker.readlines():
-				data = re.findall('"(.*?)" "(.*?)" "(.*?)" "(.*?)"', rawData, re.S)
-				(serie, url, staffeln, sender) = data[0]
-				staffeln = staffeln.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
-				AlleStaffelnAb = 999999
-				if "Manuell" in staffeln:
-					AlleStaffelnAb = -2
-					staffeln = []
-				elif "Alle" in staffeln:
-					AlleStaffelnAb = 0
-					staffeln = []
-				else:
-					if "folgende" in staffeln:
-						staffeln.remove("folgende")
-						staffeln.sort(key=int, reverse=True)
-						AlleStaffelnAb = int(staffeln[0])
-						staffeln = staffeln[1:]
-						
-					staffeln.sort(key=int)
-
-				sender = sender.replace("[","").replace("]","").replace("'","").split(",")
-				alleSender = 0
-				if "Alle" in sender:
-					alleSender = 1
-					sender = []
-				else:
-					sender.sort()
-
-				cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, ?, ?, -1)", (serie, url, AlleStaffelnAb, alleSender))
-				ID = cCursor.lastrowid
-				if len(staffeln) > 0:
-					IDs = [ID,]*len(staffeln)					
-					staffel_list = zip(IDs, staffeln)
-					cCursor.executemany("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", staffel_list)
-				if len(sender) > 0:
-					IDs = [ID,]*len(sender)					
-					sender_list = zip(IDs, sender)
-					cCursor.executemany("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", sender_list)
-				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, 0xFFFF))
-			readMarker.close()
-		dbSerRec.commit()
-		cCursor.close()
-		
-		shutil.move(markerFile, "%s_old" % markerFile)
-		#os.remove(markerFile)
-
-		# Codierung SerienMarker korrigieren
-		f = dbSerRec.text_factory
-		dbSerRec.text_factory = str
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT Serie FROM SerienMarker")
-		for row in cCursor:
-			(Serie,) = row
-			try:
-				SerieNew = Serie.decode('utf-8')
-			except:
-				SerieNew = decodeISO8859_1(Serie)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute("UPDATE OR IGNORE SerienMarker SET Serie=? WHERE Serie=?", (SerieNew,Serie))
-				cTmp.close()
-				
-		cCursor.close()
-		dbSerRec.commit()
-		dbSerRec.text_factory = f
-			
-		# Codierung SenderAuswahl korrigieren
-		f = dbSerRec.text_factory
-		dbSerRec.text_factory = str
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT ErlaubterSender FROM SenderAuswahl")
-		for row in cCursor:
-			(ErlaubterSender,) = row
-			try:
-				ErlaubterSenderNew = ErlaubterSender.decode('utf-8')
-			except:
-				ErlaubterSenderNew = decodeISO8859_1(ErlaubterSender)
-				cTmp = dbSerRec.cursor()
-				cTmp.execute("UPDATE OR IGNORE SenderAuswahl SET ErlaubterSender=? WHERE ErlaubterSender=?", (ErlaubterSenderNew,ErlaubterSender))
-				cTmp.close()
-				
-		cCursor.close()
-		dbSerRec.commit()
-		dbSerRec.text_factory = f
-
-	cCursor = dbSerRec.cursor()
-	cCursor.execute("VACUUM")
-	dbSerRec.commit()
-	cCursor.close()
-	
-	return True
-
 def writePlanerData(planerType):
 	if not os.path.exists("%stmp/" % serienRecMainPath):
 		try:
@@ -8317,12 +8065,21 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 		else:
 			ConfigListScreen.keyOK(self)
 			if self['config'].instance.getCurrentIndex() == 0:
-				if not self.savetopath.value:
-					start_dir = config.plugins.serienRec.savetopath.value
+				if config.plugins.serienRec.seriensubdir.value:
+					self.session.openWithCallback(self.openFileSelector, MessageBox,
+								  "Hier wird das direkte Aufnahme-Verzeichnis für die Serie ausgewählt, es wird nicht automatisch ein Serien-Ordner angelegt.\n\nMit der blauen Taste kann ein Serien-Ordner manuell angelegt werden.",
+								  MessageBox.TYPE_INFO, timeout=15)
 				else:
-					start_dir = self.savetopath.value
-				self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Aufnahme-Verzeichnis auswählen")
+					self.openFileSelector(True)
 
+	def openFileSelector(self, answer):
+		if not self.savetopath.value:
+			start_dir = config.plugins.serienRec.savetopath.value
+		else:
+			start_dir = self.savetopath.value
+
+		self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir,
+									  "Aufnahme-Verzeichnis auswählen", self.Serie)
 
 	def selectedMediaFile(self, res):
 		if res is not None:
@@ -8711,11 +8468,12 @@ class serienRecChannelSetup(Screen, ConfigListScreen, HelpableScreen):
 		self.close()
 
 class SerienRecFileList(Screen, HelpableScreen):
-	def __init__(self, session, initDir, title):
+	def __init__(self, session, initDir, title, seriesName = ''):
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.initDir = initDir
 		self.title = title
+		self.seriesNames = seriesName
 		
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
@@ -8816,7 +8574,7 @@ class SerienRecFileList(Screen, HelpableScreen):
 		self.close(self.fullpath)
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = "Verzeichnis-Name eingeben:")
+		self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title = "Verzeichnis-Name eingeben:", text = self.seriesNames)
 
 	def wSearch(self, Path_name):
 		if Path_name:
@@ -10666,9 +10424,6 @@ class serienRecMain(Screen, HelpableScreen):
 		
 		ReadConfigFile()
 
-		if not initDB():
-			self.close()
-
 		if not os.path.exists(config.plugins.serienRec.piconPath.value):
 			config.plugins.serienRec.showPicons.value = False
 
@@ -10698,7 +10453,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self.daylist = [[]]
 		self.displayTimer = None
 		self.displayMode = 1
-		self.serviceRefs = getActiveServiceRefs()
+		self.serviceRefs = None
 
 		self.onLayoutFinish.append(self.setSkinProperties)
 
@@ -11001,10 +10756,16 @@ class serienRecMain(Screen, HelpableScreen):
 			if config.plugins.serienRec.timeUpdate.value:
 				serienRecCheckForRecording(self.session, False, False)
 
+		if not initDB():
+			self.keyCancel()
+			self.close()
+			return
+
 		if self.isChannelsListEmpty():
 			print "[SerienRecorder] Channellist is empty !"
 			self.session.openWithCallback(self.readPlanerData, serienRecMainChannelEdit)
 		else:
+			self.serviceRefs = getActiveServiceRefs()
 			if not showMainScreen:
 				self.session.openWithCallback(self.readPlanerData, serienRecMarker)
 			else:
@@ -11439,7 +11200,8 @@ class serienRecMain(Screen, HelpableScreen):
 		if self.displayTimer:
 			self.displayTimer.stop()
 			self.displayTimer = None
-		dbSerRec.close()
+		if dbSerRec:
+			dbSerRec.close()
 
 	def keyCancel(self):
 		if self.modus == "list":

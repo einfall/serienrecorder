@@ -2,8 +2,12 @@
 
 # This file contains the SerienRecoder Serien Server stuff
 
+from SerienRecorderHelpers import *
+
+
 # Constants
 SERIES_SERVER_URL = 'http://www.serienserver.de/cache/cache.php'
+REQUEST_PARAMETER = "?device=" + STBHelpers.getSTBType() + "&version=SR" + SRVERSION + "&uuid=" + STBHelpers.getHardwareUUID()
 
 try:
 	import xmlrpclib
@@ -15,7 +19,7 @@ class SeriesServer:
 	def __init__(self):
 		# Check dependencies
 		if xmlrpclib is not None:
-			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_URL)
+			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_URL + REQUEST_PARAMETER)
 
 	def getSeriesID(self, seriesName):
 		try:

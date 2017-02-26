@@ -27,7 +27,7 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.4.4-beta'
+SRVERSION = '3.4.5-beta'
 
 # the new API for the Dreambox DM7080HD changes the behavior
 # of eTimer append - here are the changes
@@ -305,6 +305,16 @@ class STBHelpers:
 			except:
 				STBType = "unknown"
 		return STBType
+
+	@classmethod
+	def getHardwareUUID(cls):
+		try:
+			file = open("/var/lib/dbus/machine-id", "r")
+			uuid = file.readline().strip()
+			file.close()
+		except:
+			uuid = "unknown"
+		return uuid
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
