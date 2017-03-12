@@ -816,10 +816,7 @@ def getEmailData():
 		writeLog("TV-Planer: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
 		return None
 	
-	date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
-	searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
-	searchstr = searchstr.format(date=date)
-	searchstr = searchstr.replace('M\xc3\xa4r', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
+	searchstr = TimeHelpers.getMailSearchString()
 	try:
 		result, data = mail.uid('search', None, searchstr)
 	
@@ -10523,10 +10520,7 @@ class serienRecMain(Screen, HelpableScreen):
 			mail.logout()
 			return None
 
-		date = (datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)).strftime("%d-%b-%Y")
-		searchstr = '(SENTSINCE {date} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
-		searchstr = searchstr.format(date=date)
-		searchstr = searchstr.replace('M\xc3\xa4r', 'Mar').replace('Mai', "May").replace('Okt', 'Oct').replace('Dez', 'Dec')
+		searchstr = TimeHelpers.getMailSearchString()
 		writeLog("IMAP Check: %s" % searchstr, True)
 		try:
 			result, data = mail.uid('search', None, searchstr)

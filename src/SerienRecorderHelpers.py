@@ -170,6 +170,15 @@ class TimeHelpers:
 		tdstr = tdstr_s.format(sign, int(tdhours), int(tdminutes))
 		return tdstr
 
+	@classmethod
+	def getMailSearchString(cls):
+		date = datetime.date.today() - datetime.timedelta(config.plugins.serienRec.imap_mail_age.value)
+		months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+		searchstr = '(SENTSINCE {day:02d}-{month}-{year:04d} HEADER Subject "' + config.plugins.serienRec.imap_mail_subject.value + '")'
+		searchstr = searchstr.format(day=date.day, month=months[date.month - 1], year=date.year)
+		return searchstr
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # STBHelpers - STB related helper functions
