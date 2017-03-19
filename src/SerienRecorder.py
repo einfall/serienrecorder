@@ -4412,16 +4412,18 @@ class serienRecTimer(Screen, HelpableScreen):
 			imageFound = "%simages/black.png" % serienRecMainPath
 
 		if activeTimer:
-			SerieColor = parseColor('foreground').argb()
+			SerieColor = None
 		else:
 			SerieColor = parseColor('red').argb()
+
+		foregroundColor = parseColor('foreground').argb()
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8 * skinFactor, 32 * skinFactor, 32 * skinFactor, loadPNG(imageFound)),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel, SerieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 250 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb()),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 250 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), parseColor('yellow').argb())
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), foregroundColor, foregroundColor)
 			]
 
 	def keyOK(self):
@@ -5220,9 +5222,11 @@ class serienRecMarker(Screen, HelpableScreen):
 				senderText = "%s, Std." % senderText
 
 		if SerieAktiviert:
-			serieColor = parseColor('yellow').argb()
+			serieColor = None
 		else:
 			serieColor = parseColor('red').argb()
+
+		foregroundColor = parseColor('foreground').argb()
 
 		senderText = "Sender (%s): %s" % (senderText, sendern)
 		staffelText = "Staffel: %s" % staffeln
@@ -5231,10 +5235,10 @@ class serienRecMarker(Screen, HelpableScreen):
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffelText),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, senderText),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, infoText),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 49 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText)
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffelText, foregroundColor, foregroundColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, senderText, foregroundColor, foregroundColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, infoText, foregroundColor, foregroundColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 49 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText, foregroundColor, foregroundColor)
 			]
 
 	def keyCheckLong(self):
@@ -6350,7 +6354,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		imageHDD = imageNone
 		imageTimer = imageNone
 		if addedType == 1:
-			titleColor = parseColor('yellow').argb()
+			titleColor = None
 			imageHDD = "%simages/hdd_icon.png" % serienRecMainPath
 		elif addedType == 2:
 			titleColor = parseColor('blue').argb()
@@ -6360,15 +6364,15 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		else:
 			titleColor = parseColor('red').argb()
 
-		dateColor = parseColor('yellow').argb()
+		foregroundColor = parseColor('foreground').argb()
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start), dateColor, dateColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender, foregroundColor, foregroundColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start)),
 		    (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 7 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer)),
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 30 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDD)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
+			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, foregroundColor, foregroundColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 498 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), titleColor, titleColor)
 			]
 
@@ -9242,14 +9246,16 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 
 	def buildList(self, entry):
 		(zeile, Serie, Staffel, Episode, title, start_time, webChannel) = entry
+		foregroundColor = parseColor('foreground').argb()
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
+			(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile, foregroundColor)
 			]
 
 	def buildList_popup(self, entry):
 		(Serie,) = entry
+		foregroundColor = parseColor('foreground').argb()
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, foregroundColor)
 			]
 
 	def answerStaffel(self, aStaffel):
@@ -10970,11 +10976,11 @@ class serienRecMain(Screen, HelpableScreen):
 		elif serieAdded == 2:
 			seriesColor = parseColor('red').argb()
 		else:
-			seriesColor = parseColor('foreground').argb()
+			seriesColor = None
 			if aufnahme:
 				seriesColor = parseColor('blue').argb()
 
-		titleColor = timeColor = parseColor('yellow').argb()
+		titleColor = timeColor = parseColor('foreground').argb()
 
 		if int(neu) == 0:
 			imageNeu = imageNone
@@ -11022,16 +11028,16 @@ class serienRecMain(Screen, HelpableScreen):
 		elif serieAdded == 2:
 			seriesColor = parseColor('red').argb()
 		else:
-			seriesColor = parseColor('foreground').argb()
+			seriesColor = None
 
 		title = "%d Abrufe/Tag" % average
-		titleColor = parseColor('yellow').argb()
+		titleColor = parseColor('foreground').argb()
 
 		rank = "%d." % rank
 
 		return [entry,
 				(eListboxPythonMultiContent.TYPE_TEXT, 5 * skinFactor, 3, 40 * skinFactor, 26 * skinFactor, 0,
-				 RT_HALIGN_RIGHT | RT_VALIGN_CENTER, rank),
+				 RT_HALIGN_RIGHT | RT_VALIGN_CENTER, rank, titleColor, titleColor),
 				(eListboxPythonMultiContent.TYPE_TEXT, 70 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0,
 				 RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, seriesColor, seriesColor),
 				(eListboxPythonMultiContent.TYPE_TEXT, 70 * skinFactor, 29 * skinFactor, 520 * skinFactor,

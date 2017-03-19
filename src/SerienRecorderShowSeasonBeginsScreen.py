@@ -162,6 +162,8 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		if str(Staffel).isdigit() and int(Staffel) == 1:
 			icon = imageNeu
 
+		foregroundColor = parseColor('foreground').argb()
+
 		Staffel = "Staffel %s" % str(Staffel)
 		WochenTag = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+ ", %d.%m.%Y", time.localtime(int(UTCTime)))
@@ -180,30 +182,26 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30
 					 * skinFactor, 30 * skinFactor, loadPNG(icon)),
 					(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0,
-					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
+					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender, foregroundColor, foregroundColor),
 					(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18
-					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb(),
-					 parseColor('yellow').argb()),
+					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime),
 					(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0,
 					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
 					(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18
-					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, parseColor('yellow').argb(),
-					 parseColor('yellow').argb())
+					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel)
 					]
 		else:
 			return [entry,
 					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30 * skinFactor, 30
 					 * skinFactor, loadPNG(icon)),
 					(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0,
-					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender),
+					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender, foregroundColor, foregroundColor),
 					(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18
-					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, parseColor('yellow').argb(),
-					 parseColor('yellow').argb()),
+					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime),
 					(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0,
 					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, setFarbe, setFarbe),
 					(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18
-					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel, parseColor('yellow').argb(),
-					 parseColor('yellow').argb())
+					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Staffel)
 					]
 
 	def serieInfo(self):

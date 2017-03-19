@@ -23,7 +23,7 @@
 
 		<!-- Serienliste -->
 		<widget name="config" position="70,190" size="1200,770" itemHeight="35" font="Regular;20" secondfont="Regular;19" scrollbarMode="showOnDemand" enableWrapAround="1" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="menu_list" position="70,190" size="1200,755" enableWrapAround="1" backgroundColor="#102e2e2e" transparent="1" />
+		<widget name="menu_list" position="70,190" size="1200,755" enableWrapAround="1" foregroundColor="yellow" backgroundColor="#102e2e2e" transparent="1" />
 		<widget name="log" position="70,190" size="1200,755" enableWrapAround="1" backgroundColor="#102e2e2e" transparent="1" />
 		
 		<!-- Anzeige-Modus -->

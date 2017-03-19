@@ -14,8 +14,6 @@ try:
 except ImportError as ie:
 	xmlrpclib = None
 
-import socket
-
 class TimeoutTransport (xmlrpclib.Transport):
 	"""
 	Custom XML-RPC transport class for HTTP connections, allowing a timeout in
@@ -26,22 +24,16 @@ class TimeoutTransport (xmlrpclib.Transport):
 		self._timeout = timeout
 
 	def make_connection(self, host):
-		# If using python 2.6, since that implementation normally returns the
-		# HTTP compatibility class, which doesn't have a timeout feature.
 		import httplib
 		host, extra_headers, x509 = self.get_host_info(host)
 		return httplib.HTTPConnection(host, timeout=self._timeout)
-
-		#conn = xmlrpclib.Transport.make_connection(self, host)
-		#conn.timeout = self._timeout
-		#return conn
 
 class SeriesServer:
 
 	def __init__(self):
 		# Check dependencies
 		if xmlrpclib is not None:
-			t = TimeoutTransport(5)
+			t = TimeoutTransport(7)
 			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_URL + REQUEST_PARAMETER, transport=t)
 
 	def getSeriesID(self, seriesName):
