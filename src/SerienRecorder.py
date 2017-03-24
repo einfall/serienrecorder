@@ -819,7 +819,11 @@ def getEmailData():
 	searchstr = TimeHelpers.getMailSearchString()
 	try:
 		result, data = mail.uid('search', None, searchstr)
-	
+		if result != 'OK':
+			writeLog("TV-Planer: Fehler bei der Suche nach TV-Planer E-Mails", True)
+			writeLog("TV-Planer: %s" % data, True)
+			return None
+
 	except imaplib.IMAP4.error:
 		writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
 		writeLog("TV-Planer: %s" % searchstr, True)
@@ -10531,6 +10535,8 @@ class serienRecMain(Screen, HelpableScreen):
 		try:
 			result, data = mail.uid('search', None, searchstr)
 			writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
+			if result != 'OK':
+				writeLog("IMAP Check: %s" % data, True)
 
 		except imaplib.IMAP4.error:
 			self.session.open(MessageBox, "Fehler beim Abrufen der TV-Planer E-Mail", MessageBox.TYPE_INFO, timeout=10)
