@@ -632,7 +632,7 @@ def getDirname(serien_name, staffel):
 				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 	else: 
 		(dirname, seasonsubdir, url) = row
-		if url.startswith('http://www.wunschliste.de/spielfilm'):
+		if url.startswith('https://www.wunschliste.de/spielfilm'):
 			path = config.plugins.serienRec.tvplaner_movies_filepath.value
 			isCreateSerienSubDir = config.plugins.serienRec.tvplaner_movies_createsubdir.value
 			isCreateSeasonSubDir = False
@@ -1114,13 +1114,13 @@ def getEmailData():
 	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (parser.date[0], parser.date[1])
 	transmissiondict = dict()
 	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
-		if url.startswith('http://www.wunschliste.de/spielfilm'):
+		if url.startswith('https://www.wunschliste.de/spielfilm'):
 			if not config.plugins.serienRec.tvplaner_movies.value:
 				writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % (seriesname), True)
 				print "' %s - Filmaufzeichnung ist deaktiviert '" % (seriesname)
 				continue
 			type = '[ Film ]'
-		elif url.startswith('http://www.wunschliste.de/serie'):
+		elif url.startswith('https://www.wunschliste.de/serie'):
 			if not config.plugins.serienRec.tvplaner_series.value:
 				writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname), True)
 				print "' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname)
@@ -1186,7 +1186,7 @@ def getEmailData():
 					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
 					try:
 						erlaubteSTB = 0xFFFF
-						if url.startswith('http://www.wunschliste.de/serie') and config.plugins.serienRec.tvplaner_series_activeSTB.value or url.startswith('http://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+						if url.startswith('https://www.wunschliste.de/serie') and config.plugins.serienRec.tvplaner_series_activeSTB.value or url.startswith('https://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
 							erlaubteSTB = 0
 							erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
 						cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
@@ -2141,6 +2141,49 @@ class serienRecAddTimer():
 			"eit" : eit
 		}
 
+import os, re, threading
+
+class downloadPlanerData(threading.Thread):
+	def __init__ (self, daypage, webChannels):
+		threading.Thread.__init__(self)
+		self.daypage = daypage
+		self.webChannels = webChannels
+		self.planerData = None
+	def run(self):
+		try:
+			self.planerData = SeriesServer().doGetPlanerData(self.daypage, self.webChannels)
+		except:
+			writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten [%s]\n" % str(self.daypage), True)
+
+	def getData(self):
+		return (self.daypage, self.planerData)
+
+class downloadTransmissions(threading.Thread):
+	def __init__(self, seriesID, timeSpan, markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays):
+		threading.Thread.__init__(self)
+		self.seriesID = seriesID
+		self.timeSpan = timeSpan
+		self.markerChannels = markerChannels
+		self.seriesTitle = serienTitle
+		self.season = SerieStaffel
+		self.fromEpisode = AbEpisode
+		self.numberOfRecords = AnzahlAufnahmen
+		self.currentTime = current_time
+		self.futureTime = future_time
+		self.excludedWeekdays = excludedWeekdays
+		self.transmissions = None
+		self.transmissionFailed = False
+
+	def run(self):
+		try:
+			self.transmissions = SeriesServer().doGetTransmissions(self.seriesID, self.timeSpan, self.markerChannels)
+		except:
+			self.transmissionFailed = True
+			self.transmissions = None
+
+	def getData(self):
+		return (self.transmissionFailed, self.transmissions, self.seriesTitle, self.season, self.fromEpisode, self.numberOfRecords, self.currentTime, self.futureTime, self.excludedWeekdays)
+
 class serienRecCheckForRecording():
 
 	instance = None
@@ -2477,12 +2520,20 @@ class serienRecCheckForRecording():
 
 		webChannels = getWebSenderAktiv()
 		markers = getAllMarkers()
+		downloadPlanerDataResults = []
 		for daypage in range(int(config.plugins.serienRec.planerCacheSize.value)):
-			try:
-				planerData = SeriesServer().doGetPlanerData(int(daypage), webChannels)
-				self.processPlanerData(planerData, markers, daypage)
-			except:
-				writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten [%s]\n" % str(daypage), True)
+			#planerData = SeriesServer().doGetPlanerData(int(daypage), webChannels)
+			planerData = downloadPlanerData(int(daypage), webChannels)
+			downloadPlanerDataResults.append(planerData)
+			planerData.start()
+
+		for planerDataThread in downloadPlanerDataResults:
+			planerDataThread.join()
+			if not planerDataThread.getData():
+				continue
+
+			(daypage, planerData) = planerDataThread.getData()
+			self.processPlanerData(planerData, markers, daypage)
 
 		self.postProcessPlanerData()
 		writeLog("... Laden der SerienPlaner-Daten beendet\n", True)
@@ -2902,8 +2953,9 @@ class serienRecCheckForRecording():
 			cTmp.close()
 			writeLog("\n---------' Verarbeite Daten vom Server %s---------------------------\n" % fullCheck, True)
 			webChannels = getWebSenderAktiv()
+			downloadTransmissionsResults = []
 			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
-				if SerieUrl.startswith('http://www.wunschliste.de/spielfilm'):
+				if SerieUrl.startswith('https://www.wunschliste.de/spielfilm'):
 					# temporary marker for movie recording
 					print "[SerienRecorder] ' %s - TV-Planer Film wird ignoriert '" % serienTitle
 					continue
@@ -2981,13 +3033,28 @@ class serienRecCheckForRecording():
 							continue
 						
 						cCursor.close()
-							
-					download = retry(1, ds.run, self.downloadTransmissions, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
-					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
-					download.addErrback(self.dataError,SerieUrl)
-					downloads.append(download)
+
+					transmissions = downloadTransmissions(seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					downloadTransmissionsResults.append(transmissions)
+					transmissions.start()
+
+					# download = retry(1, ds.run, self.downloadTransmissions, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
+					# download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					# download.addErrback(self.dataError,SerieUrl)
+					# downloads.append(download)
 			
-			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
+			#finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
+
+			for transmissionsThread in downloadTransmissionsResults:
+				transmissionsThread.join()
+				if not transmissionsThread.getData():
+					continue
+
+				global transmissionFailed
+				(transmissionFailed, transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = transmissionsThread.getData()
+				self.processTransmission(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+
+			self.createTimer()
 		# 
 		# In order to provide an emergency recording service when serien server is down or
 		# because Wunschliste isn't accessable, it is now possible to use the TV Wunschliste
@@ -3114,17 +3181,17 @@ class serienRecCheckForRecording():
 		# in den deep-standby fahren.
 		self.askForDSB()
 
-	@staticmethod
-	def downloadTransmissions(seriesID, timeSpan, markerChannels):
-		#print "downloadTransmission"
-		try:
-			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
-		except:
-			print "downloadTransmissions: failed"
-			global transmissionFailed
-			transmissionFailed = True
-			transmissions = None
-		return transmissions
+	# @staticmethod
+	# def downloadTransmissions(seriesID, timeSpan, markerChannels):
+	# 	#print "downloadTransmission"
+	# 	try:
+	# 		transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
+	# 	except:
+	# 		print "downloadTransmissions: failed"
+	# 		global transmissionFailed
+	# 		transmissionFailed = True
+	# 		transmissions = None
+	# 	return transmissions
 
 	def processTransmission(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
 		print "processTransmissions: %r" % serien_name
