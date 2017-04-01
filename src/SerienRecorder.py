@@ -5788,7 +5788,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 		self.ErrorMsg = "unbekannt"
-		self.serienlist = None
+		self.serienlist = []
 		self.skin = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
@@ -5971,18 +5971,27 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			if result[1]:
 				self.searchSerie()
 
-	def searchSerie(self):
+	def searchSerie(self, start = 0):
 		print "[SerienRecorder] suche ' %s '" % self.serien_name
 		self['title'].setText("Suche nach ' %s '" % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
+		if start == 0:
+			self.serienlist = []
+		self.results(SeriesServer().doSearch(self.serien_name, start))
 
-		self.results(SeriesServer().doSearch(self.serien_name))
-
-	def results(self, serienlist):	
-		self.serienlist = serienlist
-		self.chooseMenuList.setList(map(self.buildList, self.serienlist))
-		self['title'].setText("Die Suche für ' %s ' ergab %s Teffer." % (self.serien_name, str(sum([1 if x[2] != "-1" else int(x[1]) for x in serienlist]))))
+	def results(self, serienlist):
+		(moreResults, searchResults) = serienlist
+		self.serienlist.extend(searchResults)
+		self['title'].setText("Die Suche für ' %s ' ergab %s Teffer." % (self.serien_name, str(len(self.serienlist))))
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
+
+		# deep copy list
+		resultList = self.serienlist[:]
+
+		if moreResults > 0:
+			resultList.append(("", "", ""))
+			resultList.append(("=> Weitere Ergebnisse laden?", str(moreResults), "-1"))
+		self.chooseMenuList.setList(map(self.buildList, resultList))
 		self.loading = False
 		self.getCover()
 
@@ -6015,8 +6024,12 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		Id = self['menu_list'].getCurrent()[0][2]
 		print Serie, Year, Id
 
+		if Id == "":
+			return
+
 		if Id == "-1":
-			self.keyBlue()
+			self.chooseMenuList.setList([])
+			self.searchSerie(int(Year))
 			return
 
 		self.serien_name = ""
@@ -6054,10 +6067,11 @@ class serienRecAddSerie(Screen, HelpableScreen):
 	def wSearch(self, serien_name):
 		if serien_name:
 			print serien_name
-			self.chooseMenuList.setList(map(self.buildList, []))
+			self.chooseMenuList.setList([])
 			self['title'].setText("")
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.serien_name = serien_name
+			self.serienlist = []
 			self.searchSerie()
 
 	def keyLeft(self):

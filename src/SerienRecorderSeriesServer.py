@@ -139,17 +139,18 @@ class SeriesServer:
 		return infoText
 
 
-	def doSearch(self, searchString):
+	def doSearch(self, searchString, start = 0):
+		more = 0
 		resultList = []
 		try:
-			searchResults = self.server.sp.cache.searchSeries(searchString)
+			searchResults = self.server.sp.cache.searchSeries(searchString, start)
 			for searchResult in searchResults['results']:
 				resultList.append((searchResult['name'].encode('utf-8'), searchResult['country_year'].encode('utf-8'), str(searchResult['id'])))
 			if 'more' in searchResults:
-				resultList.append(("... %s'%s'" % ("Es gibt weitere Ergebnisse für ", searchString.encode('utf-8')), str(searchResults['more']), "-1"))
+				more = int(searchResults['more'])
 		except:
 			resultList = []
-		return resultList
+		return more, resultList
 
 	def doGetCoverURL(self, seriesID, seriesName):
 		try:
