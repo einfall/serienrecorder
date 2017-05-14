@@ -666,7 +666,8 @@ def CreateDirectory(serien_name, staffel, cover_only = False):
 		try:
 			os.makedirs(dirname)
 		except OSError as e:
-			if e.error != 17:
+			writeLog("Fehler beim Erstellen des Verzeichnisses: %s" % e.strerror)
+			if e.errno != 17:
 				raise
 
 	# Copy cover only if path exists and series sub dir is activated
@@ -2142,6 +2143,18 @@ class serienRecAddTimer():
 		}
 
 import os, re, threading
+
+class downloadSearchResults(threading.Thread):
+	def __init__ (self, seriesName, startOffset):
+		threading.Thread.__init__(self)
+		self.seriesName = seriesName
+		self.startOffset = startOffset
+		self.searchResults = None
+	def run(self):
+		self.searchResults = SeriesServer().doSearch(self.seriesName, self.startOffset)
+
+	def getData(self):
+		return self.searchResults
 
 class downloadPlanerData(threading.Thread):
 	def __init__ (self, daypage, webChannels):
@@ -5977,7 +5990,12 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 		if start == 0:
 			self.serienlist = []
-		self.results(SeriesServer().doSearch(self.serien_name, start))
+
+		searchResults = downloadSearchResults(self.serien_name, start)
+		searchResults.start()
+		searchResults.join()
+
+		self.results(searchResults.getData())
 
 	def results(self, serienlist):
 		(moreResults, searchResults) = serienlist
@@ -9122,6 +9140,9 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self.addedlist_tmp = []
 		self.dbData = []
 		self.modus = "menu_list"
+		self.aStaffel = "0"
+		self.aFromEpisode = 0
+		self.aToEpisode = 0
 
 		if skip:
 			self.onShown.append(self.functionWillBeDeleted)
@@ -9367,6 +9388,9 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			print "[SerienRecorder] von Episode: %s" % self.aFromEpisode
 			print "[SerienRecorder] bis Episode: %s" % self.aToEpisode
 
+			if self.aStaffel.startswith('0') and len(self.aStaffel) > 1:
+				self.aStaffel = self.aStaffel[1:]
+
 			if addToAddedList(self.aSerie, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump"):
 				self.readAdded()
 
@@ -9397,7 +9421,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 				return
 
 			self.aSerie = self['popup_list'].getCurrent()[0][0]
-			self.aStaffel = 0
+			self.aStaffel = "0"
 			self.aFromEpisode = 0
 			self.aToEpisode = 0
 			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = "%s: Staffel eingeben:" % self.aSerie)

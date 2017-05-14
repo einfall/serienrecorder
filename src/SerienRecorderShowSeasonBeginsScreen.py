@@ -4,6 +4,21 @@
 
 from SerienRecorder import *
 from SerienRecorderHelpers import *
+import os, re, threading
+
+class downloadSeasonBegins(threading.Thread):
+	def __init__ (self, webChannels):
+		threading.Thread.__init__(self)
+		self.webChannels = webChannels
+		self.transmissions = None
+	def run(self):
+		try:
+			self.transmissions = SeriesServer().doGetSeasonBegins(self.webChannels)
+		except:
+			self.transmissions = None
+
+	def getData(self):
+		return self.transmissions
 
 class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session):
@@ -106,11 +121,16 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 		webChannels = getWebSenderAktiv()
 		self.proposalList = []
-		try:
-			self.transmissions = SeriesServer().doGetSeasonBegins(webChannels)
-			self.buildProposalList()
-		except:
+
+		transmissionResults = downloadSeasonBegins(webChannels)
+		transmissionResults.start()
+		transmissionResults.join()
+
+		if not transmissionResults.getData():
 			print "[SerienRecorder]: Abfrage beim SerienServer doGetSeasonBegins() fehlgeschlagen"
+		else:
+			self.transmissions = transmissionResults.getData()
+			self.buildProposalList()
 
 	def buildProposalList(self):
 		markers = getAllMarkers()
