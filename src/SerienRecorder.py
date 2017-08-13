@@ -629,7 +629,13 @@ def getDirname(serien_name, staffel):
 			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 			dirname_serie = dirname
 			if config.plugins.serienRec.seasonsubdir.value:
-				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+				# This is to let the user configure the name of the Sesaon subfolder
+				# If a file called 'Staffel' exists in SerienRecorder folder the folder will be created as "Staffel" instead of "Season"
+				germanSeasonNameConfig = "%sStaffel" % serienRecMainPath
+				if fileExists(germanSeasonNameConfig):
+					dirname = "%sStaffel %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+				else:
+					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 	else: 
 		(dirname, seasonsubdir, url) = row
 		if url.startswith('https://www.wunschliste.de/spielfilm'):
@@ -4003,9 +4009,10 @@ class serienRecCheckForRecording():
 	def splitEvent(episode, staffel, title):
 		splitedSeasonEpisodeList = []
 		if 'x' in str(episode):
-			episode = str(staffel) + 'x' + str(episode)
 			seasonEpisodeList = episode.split('/')
 			for seasonEpisode in seasonEpisodeList:
+				if not 'x' in seasonEpisode:
+					seasonEpisode = str(staffel) + 'x' + str(seasonEpisode)
 				splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
 		else:
 			seasonEpisodeList = episode.split('/')
@@ -6728,7 +6735,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 	def checkSender(self, mSender):
 		fSender = []
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url LIKE ?", ('%' + self.serien_id, ))
+		cCursor.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url LIKE ?", ('%' + str(self.serien_id), ))
 		row = cCursor.fetchone()
 		alleSender = 1
 		id = 0

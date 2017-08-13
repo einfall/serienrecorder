@@ -44,22 +44,35 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.4.0:
+CHANGE-LOG v3.5.0:
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
 
 Neue Funktionen:
-	- Wunschliste TV-Planer E-Mails empfangen und auswerten als Backup und Entlastung des SerienServers (Vielen Dank an egn für die Implementierung)
-	- Tagesplaner und Top (als Ersatz für den Serien-Planer) - Daten werden jetzt vom SerienServer generiert 
+	- Durch Threading wird die Box beim Abrufen vom Serien-Server nicht mehr so lange blockiert
+	- Filter im Serien-/Staffelstart Screen, über die gelbe Taste kann jetzt nach Serienstarts gefiltert werden
+	- In den Einstellungen kann man jetzt entscheiden, ob Cover nur heruntergeladen werden oder auch angezeigt werden sollen.
+	  Werden die Cover nur heruntergeladen, passiert das immer beim Auto-Check und zwar nur für die Serien die auch beim Auto-Check berücksichtigt werden.
+	- Blaue Taste zum Anlegen eines Verzeichnisses wird im Serien-Marker mit Serienname vorbelegt
+	- Suche verbessert - es können jetzt weitere Ergebnisse nachgeladen werden
+	- Wenn eine leere Datei mit dem Namen "Staffel" im SerienRecorder Ordner existiert, dann wird der Staffel-Ordner in Deutsch erzeugt
+	- Zusätzlicher Skin für DreamOS FHD (Danke an zombi)
 	
 Änderungen:
-	- Serien-/Staffelstarts werden jetzt aus den Daten des SerienServers generiert
-	- Farbnamen in den Skins durch Farbcodes ersetzt um Probleme mit dem VTI 11 zu vermeiden
-
+	- Verbesserte Logausgabe
+	- Änderungen bei "Timer aktualisieren" - es wird jetzt auch automatisch der Aufnahmeordner für bestehende Timer geändert
+	- Es werden jetzt nur die Timer im Log angezeigt bei denen es auch Aktualisierungen gab
+	- Fallback auf Standardpfad wenn Datenbankpfad nicht vorhanden (kein Absturz mehr)
+	- Timeout für Verbindungen zum SerienServer auf 7 Sekunden verkürzt
+	- Listenfarben können jetzt besser im Skin definiert werden
+	- Aufnahme-Ordner im Serien-Marker zeigt Hinweistext, dass kein Serien-Ordner angelegt wird
+	
 Bugfixes:
-	- Schreibfehler beim folder.jpg behoben
-	- Verbessertes Exception Handling um Abstürze wegen fehlender Daten zu verhindern
-	- Wird der SerienRecorder in der Serien-Marker Ansicht gestartet wurden beim Verlassen immer Daten der Serien-Planer Ansicht geladen, das hat das Beenden verzögert
+	- Keine Abstürze mehr beim Löschen von Senderzuordnungen
+	- Wenn keine Serienordner verwendet werden, dann wurde trotzdem ein folder.jpg mit dem Cover in den Aufnahmeordner kopiert - das passiert jetzt nicht mehr
+	- Diverse Fehlerbehebungen bei der Auswertung und dem Abrufen der TV-Planer E-Mails
+	- Event-Programmierungen funktionieren jetzt auch wenn die Staffelnummer fehlt
+	- Fehlerbehebungen um Abstürze zu verhindern
 	
 Viel Spass mit dem SerienRecorder!
 
