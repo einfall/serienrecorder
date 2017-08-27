@@ -29,6 +29,16 @@ except ImportError:
 
 from SerienRecorderHelpers import *
 
+# the new API for the Dreambox DM7080HD changes the behavior
+# of eTimer append - here are the changes
+isDreamboxOS = False
+try:
+	from enigma import eMediaDatabase
+except ImportError as ie:
+	isDreamboxOS = False
+else:
+	isDreamboxOS = True
+
 class checkGitHubUpdate:
 	def __init__(self, session):
 		self.session = session
@@ -63,9 +73,11 @@ class checkGitHubUpdate:
 					if isDreamboxOS and updateURL.find(".deb"):
 						downloadURL = updateURL
 						downloadFileSize = int(asset['size'] / 1024)
+						break
 					if not isDreamboxOS and updateURL.find('.ipk'):
 						downloadURL = updateURL
 						downloadFileSize = int(asset['size'] / 1024)
+						break
 
 				self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
 		except:

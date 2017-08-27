@@ -619,6 +619,12 @@ def getDirname(serien_name, staffel):
 		seasonsubdirfillchar = ' '
 	else:
 		seasonsubdirfillchar = config.plugins.serienRec.seasonsubdirfillchar.value
+	# This is to let the user configure the name of the Sesaon subfolder
+	# If a file called 'Staffel' exists in SerienRecorder folder the folder will be created as "Staffel" instead of "Season"
+	germanSeasonNameConfig = "%sStaffel" % serienRecMainPath
+	seasonDirName = "Season"
+	if fileExists(germanSeasonNameConfig):
+		seasonDirName = "Staffel"
 	cCursor = dbSerRec.cursor()
 	cCursor.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Url FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
 	row = cCursor.fetchone()
@@ -629,13 +635,7 @@ def getDirname(serien_name, staffel):
 			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 			dirname_serie = dirname
 			if config.plugins.serienRec.seasonsubdir.value:
-				# This is to let the user configure the name of the Sesaon subfolder
-				# If a file called 'Staffel' exists in SerienRecorder folder the folder will be created as "Staffel" instead of "Season"
-				germanSeasonNameConfig = "%sStaffel" % serienRecMainPath
-				if fileExists(germanSeasonNameConfig):
-					dirname = "%sStaffel %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
-				else:
-					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+				dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 	else: 
 		(dirname, seasonsubdir, url) = row
 		if url.startswith('https://www.wunschliste.de/spielfilm'):
@@ -651,7 +651,7 @@ def getDirname(serien_name, staffel):
 				dirname = "%s/" % dirname
 			dirname_serie = dirname
 			if (seasonsubdir == -1) and isCreateSeasonSubDir or (seasonsubdir == 1):
-				dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+				dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		else:
 			dirname = path
 			dirname_serie = dirname
@@ -659,7 +659,7 @@ def getDirname(serien_name, staffel):
 				dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 				dirname_serie = dirname
 				if isCreateSeasonSubDir:
-					dirname = "%sSeason %s/" % (dirname, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+					dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 		
 	cCursor.close()
 	return dirname, dirname_serie
@@ -790,7 +790,7 @@ def getEmailData():
 		writeLog("TV-Planer: imap_mail_subject nicht gesetzt", True)
 		return None
 	
-	if config.plugins.serienRec.imap_mail_age.value < 1 and config.plugins.serienRec.imap_mail_age.value > 100:
+	if 1 > config.plugins.serienRec.imap_mail_age.value > 100:
 		config.plugins.serienRec.imap_mail_age.value = 1
 	
 	try:
@@ -1183,7 +1183,7 @@ def getEmailData():
 			cCursor.execute("SELECT Serie FROM SerienMarker WHERE LOWER(Serie)=?", (doReplaces(seriesname).lower(),))
 			row = cCursor.fetchone()
 			if not row:
-				# marker isn't in database, creat new marker
+				# marker isn't in database, create new marker
 				# url stored in marker isn't the final one, it is corrected later
 				url = transmissiondict[seriesname][0][-1] 
 				try:
@@ -2148,7 +2148,7 @@ class serienRecAddTimer():
 			"eit" : eit
 		}
 
-import os, re, threading
+import os, re, threading, Queue
 
 class downloadSearchResults(threading.Thread):
 	def __init__ (self, seriesName, startOffset):
@@ -2177,31 +2177,28 @@ class downloadPlanerData(threading.Thread):
 	def getData(self):
 		return (self.daypage, self.planerData)
 
-class downloadTransmissions(threading.Thread):
-	def __init__(self, seriesID, timeSpan, markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays):
+class downloadTransmissionsThread(threading.Thread):
+
+	def __init__(self, jobs, results):
 		threading.Thread.__init__(self)
-		self.seriesID = seriesID
-		self.timeSpan = timeSpan
-		self.markerChannels = markerChannels
-		self.seriesTitle = serienTitle
-		self.season = SerieStaffel
-		self.fromEpisode = AbEpisode
-		self.numberOfRecords = AnzahlAufnahmen
-		self.currentTime = current_time
-		self.futureTime = future_time
-		self.excludedWeekdays = excludedWeekdays
-		self.transmissions = None
-		self.transmissionFailed = False
+		self.jobQueue = jobs
+		self.resultQueue = results
 
 	def run(self):
-		try:
-			self.transmissions = SeriesServer().doGetTransmissions(self.seriesID, self.timeSpan, self.markerChannels)
-		except:
-			self.transmissionFailed = True
-			self.transmissions = None
+		while True:
+			data = self.jobQueue.get()
+			self.download(data)
+			self.jobQueue.task_done()
 
-	def getData(self):
-		return (self.transmissionFailed, self.transmissions, self.seriesTitle, self.season, self.fromEpisode, self.numberOfRecords, self.currentTime, self.futureTime, self.excludedWeekdays)
+	def download(self, data):
+		(seriesID, timeSpan, markerChannels, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays) = data
+		try:
+			transmissionFailed = False
+			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
+		except:
+			transmissionFailed = True
+			transmissions = None
+		self.resultQueue.put((transmissionFailed, transmissions, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
 
 class serienRecCheckForRecording():
 
@@ -2546,15 +2543,18 @@ class serienRecCheckForRecording():
 			downloadPlanerDataResults.append(planerData)
 			planerData.start()
 
-		for planerDataThread in downloadPlanerDataResults:
-			planerDataThread.join()
-			if not planerDataThread.getData():
-				continue
+		try:
+			for planerDataThread in downloadPlanerDataResults:
+				planerDataThread.join()
+				if not planerDataThread.getData():
+					continue
 
-			(daypage, planerData) = planerDataThread.getData()
-			self.processPlanerData(planerData, markers, daypage)
+				(daypage, planerData) = planerDataThread.getData()
+				self.processPlanerData(planerData, markers, daypage)
 
-		self.postProcessPlanerData()
+			self.postProcessPlanerData()
+		except:
+			writeLog("Fehler beim Abrufen oder Verarbeiten der SerienPlaner-Daten")
 		writeLog("... Laden der SerienPlaner-Daten beendet\n", True)
 
 		self.startCheck3()
@@ -2972,8 +2972,21 @@ class serienRecCheckForRecording():
 			cTmp.close()
 			writeLog("\n---------' Verarbeite Daten vom Server %s---------------------------\n" % fullCheck, True)
 			webChannels = getWebSenderAktiv()
-			downloadTransmissionsResults = []
+
+			# Create a job queue to keep the jobs processed by the threads
+			# Create a result queue to keep the results of the job threads
+			jobQueue = Queue.Queue()
+			resultQueue = Queue.Queue()
+
+			writeLog("Active threads: %d" % threading.active_count(), True)
+			# Create the threads
+			for i in range(2):
+				worker = downloadTransmissionsThread(jobQueue, resultQueue)
+				worker.setDaemon(True)
+				worker.start()
+
 			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+				serienTitle = doReplaces(serienTitle)
 				if SerieUrl.startswith('https://www.wunschliste.de/spielfilm'):
 					# temporary marker for movie recording
 					print "[SerienRecorder] ' %s - TV-Planer Film wird ignoriert '" % serienTitle
@@ -3011,12 +3024,12 @@ class serienRecCheckForRecording():
 							if row:
 								# Series was already in database with different name - remove duplicate marker of TV-Planer and STBAuswahl
 								try:
+									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird wieder aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
+									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
 									cCursor.execute("SELECT ID FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
 									rowTVPlaner = cCursor.fetchone()
 									cCursor.execute("DELETE FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
 									cCursor.execute("DELETE FROM STBAuswahl WHERE ID=?", (rowTVPlaner[0],))
-									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird wieder aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
 								except:
 									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0]), True)
 									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0])
@@ -3053,25 +3066,13 @@ class serienRecCheckForRecording():
 						
 						cCursor.close()
 
-					transmissions = downloadTransmissions(seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
-					downloadTransmissionsResults.append(transmissions)
-					transmissions.start()
+					jobQueue.put((seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
 
-					# download = retry(1, ds.run, self.downloadTransmissions, seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels)
-					# download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
-					# download.addErrback(self.dataError,SerieUrl)
-					# downloads.append(download)
-			
-			#finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
-
-			for transmissionsThread in downloadTransmissionsResults:
-				transmissionsThread.join()
-				if not transmissionsThread.getData():
-					continue
-
-				global transmissionFailed
-				(transmissionFailed, transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = transmissionsThread.getData()
+			jobQueue.join()
+			while not resultQueue.empty():
+				(transmissionFailed, transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
 				self.processTransmission(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+				resultQueue.task_done()
 
 			self.createTimer()
 		# 
@@ -3641,9 +3642,11 @@ class serienRecCheckForRecording():
 			dbSerRec.close()
 			if (config.plugins.serienRec.updateInterval.value == 24) and (config.plugins.serienRec.wakeUpDSB.value or config.plugins.serienRec.autochecktype.value == "2") and int(config.plugins.serienRec.afterAutocheck.value):
 				if config.plugins.serienRec.DSBTimeout.value > 0:
+					print "Versuche Benachrichtigung für Herunterfahren anzuzeigen..."
 					try:
 						self.session.openWithCallback(self.gotoDeepStandby, MessageBox, "Soll der SerienRecorder die Box in (Deep-)Standby versetzen?", MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
-					except:
+					except Exception as e:
+						print "Benachrichtung für Herunterfahren konnte nicht angezeigt werden - fahre Box ohne Nachfragen herunterunter... (%s)" % str(e)
 						self.gotoDeepStandby(True)
 				else:
 					self.gotoDeepStandby(True)
