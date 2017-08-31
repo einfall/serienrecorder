@@ -3640,13 +3640,16 @@ class serienRecCheckForRecording():
 	def askForDSB(self):
 		if not self.manuell:
 			dbSerRec.close()
-			if (config.plugins.serienRec.updateInterval.value == 24) and (config.plugins.serienRec.wakeUpDSB.value or config.plugins.serienRec.autochecktype.value == "2") and int(config.plugins.serienRec.afterAutocheck.value):
+			if config.plugins.serienRec.afterAutocheck.value != "0":
 				if config.plugins.serienRec.DSBTimeout.value > 0:
-					print "Versuche Benachrichtigung für Herunterfahren anzuzeigen..."
+					print "[SerienRecorder] Try to display shutdown notification..."
 					try:
-						self.session.openWithCallback(self.gotoDeepStandby, MessageBox, "Soll der SerienRecorder die Box in (Deep-)Standby versetzen?", MessageBox.TYPE_YESNO, default=True, timeout=config.plugins.serienRec.DSBTimeout.value)
+						notificationText = "Soll der SerienRecorder die Box in den Ruhemodus (Standby) schalten?"
+						if config.plugins.serienRec.afterAutocheck.value == "2":
+							notificationText = "Soll der SerienRecorder die Box ausschalten (Deep-Standby)?"
+						Notifications.AddNotificationWithCallback(self.gotoDeepStandby, MessageBox, text=notificationText, type=MessageBox.TYPE_YESNO, timeout=config.plugins.serienRec.DSBTimeout.value, default=True)
 					except Exception as e:
-						print "Benachrichtung für Herunterfahren konnte nicht angezeigt werden - fahre Box ohne Nachfragen herunterunter... (%s)" % str(e)
+						print "[SerienRecorder] Could not display shutdown notification - shutdown box without notification... (%s)" % str(e)
 						self.gotoDeepStandby(True)
 				else:
 					self.gotoDeepStandby(True)

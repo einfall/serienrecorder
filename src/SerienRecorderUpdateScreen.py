@@ -241,7 +241,7 @@ class checkGitHubUpdateScreen(Screen):
 	def downloadError(self):
 		self.stopProgressTimer()
 		writeErrorLog("SerienRecorderUpdateScreen():\n   URL: %s" % self.downloadURL)
-		self.session.open(MessageBox, "Der SerienRecorder Download ist fehlgeschlagen.\nDie Installation wurde abgebrochen.", MessageBox.TYPE_INFO)
+		Notifications.AddPopup("Der Download der neuen SerienRecorder Version ist fehlgeschlagen.\nDas Update wird abgebrochen.", type=MessageBox.TYPE_INFO, timeout=10)
 		self.close()
 
 	def finishedPluginUpdate(self, retval):
@@ -249,7 +249,7 @@ class checkGitHubUpdateScreen(Screen):
 		self.stopProgressTimer()
 		if fileExists(self.filePath):
 			os.remove(self.filePath)
-		self.session.openWithCallback(self.restartGUI, MessageBox, "Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", MessageBox.TYPE_YESNO)
+		Notifications.AddNotificationWithCallback(self.restartGUI, MessageBox, text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", type=MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, doRestart):
 		config.plugins.serienRec.showStartupInfoText.value = True
