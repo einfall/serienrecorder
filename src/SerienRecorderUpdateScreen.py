@@ -17,6 +17,7 @@ from Components.config import config, configfile
 from Components.ProgressBar import ProgressBar
 
 from enigma import getDesktop, eTimer, eConsoleAppContainer
+import urllib
 from twisted.web.client import getPage, downloadPage
 
 import Screens.Standby
@@ -29,21 +30,12 @@ except ImportError:
 
 from SerienRecorderHelpers import *
 
-# the new API for the Dreambox DM7080HD changes the behavior
-# of eTimer append - here are the changes
-isDreamboxOS = False
-try:
-	from enigma import eMediaDatabase
-except ImportError as ie:
-	isDreamboxOS = False
-else:
-	isDreamboxOS = True
-
 class checkGitHubUpdate:
 	def __init__(self, session):
 		self.session = session
 
 	def checkForUpdate(self):
+		writeTestLog("Check for update")
 		import ssl
 		if hasattr(ssl, '_create_unverified_context'):
 			ssl._create_default_https_context = ssl._create_unverified_context
@@ -55,9 +47,11 @@ class checkGitHubUpdate:
 			data = json.load(rawData)
 			latestRelease = data[0]
 			latestVersion = latestRelease['tag_name'][1:]
+			writeTestLog("Get latest version from github: %s" % latestVersion)
 
 			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
 			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
+			writeTestLog("Installed version: %s" % config.plugins.serienRec.showversion.value)
 			remoteversion.extend((max([len(remoteversion), len(version)]) - len(remoteversion)) * '0')
 			remoteversion = map(lambda x: int(x), remoteversion)
 			version.extend((max([len(remoteversion), len(version)]) - len(version)) * '0')
@@ -70,16 +64,18 @@ class checkGitHubUpdate:
 				downloadFileSize = 5 * 1024
 				for asset in latestRelease['assets']:
 					updateURL = asset['browser_download_url'].encode('utf-8')
-					if isDreamboxOS and updateURL.find(".deb"):
+					if isDreamOS() and updateURL.endswith(".deb"):
 						downloadURL = updateURL
 						downloadFileSize = int(asset['size'] / 1024)
 						break
-					if not isDreamboxOS and updateURL.find('.ipk'):
+					if not isDreamOS() and updateURL.endswith('.ipk'):
 						downloadURL = updateURL
 						downloadFileSize = int(asset['size'] / 1024)
 						break
 
-				self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
+				if downloadURL:
+					writeTestLog("New version available at: %s [%d]" % (downloadURL, downloadFileSize))
+					self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
 		except:
 			Notifications.AddPopup("Unerwarteter Fehler beim Überprüfen der SerienRecorder Version", MessageBox.TYPE_INFO, timeout=3)
 
@@ -127,7 +123,7 @@ class checkGitHubUpdateScreen(Screen):
 		self.console = eConsoleAppContainer()
 
 		self.progressTimer = eTimer()
-		if isDreamboxOS:
+		if isDreamOS():
 			self.progressTimerConnection = self.progressTimer.timeout.connect(self.updateProgressBar)
 		else:
 			self.progressTimer.callback.append(self.updateProgressBar)
@@ -176,6 +172,7 @@ class checkGitHubUpdateScreen(Screen):
 			return
 		else:
 			self.filePath = "/tmp/%s" % self.downloadURL.split('/')[-1]
+			writeTestLog("Start download to: %s" % self.filePath)
 			self['status'].setText("Download wurde gestartet, bitte warten...")
 			self.progress = 0
 			self.inProgres = True
@@ -191,6 +188,7 @@ class checkGitHubUpdateScreen(Screen):
 
 	def cmdData(self, data):
 		self['srlog'].setText(data)
+		writeTestLog(data)
 
 	def updateProgressBar(self):
 		if self.downloadDone:
@@ -216,39 +214,48 @@ class checkGitHubUpdateScreen(Screen):
 			self.progressTimer.stop()
 			self.progressTimer = None
 
-		if isDreamboxOS:
+		if isDreamOS():
 			self.progressTimerConnection = None
 
-	def downloadFinished(self, data):
+	def downloadFinished(self, result):
+		writeTestLog("Download finished: %s" % result)
 		self.downloadDone = True
 		self.progress = 0
 		self['status'].setText("")
 
 		if fileExists(self.filePath):
+			writeTestLog("Download successful - start installation")
 			self['status'].setText("Installation wurde gestartet, bitte warten...")
 
-			if isDreamboxOS:
+			if isDreamOS():
 				self.console.appClosed.connect(self.finishedPluginUpdate)
 				self.console.dataAvail.connect(self.cmdData)
-				self.console.execute("apt-get update && dpkg -i %s && apt-get -f install" % str(self.filePath))
+				command = "apt-get update && dpkg -i %s && apt-get -f install" % str(self.filePath)
 			else:
 				self.console.appClosed.append(self.finishedPluginUpdate)
 				self.console.dataAvail.append(self.cmdData)
-				self.console.execute("opkg update && opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.filePath))
-		else:
-			self.downloadError()
+				command = "opkg update && opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.filePath)
 
-	def downloadError(self):
+			writeTestLog("Executing command: %s" % command)
+			self.console.execute(command)
+		else:
+			writeTestLog("Download failed")
+			self.downloadError("Downloaded file does not exist")
+
+	def downloadError(self, result):
 		self.stopProgressTimer()
-		writeErrorLog("SerienRecorderUpdateScreen():\n   URL: %s" % self.downloadURL)
+		writeTestLog("Failed to download update: %s" % result)
 		Notifications.AddPopup("Der Download der neuen SerienRecorder Version ist fehlgeschlagen.\nDas Update wird abgebrochen.", type=MessageBox.TYPE_INFO, timeout=10)
 		self.close()
 
 	def finishedPluginUpdate(self, retval):
+		writeTestLog("Installation finished")
 		self.console.kill()
 		self.stopProgressTimer()
 		if fileExists(self.filePath):
+			writeTestLog("Remove package from: %s" % self.filePath)
 			os.remove(self.filePath)
+		writeTestLog("Show restart notification")
 		Notifications.AddNotificationWithCallback(self.restartGUI, MessageBox, text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", type=MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, doRestart):
@@ -257,6 +264,8 @@ class checkGitHubUpdateScreen(Screen):
 		configfile.save()
 
 		if doRestart:
+			writeTestLog("Restart...")
 			self.session.open(Screens.Standby.TryQuitMainloop, 3)
 		else:
+			writeErrorLog("Close without restart")
 			self.close()

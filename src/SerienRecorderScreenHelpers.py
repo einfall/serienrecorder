@@ -3,6 +3,7 @@
 # This file contains the SerienRecoder Screen Helpers
 
 import SerienRecorder
+from SerienRecorderHelpers import *
 
 from Tools.Directories import fileExists
 from enigma import eListboxPythonMultiContent, gFont, getDesktop, eTimer
@@ -365,7 +366,7 @@ class serienRecBaseScreen():
 			self.updateMenuKeys()
 
 			self.displayTimer = eTimer()
-			if SerienRecorder.isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)

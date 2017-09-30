@@ -209,6 +209,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.sucheAufnahme = ConfigYesNo(default = True)
 	config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default = True)
 	config.plugins.serienRec.tuner = ConfigInteger(4, (1,8))
+	config.plugins.serienRec.seasonFilter = ConfigYesNo(default = False)
 	config.plugins.serienRec.logScrollLast = ConfigYesNo(default = False)
 	config.plugins.serienRec.logWrapAround = ConfigYesNo(default = False)
 	config.plugins.serienRec.TimerName = ConfigSelection(choices = [("0", "<Serienname> - SnnEmm - <Episodentitel>"), ("1", "<Serienname>"), ("2", "SnnEmm - <Episodentitel>")], default="0")
@@ -449,7 +450,7 @@ def showCover(data, self, serien_nameCover, force_show=True):
 			size = self['cover'].instance.size()
 			self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#00000000"))
 			self.picLoaderResult = 1
-			if isDreamboxOS:
+			if isDreamOS():
 				self.picLoaderResult = self.picload.startDecode(serien_nameCover, False)
 			else:
 				self.picLoaderResult = self.picload.startDecode(serien_nameCover, 0, 0, False)
@@ -2288,7 +2289,7 @@ class serienRecCheckForRecording():
 		if not self.manuell and config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
 			refreshTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
 			else:
 				refreshTimer.callback.append(self.startCheck)
@@ -2344,7 +2345,6 @@ class serienRecCheckForRecording():
 		global dbSerRec
 		global refreshTimer
 		global refreshTimerConnection
-		global isDreamboxOS
 		global logFile
 		global logFileSave
 
@@ -2397,7 +2397,7 @@ class serienRecCheckForRecording():
 		if config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
 			refreshTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				refreshTimerConnection = refreshTimer.timeout.connect(self.startCheck)
 			else:
 				refreshTimer.callback.append(self.startCheck)
@@ -2978,7 +2978,7 @@ class serienRecCheckForRecording():
 			jobQueue = Queue.Queue()
 			resultQueue = Queue.Queue()
 
-			writeLog("Active threads: %d" % threading.active_count(), True)
+			#writeLog("Active threads: %d" % threading.active_count(), True)
 			# Create the threads
 			for i in range(2):
 				worker = downloadTransmissionsThread(jobQueue, resultQueue)
@@ -4323,7 +4323,7 @@ class serienRecTimer(Screen, HelpableScreen):
 			self.updateMenuKeys()
 			
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -4718,7 +4718,7 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		self.points = ""
 
 		self.timer_default = eTimer()
-		if isDreamboxOS:
+		if isDreamOS():
 			self.timer_default_conn = self.timer_default.timeout.connect(self.realStartCheck)
 		else:
 			self.timer_default.callback.append(self.realStartCheck)
@@ -4749,7 +4749,7 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 			self.updateMenuKeys()
 			
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -4824,7 +4824,7 @@ class serienRecRunAutoCheck(Screen, HelpableScreen):
 		# Log Reload Timer
 		print "startCheck timer"
 		self.readLogTimer = eTimer()
-		if isDreamboxOS:
+		if isDreamOS():
 			self.readLogTimer_conn = self.readLogTimer.timeout.connect(self.readLog)
 		else:
 			self.readLogTimer.callback.append(self.readLog)
@@ -5028,7 +5028,7 @@ class serienRecMarker(Screen, HelpableScreen):
 			self.displayMode = 2
 			self.updateMenuKeys()
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -5869,7 +5869,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -6233,7 +6233,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -6402,46 +6402,57 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		#build unique margins
 		marginList = {}
 
+		SerieStaffel = None
+		AbEpisode = None
+		try:
+			(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = getMarker([self.serien_name])[0]
+		except:
+			writeLog("Fehler beim Filtern nach Staffel", True)
+
 		for serien_name,sender,startzeit,endzeit,staffel,episode,title,status in transmissions:
+			seasonAllowed = True
+			if config.plugins.serienRec.seasonFilter.value:
+				seasonAllowed = self.isSeasonAllowed(staffel, episode, SerieStaffel, AbEpisode)
 
-			datum = time.strftime("%d.%m", time.localtime(startzeit))
-			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+			if seasonAllowed:
+				datum = time.strftime("%d.%m", time.localtime(startzeit))
+				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
-			bereits_vorhanden = False
-			if config.plugins.serienRec.sucheAufnahme.value:
-				if not staffel in dirList:
-					dirList[staffel] = getDirname(serien_name, staffel)
+				bereits_vorhanden = False
+				if config.plugins.serienRec.sucheAufnahme.value:
+					if not staffel in dirList:
+						dirList[staffel] = getDirname(serien_name, staffel)
 
-				(dirname, dirname_serie) = dirList[staffel]
-				if str(episode).isdigit():
-					if int(episode) == 0:
-						bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True, title) and True or False
+					(dirname, dirname_serie) = dirList[staffel]
+					if str(episode).isdigit():
+						if int(episode) == 0:
+							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True, title) and True or False
+						else:
+							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True) and True or False
 					else:
 						bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True) and True or False
+
+				if bereits_vorhanden:
+					addedType = 1
 				else:
-					bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True) and True or False
+					if not sender in marginList:
+						marginList[sender] = getMargins(serien_name, sender)
 
-			if bereits_vorhanden:
-				addedType = 1
-			else:
-				if not sender in marginList:
-					marginList[sender] = getMargins(serien_name, sender)
+					(margin_before, margin_after) = marginList[sender]
 
-				(margin_before, margin_after) = marginList[sender]
+					# check 2 (im timer file)
+					start_unixtime = startzeit - (int(margin_before) * 60)
 
-				# check 2 (im timer file)
-				start_unixtime = startzeit - (int(margin_before) * 60)
+					if self.isTimerAdded(sender, staffel, episode, int(start_unixtime), title):
+						addedType = 2
+					elif self.isAlreadyAdded(staffel, episode, title):
+						addedType = 3
+					else:
+						addedType = 0
 
-				if self.isTimerAdded(sender, staffel, episode, int(start_unixtime), title):
-					addedType = 2
-				elif self.isAlreadyAdded(staffel, episode, title):
-					addedType = 3
-				else:
-					addedType = 0
-
-			startTime = time.strftime("%H.%M", time.localtime(startzeit))
-			endTime = time.strftime("%H.%M", time.localtime(endzeit))
-			self.sendetermine_list.append([serien_name, sender, datum, startTime, endTime, staffel, episode, title, status, addedType])
+				startTime = time.strftime("%H.%M", time.localtime(startzeit))
+				endTime = time.strftime("%H.%M", time.localtime(endzeit))
+				self.sendetermine_list.append([serien_name, sender, datum, startTime, endTime, staffel, episode, title, status, addedType])
 
 		if len(self.sendetermine_list):
 			self['text_green'].setText("Timer erstellen")
@@ -6709,6 +6720,32 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 						cCursor.close()
 
 			return TimerOK
+
+	def isSeasonAllowed(self, season, episode, markerSeasons, fromEpisode):
+		if not markerSeasons and not fromEpisode:
+			return True
+
+		allowed = False
+		if -2 in markerSeasons:  # 'Manuell'
+			allowed = False
+		elif (-1 in markerSeasons) and (0 in markerSeasons):  # 'Alle'
+			allowed = True
+		elif str(season).isdigit():
+			if int(season) == 0:
+				if str(episode).isdigit():
+					if int(episode) < int(fromEpisode):
+						allowed = False
+					else:
+						allowed = True
+			elif int(season) in markerSeasons:
+				allowed = True
+			elif -1 in markerSeasons:  # 'folgende'
+				if int(season) >= max(markerSeasons):
+					allowed = True
+		elif getSpecialsAllowed(self.serien_name):
+			allowed = True
+
+		return allowed
 
 	def keyOK(self):
 		if self.loading:
@@ -7341,7 +7378,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen einschränken:", config.plugins.serienRec.selectNoOfTuners))
 			if config.plugins.serienRec.selectNoOfTuners.value:
 				self.list.append(getConfigListEntry("    maximale Anzahl der zu benutzenden Tuner:", config.plugins.serienRec.tuner))
-			if not isDreamboxOS:
+			if not isDreamOS():
 				self.list.append(getConfigListEntry("nach Änderungen Suchlauf beim Beenden starten:", config.plugins.serienRec.runAutocheckAtExit))
 		#if config.plugins.serienRec.updateInterval.value == 24:
 		if config.plugins.serienRec.autochecktype.value == "1":
@@ -7404,6 +7441,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				self.list.append(getConfigListEntry("    Speicherort der Cover:", config.plugins.serienRec.coverPath))
 				self.list.append(getConfigListEntry("    Zeige Cover:", config.plugins.serienRec.showCover))
 			self.list.append(getConfigListEntry("Korrektur der Schriftgröße in Listen:", config.plugins.serienRec.listFontsize))
+			self.list.append(getConfigListEntry("Staffel-Filter in Sendetermine Ansicht:", config.plugins.serienRec.seasonFilter))
 			self.list.append(getConfigListEntry("Sortierung der Serien-Marker:", config.plugins.serienRec.markerSort))
 			self.list.append(getConfigListEntry("Anzahl der wählbaren Staffeln im Menü Serien-Marker:", config.plugins.serienRec.max_season))
 			self.list.append(getConfigListEntry("Staffelauswahl bei neuen Markern:", config.plugins.serienRec.defaultStaffel))
@@ -7612,7 +7650,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.showCover :               ("Bei 'nein' werden keine Cover angezeigt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.listFontsize :            ("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.intensiveTimersuche :     ("Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.", "intensive_Suche"),
-			config.plugins.serienRec.sucheAufnahme :           ("Bei 'ja' wird ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv.", "Aufnahme_vorhanden"),
+			config.plugins.serienRec.sucheAufnahme :           ("Bei 'ja' wird ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv.\n"
+																"Zusätzlich sorgt diese Option dafür, dass für Episoden die auf der Festplatte gefunden werden, kein Timer mehr angelegt wird.", "Aufnahme_vorhanden"),
 			config.plugins.serienRec.markerSort :              ("Bei 'Alphabetisch' werden die Serien-Marker alphabetisch sortiert.\n"
 																"Bei 'Wunschliste' werden die Serien-Marker so wie bei Wunschliste sortiert, d.h 'der, die, das und the' werden bei der Sortierung nicht berücksichtigt.\n"
 																"Dadurch werden z.B. 'Die Simpsons' unter 'S' einsortiert.", "1.3_Die_globalen_Einstellungen"),
@@ -7622,6 +7661,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.showMessageOnConflicts :  ("Bei 'ja' wird für jeden Timer, der beim automatische Timer-Suchlauf wegen eines Konflikts nicht angelegt werden konnte, eine Nachricht auf dem Bildschirm eingeblendet.\n"
 			                                                    "Diese Nachrichten bleiben solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.DisplayRefreshRate :      ("Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt.", "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.seasonFilter :      		("Bei 'ja' werden in der Sendetermine Ansicht nur Termine für die am Marker eingestellten Staffeln angezeigt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.refreshViews :            ("Bei 'ja' werden die Anzeigen nach Änderungen von Markern, Sendern, etc. sofort aktualisiert, was aber je nach STB-Typ und Internet-Verbindung zeitintensiv sein kann.\n"
 			                                                    "Bei 'nein' erfolgt die Aktualisierung erst, wenn die Anzeige erneut geöffnet wird.", "Sofortige_Aktualisierung"),
 			config.plugins.serienRec.defaultStaffel :          ("Auswahl, ob bei neuen Markern die Staffeln manuell eingegeben werden, oder 'Alle' ausgewählt wird.", "1.3_Die_globalen_Einstellungen"),
@@ -7787,6 +7827,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.sucheAufnahme.save()
 		config.plugins.serienRec.selectNoOfTuners.save()
 		config.plugins.serienRec.tuner.save()
+		config.plugins.serienRec.seasonFilter.save()
 		config.plugins.serienRec.logScrollLast.save()
 		config.plugins.serienRec.logWrapAround.save()
 		config.plugins.serienRec.NoOfRecords.save()
@@ -8791,7 +8832,7 @@ class serienRecReadLog(Screen, HelpableScreen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -8975,7 +9016,7 @@ class serienRecShowConflicts(Screen, HelpableScreen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -9199,7 +9240,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.updateMenuKeys()
 
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -9603,7 +9644,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -10022,7 +10063,7 @@ class serienRecShowInfo(Screen, HelpableScreen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -10198,7 +10239,7 @@ class serienRecShowEpisodeInfo(Screen, HelpableScreen):
 			self.updateMenuKeys()
 
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -10378,7 +10419,7 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -10698,7 +10739,7 @@ class serienRecMain(Screen, HelpableScreen):
 			self.updateMenuKeys()
 		
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
@@ -11345,7 +11386,7 @@ class serienRecMain(Screen, HelpableScreen):
 			global runAutocheckAtExit
 			if runAutocheckAtExit and config.plugins.serienRec.runAutocheckAtExit.value:
 				singleTimer = eTimer()
-				if isDreamboxOS:
+				if isDreamOS():
 					singleTimer_conn = singleTimer.timeout.connect(serienRecCheckForRecording(self.session, True, False))
 				else:
 					singleTimer.callback.append(serienRecCheckForRecording(self.session, True, False))
@@ -11426,7 +11467,7 @@ def autostart(reason, **kwargs):
 		if config.plugins.serienRec.autochecktype.value in ("1", "2") and config.plugins.serienRec.timeUpdate.value:
 			print color_print+"[SerienRecorder] Auto-Check: AN"+color_end
 			startTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				startTimerConnection = startTimer.timeout.connect(startAutoCheckTimer)
 			else:
 				startTimer.callback.append(startAutoCheckTimer)

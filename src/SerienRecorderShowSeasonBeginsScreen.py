@@ -59,7 +59,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.setupSkin()
 
 		self.timer_default = eTimer()
-		if isDreamboxOS:
+		if isDreamOS():
 			self.timer_default_conn = self.timer_default.timeout.connect(self.readProposal)
 		else:
 			self.timer_default.callback.append(self.readProposal)

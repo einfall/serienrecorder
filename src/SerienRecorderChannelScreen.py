@@ -77,7 +77,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		self.changesMade = False
 
 		self.timer_default = eTimer()
-		if isDreamboxOS:
+		if isDreamOS():
 			self.timer_default_conn = self.timer_default.timeout.connect(self.showChannels)
 		else:
 			self.timer_default.callback.append(self.showChannels)
@@ -128,7 +128,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			self.updateMenuKeys()
 
 			self.displayTimer = eTimer()
-			if isDreamboxOS:
+			if isDreamOS():
 				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)

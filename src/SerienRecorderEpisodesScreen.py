@@ -61,7 +61,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.serien_id = raw[0]
 
 		self.timer_default = eTimer()
-		if isDreamboxOS:
+		if isDreamOS():
 			self.timer_default_conn = self.timer_default.timeout.connect(self.loadEpisodes)
 		else:
 			self.timer_default.callback.append(self.loadEpisodes)

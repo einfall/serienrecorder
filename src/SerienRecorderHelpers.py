@@ -27,16 +27,7 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.5.2-beta'
-
-# the new API for the Dreambox DM7080HD changes the behavior
-# of eTimer append - here are the changes
-try:
-	from enigma import eMediaDatabase
-except ImportError as ie:
-	isDreamboxOS = False
-else:
-	isDreamboxOS = True
+SRVERSION = '3.5.3-beta'
 
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
@@ -84,6 +75,15 @@ def getSeriesIDByURL(url):
 		result = seriesID[0]
 
 	return result
+
+def isDreamOS():
+	try:
+		from enigma import eMediaDatabase
+	except ImportError:
+		isDreamboxOS = False
+	else:
+		isDreamboxOS = True
+	return isDreamboxOS
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -340,7 +340,7 @@ class PicLoader:
 		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
 
 	def load(self, filename):
-		if isDreamboxOS:
+		if isDreamOS():
 			self.picload.startDecode(filename, False)
 		else:
 			self.picload.startDecode(filename, 0, 0, False)
