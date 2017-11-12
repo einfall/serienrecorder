@@ -3641,7 +3641,7 @@ class serienRecCheckForRecording():
 		if not self.manuell:
 			dbSerRec.close()
 			if config.plugins.serienRec.afterAutocheck.value != "0":
-				if config.plugins.serienRec.DSBTimeout.value > 0:
+				if config.plugins.serienRec.DSBTimeout.value > 0 and not Screens.Standby.inStandby:
 					print "[SerienRecorder] Try to display shutdown notification..."
 					try:
 						notificationText = "Soll der SerienRecorder die Box in den Ruhemodus (Standby) schalten?"
