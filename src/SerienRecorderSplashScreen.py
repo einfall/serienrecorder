@@ -16,10 +16,10 @@ class ShowSplashScreen(Screen):
 	DESKTOP_HEIGHT = getDesktop(0).size().height()
 
 	skin = """
-		<screen name="SerienRecorderSplash" position="%d,%d" size="416,240" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
+		<screen name="SerienRecorderSplash" position="%d,%d" size="416,250" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
 			<widget name="srlog" position="135,50" size="250,30" font="Regular;18" valign="center" halign="left" foregroundColor="#FFFFFF" transparent="1" zPosition="5"/>
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/splashscreen.png" position="5,5" zPosition="1" size="406,240" alphatest="on" />
-		</screen>""" % ((DESKTOP_WIDTH - 416) / 2, (DESKTOP_HEIGHT - 240) / 2, _("SerienRecorder Splashscreen"))
+		</screen>""" % ((DESKTOP_WIDTH - 416) / 2, (DESKTOP_HEIGHT - 250) / 2, _("SerienRecorder Splashscreen"))
 
 	def __init__(self, session, version):
 		self.session = session

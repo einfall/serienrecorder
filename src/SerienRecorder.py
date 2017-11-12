@@ -1398,7 +1398,7 @@ def initDB():
 		shutil.move("%sSerienRecorder.db" % serienRecMainPath, serienRecDataBase)
 
 	if not fileExists(serienRecDataBase):
-		config.plugins.serienRec.databasePath.value = "/etc/enigma2"
+		config.plugins.serienRec.databasePath.value = "/etc/enigma2/"
 		config.plugins.serienRec.databasePath.save()
 		configfile.save()
 		writeLog("Datenbankpfad nicht gefunden, auf Standardpfad zurückgesetzt!")
@@ -2781,8 +2781,8 @@ class serienRecCheckForRecording():
 					NavigationInstance.instance.RecordTimer.saveTimer()
 					sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=?"
 					cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
-					new_start = time.strftime("%d.%m - %H:%M", time.localtime(int(start_unixtime)))
-					old_start = time.strftime("%d.%m - %H:%M", time.localtime(int(serien_time)))
+					new_start = time.strftime("%d.%m. - %H:%M", time.localtime(int(start_unixtime)))
+					old_start = time.strftime("%d.%m. - %H:%M", time.localtime(int(serien_time)))
 					if updateStartTime:
 						writeLog("   Startzeit wurde aktualisiert von %s auf %s" % (old_start, new_start), True)
 					if updateEIT:
@@ -5554,6 +5554,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		dbSerRec.commit()
 		cCursor.close()
 		self.changesMade = True
+		writeLog("' %s - Serien Marker entfernt '" % serien_name, True)
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Serie '- %s -' entfernt." % serien_name)
 		self.readSerienMarker()	
@@ -6080,6 +6081,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
 			dbSerRec.commit()
 			cCursor.close()
+			writeLog("' %s - Serien Marker erzeugt '" % Serie, True)
 			self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % Serie)
 			self['title'].instance.setForegroundColor(parseColor("green"))
 			if config.plugins.serienRec.openMarkerScreen.value:
@@ -11246,6 +11248,7 @@ class serienRecMain(Screen, HelpableScreen):
 				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
 				dbSerRec.commit()
 				cCursor.close()
+				writeLog("' %s - Serien Marker erzeugt '" % serien_name, True)
 				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("green"))
 				global runAutocheckAtExit

@@ -291,33 +291,50 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		if webChannelList:
 			webChannelList.sort(key=lambda x: x.lower())
 			self.serienRecChannelList = []
+
 			if len(webChannelList) != 0:
 				self['title'].setText("Erstelle Sender-Liste...")
 				cCursor = SerienRecorder.dbSerRec.cursor()
-				sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)"
-				if autoMatch:
-					# Get existing channels from database
-					cCursor.execute("SELECT WebChannel, STBChannel FROM Channels")
-					dbChannels = cCursor.fetchall()
 
-					missingWebChannels = self.getMissingWebChannels(webChannelList, dbChannels)
-					for webChannel in missingWebChannels:
+				# Get existing channels from database
+				cCursor.execute("SELECT WebChannel, STBChannel FROM Channels")
+				dbChannels = cCursor.fetchall()
+
+				if autoMatch:
+					# Get all unassigned web channels and try to find the STB channel equivalent
+					# Update only matching channels in list
+					sql = "UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?"
+					unassignedWebChannels = self.getUnassignedWebChannels(dbChannels)
+
+					for webChannel in unassignedWebChannels:
 						# Unmapped web channel
 						(servicename, serviceref) = self.findWebChannelInSTBChannels(webChannel)
 						if servicename and serviceref:
-							cCursor.execute(sql, (webChannel, servicename, serviceref, 1))
+							cCursor.execute(sql, (servicename, serviceref, 1, webChannel.lower()))
 							self.serienRecChannelList.append((webChannel, servicename, "", "1"))
-						else:
-							cCursor.execute(sql, (webChannel, "", "", 0))
-							self.serienRecChannelList.append((webChannel, "", "", "0"))
 
 						self.changesMade = True
 						global runAutocheckAtExit
 						runAutocheckAtExit = True
 				else:
-					for webChannel in webChannelList:
-						cCursor.execute(sql, (webChannel, "", "", 0))
-						self.serienRecChannelList.append((webChannel, "", "", "0"))
+					# Get all new web channels (missing in SR database)
+					(newWebChannels, removedWebChannels) = self.getMissingWebChannels(webChannelList, dbChannels)
+
+					# Delete remove channels
+					if removedWebChannels:
+						self.session.open(MessageBox, "Folgende Sender wurden bei Wunschliste nicht mehr gefunden,\ndie Zuordnung im SerienRecorder wird gelöscht:\n\n" + "\n".join(removedWebChannels), MessageBox.TYPE_INFO, timeout=10)
+						for webChannel in removedWebChannels:
+							self.selected_sender = webChannel
+							self.channelDelete(True)
+
+					if not newWebChannels:
+						self.session.open(MessageBox, "Die SerienRecorder Senderliste ist aktuell,\nes wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
+						self.showChannels()
+					else:
+						sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)"
+						for webChannel in newWebChannels:
+							cCursor.execute(sql, (webChannel, "", "", 0))
+							self.serienRecChannelList.append((webChannel, "", "", "0"))
 
 				SerienRecorder.dbSerRec.commit()
 				cCursor.close()
@@ -336,12 +353,31 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 
 	@staticmethod
 	def getMissingWebChannels(webChannels, dbChannels):
+		added = []
+		removed = []
+
+		dbWebChannels = [x[0] for x in dbChannels]
+
+		# append missing (new) channels
+		for webChannel in webChannels:
+			if webChannel.lower() not in [dbWebChannel.lower() for dbWebChannel in dbWebChannels]:
+				added.append(webChannel)
+
+		# append removed channels
+		for dbWebChannel in dbWebChannels:
+			if dbWebChannel.lower() not in [webChannel.lower() for webChannel in webChannels]:
+				removed.append(dbWebChannel)
+
+		return added, removed
+
+	@staticmethod
+	def getUnassignedWebChannels(dbChannels):
 		result = []
 
-		# append missing
-		for webChannel in webChannels:
-			if not [item for item in dbChannels if webChannel.lower() in [dbWebChannel.lower() for dbWebChannel in item]]:
-				result.append(webChannel)
+		#append unassigned
+		for x in dbChannels:
+			if not x[1]:
+				result.append(x[0])
 
 		return result
 
@@ -564,7 +600,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 			print "[SerienRecorder] channel-list ok."
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.autoMatch, MessageBox, "Automatische Zuordnung durchführen?\n\nDieser Vorgang kann je nach Umfang der Senderliste einige Zeit dauern?", MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.autoMatch, MessageBox, "Es wird versucht für alle nicht zugeordneten Web-Sender einen passenden STB-Sender zu finden, dabei werden zunächst HD Sender bevorzugt.\n\nDies kann, je nach Umfang der Senderliste, einige Zeit (u.U. einige Minuten) dauern - bitte haben Sie Geduld!\n\nAutomatische Zuordnung jetzt durchführen?", MessageBox.TYPE_YESNO)
 
 	def autoMatch(self, execute):
 		if execute:
@@ -595,6 +631,7 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 				else:
 					self.channelDelete(True)
 			cCursor.close()
+			self.showChannels()
 
 	def channelDelete(self, answer):
 		if not answer:
@@ -607,7 +644,6 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		self.changesMade = True
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Sender '- %s -' entfernt." % self.selected_sender)
-		self.showChannels()
 
 	def keyLeft(self):
 		self[self.modus].pageUp()
