@@ -7316,7 +7316,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 
 	def createConfigList(self):
 		self.list = []
-		self.list.append(getConfigListEntry("---------  SYSTEM:  -------------------------------------------------------------------------------------------"))
+		self.list.append(getConfigListEntry("---------  SYSTEM:  -------------------------------------------------------------------------------------------", ConfigNothing()))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("ID der Box:", config.plugins.serienRec.BoxID))
 			self.list.append(getConfigListEntry("Neue Serien-Marker nur auf dieser Box aktivieren:", config.plugins.serienRec.activateNewOnThisSTBOnly))
@@ -7337,8 +7337,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				self.list.append(getConfigListEntry("    Speicherort für Backup:", config.plugins.serienRec.BackupPath))
 				self.list.append(getConfigListEntry("    Backup-Dateien löschen die älter als x Tage sind:", config.plugins.serienRec.deleteBackupFilesOlderThan))
 
-		self.list.append(getConfigListEntry(""))
-		self.list.append(getConfigListEntry("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------"))
+		self.list.append(getConfigListEntry("", ConfigNothing()))
+		self.list.append(getConfigListEntry("---------  AUTO-CHECK:  ---------------------------------------------------------------------------------------", ConfigNothing()))
 		#self.list.append(getConfigListEntry("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):", config.plugins.serienRec.updateInterval)) #3600000
 		#self.list.append(getConfigListEntry("Intervall für autom. Suchlauf (Std.) (00 = keiner, 24 = nach Uhrzeit):", config.plugins.serienRec.updateInterval)) #3600000
 		self.list.append(getConfigListEntry("Automatischen Suchlauf ausführen:", config.plugins.serienRec.autochecktype))
@@ -7391,8 +7391,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 				if int(config.plugins.serienRec.afterAutocheck.value):
 					self.list.append(getConfigListEntry("    Timeout für (Deep-)Standby-Abfrage (in Sek.):", config.plugins.serienRec.DSBTimeout))
 			
-		self.list.append(getConfigListEntry(""))
-		self.list.append(getConfigListEntry("---------  TIMER:  --------------------------------------------------------------------------------------------"))
+		self.list.append(getConfigListEntry("", ConfigNothing()))
+		self.list.append(getConfigListEntry("---------  TIMER:  --------------------------------------------------------------------------------------------", ConfigNothing()))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Timer-Art:", self.kindOfTimer))
 			self.list.append(getConfigListEntry("Nach dem Event:", config.plugins.serienRec.afterEvent))
@@ -7417,12 +7417,12 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 					self.list.append(getConfigListEntry("    Verwende alternative Sender bei Konflikten:", config.plugins.serienRec.useAlternativeChannel))
 		
 		if config.plugins.serienRec.setupType.value == "1":
-			self.list.append(getConfigListEntry(""))
-			self.list.append(getConfigListEntry("---------  OPTIMIERUNGEN:  ------------------------------------------------------------------------------------"))
+			self.list.append(getConfigListEntry("", ConfigNothing()))
+			self.list.append(getConfigListEntry("---------  OPTIMIERUNGEN:  ------------------------------------------------------------------------------------", ConfigNothing()))
 			self.list.append(getConfigListEntry("Intensive Suche nach angelegten Timern:", config.plugins.serienRec.intensiveTimersuche))
 			self.list.append(getConfigListEntry("Zeige ob die Episode als Aufnahme auf der HDD ist:", config.plugins.serienRec.sucheAufnahme))
-			self.list.append(getConfigListEntry(""))
-			self.list.append(getConfigListEntry("---------  GUI:  ----------------------------------------------------------------------------------------------"))
+			self.list.append(getConfigListEntry("", ConfigNothing()))
+			self.list.append(getConfigListEntry("---------  GUI:  ----------------------------------------------------------------------------------------------", ConfigNothing()))
 			self.list.append(getConfigListEntry("Skin:", config.plugins.serienRec.SkinType))
 			global showAllButtons
 			if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD", "StyleFHD", "Black Box"):
@@ -7454,8 +7454,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("Screens bei Änderungen sofort aktualisieren:", config.plugins.serienRec.refreshViews))
 
 
-		self.list.append(getConfigListEntry(""))
-		self.list.append(getConfigListEntry("---------  LOG:  ----------------------------------------------------------------------------------------------"))
+		self.list.append(getConfigListEntry("", ConfigNothing()))
+		self.list.append(getConfigListEntry("---------  LOG:  ----------------------------------------------------------------------------------------------", ConfigNothing()))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Speicherort für Log-Datei:", config.plugins.serienRec.LogFilePath))
 			self.list.append(getConfigListEntry("Log-Dateiname mit Datum/Uhrzeit:", config.plugins.serienRec.longLogFileName))
