@@ -27,7 +27,7 @@ userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.5.4-beta'
+SRVERSION = '3.6.0'
 
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
@@ -98,7 +98,7 @@ class TimeHelpers:
 	@classmethod
 	def getNextDayUnixtime(cls, minutes, hour, day, month):
 		now = datetime.datetime.now()
-		if int(month) < now.month and now.month is 12:
+		if int(month) < now.month:
 			date = datetime.datetime(int(now.year) + 1,int(month),int(day),int(hour),int(minutes))
 		else:
 			date = datetime.datetime(int(now.year),int(month),int(day),int(hour),int(minutes))
@@ -108,7 +108,7 @@ class TimeHelpers:
 	@classmethod
 	def getUnixTimeAll(cls, minutes, hour, day, month):
 		now = datetime.datetime.now()
-		if int(month) < now.month and now.month is 12:
+		if int(month) < now.month:
 			return datetime.datetime(int(now.year) + 1, int(month), int(day), int(hour), int(minutes)).strftime("%s")
 		else:
 			return datetime.datetime(int(now.year), int(month), int(day), int(hour), int(minutes)).strftime("%s")
@@ -440,3 +440,5 @@ class PiconLoader:
 
 	def piconPathChanged(self, configElement = None):
 		self.nameCache.clear()
+
+

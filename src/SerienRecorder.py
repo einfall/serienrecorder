@@ -5,39 +5,42 @@ from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Label import Label
 from Components.MenuList import MenuList
 from Components.MultiContent import MultiContentEntryText, MultiContentEntryPixmap, MultiContentEntryPixmapAlphaTest
-from Tools.LoadPixmap import LoadPixmap
 from Components.Pixmap import Pixmap
 from Components.AVSwitch import AVSwitch
-from Screens.InfoBar import MoviePlayer
 from Components.PluginComponent import plugins
 from Components.Button import Button
 from Components.VideoWindow import VideoWindow
-from Screens.Screen import Screen
-from Plugins.Plugin import PluginDescriptor
-from twisted.web.client import getPage
-from twisted.web.client import downloadPage
-from HTMLParser import HTMLParser
-
 from Components.ServicePosition import ServicePositionGauge
-from Tools.NumericalTextInput import NumericalTextInput
 from Components.ConfigList import ConfigList, ConfigListScreen
 from Components.config import config, ConfigInteger, ConfigSelection, getConfigListEntry, ConfigText, ConfigDirectory, ConfigYesNo, configfile, ConfigSelection, ConfigSubsection, ConfigPIN, NoSave, ConfigNothing, ConfigClock, ConfigSelectionNumber
-
 from Components.ScrollLabel import ScrollLabel
 from Components.FileList import FileList
 from Components.Sources.StaticText import StaticText
 
+from Plugins.Plugin import PluginDescriptor
+
+from twisted.web.client import getPage
+from twisted.web.client import downloadPage
+from twisted.web import client, error as weberror
+from twisted.internet import reactor, defer
+
+from HTMLParser import HTMLParser
+
+from Tools.NumericalTextInput import NumericalTextInput
+from Tools.LoadPixmap import LoadPixmap
+from Tools.Directories import pathExists, fileExists, SCOPE_SKIN_IMAGE, resolveFilename
+
+from Screens.Screen import Screen
 from Screens.HelpMenu import HelpableScreen
 from Screens.InputBox import InputBox
 from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
+from Screens.EpgSelection import EPGSelection
+from Screens.InfoBar import MoviePlayer
 import Screens.Standby
 
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter
-from Tools.Directories import pathExists, fileExists, SCOPE_SKIN_IMAGE, resolveFilename
 import sys, os, base64, re, time, shutil, datetime, codecs, urllib, urllib2, random, itertools, traceback
-from twisted.web import client, error as weberror
-from twisted.internet import reactor, defer
 from skin import parseColor, loadSkin, parseFont
 import imaplib
 import email
@@ -240,14 +243,14 @@ def ReadConfigFile():
 	config.plugins.serienRec.firstscreen = ConfigSelection(choices = [("0","SerienPlaner"), ("1", "SerienMarker")], default="0")
 	
 	# interne
-	config.plugins.serienRec.version = NoSave(ConfigText(default="034"))
+	config.plugins.serienRec.version = NoSave(ConfigText(default="036"))
 	config.plugins.serienRec.showversion = NoSave(ConfigText(default=SerienRecorderHelpers.SRVERSION))
 	config.plugins.serienRec.screenplaner = ConfigInteger(1, (1,2))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
 	config.plugins.serienRec.addedListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.wishListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
-	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.4"))
+	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.6"))
 
 	# Override settings for maxWebRequests, AutoCheckInterval and due to restrictions of Wunschliste.de
 	config.plugins.serienRec.maxWebRequests.setValue(1)
@@ -548,7 +551,7 @@ def checkTuner(check_start, check_end, check_stbRef):
 	if lTuner.count(check_stbRef):
 		return True
 	else:
-		return (len(lTuner) < int(config.plugins.serienRec.tuner.value))
+		return len(lTuner) < int(config.plugins.serienRec.tuner.value)
 
 def checkFileAccess():
 	# überprüfe ob logFile als Datei erzeigt werden kann
@@ -682,10 +685,6 @@ def CreateDirectory(serien_name, staffel, cover_only = False):
 		if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
 			shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
 		if config.plugins.serienRec.seasonsubdir.value:
-			if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
-				seasonsubdirfillchar = ' '
-			else:
-				seasonsubdirfillchar = config.plugins.serienRec.seasonsubdirfillchar.value
 			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname):
 				shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname)
 	
@@ -734,6 +733,17 @@ def getTags(serien_name):
 			tags = pickle.loads(tagString)
 	cCursor.close()
 	return tags
+
+def getAddToDatabase(serien_name):
+	global dbSerRec
+	result = 1
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT addToDatabase FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(), ))
+	data = cCursor.fetchone()
+	if data:
+		(result,) = data
+	cCursor.close()
+	return bool(result)
 
 def encode(key, clear):
 	enc = []
@@ -930,7 +940,7 @@ def getEmailData():
 				for name, value in attrs:
 					if name == 'href':
 						url = value
-						break;
+						break
 				self.transmission.append(url)
 				self.state = 'transmission_serie'
 			elif self.state == 'transmission_serie' and tag == 'strong':
@@ -1190,7 +1200,7 @@ def getEmailData():
 				try:
 					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (doReplaces(seriesname), url))
 					dbSerRec.commit()
-					writeLog("' %s - Serien Marker erzeugt '" % doReplaces(seriesname), True)
+					writeLog("Serien Marker für ' %s ' wurde erzeugt" % doReplaces(seriesname), True)
 					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
 					try:
 						erlaubteSTB = 0xFFFF
@@ -1205,7 +1215,7 @@ def getEmailData():
 						writeLog("' %s - TV-Planer erlaubte STB -> Update %d failed '" % (doReplaces(seriesname), erlaubteSTB), True)
 						print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d failed '" % (doReplaces(seriesname), erlaubteSTB)
 				except:
-					writeLog("' %s - Serien Marker konnte nicht erzeugt werden '" % doReplaces(seriesname), True)
+					writeLog("Serien Marker für ' %s ' konnte nicht erzeugt werden" % doReplaces(seriesname), True)
 					print "[SerienRecorder] ' %s - Serien Marker konnte nicht erzeugt werden '" % doReplaces(seriesname)
 
 		cCursor.close()
@@ -1390,6 +1400,7 @@ def addToAddedList(seriesName, fromEpisode, toEpisode, season, episodeTitle):
 			return False
 
 def initDB():
+	# type: () -> object
 	global dbSerRec
 	global serienRecDataBase
 
@@ -1450,7 +1461,8 @@ def initDB():
 																	TimerForSpecials INTEGER DEFAULT 0,
 																	vps INTEGER DEFAULT NULL,
 																	excludedWeekdays INTEGER DEFAULT NULL,
-																	tags TEXT)''')
+																	tags TEXT,
+																	addToDatabase INTEGER DEFAULT 1)''')
 
 		cCursor.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																	 ErlaubterSender TEXT NOT NULL, 
@@ -1587,6 +1599,14 @@ def initDB():
 			except:
 				pass
 
+			try:
+				cCursor = dbSerRec.cursor()
+				cCursor.execute('ALTER TABLE SerienMarker ADD addToDatabase INTEGER DEFAULT 1')
+				dbSerRec.commit()
+				cCursor.close()
+			except:
+				pass
+
 			cCursor = dbSerRec.cursor()
 			cCursor.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
 																		  StartZeitstempel INTEGER NOT NULL, 
@@ -1659,7 +1679,8 @@ def updateDB():
 															 TimerForSpecials INTEGER DEFAULT 0,
 															 vps INTEGER DEFAULT NULL,
 															 excludedWeekdays INTEGER DEFAULT NULL,
-															 tags TEXT)''')
+															 tags TEXT,
+															 addToDatabase INTEGER DEFAULT 1)''')
 
 	cNew.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 															  ErlaubterSender TEXT NOT NULL, 
@@ -1703,7 +1724,7 @@ def updateDB():
 	cCursor.execute("SELECT * FROM SerienMarker ORDER BY Serie")
 	raw = cCursor.fetchall()
 	for each in raw:
-		(ID,Serie,Url,AufnahmeVerzeichnis,AlleStaffelnAb,alleSender,Vorlaufzeit,Nachlaufzeit,AufnahmezeitVon,AufnahmezeitBis,AnzahlWiederholungen,preferredChannel,useAlternativeChannel,AbEpisode,Staffelverzeichnis,TimerForSpecials,vps,excludedWeekdays,tags) = each
+		(ID,Serie,Url,AufnahmeVerzeichnis,AlleStaffelnAb,alleSender,Vorlaufzeit,Nachlaufzeit,AufnahmezeitVon,AufnahmezeitBis,AnzahlWiederholungen,preferredChannel,useAlternativeChannel,AbEpisode,Staffelverzeichnis,TimerForSpecials,vps,excludedWeekdays,tags,addToDatabase) = each
 		if preferredChannel != 1:
 			preferredChannel = 0
 		if useAlternativeChannel != 1:
@@ -1729,8 +1750,8 @@ def updateDB():
 			else:
 				AufnahmezeitBis = None
 		
-		sql = "INSERT INTO SerienMarker (Serie,Url,AufnahmeVerzeichnis,AlleStaffelnAb,alleSender,Vorlaufzeit,Nachlaufzeit,AufnahmezeitVon,AufnahmezeitBis,AnzahlWiederholungen,preferredChannel,useAlternativeChannel,AbEpisode,Staffelverzeichnis,TimerForSpecials,vps,excludedWeekdays,tags) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-		cNew.execute(sql, (Serie,Url,AufnahmeVerzeichnis,AlleStaffelnAb,alleSender,Vorlaufzeit,Nachlaufzeit,AufnahmezeitVon,AufnahmezeitBis,AnzahlWiederholungen,preferredChannel,useAlternativeChannel,AbEpisode,Staffelverzeichnis,TimerForSpecials,vps,excludedWeekdays,tags))
+		sql = "INSERT INTO SerienMarker (Serie,Url,AufnahmeVerzeichnis,AlleStaffelnAb,alleSender,Vorlaufzeit,Nachlaufzeit,AufnahmezeitVon,AufnahmezeitBis,AnzahlWiederholungen,preferredChannel,useAlternativeChannel,AbEpisode,Staffelverzeichnis,TimerForSpecials,vps,excludedWeekdays,tags,addToDatabase) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+		cNew.execute(sql, (Serie,Url,AufnahmeVerzeichnis,AlleStaffelnAb,alleSender,Vorlaufzeit,Nachlaufzeit,AufnahmezeitVon,AufnahmezeitBis,AnzahlWiederholungen,preferredChannel,useAlternativeChannel,AbEpisode,Staffelverzeichnis,TimerForSpecials,vps,excludedWeekdays,tags,addToDatabase))
 		newID = cNew.lastrowid
 		cCursor.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=?", (ID,))
 		for raw2 in cCursor:
@@ -1976,8 +1997,28 @@ def saveEnigmaSettingsToFile(path=serienRecMainPath):
 	writeConfFile.close()
 	readSettings.close()
 
+#----------------------------------------------------------------------------------------------
 
+class serienRecEPGSelection(EPGSelection):
+	def __init__(self, *args):
+		EPGSelection.__init__(self, *args)
+		self.skinName = "EPGSelection"
 
+	def infoKeyPressed(self):
+		self.timerAdd()
+
+	def timerAdd(self):
+		cur = self["list"].getCurrent()
+		evt = cur[0]
+		if not evt:
+			return
+
+		seriesName = evt and evt.getEventName() or ""
+		if seriesName:
+			self.session.open(serienRecAddSerie, seriesName)
+
+	def onSelectionChanged(self):
+		pass
 
 #---------------------------------- Timer Functions ------------------------------------------
 		
@@ -2867,8 +2908,10 @@ class serienRecCheckForRecording():
 
 						# get tags from marker
 						tags = getTags(serien_name)
-						
-						epgmatches = []
+
+						# get addToDatabase for marker
+						addToDatabase = getAddToDatabase(serien_name)
+
 						epgcache = eEPGCache.getInstance()
 						allevents = epgcache.lookupEvent(['IBD',(stbRef, 2, eit, -1)]) or []
 
@@ -2888,11 +2931,12 @@ class serienRecCheckForRecording():
 								result = serienRecAddTimer.addTimer(stbRef, str(serien_time), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title), eit, False, dirname, vpsSettings, tags, None)
 								if result["result"]:
 									self.countTimer += 1
-									# Eintrag in das timer file
-									cTimer = dbSerRec.cursor()
-									cTimer.execute("UPDATE OR IGNORE AngelegteTimer SET TimerAktiviert=1 WHERE Serie=? AND Staffel=? AND Episode=? AND Titel=? AND StartZeitstempel=? AND ServiceRef=? AND webChannel=? AND EventID=?", row)
-									dbSerRec.commit()
-									cTimer.close()
+									if addToDatabase:
+										# Eintrag in das timer file
+										cTimer = dbSerRec.cursor()
+										cTimer.execute("UPDATE OR IGNORE AngelegteTimer SET TimerAktiviert=1 WHERE Serie=? AND Staffel=? AND Episode=? AND Titel=? AND StartZeitstempel=? AND ServiceRef=? AND webChannel=? AND EventID=?", row)
+										dbSerRec.commit()
+										cTimer.close()
 									show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
 									writeLog("' %s ' - Timer wurde angelegt -> %s %s @ %s" % (label_serie, show_start, timer_name, webChannel), True)
 								break
@@ -4051,9 +4095,12 @@ class serienRecCheckForRecording():
 		# get VPS settings for channel
 		vpsSettings = getVPS(webChannel, serien_name)
 
-		#get tags from marker
+		# get tags from marker
 		tags = getTags(serien_name)
-			
+
+		# get addToDatabase for marker
+		addToDatabase = getAddToDatabase(serien_name)
+
 		# versuche timer anzulegen
 		# setze strings für addtimer
 		if checkTuner(start_unixtime, end_unixtime, stbRef):
@@ -4067,7 +4114,7 @@ class serienRecCheckForRecording():
 			if result["result"]:
 				self.countTimer += 1
 				# Eintrag in das timer file
-				self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit)
+				self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit, addToDatabase)
 				if vomMerkzettel:
 					self.countTimerFromWishlist += 1
 					writeLog("' %s ' - Timer (vom Merkzettel) wurde angelegt%s -> %s %s @ %s" % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
@@ -4088,7 +4135,7 @@ class serienRecCheckForRecording():
 							if useTitles:
 								title = splitedTitleList[idx]
 							alreadyExists = checkAlreadyAdded(serien_name, entry[0], entry[1], title, False)
-							if not alreadyExists:
+							if not alreadyExists and addToDatabase:
 								# Nicht vorhandene Einzelfolgen als bereits aufgenommen markieren
 								addToAddedList(serien_name, entry[1], entry[1], entry[0], title)
 								writeLogFilter("timerDebug", "Einzelepisode wird nicht mehr aufgenommen: %s S%sE%s - %s" % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
@@ -4110,7 +4157,7 @@ class serienRecCheckForRecording():
 				if result["result"]:
 					self.countNotActiveTimer += 1
 					# Eintrag in das timer file
-					self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit, False)
+					self.addRecTimer(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit, addToDatabase, False)
 					cCursor = dbSerRec.cursor()
 					cCursor.execute("INSERT OR IGNORE INTO TimerKonflikte (Message, StartZeitstempel, webChannel) VALUES (?, ?, ?)", (dbMessage, int(start_unixtime), webChannel))
 					if vomMerkzettel:
@@ -4220,26 +4267,29 @@ class serienRecCheckForRecording():
 
 			
 	@staticmethod
-	def addRecTimer(serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, TimerAktiviert = True):
-		(margin_before, margin_after) = getMargins(serien_name, webChannel)
-		cCursor = dbSerRec.cursor()
-		sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
-		#sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND ?<=StartZeitstempel<=?"
-		cCursor.execute(sql, (serien_name.lower(), stbRef.lower(), int(start_time) + (int(margin_before) * 60) - (int(STBHelpers.getEPGTimeSpan()) * 60), int(start_time) + (int(margin_before) * 60) + (int(STBHelpers.getEPGTimeSpan()) * 60)))
-		row = cCursor.fetchone()
-		if row:
-			sql = "UPDATE OR IGNORE AngelegteTimer SET EventID=?, TimerAktiviert=? WHERE LOWER(Serie)=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
-			cCursor.execute(sql, (eit, int(TimerAktiviert), serien_name.lower(), stbRef.lower(), int(start_time) + (int(margin_before) * 60) - (int(STBHelpers.getEPGTimeSpan()) * 60), int(start_time) + (int(margin_before) * 60) + (int(STBHelpers.getEPGTimeSpan()) * 60)))
-			print "[SerienRecorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
-			writeLogFilter("timerDebug", "Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
-		else:
-			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, int(TimerAktiviert)))
-			#cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit))
+	def addRecTimer(serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, addToDatabase, TimerAktiviert = True):
+		if not addToDatabase:
 			print "[SerienRecorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
 			writeLogFilter("timerDebug", "Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
-
-		dbSerRec.commit()
-		cCursor.close()
+		else:
+			(margin_before, margin_after) = getMargins(serien_name, webChannel)
+			cCursor = dbSerRec.cursor()
+			sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
+			#sql = "SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND ?<=StartZeitstempel<=?"
+			cCursor.execute(sql, (serien_name.lower(), stbRef.lower(), int(start_time) + (int(margin_before) * 60) - (int(STBHelpers.getEPGTimeSpan()) * 60), int(start_time) + (int(margin_before) * 60) + (int(STBHelpers.getEPGTimeSpan()) * 60)))
+			row = cCursor.fetchone()
+			if row:
+				sql = "UPDATE OR IGNORE AngelegteTimer SET EventID=?, TimerAktiviert=? WHERE LOWER(Serie)=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
+				cCursor.execute(sql, (eit, int(TimerAktiviert), serien_name.lower(), stbRef.lower(), int(start_time) + (int(margin_before) * 60) - (int(STBHelpers.getEPGTimeSpan()) * 60), int(start_time) + (int(margin_before) * 60) + (int(STBHelpers.getEPGTimeSpan()) * 60)))
+				print "[SerienRecorder] Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+				writeLogFilter("timerDebug", "Timer bereits vorhanden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			else:
+				cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, int(TimerAktiviert)))
+				#cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit))
+				print "[SerienRecorder] Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title)
+				writeLogFilter("timerDebug", "Timer angelegt: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+			dbSerRec.commit()
+			cCursor.close()
 		
 	def dataError(self, error, url=None):
 		print "[SerienRecorder] Es ist ein Fehler aufgetreten - die Daten konnten nicht abgerufen/verarbeitet werden: (%s)" % error
@@ -5115,9 +5165,9 @@ class serienRecMarker(Screen, HelpableScreen):
 		serien_url = self['menu_list'].getCurrent()[0][1]
 		serien_id = getSeriesIDByURL(serien_url)
 		if serien_id:
-			#self.session.open(serienRecShowInfo, serien_name, serien_id)
-			self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-							  MessageBox.TYPE_INFO, timeout=10)
+			self.session.open(serienRecShowInfo, serien_name, serien_id)
+			#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+			#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def episodeList(self):
 		if self.modus == "menu_list":
@@ -5554,7 +5604,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		dbSerRec.commit()
 		cCursor.close()
 		self.changesMade = True
-		writeLog("' %s - Serien Marker entfernt '" % serien_name, True)
+		writeLog("Serien Marker für ' %s ' wurde entfernt" % serien_name, True)
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Serie '- %s -' entfernt." % serien_name)
 		self.readSerienMarker()	
@@ -6081,7 +6131,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
 			dbSerRec.commit()
 			cCursor.close()
-			writeLog("' %s - Serien Marker erzeugt '" % Serie, True)
+			writeLog("Serien Marker für ' %s ' wurde erzeugt" % Serie, True)
 			self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % Serie)
 			self['title'].instance.setForegroundColor(parseColor("green"))
 			if config.plugins.serienRec.openMarkerScreen.value:
@@ -6165,6 +6215,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		self.skin = None
 		self.serien_id = 0
 		self.ErrorMsg = ''
+		self.countTimer = 0
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, "umschalten ausgewählter Sendetermin aktiviert/deaktiviert"),
@@ -6417,7 +6468,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				seasonAllowed = self.isSeasonAllowed(staffel, episode, SerieStaffel, AbEpisode)
 
 			if seasonAllowed:
-				datum = time.strftime("%d.%m", time.localtime(startzeit))
+				datum = time.strftime("%d.%m.%y", time.localtime(startzeit))
 				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
 				bereits_vorhanden = False
@@ -6555,7 +6606,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
 					
 					# formatiere start/end-zeit
-					(day, month) = datum.split('.')
+					(day, month, year) = datum.split('.')
 					(start_hour, start_min) = startzeit.split('.')
 					(end_hour, end_min) = endzeit.split('.')
 
@@ -6576,6 +6627,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 					# get tags from marker
 					tags = getTags(serien_name)
+
+					#get addToDatabase for marker
+					addToDatabase = getAddToDatabase(serien_name)
 
 					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 
@@ -6607,7 +6661,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 							NoOfRecords = config.plugins.serienRec.NoOfRecords.value
 					cCursor.close()
 
-					params = (serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, bool(useAlternativeChannel), vpsSettings, tags)
+					params = (serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, bool(useAlternativeChannel), vpsSettings, tags, addToDatabase)
 					if (bereits_vorhanden < NoOfRecords) and (bereits_vorhanden_HDD < NoOfRecords):
 						TimerDone = self.doTimer(params)
 					else:
@@ -6636,7 +6690,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		if not answer:
 			return False
 		else:
-			(serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags) = params
+			(serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags, addToDatabase) = params
 			# check sender
 			cSener_list = self.checkSender(sender)
 			if len(cSener_list) == 0:
@@ -6681,7 +6735,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 				if True:
 					result = serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, False, dirname, vpsSettings, tags, None)
 					if result["result"]:
-						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit):
+						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase):
 							self.countTimer += 1
 							TimerOK = True
 					else:
@@ -6699,7 +6753,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 						result = serienRecAddTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit), str(alt_end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), alt_eit, False, dirname, vpsSettings, tags, None)
 						if result["result"]:
 							konflikt = None
-							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit):
+							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit, addToDatabase):
 								self.countTimer += 1
 								TimerOK = True
 						else:
@@ -6714,7 +6768,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 					result = serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit), timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True, dirname, vpsSettings, tags, None)
 					if result["result"]:
-						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, False):
+						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase, False):
 							self.countTimer += 1
 							TimerOK = True
 						cCursor = dbSerRec.cursor()
@@ -6804,24 +6858,29 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		cCursor.close()
 		return fSender
 
-	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, TimerAktiviert=True):
+	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, addToDatabase, TimerAktiviert=True):
 		result = False
 		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
-		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=?", (serien_name.lower(), start_time))
-		row = cCursor.fetchone()
-		if row:
-			print "[SerienRecorder] Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title)
-			writeLog("Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title))
-			result = True
-		else:
-			cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, int(TimerAktiviert)))
-			dbSerRec.commit()
+		if not addToDatabase:
 			print "[SerienRecorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
 			writeLog("Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title))
 			result = True
-		cCursor.close()
-		return result	
+		else:
+			cCursor = dbSerRec.cursor()
+			cCursor.execute("SELECT * FROM AngelegteTimer WHERE LOWER(Serie)=? AND StartZeitstempel=?", (serien_name.lower(), start_time))
+			row = cCursor.fetchone()
+			if row:
+				print "[SerienRecorder] Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+				writeLog("Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title))
+				result = True
+			else:
+				cCursor.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, int(TimerAktiviert)))
+				dbSerRec.commit()
+				print "[SerienRecorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+				writeLog("Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title))
+				result = True
+			cCursor.close()
+		return result
 		
 	def keyRed(self):
 		if config.plugins.serienRec.refreshViews.value:
@@ -7373,7 +7432,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("Früheste Zeit für Timer:", config.plugins.serienRec.globalFromTime))
 			self.list.append(getConfigListEntry("Späteste Zeit für Timer:", config.plugins.serienRec.globalToTime))
 			self.list.append(getConfigListEntry("Versuche Timer aus dem EPG zu aktualisieren:", config.plugins.serienRec.eventid))
-			self.list.append(getConfigListEntry("Immer aufnehmen wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
+			self.list.append(getConfigListEntry("Immer aufnehmen, wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
 			if config.plugins.serienRec.forceRecording.value:
 				self.list.append(getConfigListEntry("    maximal X Tage auf Wiederholung warten:", config.plugins.serienRec.TimeSpanForRegularTimer))
 			self.list.append(getConfigListEntry("Anzahl der Aufnahmen pro Episode:", config.plugins.serienRec.NoOfRecords))
@@ -7493,26 +7552,26 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if self['config'].getCurrent()[1] == config.plugins.serienRec.savetopath:
 			#start_dir = "/media/hdd/movie/"
 			start_dir = config.plugins.serienRec.savetopath.value
-			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Aufnahme-Verzeichnis für Serien auswählen")
+			self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir, "Aufnahme-Verzeichnis für Serien auswählen")
 		if self['config'].getCurrent()[1] == config.plugins.serienRec.tvplaner_movies_filepath:
 			#start_dir = "/media/hdd/movie/"
 			start_dir = config.plugins.serienRec.tvplaner_movies_filepath.value
-			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Aufnahme-Verzeichnis für Filme auswählen")
+			self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir, "Aufnahme-Verzeichnis für Filme auswählen")
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.LogFilePath:
 			start_dir = config.plugins.serienRec.LogFilePath.value
-			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "LogFile-Verzeichnis auswählen")
+			self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir, "LogFile-Verzeichnis auswählen")
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.BackupPath:
 			start_dir = config.plugins.serienRec.BackupPath.value
-			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Backup-Verzeichnis auswählen")
+			self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir, "Backup-Verzeichnis auswählen")
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.databasePath:
 			start_dir = config.plugins.serienRec.databasePath.value
-			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Datenbank-Verzeichnis auswählen")
+			self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir, "Datenbank-Verzeichnis auswählen")
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.coverPath:
 			start_dir = config.plugins.serienRec.coverPath.value
-			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Cover-Verzeichnis auswählen")
+			self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir, "Cover-Verzeichnis auswählen")
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.piconPath:
 			start_dir = config.plugins.serienRec.piconPath.value
-			self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir, "Picon-Verzeichnis auswählen")
+			self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir, "Picon-Verzeichnis auswählen")
 			
 	def selectedMediaFile(self, res):
 		if res is not None:
@@ -7681,7 +7740,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.writeLogAdded :           ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogDisk :            ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Aufnahmen vorhanden ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogTimeRange :       ("Bei 'ja' erfolgen Einträge in die log-Datei, wenn die zu timende Folge nicht in der erlaubten Zeitspanne (%s:%s - %s:%s) liegt, "
-			                                                    "sowie wenn gemäß der Einstellung 'Immer aufnehmen wenn keine Wiederholung gefunden wird' = 'ja' "
+			                                                    "sowie wenn gemäß der Einstellung 'Immer aufnehmen, wenn keine Wiederholung gefunden wird' = 'ja' "
 																"ein Timer ausserhalb der erlaubten Zeitspanne angelegt wird." % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2), str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Das_Log"),
 			config.plugins.serienRec.writeLogTimeLimit :       ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der Sendetermin für die zu timende Folge in der Verganhenheit, \n"
 			                                                    "oder mehr als die in 'Timer für X Tage erstellen' eingestellte Anzahl von Tagen in der Zukunft liegt (jetzt also nach %s)." % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))), "Das_Log"),
@@ -7937,11 +7996,11 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 			Skin1_Settings(self)
 
 		cCursor = dbSerRec.cursor()
-		cCursor.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
+		cCursor.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase FROM SerienMarker WHERE LOWER(Serie)=?", (self.Serie.lower(),))
 		row = cCursor.fetchone()
 		if not row:
-			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "")
-		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags) = row
+			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1)
+		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase) = row
 		cCursor.close()
 
 		if not AufnahmeVerzeichnis:
@@ -7992,6 +8051,11 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.override_vps = ConfigYesNo(default = False)
 			self.enable_vps = ConfigYesNo(default = False)
 			self.enable_vps_savemode = ConfigYesNo(default = False)
+
+		if str(addToDatabase).isdigit():
+			self.addToDatabase = ConfigYesNo(default = bool(addToDatabase))
+		else:
+			self.addToDatabase = ConfigYesNo(default = True)
 
 		self.preferredChannel = ConfigSelection(choices = [("1", "Standard"), ("0", "Alternativ")], default=str(preferredChannel))
 		self.useAlternativeChannel = ConfigSelection(choices = [("-1", "gemäß Setup (dzt. %s)" % str(config.plugins.serienRec.useAlternativeChannel.value).replace("True", "ja").replace("False", "nein")), ("0", "nein"), ("1", "ja")], default=str(useAlternativeChannel))
@@ -8132,6 +8196,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 				if self.enable_vps.value:
 					self.list.append(getConfigListEntry("            Sicherheitsmodus aktivieren:", self.enable_vps_savemode))
 
+		self.list.append(getConfigListEntry("Timer in Timer-Liste speichern:", self.addToDatabase))
 		self.list.append(getConfigListEntry("Bevorzugte Sender-Liste:", self.preferredChannel))
 		self.list.append(getConfigListEntry("Verwende alternative Sender bei Konflikten:", self.useAlternativeChannel))
 
@@ -8245,7 +8310,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 		else:
 			start_dir = self.savetopath.value
 
-		self.session.openWithCallback(self.selectedMediaFile, SerienRecFileList, start_dir,
+		self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir,
 									  "Aufnahme-Verzeichnis auswählen", self.Serie)
 
 	def selectedMediaFile(self, res):
@@ -8317,6 +8382,7 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.enable_vps_savemode :   ("Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet. Die programmierten Start- und Endzeiten werden eingehalten.\n"
 			                              "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.\n"
 										  "Diese Einstellung hat Vorrang gegenüber der Sender Einstellung für VPS.") % self.Serie,
+			self.addToDatabase :      	  "Bei 'nein' werden für die Aufnahmen von '%s' keine Einträge in die Timer-Liste gemacht, sodass die Episoden beliebig oft aufgenommen werden können." % self.Serie,
 			self.preferredChannel :      "Auswahl, ob die Standard-Sender oder die alternativen Sender für die Aufnahmen von '%s' verwendet werden sollen." % self.Serie,
 			self.useAlternativeChannel : ("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "
 										  "falls der Timer für '%s' auf dem bevorzugten Sender nicht angelegt werden kann.\n"
@@ -8390,8 +8456,8 @@ class serienRecMarkerSetup(Screen, ConfigListScreen, HelpableScreen):
 			tags = pickle.dumps(self.serienmarker_tags)
 
 		cCursor = dbSerRec.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=? WHERE LOWER(Serie)=?"
-		cCursor.execute(sql, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value), vpsSettings, excludedWeekdays, tags, self.Serie.lower()))
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=? WHERE LOWER(Serie)=?"
+		cCursor.execute(sql, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value), vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), self.Serie.lower()))
 		dbSerRec.commit()
 		cCursor.close()
 		self.close(True)
@@ -8634,7 +8700,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen, HelpableScreen):
 	def cancel(self):
 		self.close()
 
-class SerienRecFileList(Screen, HelpableScreen):
+class serienRecFileList(Screen, HelpableScreen):
 	def __init__(self, session, initDir, title, seriesName = ''):
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
@@ -11248,7 +11314,7 @@ class serienRecMain(Screen, HelpableScreen):
 				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
 				dbSerRec.commit()
 				cCursor.close()
-				writeLog("' %s - Serien Marker erzeugt '" % serien_name, True)
+				writeLog("Serien Marker für ' %s ' wurde erzeugt" % serien_name, True)
 				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("green"))
 				global runAutocheckAtExit
@@ -11483,26 +11549,8 @@ def autostart(reason, **kwargs):
 		from SerienRecorderResource import addWebInterfaceForDreamMultimedia
 		addWebInterfaceForDreamMultimedia(session)
 
-
 def main(session, **kwargs):
 	session.open(serienRecMain)
 	#print "open screen %s", config.plugins.serienRec.firstscreen.value
 	#exec("session.open("+config.plugins.serienRec.firstscreen.value+")")
 
-def SRSetup(menuid, **kwargs):
-	if menuid == "mainmenu":
-		return [("SerienRecorder", main, "serien_recorder", None)]
-	else:
-		return []
-		
-def Plugins(path, **kwargs):
-	global plugin_path
-	plugin_path = path
-	return [
-		PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc=autostart, wakeupfnc=getNextWakeup),
-		#PluginDescriptor(name="SerienRecorder", description="Record your favourite series.", where = [PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc = autostart, wakeupfnc=getNextWakeup,
-		PluginDescriptor(name="SerienRecorder", description="Record your favourite series.", where = [PluginDescriptor.WHERE_EXTENSIONSMENU], fnc=main),
-		PluginDescriptor(name="SerienRecorder", description="Record your favourite series.", where = [PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=main),
-		PluginDescriptor(name="SerienRecorder", description="Record your favourite series.", where = [PluginDescriptor.WHERE_MENU], fnc=SRSetup),
-		]
-	

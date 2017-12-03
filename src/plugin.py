@@ -19,15 +19,15 @@ serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 def SRstart(session, **kwargs):
 
 	for file_name in (('SerienRecorder', SerienRecorder),
-	                  ('SerienRecorderResource', SerienRecorderResource),
-	                  ('SerienRecorderSeriesServer', SerienRecorderSeriesServer),
-	                  ('SerienRecorderScreenHelpers', SerienRecorderScreenHelpers),
-	                  ('SerienRecorderHelpers', SerienRecorderHelpers),
-	                  ('SerienRecorderUpdateScreen', SerienRecorderUpdateScreen),
-	                  ('SerienRecorderAboutScreen', SerienRecorderAboutScreen),
-	                  ('SerienRecorderChannelScreen', SerienRecorderChannelScreen),
-	                  ('SerienRecorderSplashScreen', SerienRecorderSplashScreen),
-	                  ('SerienRecorderStartupInfoScreen', SerienRecorderStartupInfoScreen),
+					  ('SerienRecorderResource', SerienRecorderResource),
+					  ('SerienRecorderSeriesServer', SerienRecorderSeriesServer),
+					  ('SerienRecorderScreenHelpers', SerienRecorderScreenHelpers),
+					  ('SerienRecorderHelpers', SerienRecorderHelpers),
+					  ('SerienRecorderUpdateScreen', SerienRecorderUpdateScreen),
+					  ('SerienRecorderAboutScreen', SerienRecorderAboutScreen),
+					  ('SerienRecorderChannelScreen', SerienRecorderChannelScreen),
+					  ('SerienRecorderSplashScreen', SerienRecorderSplashScreen),
+					  ('SerienRecorderStartupInfoScreen', SerienRecorderStartupInfoScreen),
 					  ('SerienRecorderShowSeasonBeginScreen', SerienRecorderShowSeasonBeginsScreen)):
 		if fileExists(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0])):
 			if (int(os.path.getmtime(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0]))) < int(
@@ -43,12 +43,34 @@ def SRstart(session, **kwargs):
 		traceback.print_exc()
 
 
+# Movielist
+def movielist(session, service, **kwargs):
+	from enigma import eServiceCenter, eServiceReference, iServiceInformation
+
+	serviceHandler = eServiceCenter.getInstance()
+	info = serviceHandler.info(service)
+	seriesName = info and info.getName(service) or ""
+	if seriesName:
+		SerienRecorder.initDB()
+		session.open(SerienRecorder.serienRecAddSerie, seriesName)
+
+# Event Info
+def eventinfo(session, servicelist, **kwargs):
+	SerienRecorder.initDB()
+	ref = session.nav.getCurrentlyPlayingServiceReference()
+	session.open(SerienRecorder.serienRecEPGSelection, ref)
+
 def Plugins(**kwargs):
 	return [
 		PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART],
-		                 fnc=SerienRecorder.autostart, wakeupfnc=SerienRecorder.getNextWakeup),
+						 fnc=SerienRecorder.autostart, wakeupfnc=SerienRecorder.getNextWakeup),
 		PluginDescriptor(name="SerienRecorder", description="Record your favourite series.",
-		                 where=[PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=SRstart),
+						 where=[PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=SRstart),
 		PluginDescriptor(name="SerienRecorder", description="Record your favourite series.",
-		                 where=[PluginDescriptor.WHERE_EXTENSIONSMENU], fnc=SRstart)
+						 where=[PluginDescriptor.WHERE_EXTENSIONSMENU], fnc=SRstart),
+		PluginDescriptor(name="SerienRecorder", description="Serien-Marker hinzufügen...",
+						 where=[PluginDescriptor.WHERE_MOVIELIST], fnc=movielist, needsRestart=False),
+		PluginDescriptor(name="Serien-Marker hinzufügen...", where=[PluginDescriptor.WHERE_EVENTINFO], fnc=eventinfo,
+						 needsRestart=False),
+
 	]

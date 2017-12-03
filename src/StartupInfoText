@@ -44,36 +44,30 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.5.0:
+CHANGE-LOG v3.6.0:
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
 
 Neue Funktionen:
-	- Durch Threading wird die Box beim Abrufen vom Serien-Server nicht mehr so lange blockiert
-	- Filter im Serien-/Staffelstart Screen, über die gelbe Taste kann jetzt nach Serienstarts gefiltert werden
-	- In den Einstellungen kann man jetzt entscheiden, ob Cover nur heruntergeladen werden oder auch angezeigt werden sollen.
-	  Werden die Cover nur heruntergeladen, passiert das immer beim Auto-Check und zwar nur für die Serien die auch beim Auto-Check berücksichtigt werden.
-	- Blaue Taste zum Anlegen eines Verzeichnisses wird im Serien-Marker mit Serienname vorbelegt
-	- Suche verbessert - es können jetzt weitere Ergebnisse nachgeladen werden
-	- Wenn eine leere Datei mit dem Namen "Staffel" im SerienRecorder Ordner existiert, dann wird der Staffel-Ordner in Deutsch erzeugt
-	- Zusätzlicher Skin für DreamOS FHD (Danke an zombi)
-	
+	- Staffel Ordner können jetzt auch mit deutschem Namen ("Staffel") angelegt werden, dazu muss man eine Datei mit dem Namen "Staffel" im SerienRecorder Ordner anlegen.
+	- Staffel Filter bei den Sendeterminen (der Filter kann in den globalen Einstellungen aktiviert werden) - danach werden nur noch die Sendetermine angezeigt die den eingestellten Staffeln am Serien-Marker entsprechen.
+	- Es kann jetzt für jeden Serien-Marker eingestellt werden, ob die erstellten Timer in der Timer-Liste gespeichert werden sollen oder nicht. So kann man auch Timer für Sendungen ohne Staffel- und Episodeninformationen erstellen lassen.
+	- Serien-Marker lassen sich jetzt aus dem EPG bzw. aus der Aufnahmeliste erstellen (EPG/INFO lang im Live TV bzw. MENÜ in der Aufnahmeliste).	
+
 Änderungen:
-	- Verbesserte Logausgabe
-	- Änderungen bei "Timer aktualisieren" - es wird jetzt auch automatisch der Aufnahmeordner für bestehende Timer geändert
-	- Es werden jetzt nur die Timer im Log angezeigt bei denen es auch Aktualisierungen gab
-	- Fallback auf Standardpfad wenn Datenbankpfad nicht vorhanden (kein Absturz mehr)
-	- Timeout für Verbindungen zum SerienServer auf 7 Sekunden verkürzt
-	- Listenfarben können jetzt besser im Skin definiert werden
-	- Aufnahme-Ordner im Serien-Marker zeigt Hinweistext, dass kein Serien-Ordner angelegt wird
-	
+	- Verbessertes Threading - es werden nicht mehr zu viele gleichzeitige Threads erstellt - das hat manchmal zu Problemen geführt.
+	- Logausgabe verbessert.
+	- Meldung zum Herunterfahren der Box wird nur noch dann vom SerienRecorder erzeugt, wenn die Box nicht im Standby war.
+
 Bugfixes:
-	- Keine Abstürze mehr beim Löschen von Senderzuordnungen
-	- Wenn keine Serienordner verwendet werden, dann wurde trotzdem ein folder.jpg mit dem Cover in den Aufnahmeordner kopiert - das passiert jetzt nicht mehr
-	- Diverse Fehlerbehebungen bei der Auswertung und dem Abrufen der TV-Planer E-Mails
-	- Event-Programmierungen funktionieren jetzt auch wenn die Staffelnummer fehlt
-	- Fehlerbehebungen um Abstürze zu verhindern
-	
+	- Auto-Update komplett überarbeitet - es sollte jetzt zuverlässig funktionieren (Änderungen werden natürlich erst mit dem nächsten Auto-Update wirksam).
+	- Sonderzeichenbehandlung bei der TV-Planer Funktion.
+	- Fehlerbehebung beim Herunterfahren der Box durch den SerienRecorder.
+	- Möglicher Absturz beim Abrufen von Sendeterminen.
+	- Senderzuordnung wurde komplett überarbeitet - das automatische Zuordnen von Sendern funktioniert jetzt wieder.
+	- Änderungen bei den globalen Einstellungen wegen Änderungen an VTI 13.
+	- Timer für das kommende Jahr wurden nur im Dezember des Vorjahres richtig erstellt.	
+
 Viel Spass mit dem SerienRecorder!
 
 Spenden an die Entwickler:
