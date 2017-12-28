@@ -1200,7 +1200,7 @@ def getEmailData():
 				try:
 					cCursor.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (doReplaces(seriesname), url))
 					dbSerRec.commit()
-					writeLog("Serien Marker für ' %s ' wurde erzeugt" % doReplaces(seriesname), True)
+					writeLog("\nSerien Marker für ' %s ' wurde angelegt" % doReplaces(seriesname), True)
 					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
 					try:
 						erlaubteSTB = 0xFFFF
@@ -1215,8 +1215,8 @@ def getEmailData():
 						writeLog("' %s - TV-Planer erlaubte STB -> Update %d failed '" % (doReplaces(seriesname), erlaubteSTB), True)
 						print "[SerienRecorder] ' %s - TV-Planer erlaubte STB -> Update %d failed '" % (doReplaces(seriesname), erlaubteSTB)
 				except:
-					writeLog("Serien Marker für ' %s ' konnte nicht erzeugt werden" % doReplaces(seriesname), True)
-					print "[SerienRecorder] ' %s - Serien Marker konnte nicht erzeugt werden '" % doReplaces(seriesname)
+					writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % doReplaces(seriesname), True)
+					print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % doReplaces(seriesname)
 
 		cCursor.close()
 	
@@ -2018,7 +2018,7 @@ class serienRecEPGSelection(EPGSelection):
 			self.session.open(serienRecAddSerie, seriesName)
 
 	def onSelectionChanged(self):
-		pass
+		EPGSelection.onSelectionChanged(self)
 
 #---------------------------------- Timer Functions ------------------------------------------
 		
@@ -2452,7 +2452,7 @@ class serienRecCheckForRecording():
 		if config.plugins.serienRec.AutoBackup.value:
 			# Remove old backups
 			if config.plugins.serienRec.deleteBackupFilesOlderThan.value > 0:
-				writeLog("Entferne alte Backup-Dateien und erzeuge neues Backup.", True)
+				writeLog("\nEntferne alte Backup-Dateien und erzeuge neues Backup.", True)
 				now = time.time()
 				logFolderPattern = re.compile('\d{4}\d{2}\d{2}\d{2}\d{2}')
 				for root, dirs, files in os.walk(config.plugins.serienRec.BackupPath.value, topdown=False):
@@ -2699,12 +2699,15 @@ class serienRecCheckForRecording():
 			for row in cCursor:
 				(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
 
+				title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+
 				new_serien_title = serien_title
 				new_serien_time = 0
 				cCursorTmp.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND SerieName=? AND Staffel=? AND Episode=?", (serien_name, staffel, episode))
 				tmpRow = cCursorTmp.fetchone()
 				if tmpRow:
 					(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = tmpRow
+					new_title = "%s - S%sE%s - %s" % (new_serien_name, str(new_staffel).zfill(2), str(new_episode).zfill(2), new_serien_title)
 
 				(margin_before, margin_after) = getMargins(serien_name, webChannel)
 		
@@ -2721,7 +2724,7 @@ class serienRecCheckForRecording():
 					new_serien_time = serien_time
 
 				if event_matches and len(event_matches) > 0:
-					title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+
 					(dirname, dirname_serie) = getDirname(serien_name, staffel)
 					for event_entry in event_matches:
 						eit = int(event_entry[1])
@@ -2730,7 +2733,6 @@ class serienRecCheckForRecording():
 						
 						print "[SerienRecorder] try to modify enigma2 Timer:", title, serien_time
 
-						timerUpdated = False
 						if str(staffel) is 'S' and str(episode) is '0':
 							writeLog("' %s - %s '" % (title, dirname))
 							writeLog("   Timer kann nicht aktualisiert werden @ %s" % webChannel, True)
@@ -2745,7 +2747,7 @@ class serienRecCheckForRecording():
 
 							if not timerUpdated:
 								# suche in deaktivierten Timern
-								timerUpdated = self.updateTimer(recordHandler.processed_timers, cTimer, eit, end_unixtime, episode,
+								self.updateTimer(recordHandler.processed_timers, cTimer, eit, end_unixtime, episode,
 							                              new_serien_title, serien_name, serien_time,
 							                              staffel, start_unixtime, stbRef, title,
 							                              dirname)
@@ -2753,7 +2755,8 @@ class serienRecCheckForRecording():
 							print "[SerienRecorder] Modifying enigma2 Timer failed:", title, serien_time
 							writeLog("' %s ' - Timeraktualisierung fehlgeschlagen @ %s" % (title, webChannel), True)
 						break
-						
+				else:
+					writeLog("' %s ' - konnte nicht im EPG gefunden werden @ %s" % (title, webChannel))
 			dbSerRec.commit()
 
 
@@ -2762,81 +2765,88 @@ class serienRecCheckForRecording():
 
 	def updateTimer(self, timer_list, cTimer, eit, end_unixtime, episode, new_serien_title, serien_name, serien_time, staffel, start_unixtime, stbRef, title, dirname):
 		timerUpdated = False
+		timerFound = False
 		for timer in timer_list:
 			if timer and timer.service_ref:
 				# skip all timer with false service ref
-				if (str(timer.service_ref).lower() != stbRef.lower()) or timer.begin != int(serien_time):
-					continue
+				if (str(timer.service_ref).lower() == str(stbRef).lower()) and (str(timer.begin) == str(serien_time)):
+					# Timer gefunden, weil auf dem richtigen Sender und Startzeit im Timer entspricht Startzeit in SR DB
+					timerFound = True
+					# Muss der Timer aktualisiert werden?
 
-				# Timer gefunden, weil auf dem richtigen Sender und Startzeit im Timer entspricht Startzeit in SR DB
-				# Muss der Timer aktualisiert werden?
+					# Event ID
+					updateEIT = False
+					old_eit = timer.eit
+					if timer.eit != int(eit):
+						timer.eit = eit
+						updateEIT = True
 
-				# Event ID
-				updateEIT = False
-				old_eit = timer.eit
-				if timer.eit != int(eit):
-					timer.eit = eit
-					updateEIT = True
+					# Startzeit
+					updateStartTime = False
+					if timer.begin != start_unixtime and abs(start_unixtime - timer.begin) > 30:
+						timer.begin = start_unixtime
+						timer.end = end_unixtime
+						NavigationInstance.instance.RecordTimer.timeChanged(timer)
+						updateStartTime = True
 
-				# Startzeit
-				updateStartTime = False
-				if timer.begin != start_unixtime and abs(start_unixtime - timer.begin) > 30:
-					timer.begin = start_unixtime
-					timer.end = end_unixtime
-					NavigationInstance.instance.RecordTimer.timeChanged(timer)
-					updateStartTime = True
+					# Timername
+					updateName = False
+					old_timername = timer.name
+					if config.plugins.serienRec.TimerName.value == "0":
+						timer_name = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+					elif config.plugins.serienRec.TimerName.value == "2":
+						timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+					else:
+						timer_name = serien_name
 
-				# Timername
-				updateName = False
-				old_timername = timer.name
-				if config.plugins.serienRec.TimerName.value == "0":
-					timer_name = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
-				elif config.plugins.serienRec.TimerName.value == "2":
-					timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
-				else:
-					timer_name = serien_name
+					if timer.name != timer_name:
+						timer.name = timer_name
+						updateName = True
 
-				if timer.name != timer_name:
-					timer.name = timer_name
-					updateName = True
+					# Timerbeschreibung
+					updateDescription = False
+					old_timerdescription = timer.description
+					timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
 
-				# Timerbeschreibung
-				updateDescription = False
-				old_timerdescription = timer.description
-				timer_description = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+					if timer.description != timer_description:
+						timer.description = timer_description
+						updateDescription = True
 
-				if timer.description != timer_description:
-					timer.description = timer_description
-					updateDescription = True
+					# Directory
+					updateDirectory = False
+					old_dirname = timer.dirname
+					if timer.dirname != dirname:
+						CreateDirectory(serien_name, staffel)
+						timer.dirname = dirname
+						updateDirectory = True
 
-				# Directory
-				updateDirectory = False
-				old_dirname = timer.dirname
-				if timer.dirname != dirname:
-					CreateDirectory(serien_name, staffel)
-					timer.dirname = dirname
-					updateDirectory = True
+					if updateEIT or updateStartTime or updateName or updateDescription or updateDirectory:
+						writeLog("' %s - %s '" % (title, dirname))
+						NavigationInstance.instance.RecordTimer.saveTimer()
+						sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=?"
+						cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
+						new_start = time.strftime("%d.%m. - %H:%M", time.localtime(int(start_unixtime)))
+						old_start = time.strftime("%d.%m. - %H:%M", time.localtime(int(serien_time)))
+						if updateStartTime:
+							writeLog("   Startzeit wurde aktualisiert von %s auf %s" % (old_start, new_start), True)
+						if updateEIT:
+							writeLog("   Event ID wurde aktualisiert von %s auf %s" % (str(old_eit), str(eit)), True)
+						if updateName:
+							writeLog("   Name wurde aktualisiert von %s auf %s" % (old_timername, timer_name), True)
+						if updateDescription:
+							writeLog("   Beschreibung wurde aktualisiert von %s auf %s" % (old_timerdescription, timer_description), True)
+						if updateDirectory:
+							writeLog("   Verzeichnis wurde aktualisiert von %s auf %s" % (old_dirname, dirname), True)
+						self.countTimerUpdate += 1
+						timerUpdated = True
+					else:
+						timerUpdated = True
+					break
 
-				if updateEIT or updateStartTime or updateName or updateDescription or updateDirectory:
-					writeLog("' %s - %s '" % (title, dirname))
-					NavigationInstance.instance.RecordTimer.saveTimer()
-					sql = "UPDATE OR IGNORE AngelegteTimer SET StartZeitstempel=?, EventID=?, Titel=? WHERE StartZeitstempel=? AND LOWER(ServiceRef)=?"
-					cTimer.execute(sql, (start_unixtime, eit, new_serien_title, serien_time, stbRef.lower()))
-					new_start = time.strftime("%d.%m. - %H:%M", time.localtime(int(start_unixtime)))
-					old_start = time.strftime("%d.%m. - %H:%M", time.localtime(int(serien_time)))
-					if updateStartTime:
-						writeLog("   Startzeit wurde aktualisiert von %s auf %s" % (old_start, new_start), True)
-					if updateEIT:
-						writeLog("   Event ID wurde aktualisiert von %s auf %s" % (str(old_eit), str(eit)), True)
-					if updateName:
-						writeLog("   Name wurde aktualisiert von %s auf %s" % (old_timername, timer_name), True)
-					if updateDescription:
-						writeLog("   Beschreibung wurde aktualisiert von %s auf %s" % (old_timerdescription, timer_description), True)
-					if updateDirectory:
-						writeLog("   Verzeichnis wurde aktualisiert von %s auf %s" % (old_dirname, dirname), True)
-					self.countTimerUpdate += 1
-					timerUpdated = True
-				break
+		# Timer not found - maybe removed from image timer list
+		if not timerFound:
+			writeLog("' %s - %s '" % (title, dirname))
+			writeLog("   Timer konnte nicht gefunden werden!", True)
 
 		return timerUpdated
 
@@ -3072,8 +3082,9 @@ class serienRecCheckForRecording():
 									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
 									cCursor.execute("SELECT ID FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
 									rowTVPlaner = cCursor.fetchone()
-									cCursor.execute("DELETE FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
-									cCursor.execute("DELETE FROM STBAuswahl WHERE ID=?", (rowTVPlaner[0],))
+									if rowTVPlaner:
+										cCursor.execute("DELETE FROM SerienMarker WHERE ID=?", (rowTVPlaner[0],))
+										cCursor.execute("DELETE FROM STBAuswahl WHERE ID=?", (rowTVPlaner[0],))
 								except:
 									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0]), True)
 									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0])
@@ -3713,7 +3724,7 @@ class serienRecCheckForRecording():
 						Notifications.AddNotificationWithID("Shutdown", Screens.Standby.TryQuitMainloop, 1)
 				else:
 					print "[SerienRecorder] Eine laufende Aufnahme verhindert den Deep-Standby"
-					writeLog("Eine laufenden Aufnahme verhindert den Deep-Standby")
+					writeLog("Eine laufende Aufnahme verhindert den Deep-Standby")
 			else:
 				print "[SerienRecorder] gehe in Standby"
 				writeLog("gehe in Standby")
@@ -4438,9 +4449,9 @@ class serienRecTimer(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
 			if serien_id:
-				#self.session.open(serienRecShowInfo, serien_name, serien_id[0])
-				self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-								  MessageBox.TYPE_INFO, timeout=10)
+				self.session.open(serienRecShowInfo, serien_name, serien_id[0])
+				#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+				#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -5038,6 +5049,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		self.changesMade = False
 		self.serien_nameCover = "nix"
 		self.loading = True
+		self.selected_serien_name = None
 		
 		self.onLayoutFinish.append(self.readSerienMarker)
 		self.onClose.append(self.__onClose)
@@ -5604,7 +5616,7 @@ class serienRecMarker(Screen, HelpableScreen):
 		dbSerRec.commit()
 		cCursor.close()
 		self.changesMade = True
-		writeLog("Serien Marker für ' %s ' wurde entfernt" % serien_name, True)
+		writeLog("\nSerien Marker für ' %s ' wurde entfernt" % serien_name, True)
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Serie '- %s -' entfernt." % serien_name)
 		self.readSerienMarker()	
@@ -5977,9 +5989,9 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		serien_id = self['menu_list'].getCurrent()[0][2]
 		serien_name = self['menu_list'].getCurrent()[0][0]
 
-		#self.session.open(serienRecShowInfo, serien_name, serien_id)
-		self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-					  MessageBox.TYPE_INFO, timeout=10)
+		self.session.open(serienRecShowInfo, serien_name, serien_id)
+		#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+		#			  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -6131,7 +6143,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (cCursor.lastrowid, erlaubteSTB))
 			dbSerRec.commit()
 			cCursor.close()
-			writeLog("Serien Marker für ' %s ' wurde erzeugt" % Serie, True)
+			writeLog("\nSerien Marker für ' %s ' wurde angelegt" % Serie, True)
 			self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % Serie)
 			self['title'].instance.setForegroundColor(parseColor("green"))
 			if config.plugins.serienRec.openMarkerScreen.value:
@@ -6344,9 +6356,9 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 		serien_id = getSeriesIDByURL(self.serie_url)
 		if serien_id:
-			#self.session.open(serienRecShowInfo, self.serien_name, serien_id)
-			self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-							  MessageBox.TYPE_INFO, timeout=10)
+			self.session.open(serienRecShowInfo, self.serien_name, serien_id)
+			#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+			#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -6597,8 +6609,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		if len(self.sendetermine_list) != 0:
 			lt = time.localtime()
 			self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
-			print "\n---------' Starte AutoCheckTimer um %s - (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
-			writeLog("\n---------' Starte AutoCheckTimer um %s - (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
+			writeLog("\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit, True)
 			for serien_name, sender, datum, startzeit, endzeit, staffel, episode, title, status, rightimage in self.sendetermine_list:
 				if int(status) == 1:
 					# initialize strings
@@ -6673,8 +6685,8 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 
 			writeLog("Es wurde(n) %s Timer erstellt." % str(self.countTimer), True)
 			print "[SerienRecorder] Es wurde(n) %s Timer erstellt." % str(self.countTimer)
-			writeLog("---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------", True)
-			print "---------' AutoCheckTimer Beendet '---------------------------------------------------------------------------------------"
+			writeLog("---------' Auto-Check beendet '---------------------------------------------------------------------------------------", True)
+			print "---------' Auto-Check beendet '---------------------------------------------------------------------------------------"
 			#self.session.open(serienRecRunAutoCheck, False)
 			self.session.open(serienRecReadLog)
 			if self.countTimer:
@@ -6692,6 +6704,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 		else:
 			(serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie, staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags, addToDatabase) = params
 			# check sender
+			status = 0
 			cSener_list = self.checkSender(sender)
 			if len(cSener_list) == 0:
 				webChannel = sender
@@ -7689,7 +7702,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			                                                    "Bei 'ja' wird beim manuellen Anlegen von Timern in 'Sendetermine' die Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen vorhanden sind, "
 			                                                    "ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.splitEventTimer :          ("Bei 'Nein' werden Event-Programmierungen (S01E01/1x02/1x03) als eigenständige Sendungen behandelt. "
-			                                                    "Ansonsten wird versucht die einzelnen Episoden einer Event-Programmierung zu erkennen.\n\n"
+			                                                    "Ansonsten wird versucht die einzelnen Episoden eines Events erkennen.\n\n"
 			                                                    "Bei 'Timer anlegen' wird zwar weiterhin nur ein Timer angelegt, aber die Einzelepisoden werden in der Datenbank als 'bereits aufgenommen' markiert."
 			                                                    "Sollten bereits alle Einzelepisoden vorhanden sein, wird für das Event kein Timer angelegt.\n\n"
 			                                                    "Bei 'Einzelepisoden bevorzugen' wird versucht Timer für die Einzelepisoden anzulegen. "
@@ -9383,9 +9396,9 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		if row:
 			(url, ) = row
 			serien_id = getSeriesIDByURL(url)
-			#self.session.open(serienRecShowInfo, serien_name, serien_id)
-			self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-						  MessageBox.TYPE_INFO, timeout=10)
+			self.session.open(serienRecShowInfo, serien_name, serien_id)
+			#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+			#			  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -9792,9 +9805,9 @@ class serienRecWishlist(Screen, HelpableScreen):
 			(url, ) = row
 			serien_id = getSeriesIDByURL(url)
 			if serien_id:
-				#self.session.open(serienRecShowInfo, serien_name, serien_id)
-				self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-								  MessageBox.TYPE_INFO, timeout=10)
+				self.session.open(serienRecShowInfo, serien_name, serien_id)
+				#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+				#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -10535,9 +10548,9 @@ class serienRecShowImdbVideos(Screen, HelpableScreen):
 		check = self['menu_list'].getCurrent()
 		if check is None:
 			return
-		#self.session.open(serienRecShowInfo, self.serien_name, self.serien_id)
-		self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-						  MessageBox.TYPE_INFO, timeout=10)
+		self.session.open(serienRecShowInfo, self.serien_name, self.serien_id)
+		#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+		#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -10908,9 +10921,9 @@ class serienRecMain(Screen, HelpableScreen):
 			return
 
 		(serien_name, serien_id) = self.getSeriesNameID()
-		#self.session.open(serienRecShowInfo, serien_name, serien_id)
-		self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-					  MessageBox.TYPE_INFO, timeout=10)
+		self.session.open(serienRecShowInfo, serien_name, serien_id)
+		#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+		#			  MessageBox.TYPE_INFO, timeout=10)
 
 	def showConflicts(self):
 		self.session.open(serienRecShowConflicts)
@@ -11314,7 +11327,7 @@ class serienRecMain(Screen, HelpableScreen):
 				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
 				dbSerRec.commit()
 				cCursor.close()
-				writeLog("Serien Marker für ' %s ' wurde erzeugt" % serien_name, True)
+				writeLog("\nSerien Marker für ' %s ' wurde angelegt" % serien_name, True)
 				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("green"))
 				global runAutocheckAtExit

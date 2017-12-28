@@ -56,7 +56,15 @@ class SeriesServer:
 			return infoText
 		# Title
 		if 'title' in seriesInfo:
-			infoText += seriesInfo['title']
+			infoText += seriesInfo['title'].encode('utf-8')
+
+		# Year
+		if 'year' in seriesInfo:
+			infoText += " (%s)" % seriesInfo['year']
+
+		# Info
+		if 'info' in seriesInfo:
+			infoText += "\n%s" % seriesInfo['info']
 
 		# Fan count
 		if 'fancount' in seriesInfo:
@@ -73,8 +81,7 @@ class SeriesServer:
 		# Transmission info
 		infoText += "\n\n"
 		if 'seasons_and_episodes' in seriesInfo:
-			glue = ', '
-			infoText += "%s\n" % glue.join(seriesInfo['seasons_and_episodes'])
+			infoText += "%s\n" % seriesInfo['seasons_and_episodes'].encode('utf-8')
 
 		if 'transmissioninfo' in seriesInfo:
 			infoText += "%s\n" % seriesInfo['transmissioninfo']
@@ -84,20 +91,16 @@ class SeriesServer:
 		if 'description' in seriesInfo:
 			infoText += seriesInfo['description'].encode('utf-8')
 
-		# Info
-		if 'info' in seriesInfo:
-			infoText += "\n\n%s" % seriesInfo['info']
-
 		# Upfronts
-		infoText += "\n\n"
 		if 'upfronts' in seriesInfo:
+			infoText += "\n\n"
 			glue = '\n'
 			infoText += "%s\n" % glue.join(seriesInfo['upfronts'])
 
 		# Cast / Crew
 		if 'cast' in seriesInfo:
 			glue = "\n"
-			infoText += "\n\nCast und Crew:\n%s\n\n%s" % (glue.join(seriesInfo['cast']).encode('utf-8'), glue.join(seriesInfo['crew']).encode('utf-8'))
+			infoText += "\n\nCast:\n%s" % glue.join(seriesInfo['cast']).encode('utf-8')
 		return infoText
 
 	def getEpisodeInfo(self, url):

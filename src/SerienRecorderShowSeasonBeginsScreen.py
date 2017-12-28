@@ -232,9 +232,9 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_id = getSeriesIDByURL(url)
 		if serien_id > 0:
 			serien_name = self[self.modus].getCurrent()[0][0]
-			#self.session.open(serienRecShowInfo, serien_name, serien_id)
-			self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-						  MessageBox.TYPE_INFO, timeout=10)
+			self.session.open(serienRecShowInfo, serien_name, serien_id)
+			#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+			#			  MessageBox.TYPE_INFO, timeout=10)
 
 	def youtubeSearch(self, searchWord):
 		serien_name = self[self.modus].getCurrent()[0][0]
