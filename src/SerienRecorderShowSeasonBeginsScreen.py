@@ -4,6 +4,7 @@
 
 from SerienRecorder import *
 from SerienRecorderHelpers import *
+from SerienRecorderSeriesServer import *
 import os, re, threading
 
 class downloadSeasonBegins(threading.Thread):
@@ -164,7 +165,8 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
 		if self['menu_list'].getCurrent():
 			serien_name = self[self.modus].getCurrent()[0][0]
-			super(self.__class__, self).getCover(serien_name)
+			serien_url = self[self.modus].getCurrent()[0][4]
+			self.getCover(serien_name, serien_url)
 
 	def buildList(self, entry):
 		(Serie, Staffel, Sender, UTCTime, Url, MarkerFlag) = entry
@@ -340,22 +342,34 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyLeft(self):
 		self[self.modus].pageUp()
 		serien_name = self[self.modus].getCurrent()[0][0]
-		super(self.__class__, self).getCover(serien_name)
+		serien_url = self[self.modus].getCurrent()[0][4]
+		self.getCover(serien_name, serien_url)
 
 	def keyRight(self):
 		self[self.modus].pageDown()
 		serien_name = self[self.modus].getCurrent()[0][0]
-		super(self.__class__, self).getCover(serien_name)
+		serien_url = self[self.modus].getCurrent()[0][4]
+		self.getCover(serien_name, serien_url)
 
 	def keyDown(self):
 		self[self.modus].down()
 		serien_name = self[self.modus].getCurrent()[0][0]
-		super(self.__class__, self).getCover(serien_name)
+		serien_url = self[self.modus].getCurrent()[0][4]
+		self.getCover(serien_name, serien_url)
 
 	def keyUp(self):
 		self[self.modus].up()
 		serien_name = self[self.modus].getCurrent()[0][0]
-		super(self.__class__, self).getCover(serien_name)
+		serien_url = self[self.modus].getCurrent()[0][4]
+		self.getCover(serien_name, serien_url)
+
+	def getCover(self, serienName, url):
+		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
+		if serien_id:
+			serien_id = serien_id[0]
+		self.ErrorMsg = "'getCover()'"
+		#SerienRecorder.writeLog("serienRecShowEpisodeInfo(): ID: %s  Serie: %s" % (str(serien_id), serienName))
+		SerienRecorder.getCover(self, serienName, serien_id)
 
 	def __onClose(self):
 		self.stopDisplayTimer()

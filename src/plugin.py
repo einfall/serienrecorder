@@ -13,6 +13,7 @@ import SerienRecorderChannelScreen
 import SerienRecorderSplashScreen
 import SerienRecorderStartupInfoScreen
 import SerienRecorderShowSeasonBeginsScreen
+import SerienRecorderMarkerScreen
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 
@@ -28,6 +29,7 @@ def SRstart(session, **kwargs):
 					  ('SerienRecorderChannelScreen', SerienRecorderChannelScreen),
 					  ('SerienRecorderSplashScreen', SerienRecorderSplashScreen),
 					  ('SerienRecorderStartupInfoScreen', SerienRecorderStartupInfoScreen),
+					  ('SerienRecorderMarkerScreen', SerienRecorderMarkerScreen),
 					  ('SerienRecorderShowSeasonBeginScreen', SerienRecorderShowSeasonBeginsScreen)):
 		if fileExists(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0])):
 			if (int(os.path.getmtime(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0]))) < int(
@@ -47,12 +49,17 @@ def SRstart(session, **kwargs):
 def movielist(session, service, **kwargs):
 	from enigma import eServiceCenter, eServiceReference, iServiceInformation
 
+	def handleSeriesSearchEnd(seriesName=None):
+		if seriesName:
+			session.open(SerienRecorder.serienRecMarker, seriesName)
+
 	serviceHandler = eServiceCenter.getInstance()
 	info = serviceHandler.info(service)
 	seriesName = info and info.getName(service) or ""
 	if seriesName:
 		SerienRecorder.initDB()
 		session.open(SerienRecorder.serienRecAddSerie, seriesName)
+		session.openWithCallback(handleSeriesSearchEnd, SerienRecorder.serienRecAddSerie, seriesName)
 
 # Event Info
 def eventinfo(session, servicelist, **kwargs):

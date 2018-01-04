@@ -19,8 +19,9 @@ from SerienRecorderScreenHelpers import *
 from SerienRecorderSeriesServer import *
 import SerienRecorder
 
-class serienRecMainChannelEdit(Screen, HelpableScreen):
+class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session):
+		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.session = session
@@ -198,66 +199,19 @@ class serienRecMainChannelEdit(Screen, HelpableScreen):
 		webSender = self['list'].getCurrent()[0][0]
 		self.session.open(SerienRecorder.serienRecChannelSetup, webSender)
 
-	def readLogFile(self):
-		self.session.open(SerienRecorder.serienRecReadLog)
+	def youtubeSearch(self, searchWord):
+		sender_name = self['list'].getCurrent()[0][0]
+		super(self.__class__, self).youtubeSearch(sender_name)
 
-	def showProposalDB(self):
-		self.session.open(SerienRecorder.serienRecShowSeasonBegins)
-
-	def showConflicts(self):
-		self.session.open(SerienRecorder.serienRecShowConflicts)
-
-	def showWishlist(self):
-		self.session.open(SerienRecorder.serienRecWishlist)
-
-	def youtubeSearch(self):
-		if SerienRecorder.epgTranslatorInstalled:
-			check = self['list'].getCurrent()
-			if check is None:
-				return
-
-			sender_name = self['list'].getCurrent()[0][0]
-			from Plugins.Extensions.EPGTranslator.plugin import searchYouTube
-			self.session.open(searchYouTube, sender_name)
-		else:
-			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
-
-	def WikipediaSearch(self):
-		if SerienRecorder.WikipediaInstalled:
-			check = self['list'].getCurrent()
-			if check is None:
-				return
-
-			sender_name = self['list'].getCurrent()[0][0]
-			from Plugins.Extensions.Wikipedia.plugin import wikiSearch
-			self.session.open(wikiSearch, sender_name)
-		else:
-			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
-
-	def showManual(self):
-		if SerienRecorder.OperaBrowserInstalled:
-			self.session.open(SerienRecorder.Browser, SerienRecorder.SR_OperatingManual, True)
-		elif SerienRecorder.DMMBrowserInstalled:
-			self.session.open(SerienRecorder.Browser, True, SerienRecorder.SR_OperatingManual)
-		else:
-			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
-
-	def showAbout(self):
-		self.session.open(serienRecAboutScreen)
-
-	def recSetup(self):
-		self.session.openWithCallback(self.setupClose, SerienRecorder.serienRecSetup)
+	def WikipediaSearch(self, searchWord):
+		sender_name = self['list'].getCurrent()[0][0]
+		super(self.__class__, self).WikipediaSearch(sender_name)
 
 	def setupClose(self, result):
-		if not result[2]:
-			self.close()
-		else:
-			if result[0]:
-				if config.plugins.serienRec.timeUpdate.value:
-					SerienRecorder.serienRecCheckForRecording(self.session, False)
+		super(self.__class__, self).setupClose(result)
 
-			if result[1]:
-				self.showChannels()
+		if result[1]:
+			self.showChannels()
 
 	def __onLayoutFinished(self):
 		self['title'].setText("Lade Web-Sender / STB-Sender...")

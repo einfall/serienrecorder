@@ -3,6 +3,7 @@
 # This file contains the SerienRecoder Episodes Screen
 
 from SerienRecorder import *
+from SerienRecorderScreenHelpers import *
 
 class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session, serien_name, serie_url, serien_cover):
@@ -85,6 +86,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self['headline'].instance.setForegroundColor(parseColor('foreground'))
 		self['headline'].instance.setFont(parseFont("Regular;20", ((1,1),(1,1))))
 
+		self.chooseMenuList.l.setItemHeight(int(28 * skinFactor))
+
 		super(self.__class__, self).setSkinProperties()
 
 	def setupSkin(self):
@@ -135,19 +138,15 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.timer_default.start(0)
 
 	def resultsEpisodes(self, data):
-		self.maxPages = data["numPages"]
+		self.maxPages = 1
 		self.episodes_list_cache[self.page] = []
 		for episode in data["episodes"]:
 			if "title" in episode:
 				title = episode["title"].encode("utf-8")
 			else:
 				title = "-"
-			if "otitle" in episode:
-				otitle = episode["otitle"].encode("utf-8")
-			else:
-				otitle = ("(%s)" % title)
 			self.episodes_list_cache[self.page].append(
-				[episode["season"], episode["episode"], episode["tv"], episode["url"], title, otitle])
+				[episode["season"], episode["episode"], episode["id"], title])
 
 		self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 		numberOfEpisodes = data["numEpisodes"]
@@ -163,22 +162,22 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self.ErrorMsg = ''
 			SerienRecorder.getCover(self, self.serien_name, self.serien_id)
-			episodes = SeriesServer().doGetEpisodes(int(self.serien_id), int(self.page))
-			self.resultsEpisodes(episodes)
+			try:
+				episodes = SeriesServer().doGetEpisodes(int(self.serien_id), int(self.page))
+				self.resultsEpisodes(episodes)
+			except:
+				self['title'].setText("Fehler beim Abrufen der Episodenliste")
 
 	def buildList_episodes(self, entry):
-		(season, episode, tv, info_url, title, otitle) = entry
+		(season, episode, info_id, title) = entry
 
 		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
 
 		imageMinus = "%simages/red_dot.png" % serienRecMainPath
 		imagePlus = "%simages/green_dot.png" % serienRecMainPath
 		imageNone = "%simages/black.png" % serienRecMainPath
-		imageTV = "%simages/tv.png" % serienRecMainPath
 
 		middleImage = imageNone
-		if tv:
-			middleImage = imageTV
 
 		leftImage = imageMinus
 		if len(self.addedEpisodes) > 0 and self.isAlreadyAdded(season, episode, title):
@@ -189,11 +188,11 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			color = parseColor('red').argb()
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 140 * skinFactor, 48 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % seasonEpisodeString, color),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 150 * skinFactor, 17 * skinFactor, 48 * skinFactor, 48 * skinFactor, loadPNG(middleImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title),
-			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle, parseColor('yellow').argb()),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 140 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % seasonEpisodeString, color),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 150 * skinFactor, 17 * skinFactor, 22 * skinFactor, 48 * skinFactor, loadPNG(middleImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title),
+			#(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle, parseColor('yellow').argb()),
 			]
 
 	def showPages(self):
@@ -248,9 +247,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		#if len(self.episodes_list_cache) >= self.page:
 		if self.page in self.episodes_list_cache:
 			if len(self.episodes_list_cache[self.page]) != 0:
-				if self.episodes_list_cache[self.page][sindex][3]:
-					#self.session.open(SerienRecorder.serienRecShowEpisodeInfo, self.serien_name, self.episodes_list_cache[self.page][sindex][4], "http://www.wunschliste.de/%s" % self.episodes_list_cache[self.page][sindex][3])
-					self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!", MessageBox.TYPE_INFO, timeout=10)
+				if self.episodes_list_cache[self.page][sindex][2]:
+					self.session.open(SerienRecorder.serienRecShowEpisodeInfo, self.serien_name, self.episodes_list_cache[self.page][sindex][3], self.episodes_list_cache[self.page][sindex][2])
+					#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!", MessageBox.TYPE_INFO, timeout=10)
 
 	def keyGreen(self):
 		if self.loading:
@@ -265,12 +264,12 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.page in self.episodes_list_cache:
 			current_episodes_list = self.episodes_list_cache[self.page]
 			if len(current_episodes_list) != 0:
-				isAlreadyAdded = self.isAlreadyAdded(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][4])
+				isAlreadyAdded = self.isAlreadyAdded(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][3])
 
 				if isAlreadyAdded:
-					self.removeFromDB(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][4])
+					self.removeFromDB(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][3])
 				else:
-					SerienRecorder.addToAddedList(self.serien_name, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][4])
+					SerienRecorder.addToAddedList(self.serien_name, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][3])
 
 				self.addedEpisodes = SerienRecorder.getAlreadyAdded(self.serien_name)
 				self.chooseMenuList.setList(map(self.buildList_episodes, current_episodes_list))
@@ -352,3 +351,128 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def __onClose(self):
 		self.stopDisplayTimer()
+
+class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
+	def __init__(self, session, serieName, episodeTitle, episodeID):
+		serienRecBaseScreen.__init__(self, session)
+		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
+		self.session = session
+		self.picload = ePicLoad()
+		self.serien_name = serieName
+		self.episodeID = episodeID
+		self.episodeTitle = episodeTitle
+		self.skin = None
+
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"red"   : (self.keyCancel, "zurück zur vorherigen Ansicht"),
+			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
+			"left"  : (self.pageUp, "zur vorherigen Seite blättern"),
+			"right" : (self.pageDown, "zur nächsten Seite blättern"),
+			"up"    : (self.pageUp, "zur vorherigen Seite blättern"),
+			"down"  : (self.pageDown, "zur nächsten Seite blättern"),
+			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
+			"startTeletext"       : (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
+			"startTeletext_long"  : (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
+			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
+			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
+			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
+			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
+		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
+
+		self.setupSkin()
+
+		self.onLayoutFinish.append(self.getData)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText("Zurück")
+		self.num_bt_text[4][0] = buttonText_na
+
+		self.displayTimer = None
+		global showAllButtons
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
+			self.displayMode = 2
+			self.updateMenuKeys()
+
+			self.displayTimer = eTimer()
+			if isDreamOS():
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+
+	def setupSkin(self):
+		self.skin = None
+		InitSkin(self)
+
+		self['info'].show()
+
+		self['title'].setText("Episoden Beschreibung: %s" % self.episodeTitle)
+
+		if config.plugins.serienRec.showCover.value:
+			self['cover'].show()
+		global showAllButtons
+		if not showAllButtons:
+			self['bt_red'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			self['bt_menu'].show()
+
+			self['text_red'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+
+	def updateMenuKeys(self):
+		updateMenuKeys(self)
+
+	def youtubeSearch(self, searchWord):
+		super(self.__class__, self).youtubeSearch(self.serien_name)
+
+	def WikipediaSearch(self, searchWord):
+		super(self.__class__, self).WikipediaSearch(self.serien_name)
+
+	def setupClose(self, result):
+		super(self.__class__, self).setupClose(result)
+		if result[1]:
+			self.getData()
+
+	def getData(self):
+		try:
+			infoText = SeriesServer().getEpisodeInfo(self.episodeID)
+		except:
+			infoText = 'Es ist ein Fehler beim Abrufen der Episoden-Informationen aufgetreten!'
+		self['info'].setText(infoText)
+		super(self.__class__, self).getCover(self.serien_name)
+
+	def pageUp(self):
+		self['info'].pageUp()
+
+	def pageDown(self):
+		self['info'].pageDown()
+
+	def __onClose(self):
+		if self.displayTimer:
+			self.displayTimer.stop()
+			self.displayTimer = None
+
+	def keyCancel(self):
+		self.close()

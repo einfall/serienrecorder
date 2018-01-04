@@ -72,7 +72,7 @@ class SeriesServer:
 
 		# Rating
 		if 'rating' in seriesInfo:
-			infoText += (" und eine Bewertung von %s" % seriesInfo['rating'])
+			infoText += (" und eine Bewertung von %.1f" % float(seriesInfo['rating']))
 
 		# Sex
 		if 'male' in seriesInfo and 'female' in seriesInfo and 'age' in seriesInfo:
@@ -103,10 +103,10 @@ class SeriesServer:
 			infoText += "\n\nCast:\n%s" % glue.join(seriesInfo['cast']).encode('utf-8')
 		return infoText
 
-	def getEpisodeInfo(self, url):
+	def getEpisodeInfo(self, id):
 		infoText = ""
 		try:
-			episodeInfo = self.server.sp.cache.getEpisodeInfo(url)
+			episodeInfo = self.server.sp.cache.getEpisodeInfo(id)
 		except:
 			return infoText
 		if 'season' in episodeInfo and 'episode' in episodeInfo:
@@ -116,29 +116,32 @@ class SeriesServer:
 		if 'title' in episodeInfo:
 			infoText += "Titel: %s" % episodeInfo['title'].encode('utf-8')
 
-		if 'otitle' in episodeInfo:
-			infoText += "\n"
-			infoText += "Originaltitel: %s" % episodeInfo['otitle'].encode('utf-8')
-
 		# Rating
-		if 'rating' in episodeInfo:
+		if 'rating' in episodeInfo and 'ratingCount' in episodeInfo:
 			infoText += "\n\n"
-			infoText += episodeInfo['rating']
+			infoText += "Episodenbewertung: %.1f aus %s Stimmen" % (float(episodeInfo['rating']), episodeInfo['ratingCount'])
 
 		# Transmissions
 		infoText += "\n\n"
-		if 'transmissions' in episodeInfo:
-			glue = "\n"
-			infoText += "%s\n" % glue.join(episodeInfo['transmissions']).encode('utf-8')
+		if 'firstAired' in episodeInfo:
+			infoText += "Erstausstrahlung: %s\n" % episodeInfo['firstAired']
 
+		# Description
 		if 'description' in episodeInfo:
-			infoText += "\n\n"
+			infoText += "\n"
 			infoText += "%s\n" % episodeInfo['description'].encode('utf-8')
 
 		# Cast / Crew
-		if 'cast' in episodeInfo:
-			glue = "\n"
-			infoText += "\n\nCast und Crew:\n%s" % glue.join(episodeInfo['cast']).encode('utf-8')
+		if 'guestStars' in episodeInfo:
+			glue = ", "
+			infoText += "\n\nGaststars:\n%s" % glue.join(episodeInfo['guestStars']).encode('utf-8')
+		if 'directors' in episodeInfo:
+			glue = ", "
+			infoText += "\n\nRegie:\n%s" % glue.join(episodeInfo['writers']).encode('utf-8')
+		if 'writers' in episodeInfo:
+			glue = ", "
+			infoText += "\n\nDrehbuch:\n%s" % glue.join(episodeInfo['writers']).encode('utf-8')
+
 		return infoText
 
 

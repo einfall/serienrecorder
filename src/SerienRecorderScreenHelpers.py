@@ -19,20 +19,6 @@ import re
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 
-# init EPGTranslator
-if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/EPGTranslator/plugin.pyo"):
-	from Plugins.Extensions.EPGTranslator.plugin import searchYouTube
-	epgTranslatorInstalled = True
-else:
-	epgTranslatorInstalled = False
-
-# init Wikipedia
-if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/Wikipedia/plugin.pyo"):
-	from Plugins.Extensions.Wikipedia.plugin import wikiSearch
-	WikipediaInstalled = True
-else:
-	WikipediaInstalled = False
-
 showAllButtons = False
 longButtonText = False
 buttonText_na = "-----"
@@ -388,14 +374,14 @@ class serienRecBaseScreen():
 		self.session.open(SerienRecorder.serienRecWishlist)
 
 	def youtubeSearch(self, searchWord):
-		if epgTranslatorInstalled:
+		if SerienRecorder.epgTranslatorInstalled:
 			print "[SerienRecorder] starte youtube suche für %s" % searchWord
 			self.session.open(searchYouTube, searchWord)
 		else:
 			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
 
 	def WikipediaSearch(self, searchWord):
-		if WikipediaInstalled:
+		if SerienRecorder.WikipediaInstalled:
 			print "[SerienRecorder] starte Wikipedia Suche für %s" % searchWord
 			self.session.open(wikiSearch, searchWord)
 		else:
@@ -471,5 +457,4 @@ class serienRecBaseScreen():
 			if serien_id:
 				serien_id = serien_id[0]
 		self.ErrorMsg = "'getCover()'"
-		#writeLog("serienRecShowEpisodeInfo(): ID: %s  Serie: %s" % (str(serien_id), serienName))
 		SerienRecorder.getCover(self, serienName, serien_id)
