@@ -334,6 +334,7 @@ class serienRecBaseScreen():
 		self.session = session
 		self.skin = None
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+		self.displayTimer = None
 
 	def setupSkin(self):
 		InitSkin(self)
@@ -343,6 +344,9 @@ class serienRecBaseScreen():
 		self[self.modus] = self.chooseMenuList
 
 	def setSkinProperties(self):
+		setSkinProperties(self)
+
+	def startDisplayTimer(self):
 		self.displayTimer = None
 		global showAllButtons
 		if showAllButtons:
@@ -357,6 +361,9 @@ class serienRecBaseScreen():
 			else:
 				self.displayTimer.callback.append(self.updateMenuKeys)
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+
+	def updateMenuKeys(self):
+		updateMenuKeys(self)
 
 	def readLogFile(self):
 		self.session.open(SerienRecorder.serienRecReadLog)
@@ -376,14 +383,14 @@ class serienRecBaseScreen():
 	def youtubeSearch(self, searchWord):
 		if SerienRecorder.epgTranslatorInstalled:
 			print "[SerienRecorder] starte youtube suche für %s" % searchWord
-			self.session.open(searchYouTube, searchWord)
+			self.session.open(SerienRecorder.searchYouTube, searchWord)
 		else:
 			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
 
 	def WikipediaSearch(self, searchWord):
 		if SerienRecorder.WikipediaInstalled:
 			print "[SerienRecorder] starte Wikipedia Suche für %s" % searchWord
-			self.session.open(wikiSearch, searchWord)
+			self.session.open(SerienRecorder.wikiSearch, searchWord)
 		else:
 			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
 

@@ -75,7 +75,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		HelpableScreen.callHelpAction(self, *args)
 
 	def setSkinProperties(self):
-		setSkinProperties(self)
+		super(self.__class__, self).setSkinProperties()
+
 		self['text_red'].setText("Zurück")
 		self['text_green'].setText("(De)aktivieren")
 		self['text_ok'].setText("Beschreibung")
@@ -88,7 +89,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.chooseMenuList.l.setItemHeight(int(28 * skinFactor))
 
-		super(self.__class__, self).setSkinProperties()
+		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
 		super(self.__class__, self).setupSkin()

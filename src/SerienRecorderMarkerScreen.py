@@ -6,6 +6,9 @@ from SerienRecorder import *
 from SerienRecorderHelpers import *
 from SerienRecorderScreenHelpers import *
 
+# Tageditor
+from Screens.MovieSelection import getPreferredTagEditor
+
 class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session, SelectSerie=None):
 		serienRecBaseScreen.__init__(self, session)
@@ -103,8 +106,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		HelpableScreen.callHelpAction(self, *args)
 		
 	def setSkinProperties(self):
-		setSkinProperties(self)
-		
+		super(self.__class__, self).setSkinProperties()
+
 		self['text_green'].setText("Sender auswählen")
 		self['text_ok'].setText("Staffel(n) auswählen")
 		self['text_yellow'].setText("Sendetermine")
@@ -126,21 +129,10 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			if not SerienRecorder.showMainScreen:
 				self.num_bt_text[0][2] = "Exit/Serienplaner"
 
-		self.displayTimer = None
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
-		else:
-			self.displayMode = 2
-			self.updateMenuKeys()
-			self.displayTimer = eTimer()
-			if isDreamOS():
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		
+		super(self.__class__, self).startDisplayTimer()
+
 	def setupSkin(self):
+		self.skin = None
 		InitSkin(self)
 		
 		#normal
@@ -181,10 +173,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
-			
-	def updateMenuKeys(self):
-		updateMenuKeys(self)
-		
+
 	def markerSetup(self):
 		if self['menu_list'].getCurrent() is None:
 			return
@@ -519,7 +508,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				print "[SerienRecorder] Serien Marker leer."
 				return
 
-			getSender = getWebSenderAktiv()
+			getSender = SerienRecorder.getWebSenderAktiv()
 			if len(getSender) != 0:
 				self.modus = "popup_list2"
 				self['popup_list'].show()
@@ -1206,7 +1195,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			start_dir = self.savetopath.value
 
-		self.session.openWithCallback(self.selectedMediaFile, serienRecFileList, start_dir,
+		self.session.openWithCallback(self.selectedMediaFile, SerienRecorder.serienRecFileList, start_dir,
 									  "Aufnahme-Verzeichnis auswählen", self.Serie)
 
 	def selectedMediaFile(self, res):

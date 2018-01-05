@@ -105,7 +105,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		HelpableScreen.callHelpAction(self, *args)
 
 	def setSkinProperties(self):
-		setSkinProperties(self)
+		super(self.__class__, self).setSkinProperties()
 
 		self['text_green'].setText("Aktualisieren")
 		self['text_ok'].setText("Sender auswählen")
@@ -120,20 +120,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self['text_blue'].setText("Auto-Zuordnung")
 
-		self.displayTimer = None
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
-		else:
-			self.displayMode = 2
-			self.updateMenuKeys()
-
-			self.displayTimer = eTimer()
-			if isDreamOS():
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
 		self.skin = None

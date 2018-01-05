@@ -53,9 +53,6 @@ else:
 
 from ServiceReference import ServiceReference
 
-# Tageditor
-from Screens.MovieSelection import getPreferredTagEditor
-
 from Components.UsageConfig import preferredTimerPath, preferredInstantRecordPath
 
 # Navigation (RecordTimer)
