@@ -1,6 +1,4 @@
 ﻿# -*- coding: utf-8 -*-
-from __init__ import _
-
 import datetime, time
 import re
 

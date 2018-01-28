@@ -1,9 +1,6 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Github Update Screen
-
-from __init__ import _
-
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 
@@ -41,11 +38,11 @@ class checkGitHubUpdate:
 			ssl._create_default_https_context = ssl._create_unverified_context
 		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
 		try:
-			conn.request(url="/repos/einfall/serienrecorder/releases", method="GET", headers={
+			conn.request(url="/repos/einfall/serienrecorder/releases/latest", method="GET", headers={
 				'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
 			rawData = conn.getresponse()
-			data = json.load(rawData)
-			latestRelease = data[0]
+			latestRelease = json.load(rawData)
+			#latestRelease = data[0]
 			latestVersion = latestRelease['tag_name'][1:]
 			writeTestLog("Get latest version from github: %s" % latestVersion)
 
@@ -75,7 +72,7 @@ class checkGitHubUpdate:
 
 				if downloadURL:
 					writeTestLog("New version available at: %s [%d]" % (downloadURL, downloadFileSize))
-					self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
+					self.session.open(checkGitHubUpdateScreen, self.session, updateName, updateInfo, downloadURL, downloadFileSize)
 		except:
 			Notifications.AddPopup("Unerwarteter Fehler beim Überprüfen der SerienRecorder Version", MessageBox.TYPE_INFO, timeout=3)
 
@@ -256,7 +253,7 @@ class checkGitHubUpdateScreen(Screen):
 			writeTestLog("Remove package from: %s" % self.filePath)
 			os.remove(self.filePath)
 		writeTestLog("Show restart notification")
-		Notifications.AddNotificationWithCallback(self.restartGUI, MessageBox, text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", type=MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.restartGUI, MessageBox, text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", type=MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, doRestart):
 		config.plugins.serienRec.showStartupInfoText.value = True
@@ -268,4 +265,4 @@ class checkGitHubUpdateScreen(Screen):
 			self.session.open(Screens.Standby.TryQuitMainloop, 3)
 		else:
 			writeErrorLog("Close without restart")
-			self.close()
+		self.close()

@@ -1,6 +1,4 @@
 ﻿# -*- coding: utf-8 -*-
-from __init__ import _
-
 import re
 
 from twisted.web.client import getPage
@@ -50,7 +48,7 @@ class SearchSerie(object):
 				if raw:
 					(more, ) = raw
 					if more.isdigit(): 
-						serienlist.append(("... %s%s'%s'" % (more, _(" weitere Ergebnisse für "), self.serien_name.encode('utf-8')), str(more), "-1"))
+						serienlist.append(("... %s%s'%s'" % (more, (" weitere Ergebnisse für "), self.serien_name.encode('utf-8')), str(more), "-1"))
 				else:
 					infos = line.split('|',3)
 					if len(infos) == 4:

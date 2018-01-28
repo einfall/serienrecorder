@@ -1,6 +1,4 @@
 ﻿# -*- coding: utf-8 -*-
-from __init__ import _
-
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Label import Label
 from Components.MenuList import MenuList
@@ -99,7 +97,6 @@ except:
 	default_before = 0
 	default_after = 0
 
-
 def ReadConfigFile():
 	config.plugins.serienRec = ConfigSubsection()
 	config.plugins.serienRec.savetopath = ConfigText(default = "/media/hdd/movie/", fixed_size=False, visible_width=80)
@@ -137,6 +134,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.BackupPath = ConfigText(default = "/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(0, (0,999))
 	config.plugins.serienRec.eventid = ConfigYesNo(default = True)
+	config.plugins.serienRec.epgTimeSpan = ConfigInteger(10, (0, 30))
 	# Remove EPGRefresh action for VU+ Boxes
 	try:
 		from Tools.HardwareInfoVu import HardwareInfoVu
@@ -170,6 +168,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.tvplaner_movies_activeSTB = ConfigYesNo(default = False)
 	config.plugins.serienRec.tvplaner_full_check = ConfigYesNo(default = False)
 	config.plugins.serienRec.tvplaner_last_full_check = ConfigInteger(0)
+	config.plugins.serienRec.tvplaner_skipSerienServer = ConfigYesNo(default = False)
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1,14))
 	config.plugins.serienRec.globalFromTime = ConfigClock(default = 0+time.timezone)
 	config.plugins.serienRec.globalToTime = ConfigClock(default = (((23*60)+59)*60)+time.timezone)
@@ -469,28 +468,26 @@ def showCover(data, self, serien_nameCover, force_show=True):
 def writeLog(text, forceWrite=False):
 	global logFile
 	if config.plugins.serienRec.writeLog.value or forceWrite:
-		if not fileExists(logFile):
-			try:
-				open(logFile, 'w').close()
-			except (IOError, OSError) as e:
-				logFile = SERIENRECORDER_LOGFILENAME % serienRecMainPath
-				open(logFile, 'w').close()
+		try:
+			open(logFile, 'a').close()
+		except (IOError, OSError) as e:
+			logFile = SERIENRECORDER_LOGFILENAME % serienRecMainPath
+			open(logFile, 'a').close()
 
-		writeLogFile = open(logFile, "a")
+		writeLogFile = open(logFile, 'a')
 		writeLogFile.write('%s\n' % (text))
 		writeLogFile.close()
 
 def writeLogFilter(logtype, text, forceWrite=False):
 	global logFile
 	if config.plugins.serienRec.writeLog.value or forceWrite:
-		if not fileExists(logFile):
-			try:
-				open(logFile, 'w').close()
-			except (IOError, OSError) as e:
-				logFile = SERIENRECORDER_LOGFILENAME % serienRecMainPath
-				open(logFile, 'w').close()
+		try:
+			open(logFile, 'a').close()
+		except (IOError, OSError) as e:
+			logFile = SERIENRECORDER_LOGFILENAME % serienRecMainPath
+			open(logFile, 'a').close()
 
-		writeLogFile = open(logFile, "a")
+		writeLogFile = open(logFile, 'a')
 		if (logtype is "channels" and config.plugins.serienRec.writeLogChannels.value) or \
 		   (logtype is "allowedEpisodes" and config.plugins.serienRec.writeLogAllowedEpisodes.value) or \
 		   (logtype is "added" and config.plugins.serienRec.writeLogAdded.value) or \
@@ -506,13 +503,19 @@ def writeLogFilter(logtype, text, forceWrite=False):
 def checkTuner(check_start, check_end, check_stbRef):
 	if not config.plugins.serienRec.selectNoOfTuners.value:
 		return True
-		
+
 	cRecords = 1
 	lTuner = []
 	lTimerStart = {}
 	lTimerEnd = {}
+
+	# Aufnahme Tuner braucht CI -1 -> nein, 1 - ja
+	provider_ref = ServiceReference(check_stbRef)
+	new_needs_ci_0 = checkCI(provider_ref.ref, 0)
+	new_needs_ci_1 = checkCI(provider_ref.ref, 1)
+
 	check_stbRef = check_stbRef.split(":")[4:7]
-	
+
 	timers = serienRecAddTimer.getTimersTime()
 	for name, begin, end, service_ref in timers:
 		#print name, begin, end, service_ref
@@ -520,13 +523,23 @@ def checkTuner(check_start, check_end, check_stbRef):
 			#print "between"
 			cRecords += 1
 
+			# vorhandener Timer braucht CI -1 -> nein, 1 - ja
+			# provider_ref = ServiceReference(service_ref)
+			timer_needs_ci_0 = checkCI(service_ref.ref, 0)
+			timer_needs_ci_1 = checkCI(service_ref.ref, 1)
+
 			service_ref = str(service_ref).split(":")[4:7]
+			#gleicher service
 			if str(check_stbRef).lower() == str(service_ref).lower():
 				if int(check_start) > int(begin): begin = check_start
 				if int(check_end) < int(end): end = check_end
 				lTimerStart.update({int(begin) : int(end)})
 				lTimerEnd.update({int(end) : int(begin)})
 			else:
+				# vorhandener und neuer Timer benötigt ein CI
+				if ((timer_needs_ci_0 is not -1) or (timer_needs_ci_1 is not -1)) and ((new_needs_ci_0 is not -1) or (new_needs_ci_1 is not -1)):
+					return False
+				# Anzahl der verwendeten Tuner um 1 erhöhen
 				if not lTuner.count(service_ref):
 					lTuner.append(service_ref)
 
@@ -534,19 +547,19 @@ def checkTuner(check_start, check_end, check_stbRef):
 		l = lTimerStart.items()
 		l.sort(key=lambda x: x[0])
 		for each in l:
-			if (each[0] <= lTimerStart[int(check_start)]) and (each[1] > lTimerStart[int(check_start)]): 
+			if (each[0] <= lTimerStart[int(check_start)]) and (each[1] > lTimerStart[int(check_start)]):
 				lTimerStart.update({int(check_start) : each[1]})
-				
+
 		if int(check_end) in lTimerEnd:
 			l = lTimerEnd.items()
 			l.sort(key=lambda x: x[0], reverse=True)
 			for each in l:
-				if (each[0] >= lTimerEnd[int(check_end)]) and (each[1] < lTimerEnd[int(check_end)]): 
+				if (each[0] >= lTimerEnd[int(check_end)]) and (each[1] < lTimerEnd[int(check_end)]):
 					lTimerEnd.update({int(check_end) : each[1]})
-					
-			if lTimerStart[int(check_start)] >= lTimerEnd[int(check_end)]: 
+
+			if lTimerStart[int(check_start)] >= lTimerEnd[int(check_end)]:
 				lTuner.append(check_stbRef)
-						
+
 	if lTuner.count(check_stbRef):
 		return True
 	else:
@@ -565,14 +578,14 @@ def checkFileAccess():
 
 	if not logFileValid:
 		try:
-			open(logFile, 'a').close()	
+			open(logFile, 'a').close()
 		except:
 			logFileValid = False
-	
+
 	if not logFileValid:
 		logFile = SERIENRECORDER_LOGFILENAME % serienRecMainPath
 		Notifications.AddPopup("Log-Datei kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!" % (config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=10, id="checkFileAccess")
-			
+
 def checkTimerAdded(sender, serie, staffel, episode, start_unixtime):
 	global dbSerRec
 	#"Castle" "S03E20 - Die Pizza-Connection" "1392997800" "1:0:19:EF76:3F9:1:C00000:0:0:0:" "kabel eins"
@@ -3034,121 +3047,127 @@ class serienRecCheckForRecording():
 		
 		# regular processing through serienrecorder server
 		# TODO: save all transmissions in files to protect from temporary SerienServer fails
-		#       data will be read by the file reader below and used for timer programming 
+		#       data will be read by the file reader below and used for timer programming
 		if len(self.markers) > 0:
-			downloads = []
-			global transmissionFailed
-			transmissionFailed = False
-			cTmp = dbTmp.cursor()
-			cTmp.execute("DELETE FROM GefundeneFolgen")
-			dbTmp.commit()
-			cTmp.close()
-			writeLog("\n---------' Verarbeite Daten vom Server %s---------------------------\n" % fullCheck, True)
-			webChannels = getWebSenderAktiv()
+			while True:
+				if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_skipSerienServer.value:
+					# Skip serien server processing
+					break
 
-			# Create a job queue to keep the jobs processed by the threads
-			# Create a result queue to keep the results of the job threads
-			jobQueue = Queue.Queue()
-			resultQueue = Queue.Queue()
+				downloads = []
+				global transmissionFailed
+				transmissionFailed = False
+				cTmp = dbTmp.cursor()
+				cTmp.execute("DELETE FROM GefundeneFolgen")
+				dbTmp.commit()
+				cTmp.close()
+				writeLog("\n---------' Verarbeite Daten vom Server %s---------------------------\n" % fullCheck, True)
+				webChannels = getWebSenderAktiv()
 
-			#writeLog("Active threads: %d" % threading.active_count(), True)
-			# Create the threads
-			for i in range(2):
-				worker = downloadTransmissionsThread(jobQueue, resultQueue)
-				worker.setDaemon(True)
-				worker.start()
+				# Create a job queue to keep the jobs processed by the threads
+				# Create a result queue to keep the results of the job threads
+				jobQueue = Queue.Queue()
+				resultQueue = Queue.Queue()
 
-			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
-				serienTitle = doReplaces(serienTitle)
-				if SerieUrl.startswith('https://www.wunschliste.de/spielfilm'):
-					# temporary marker for movie recording
-					print "[SerienRecorder] ' %s - TV-Planer Film wird ignoriert '" % serienTitle
-					continue
-				self.countSerien += 1
-				if SerieEnabled:
-					# Download only if series is enabled
-					if 'Alle' in SerieSender:
-						markerChannels = webChannels
-					else:
-						markerChannels = SerieSender
-					
-					self.countActivatedSeries += 1
-					seriesID = getSeriesIDByURL(SerieUrl)
-					if seriesID is None or seriesID == 0:
-						# This is a marker created by TV Planer function - fix url
-						print "[SerienRecorder] fix seriesID for %r" % serienTitle
-						try:
-							seriesID = SeriesServer().getIDByFSID(SerieUrl[str.rindex(SerieUrl, '/')+1:])
-						except:
-							writeLog("' %s - Abfrage der SerienID bei SerienServer fehlgeschlagen - ignored '" % serienTitle, True)
-							print "' %s - Abfrage der SerienID bei SerienServer fehlgeschlagen - ignored '" % serienTitle
-							continue
-						cCursor = dbSerRec.cursor()
-						if seriesID is not None and seriesID != 0:
-							try:
-								getCover(None, serienTitle, seriesID)
-							except:
-								writeLog("' %s - Abruf des Covers fehlgeschlagen - ignored '" % serienTitle, True)
-								print "' %s - Abruf des Covers fehlgeschlagen - ignored '" % serienTitle
-							Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
-							# look if Series with this ID already exists
-							cCursor.execute("SELECT Serie FROM SerienMarker WHERE Url=?", (Url,))
-							row = cCursor.fetchone()
-							if row:
-								# Series was already in database with different name - remove duplicate marker of TV-Planer and STBAuswahl
-								try:
-									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird wieder aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
-									cCursor.execute("SELECT ID FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
-									rowTVPlaner = cCursor.fetchone()
-									if rowTVPlaner:
-										cCursor.execute("DELETE FROM SerienMarker WHERE ID=?", (rowTVPlaner[0],))
-										cCursor.execute("DELETE FROM STBAuswahl WHERE ID=?", (rowTVPlaner[0],))
-								except:
-									writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0]), True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0])
-								if row[0] != serienTitle:
-									# old series title - rename
-									try:
-										# update name in database
-										cCursor.execute("UPDATE SerienMarker SET Serie=? WHERE Url=?", (serienTitle, Url))
-										writeLog("' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle), True)
-										cCursor.execute("UPDATE AngelegteTimer SET Serie=? WHERE Serie=?", (serienTitle, row[0]))
-										writeLog("' %s - Timer nutzen neuen Namen '" % (serienTitle, ), True)
-										print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle)
-										dbSerRec.commit()
-										# get settings of old marker
-										(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = getMarker([ serienTitle ])[0]
-									except:
-										writeLog("' %s - SerienMarker %r -> %r - Korrektur fehlgeschlagen '" % (serienTitle, row[0], serienTitle), True)
-										writeLog("' %s - bitte SerienMarker %r manuell löschen und Timer korrigieren '" % (serienTitle, row[0]), True)
-										print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur fehlgeschlagen '" % (serienTitle, row[0], serienTitle)
-							else:
-								print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
-								try:
-									cCursor.execute("UPDATE SerienMarker SET Url=? WHERE LOWER(Serie)=?", (Url, serienTitle.lower()))
-									dbSerRec.commit()
-									writeLog("' %s - TV-Planer Marker -> Url %s - Korrektur erfolgreich '" % (serienTitle, Url), True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Korrektur erfolgreich '" % (serienTitle, Url)
-								except:
-									writeLog("' %s - TV-Planer Marker -> Url %s - Korrektur fehlgeschlagen ' " % (serienTitle, Url), True)
-									print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Korrektur fehlgeschlagen '" % (serienTitle, Url)
+				#writeLog("Active threads: %d" % threading.active_count(), True)
+				# Create the threads
+				for i in range(2):
+					worker = downloadTransmissionsThread(jobQueue, resultQueue)
+					worker.setDaemon(True)
+					worker.start()
+
+				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+					serienTitle = doReplaces(serienTitle)
+					if SerieUrl.startswith('https://www.wunschliste.de/spielfilm'):
+						# temporary marker for movie recording
+						print "[SerienRecorder] ' %s - TV-Planer Film wird ignoriert '" % serienTitle
+						continue
+					self.countSerien += 1
+					if SerieEnabled:
+						# Download only if series is enabled
+						if 'Alle' in SerieSender:
+							markerChannels = webChannels
 						else:
-							writeLog("' %s - TV-Planer Marker ohne SerienID -> ignoriert '" % (serienTitle,), True)
-							print "[SerienRecorder] ' %s - TV-Planer Marker ohne SerienID -> ignoriert '" % (serienTitle,)
-							continue
-						
-						cCursor.close()
+							markerChannels = SerieSender
 
-					jobQueue.put((seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
+						self.countActivatedSeries += 1
+						seriesID = getSeriesIDByURL(SerieUrl)
+						if seriesID is None or seriesID == 0:
+							# This is a marker created by TV Planer function - fix url
+							print "[SerienRecorder] fix seriesID for %r" % serienTitle
+							try:
+								seriesID = SeriesServer().getIDByFSID(SerieUrl[str.rindex(SerieUrl, '/')+1:])
+							except:
+								writeLog("' %s - Abfrage der SerienID bei SerienServer fehlgeschlagen - ignored '" % serienTitle, True)
+								print "' %s - Abfrage der SerienID bei SerienServer fehlgeschlagen - ignored '" % serienTitle
+								continue
+							cCursor = dbSerRec.cursor()
+							if seriesID is not None and seriesID != 0:
+								try:
+									getCover(None, serienTitle, seriesID)
+								except:
+									writeLog("' %s - Abruf des Covers fehlgeschlagen - ignored '" % serienTitle, True)
+									print "' %s - Abruf des Covers fehlgeschlagen - ignored '" % serienTitle
+								Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
+								# look if Series with this ID already exists
+								cCursor.execute("SELECT Serie FROM SerienMarker WHERE Url=?", (Url,))
+								row = cCursor.fetchone()
+								if row:
+									# Series was already in database with different name - remove duplicate marker of TV-Planer and STBAuswahl
+									try:
+										writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird wieder aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
+										print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
+										cCursor.execute("SELECT ID FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
+										rowTVPlaner = cCursor.fetchone()
+										if rowTVPlaner:
+											cCursor.execute("DELETE FROM SerienMarker WHERE ID=?", (rowTVPlaner[0],))
+											cCursor.execute("DELETE FROM STBAuswahl WHERE ID=?", (rowTVPlaner[0],))
+									except:
+										writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0]), True)
+										print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker konnte nicht gelöscht werden '" % (serienTitle, row[0])
+									if row[0] != serienTitle:
+										# old series title - rename
+										try:
+											# update name in database
+											cCursor.execute("UPDATE SerienMarker SET Serie=? WHERE Url=?", (serienTitle, Url))
+											writeLog("' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle), True)
+											cCursor.execute("UPDATE AngelegteTimer SET Serie=? WHERE Serie=?", (serienTitle, row[0]))
+											writeLog("' %s - Timer nutzen neuen Namen '" % (serienTitle, ), True)
+											print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur erfolgreich '" % (serienTitle, row[0], serienTitle)
+											dbSerRec.commit()
+											# get settings of old marker
+											(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = getMarker([ serienTitle ])[0]
+										except:
+											writeLog("' %s - SerienMarker %r -> %r - Korrektur fehlgeschlagen '" % (serienTitle, row[0], serienTitle), True)
+											writeLog("' %s - bitte SerienMarker %r manuell löschen und Timer korrigieren '" % (serienTitle, row[0]), True)
+											print "[SerienRecorder] ' %s - SerienMarker %r -> %r - Korrektur fehlgeschlagen '" % (serienTitle, row[0], serienTitle)
+								else:
+									print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
+									try:
+										cCursor.execute("UPDATE SerienMarker SET Url=? WHERE LOWER(Serie)=?", (Url, serienTitle.lower()))
+										dbSerRec.commit()
+										writeLog("' %s - TV-Planer Marker -> Url %s - Korrektur erfolgreich '" % (serienTitle, Url), True)
+										print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Korrektur erfolgreich '" % (serienTitle, Url)
+									except:
+										writeLog("' %s - TV-Planer Marker -> Url %s - Korrektur fehlgeschlagen ' " % (serienTitle, Url), True)
+										print "[SerienRecorder] ' %s - TV-Planer Marker -> Url %s - Korrektur fehlgeschlagen '" % (serienTitle, Url)
+							else:
+								writeLog("' %s - TV-Planer Marker ohne SerienID -> ignoriert '" % (serienTitle,), True)
+								print "[SerienRecorder] ' %s - TV-Planer Marker ohne SerienID -> ignoriert '" % (serienTitle,)
+								continue
 
-			jobQueue.join()
-			while not resultQueue.empty():
-				(transmissionFailed, transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
-				self.processTransmission(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
-				resultQueue.task_done()
+							cCursor.close()
 
-			self.createTimer()
+						jobQueue.put((seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
+
+				jobQueue.join()
+				while not resultQueue.empty():
+					(transmissionFailed, transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
+					self.processTransmission(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					resultQueue.task_done()
+
+				self.createTimer()
+				break
 		# 
 		# In order to provide an emergency recording service when serien server is down or
 		# because Wunschliste isn't accessable, it is now possible to use the TV Wunschliste
@@ -3430,7 +3449,11 @@ class serienRecCheckForRecording():
 			# try to get eventID (eit) from epgCache
 			#
 			eit, new_end_unixtime, new_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
-			alt_eit, alt_end_unixtime, alt_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
+			alt_eit = 0
+			alt_end_unixtime = end_unixtime
+			alt_start_unixtime = start_unixtime
+			if altstbRef:
+				alt_eit, alt_end_unixtime, alt_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
 
 			(dirname, dirname_serie) = getDirname(serien_name, staffel)
 
@@ -3630,7 +3653,11 @@ class serienRecCheckForRecording():
 			# try to get eventID (eit) from epgCache
 			#
 			eit, new_end_unixtime, new_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
-			alt_eit, alt_end_unixtime, alt_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
+			alt_eit = 0
+			alt_end_unixtime = end_unixtime
+			alt_start_unixtime = start_unixtime
+			if altstbRef:
+				alt_eit, alt_end_unixtime, alt_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
 			
 			(dirname, dirname_serie) = getDirname(serien_name, staffel)
 			
@@ -4139,6 +4166,16 @@ class serienRecCheckForRecording():
 		# get addToDatabase for marker
 		addToDatabase = getAddToDatabase(serien_name)
 
+		# provider_ref = ServiceReference(stbRef)
+		# providerName = provider.getServiceName()
+		# writeLogFilter("timeLimit", "addtimer stbRef : %s" % (str(stbRef) ) )
+
+		# new_needs_ci=checkCI(provider_ref.ref,1)
+		# writeLogFilter("timeLimit", "ci0  : %s" % (str(new_needs_ci1) ) )
+		# writeLog("ci0  -> %s " % (str(new_needs_ci1)), True)
+		# # new_needs_ci2=checkCI(provider_ref,1)
+		# writeLogFilter("timeLimit", "ci1  : %s" % (str(new_needs_ci2) ) )
+		
 		# versuche timer anzulegen
 		# setze strings für addtimer
 		if checkTuner(start_unixtime, end_unixtime, stbRef):
@@ -4688,6 +4725,14 @@ class serienRecTimer(Screen, HelpableScreen):
 			self.filter = True
 		self.readTimer()
 		
+	def keyBlue(self):
+		if config.plugins.serienRec.confirmOnDelete.value:
+			self.session.openWithCallback(self.removeNewTimerFromDB, MessageBox,
+			                              "Sollen wirklich alle noch ausstehenden Timer von der Box und aus der Datenbank entfernt werden?",
+			                              MessageBox.TYPE_YESNO, default = False)
+		else:
+			self.removeNewTimerFromDB(True)
+
 	def removeNewTimerFromDB(self, answer):
 		if answer:
 			current_time = int(time.time())
@@ -4703,14 +4748,6 @@ class serienRecTimer(Screen, HelpableScreen):
 			self['title'].setText("Alle noch ausstehenden Timer wurden entfernt.")
 		else:
 			return
-
-	def keyBlue(self):
-		if config.plugins.serienRec.confirmOnDelete.value:
-			self.session.openWithCallback(self.removeOldTimerFromDB, MessageBox,
-			                              "Sollen wirklich alle noch ausstehenden Timer von der Box und aus der Datenbank entfernt werden?",
-			                              MessageBox.TYPE_YESNO, default = False)
-		else:
-			self.removeOldTimerFromDB(True)
 
 	def removeOldTimerFromDB(self, answer):
 		if answer:
@@ -5883,7 +5920,7 @@ class serienRecSendeTermine(Screen, HelpableScreen):
 					print "[SerienRecorder] Tuner belegt: %s %s" % (label_serie, startzeit)
 					writeLog("Tuner belegt: %s %s" % (label_serie, startzeit), True)
 
-				if (not TimerOK) and (useAlternativeChannel):
+				if not TimerOK and useAlternativeChannel:
 					# try to get eventID (eit) from epgCache
 					alt_eit, alt_end_unixtime_eit, alt_start_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_altstbRef)
 					# versuche timer anzulegen
@@ -6178,7 +6215,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		
 	def showAdvice(self):
 		self.onShown.remove(self.showAdvice)
-		self.session.openWithCallback(self.switchOffAdvice, MessageBox, _("Hinweis:\n"
+		self.session.openWithCallback(self.switchOffAdvice, MessageBox, ("Hinweis:\n"
 		                                "Zusätzliche Informationen zu den Einstellungen erhalten Sie durch langes Drücken der Taste 'HILFE'.\n"
 										"Es wird dann die entsprechenden Stelle in der Bedienungsanleitung angezeigt.\n"
 										"\n"
@@ -6558,6 +6595,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 #			self.list.append(getConfigListEntry("    Neue Serien Marker erzeugen:", config.plugins.serienRec.tvplaner_create_marker))
 #			self.list.append(getConfigListEntry("    Mailbox alle <n> Minuten überprüfen:", config.plugins.serienRec.imap_check_interval))
 			self.list.append(getConfigListEntry("    Voller Suchlauf mindestens einmal im Erstellungszeitraum:", config.plugins.serienRec.tvplaner_full_check))
+			self.list.append(getConfigListEntry("    Timer nur aus der TV-Planer E-Mail anlegen:", config.plugins.serienRec.tvplaner_skipSerienServer))
 			self.list.append(getConfigListEntry("    Serien aufnehmen:", config.plugins.serienRec.tvplaner_series))
 			if config.plugins.serienRec.tvplaner_series.value:
 				self.list.append(getConfigListEntry("        Neue TV-Planer Serien nur auf dieser Box aktivieren:", config.plugins.serienRec.tvplaner_series_activeSTB))
@@ -6571,6 +6609,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("Früheste Zeit für Timer:", config.plugins.serienRec.globalFromTime))
 			self.list.append(getConfigListEntry("Späteste Zeit für Timer:", config.plugins.serienRec.globalToTime))
 			self.list.append(getConfigListEntry("Versuche Timer aus dem EPG zu aktualisieren:", config.plugins.serienRec.eventid))
+			if config.plugins.serienRec.eventid.value:
+				self.list.append(getConfigListEntry("    EPG Suchgrenzen in Minuten:", config.plugins.serienRec.epgTimeSpan))
 			self.list.append(getConfigListEntry("Immer aufnehmen, wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
 			if config.plugins.serienRec.forceRecording.value:
 				self.list.append(getConfigListEntry("    maximal X Tage auf Wiederholung warten:", config.plugins.serienRec.TimeSpanForRegularTimer))
@@ -6778,6 +6818,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.tvplaner_movies_filepath :("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Filmen gespeichert werden.", "Speicherort_der_Aufnahme"),
 			config.plugins.serienRec.tvplaner_movies_createsubdir :            ("Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis (z.B.\n'%s<Filmname>/') für die Aufnahmen erstellt." % config.plugins.serienRec.tvplaner_movies_filepath.value, ""), 	
 			config.plugins.serienRec.tvplaner_full_check :     ("Bei 'ja' wird vor dem Erreichen der eingestellten Zahl von Aufnahmetagen wieder ein voller Suchlauf gestartet", ""),
+			config.plugins.serienRec.tvplaner_skipSerienServer :     ("Bei 'ja' werden Timer nur aus der TV-Planer E-Mail angelegt, es werden keine Termine vom Serien-Server abgerufen.", ""),
 			config.plugins.serienRec.databasePath :            ("Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.", "Speicherort_der_Datenbank"),
 			config.plugins.serienRec.AutoBackup :              ("Bei 'vor dem Suchlauf' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
 			                                                    "dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/').\n"
@@ -6794,6 +6835,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.eventid :                 ("Bei 'ja' wird versucht die Sendung anhand der Anfangs- und Endzeiten im EPG zu finden. "
 			                                                    "Außerdem erfolgt bei jedem Timer-Suchlauf ein Abgleich der Anfangs- und Endzeiten aller Timer mit den EPG-Daten.\n"
 			                                                      "Diese Funktion muss aktiviert sein, wenn VPS benutzt werden soll.", "Hole_EventID"),
+			config.plugins.serienRec.epgTimeSpan :                 ("Die Anzahl Minuten um die der EPG Suchzeitraum nach vorne und hinten vergrößert werden soll (Standard: 10 min).\n\n"
+			                                                    "Beispiel: Eine Sendung soll laut Wunschliste um 3:20 Uhr starten, im EPG ist die Startzeit aber 3:28 Uhr, um die Sendung im EPG zu finden wird der Suchzeitraum um den eingestellten Wert "
+			                                                      "vergrößert, im Standard wird also von 3:10 Uhr bis 3:30 Uhr gesucht um die Sendung im EPG zu finden.", "Hole_EventID"),
 			config.plugins.serienRec.forceRecording :          ("Bei 'ja' werden auch Timer für Folgen erstellt, die ausserhalb der erlaubten Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, "
 			                                                    "falls KEINE Wiederholung innerhalb der erlaubten Zeitspanne gefunden wird. Wird eine passende Wiederholung zu einem späteren Zeitpunkt gefunden, dann wird der Timer für diese Wiederholung erstellt.\n"
 			                                                    "Bei 'nein' werden ausschließlich Timer für jene Folgen erstellt, die innerhalb der erlaubten Zeitspanne liegen." % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2), str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Immer_aufnehmen"),
@@ -6975,6 +7019,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if config.plugins.serienRec.tvplaner_full_check.value:
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 			config.plugins.serienRec.tvplaner_last_full_check.save()
+		config.plugins.serienRec.tvplaner_skipSerienServer.save()
 		config.plugins.serienRec.checkfordays.save()
 		config.plugins.serienRec.AutoBackup.save()
 		config.plugins.serienRec.deleteBackupFilesOlderThan.save()
@@ -6994,6 +7039,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.wakeUpDSB.save()
 		config.plugins.serienRec.afterAutocheck.save()
 		config.plugins.serienRec.eventid.save()
+		config.plugins.serienRec.epgTimeSpan.save()
 		config.plugins.serienRec.LogFilePath.save()
 		config.plugins.serienRec.longLogFileName.save()
 		config.plugins.serienRec.deleteLogFilesOlderThan.save()

@@ -2,15 +2,13 @@
 
 # This file contain some helper functions
 # which called from other SerienRecorder modules
-
-from __init__ import _
-
 from Components.config import config
 from Components.AVSwitch import AVSwitch
 
-from enigma import eServiceReference, eTimer, eServiceCenter, eEPGCache, ePicLoad
+from enigma import eServiceReference, eTimer, eServiceCenter, eEPGCache, ePicLoad, iServiceInformation
 
 from Screens.ChannelSelection import service_types_tv
+from ServiceReference import ServiceReference
 
 from Tools.Directories import fileExists
 
@@ -23,11 +21,10 @@ import datetime, os, re, urllib2, sys, time
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Useragent
-userAgent = ''
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.6.3-beta'
+SRVERSION = '3.6.4-beta'
 
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
@@ -85,6 +82,40 @@ def isDreamOS():
 		isDreamboxOS = True
 	return isDreamboxOS
 
+def checkCI(servref = None, cinum = 0):
+	cifile = "/etc/enigma2/ci%d.xml" % cinum
+
+	if servref is None or not os.path.exists(cifile):
+		return -1
+
+	serviceref = servref.toString()
+	serviceHandler = eServiceCenter.getInstance()
+	info = serviceHandler.info(servref)
+	provider = "unknown"
+	if info is not None:
+		provider = info.getInfoString(servref, iServiceInformation.sProvider)
+
+	sp = serviceref.split(":")
+	namespace = ""
+	if len(sp) > 6:
+		namespace = sp[6]
+
+	f = open(cifile, "r")
+	assignments = f.read()
+	f.close()
+	if assignments.find(serviceref) is not -1:
+		# print "[AUTOPIN] CI Slot %d assigned to %s" % (cinum+1, serviceref)
+		return cinum
+	if assignments.find("provider name") is -1:
+		return -1
+	# service not found, but maybe provider ...
+	providerstr = "provider name=\"%s\" dvbnamespace=\"%s\"" % (provider, namespace)
+	if assignments.find(providerstr) is not -1:
+		# print "[AUTOPIN] CI Slot %d assigned to %s via provider %s" % (cinum+1, serviceref, provider)
+		return cinum
+
+	return -1
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # TimeHelper - Time related helper functions
@@ -95,6 +126,9 @@ def isDreamOS():
 # ----------------------------------------------------------------------------------------------------------------------
 
 class TimeHelpers:
+	def __init__(self):
+		pass
+
 	@classmethod
 	def getNextDayUnixtime(cls, minutes, hour, day, month):
 		now = datetime.datetime.now()
@@ -190,7 +224,9 @@ class TimeHelpers:
 # ----------------------------------------------------------------------------------------------------------------------
 
 class STBHelpers:
-	EPGTimeSpan = 10
+
+	def __init__(self):
+		pass
 
 	@classmethod
 	def getServiceList(cls, ref):
@@ -236,7 +272,7 @@ class STBHelpers:
 
 	@classmethod
 	def getEPGTimeSpan(cls):
-		return int(cls.EPGTimeSpan)
+		return int(config.plugins.serienRec.epgTimeSpan.value)
 
 	@classmethod
 	def getEPGEvent(cls, query, channelref, title, starttime):
@@ -250,9 +286,13 @@ class STBHelpers:
 		for serviceref, eit, name, begin, duration, shortdesc, extdesc in allevents:
 			_name = name.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").lower()
 			_title = title.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").lower()
+
+			lowEPGStartTime = int(int(begin) - (int(cls.getEPGTimeSpan()) * 60))
+			highEPGStartTime = int(int(begin) + (int(cls.getEPGTimeSpan()) * 60))
 			if (channelref == serviceref) and (_name.count(_title) or _title.count(_name)):
-				if int(int(begin)-(int(cls.getEPGTimeSpan())*60)) <= int(starttime) <= int(int(begin)+(int(cls.getEPGTimeSpan())*60)):
+				if bool(lowEPGStartTime <= int(starttime) <= highEPGStartTime):
 					epgmatches.append((serviceref, eit, name, begin, duration, shortdesc, extdesc))
+					break
 		return epgmatches
 
 	@classmethod

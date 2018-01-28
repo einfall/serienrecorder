@@ -1,9 +1,6 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Channel Screen
-
-from __init__ import _
-
 from Screens.Screen import Screen
 from Screens.HelpMenu import HelpableScreen
 from Screens.MessageBox import MessageBox
