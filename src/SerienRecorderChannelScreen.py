@@ -183,11 +183,11 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		webSender = self['list'].getCurrent()[0][0]
 		self.session.open(SerienRecorder.serienRecChannelSetup, webSender)
 
-	def youtubeSearch(self, searchWord):
+	def youtubeSearch(self):
 		sender_name = self['list'].getCurrent()[0][0]
 		super(self.__class__, self).youtubeSearch(sender_name)
 
-	def WikipediaSearch(self, searchWord):
+	def WikipediaSearch(self):
 		sender_name = self['list'].getCurrent()[0][0]
 		super(self.__class__, self).WikipediaSearch(sender_name)
 

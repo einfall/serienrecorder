@@ -238,11 +238,11 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
 			#			  MessageBox.TYPE_INFO, timeout=10)
 
-	def youtubeSearch(self, searchWord):
+	def youtubeSearch(self):
 		serien_name = self[self.modus].getCurrent()[0][0]
 		super(self.__class__, self).youtubeSearch(serien_name)
 
-	def WikipediaSearch(self, searchWord):
+	def WikipediaSearch(self):
 		serien_name = self[self.modus].getCurrent()[0][0]
 		super(self.__class__, self).WikipediaSearch(serien_name)
 

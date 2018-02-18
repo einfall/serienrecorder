@@ -126,10 +126,10 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
 
-	def youtubeSearch(self, searchWord):
+	def youtubeSearch(self):
 		super(self.__class__, self).youtubeSearch(self.serien_name)
 
-	def WikipediaSearch(self, searchWord):
+	def WikipediaSearch(self):
 		super(self.__class__, self).WikipediaSearch(self.serien_name)
 
 	def searchEpisodes(self):
@@ -445,10 +445,10 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
-	def youtubeSearch(self, searchWord):
+	def youtubeSearch(self):
 		super(self.__class__, self).youtubeSearch(self.serien_name)
 
-	def WikipediaSearch(self, searchWord):
+	def WikipediaSearch(self):
 		super(self.__class__, self).WikipediaSearch(self.serien_name)
 
 	def setupClose(self, result):
