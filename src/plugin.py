@@ -12,8 +12,8 @@ import SerienRecorderAboutScreen
 import SerienRecorderChannelScreen
 import SerienRecorderSplashScreen
 import SerienRecorderStartupInfoScreen
-import SerienRecorderShowSeasonBeginsScreen
 import SerienRecorderMarkerScreen
+import SerienRecorderShowSeasonBeginsScreen
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 

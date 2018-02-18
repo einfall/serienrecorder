@@ -2,9 +2,9 @@
 
 # This file contains the SerienRecoder Marker Screen
 
+from SerienRecorderScreenHelpers import *
 from SerienRecorder import *
 from SerienRecorderHelpers import *
-from SerienRecorderScreenHelpers import *
 
 # Tageditor
 from Screens.MovieSelection import getPreferredTagEditor
@@ -177,7 +177,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def markerSetup(self):
 		if self['menu_list'].getCurrent() is None:
 			return
-		serien_name = self['menu_list'].getCurrent()[0][0]
+		serien_name = self['menu_list'].getCurrent()[0][1]
 		self.session.openWithCallback(self.SetupFinished, serienRecMarkerSetup, serien_name)
 
 	def SetupFinished(self, result):
@@ -200,8 +200,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if check is None:
 			return
 
-		serien_name = self['menu_list'].getCurrent()[0][0]
-		serien_url = self['menu_list'].getCurrent()[0][1]
+		serien_name = self['menu_list'].getCurrent()[0][1]
+		serien_url = self['menu_list'].getCurrent()[0][2]
 		serien_id = getSeriesIDByURL(serien_url)
 		if serien_id:
 			self.session.open(SerienRecorder.serienRecShowInfo, serien_name, serien_id)
@@ -214,8 +214,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			if check is None:
 				return
 
-			serien_name = self['menu_list'].getCurrent()[0][0]
-			serien_url = self['menu_list'].getCurrent()[0][1]
+			serien_name = self['menu_list'].getCurrent()[0][1]
+			serien_url = self['menu_list'].getCurrent()[0][2]
 			serien_id = getSeriesIDByURL(serien_url)
 			if serien_id:
 				self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s" % serien_id, self.serien_nameCover)
@@ -223,11 +223,11 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def youtubeSearch(self, searchWord):
-		serien_name = self['menu_list'].getCurrent()[0][0]
+		serien_name = self['menu_list'].getCurrent()[0][1]
 		super(self.__class__, self).youtubeSearch(serien_name)
 
 	def WikipediaSearch(self, searchWord):
-		serien_name = self['menu_list'].getCurrent()[0][0]
+		serien_name = self['menu_list'].getCurrent()[0][1]
 		super(self.__class__, self).WikipediaSearch(serien_name)
 
 	def setupClose(self, result):
@@ -244,9 +244,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if check is None:
 			return
 
-		serien_name = self['menu_list'].getCurrent()[0][0]
+		serien_name = self['menu_list'].getCurrent()[0][1]
 		self.serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
-		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][1])
+		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][2])
 		self.ErrorMsg = "'getCover()'"
 		SerienRecorder.getCover(self, serien_name, serien_id)
 
@@ -326,7 +326,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			elif Nachlaufzeit < 0:
 				Nachlaufzeit = 0
 
-			markerList.append((Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert))
+			markerList.append((ID, Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert))
 				
 		cCursor.close()
 		self['title'].setText("Serien Marker - %d/%d Serien vorgemerkt." % (len(markerList)-numberOfDeactivatedSeries, len(markerList)))
@@ -343,7 +343,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		(serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert) = entry
+		(ID, serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert) = entry
 
 		if preferredChannel == 1:
 			senderText = "Std."
@@ -393,7 +393,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyOK(self):
 		if self.modus == "popup_list":
-			self.select_serie = self['menu_list'].getCurrent()[0][0]
+			self.select_serie = self['menu_list'].getCurrent()[0][1]
 			select_staffel = self['popup_list'].getCurrent()[0][0]
 			select_mode = self['popup_list'].getCurrent()[0][1]
 			select_index = self['popup_list'].getCurrent()[0][2]
@@ -406,7 +406,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self.staffel_liste[select_index][1] = select_mode
 			self.chooseMenuList_popup.setList(map(self.buildList2, self.staffel_liste))
 		elif self.modus == "popup_list2":
-			self.select_serie = self['menu_list'].getCurrent()[0][0]
+			self.select_serie = self['menu_list'].getCurrent()[0][1]
 			select_sender = self['popup_list'].getCurrent()[0][0]
 			select_mode = self['popup_list'].getCurrent()[0][1]
 			select_index = self['popup_list'].getCurrent()[0][2]
@@ -429,7 +429,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 
 			self.modus = "popup_list"
-			self.select_serie = self['menu_list'].getCurrent()[0][0]
+			self.select_serie = self['menu_list'].getCurrent()[0][1]
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			
@@ -513,7 +513,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				self.modus = "popup_list2"
 				self['popup_list'].show()
 				self['popup_bg'].show()
-				self.select_serie = self['menu_list'].getCurrent()[0][0]
+				self.select_serie = self['menu_list'].getCurrent()[0][1]
 
 				getSender.insert(0, 'Alle')
 				mode_list = [0,]*len(getSender)
@@ -550,15 +550,16 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			if check is None:
 				return
 
-			serien_name = self['menu_list'].getCurrent()[0][0]
-			serien_url = self['menu_list'].getCurrent()[0][1]
+			serien_id = self['menu_list'].getCurrent()[0][0]
+			serien_name = self['menu_list'].getCurrent()[0][1]
+			serien_url = self['menu_list'].getCurrent()[0][2]
 			
 			print serien_url
-			self.session.openWithCallback(self.callTimerAdded, SerienRecorder.serienRecSendeTermine, serien_name, serien_url, self.serien_nameCover)
+			self.session.openWithCallback(self.callTimerAdded, SerienRecorder.serienRecSendeTermine, serien_id, serien_name, serien_url, self.serien_nameCover)
 
 	def callDisableAll(self, answer):
 		if answer:
-			self.selected_serien_name = self['menu_list'].getCurrent()[0][0]
+			self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
 			cCursor = SerienRecorder.dbSerRec.cursor()
 			mask = (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
 			cCursor.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=ErlaubteSTB &(~?)", (mask,))
@@ -602,7 +603,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				print "[SerienRecorder] Serien Marker leer."
 				return
 			else:
-				self.selected_serien_name = self['menu_list'].getCurrent()[0][0]
+				self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
 				cCursor = SerienRecorder.dbSerRec.cursor()
 				cCursor.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (self.selected_serien_name.lower(),))
 				row = cCursor.fetchone()
@@ -622,7 +623,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				print "[SerienRecorder] Serien Marker leer."
 				return
 			else:
-				self.selected_serien_name = self['menu_list'].getCurrent()[0][0]
+				self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
 				cCursor = SerienRecorder.dbSerRec.cursor()
 				cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (self.selected_serien_name.lower(),))
 				row = cCursor.fetchone()
