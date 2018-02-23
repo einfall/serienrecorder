@@ -6,7 +6,7 @@ from SerienRecorderHelpers import *
 
 
 # Constants
-SERIES_SERVER_URL = 'http://www.serienserver.de/cache/cache.php'
+SERIES_SERVER_URL = 'https://www.serienserver.de/cache/cache.php'
 REQUEST_PARAMETER = "?device=" + STBHelpers.getSTBType() + "&version=SR" + SRVERSION + "&uuid=" + STBHelpers.getHardwareUUID()
 
 try:
@@ -25,8 +25,11 @@ class TimeoutTransport (xmlrpclib.Transport):
 
 	def make_connection(self, host):
 		import httplib
+		import ssl
 		host, extra_headers, x509 = self.get_host_info(host)
-		return httplib.HTTPConnection(host, timeout=self._timeout)
+		if hasattr(ssl, '_create_unverified_context'):
+			ssl._create_default_https_context = ssl._create_unverified_context
+		return httplib.HTTPSConnection(host, timeout=self._timeout)
 
 class SeriesServer:
 

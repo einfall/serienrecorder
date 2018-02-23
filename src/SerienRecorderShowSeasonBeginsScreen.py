@@ -77,13 +77,14 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		HelpableScreen.callHelpAction(self, *args)
 
 	def setSkinProperties(self):
-		setSkinProperties(self)
+		super(self.__class__, self).setSkinProperties()
 
 		self['text_ok'].setText("Marker hinzufügen")
 		self['text_yellow'].setText("Zeige Serienstarts")
 
 		self.num_bt_text[3][0] = buttonText_na
-		super(self.__class__, self).setSkinProperties()
+
+		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
 		super(self.__class__, self).setupSkin()

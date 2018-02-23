@@ -6239,7 +6239,24 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		
 	def setSkinProperties(self):
 		setSkinProperties(self)
+
+		global showAllButtons
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
+			self.displayMode = 2
+			self.updateMenuKeys()
+
+			self.displayTimer = eTimer()
+			if isDreamOS():
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 		
+	def updateMenuKeys(self):
+		updateMenuKeys(self)
+
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
