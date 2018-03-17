@@ -15,7 +15,7 @@ import SerienRecorderStartupInfoScreen
 import SerienRecorderMarkerScreen
 import SerienRecorderShowSeasonBeginsScreen
 
-serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/"
+serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 
 def SRstart(session, **kwargs):
 

@@ -17,7 +17,7 @@ from Screens.MessageBox import MessageBox
 
 import re
 
-serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/"
+serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 
 showAllButtons = False
 longButtonText = False
@@ -92,13 +92,13 @@ def setSkinProperties(self, isLayoutFinshed=True):
 							[buttonText_na, "Konflikt-Liste", "YouTube (lang: Wikipedia)"],
 							[buttonText_na, "Merkzettel", ""],
 							["Neue Serienstarts", buttonText_na, "Hilfe"],
-							["Serien Beschreibung", buttonText_na, "Einstellungen"])
+							["Serien Beschreibung", buttonText_na, "globale Einstellungen"])
 	else:
 		self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
 							[buttonText_na, "Konflikt-Liste", "YouTube/Wikipedia"],
 							[buttonText_na, "Merkzettel", ""],
 							["Neue Serienstarts", buttonText_na, "Hilfe"],
-							["Serien Beschreibung", buttonText_na, "Einstellungen"])
+							["Serien Beschreibung", buttonText_na, "globale Einstellungen"])
 
 	if showAllButtons:
 		Skin1_Settings(self)

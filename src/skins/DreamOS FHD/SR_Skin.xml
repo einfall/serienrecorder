@@ -20,39 +20,39 @@
         <widget name="list" position="20,180" size="1250,777" scrollbarMode="showOnDemand" zPosition="1"/> 
         <widget name="popup_list" position="20,130" size="1250,836" itemHeight="38" scrollbarMode="showOnDemand" zPosition="2"/>
 		<widget name="popup_list2" position="20,180" size="1250,780" scrollbarMode="showOnDemand" zPosition="3"/>
-        <widget name="cover" position="1490,390" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/cover_default.png" size="200,300" />
+        <widget name="cover" position="1490,390" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/cover_default.png" size="200,300" />
 		<widget name="config_information_text" position="1300,390" size="560,500" font="Regular;24" zPosition="1"/>
-        <widget name="bt_0" position="1300,732" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_0.png"/>
+        <widget name="bt_0" position="1300,732" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_0.png"/>
 		<widget name="text_0" position="1370,730" size="360,30" font="Regular;24" transparent="1"/>
-		<widget name="bt_5" position="1300,732" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_5.png"/>
+		<widget name="bt_5" position="1300,732" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_5.png"/>
         <widget name="text_5" position="1370,730" size="360,30" font="Regular;24" transparent="1"/>
-        <widget name="bt_exit" position="1300,732" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_exit.png"/>
+        <widget name="bt_exit" position="1300,732" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_exit.png"/>
 		<widget name="text_exit" position="1370,730" size="360,30" font="Regular;24" transparent="1"/>
-        <widget name="bt_1" position="1300,772" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_1.png"/>
+        <widget name="bt_1" position="1300,772" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_1.png"/>
 		<widget name="text_1" position="1370,770" size="360,30" font="Regular;24" transparent="1"/>
-		<widget name="bt_6" position="1300,772" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_6.png"/>
+		<widget name="bt_6" position="1300,772" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_6.png"/>
 		<widget name="text_6" position="1370,770" size="360,30" font="Regular;24" transparent="1"/>  
-        <widget name="bt_text" position="1300,772" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_text.png"/>
+        <widget name="bt_text" position="1300,772" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_text.png"/>
 		<widget name="text_text" position="1370,770" size="360,30" font="Regular;24" transparent="1"/>           
-        <widget name="bt_2" position="1300,812" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_2.png"/>
+        <widget name="bt_2" position="1300,812" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_2.png"/>
 		<widget name="text_2" position="1370,810" size="360,30" font="Regular;24" transparent="1"/>
-		<widget name="bt_7" position="1300,812" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_7.png"/>
+		<widget name="bt_7" position="1300,812" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_7.png"/>
 		<widget name="text_7" position="1370,810" size="360,30" font="Regular;24" transparent="1"/>
-		<widget name="bt_epg" position="1300,812" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_info.png"/>
+		<widget name="bt_epg" position="1300,812" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_info.png"/>
 		<widget name="text_epg" position="1370,810" size="360,30" font="Regular;24" transparent="1"/>		
-        <widget name="bt_3" position="1300,852" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_3.png"/>
+        <widget name="bt_3" position="1300,852" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_3.png"/>
 		<widget name="text_3" position="1370,850" size="360,30" font="Regular;24" transparent="1"/>
-		<widget name="bt_8" position="1300,852" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_8.png"/>
+		<widget name="bt_8" position="1300,852" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_8.png"/>
 		<widget name="text_8" position="1370,850" size="360,30" font="Regular;24" transparent="1"/>
-		<widget name="bt_info" position="1300,852" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_help.png"/>
+		<widget name="bt_info" position="1300,852" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_help.png"/>
 		<widget name="text_info" position="1370,850" size="360,30" font="Regular;24" transparent="1"/>       
-        <widget name="bt_4" position="1300,892" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_4.png" />
+        <widget name="bt_4" position="1300,892" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_4.png" />
 		<widget name="text_4" position="1370,890" size="360,30" font="Regular;24" transparent="1"/>
-		<widget name="bt_9" position="1300,892" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_9.png"/>
+		<widget name="bt_9" position="1300,892" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_9.png"/>
 		<widget name="text_9" position="1370,890" size="360,30" font="Regular;24" transparent="1"/>
-        <widget name="bt_menu" position="1300,892" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_menu.png"/>
+        <widget name="bt_menu" position="1300,892" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_menu.png"/>
 		<widget name="text_menu" position="1370,890" size="360,30" font="Regular;24" transparent="1"/>	
-	    <widget name="bt_ok" position="1300,932" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/DreamOS FHD/images/key_ok.png"/>
+	    <widget name="bt_ok" position="1300,932" size="50,25" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/DreamOS FHD/images/key_ok.png"/>
 		<widget name="text_ok" position="1370,930" size="360,30" font="Regular;24"/>
         <eLabel backgroundColor="foreground" position="20,125" size="1250,1" />
         <eLabel backgroundColor="foreground" position="1280,5" size="1,960" />

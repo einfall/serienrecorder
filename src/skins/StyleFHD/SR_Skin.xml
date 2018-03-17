@@ -41,34 +41,34 @@
 		<widget name="config_information" position="1300,115" size="560,250" zPosition="3" foregroundColor="#0061b5f8" backgroundColor="#ffffffff" />
 		<widget name="config_information_text" position="1300,115" size="560,250" zPosition="5" font="Regular;18" halign="left" foregroundColor="#0061b5f8" backgroundColor="#102e2e2e" transparent="0" />
 
-		<widget name="bt_menu" position="1300,370" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_menu.png" alphatest="on" />
+		<widget name="bt_menu" position="1300,370" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_menu.png" alphatest="on" />
 		<widget name="text_menu" position="1340,370" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_ok" position="1300,410" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_ok.png" alphatest="on" />
+		<widget name="bt_ok" position="1300,410" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_ok.png" alphatest="on" />
 		<widget name="text_ok" position="1340,410" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_0" position="1300,450" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_0.png" alphatest="on" />
+		<widget name="bt_0" position="1300,450" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_0.png" alphatest="on" />
 		<widget name="text_0" position="1340,450" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_1" position="1300,490" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_1.png" alphatest="on" />
+		<widget name="bt_1" position="1300,490" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_1.png" alphatest="on" />
 		<widget name="text_1" position="1340,490" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_2" position="1300,530" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_2.png" alphatest="on" />
+		<widget name="bt_2" position="1300,530" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_2.png" alphatest="on" />
 		<widget name="text_2" position="1340,530" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_3" position="1300,570" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_3.png" alphatest="on" />
+		<widget name="bt_3" position="1300,570" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_3.png" alphatest="on" />
 		<widget name="text_3" position="1340,570" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_4" position="1300,610" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_4.png" alphatest="on" />
+		<widget name="bt_4" position="1300,610" size="35,35" zPosition="3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_4.png" alphatest="on" />
 		<widget name="text_4" position="1340,610" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_5" position="1300,650" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_5.png" alphatest="on" />
+		<widget name="bt_5" position="1300,650" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_5.png" alphatest="on" />
 		<widget name="text_5" position="1340,650" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_6" position="1300,690" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_6.png" alphatest="on" />
+		<widget name="bt_6" position="1300,690" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_6.png" alphatest="on" />
 		<widget name="text_6" position="1340,690" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_7" position="1300,730" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_7.png" alphatest="on" />
+		<widget name="bt_7" position="1300,730" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_7.png" alphatest="on" />
 		<widget name="text_7" position="1340,730" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_8" position="1300,770" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_8.png" alphatest="on" />
+		<widget name="bt_8" position="1300,770" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_8.png" alphatest="on" />
 		<widget name="text_8" position="1340,770" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_9" position="1300,810" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_9.png" alphatest="on" />
+		<widget name="bt_9" position="1300,810" size="35,35" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_9.png" alphatest="on" />
 		<widget name="text_9" position="1340,810" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_text" position="1300,850" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_text.png" alphatest="on" />
+		<widget name="bt_text" position="1300,850" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_text.png" alphatest="on" />
 		<widget name="text_text" position="1340,850" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_epg" position="1300,890" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_epg.png" alphatest="on" />
+		<widget name="bt_epg" position="1300,890" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_epg.png" alphatest="on" />
 		<widget name="text_epg" position="1340,890" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
-		<widget name="bt_info" position="1300,930" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/StyleFHD/images/key_help.png" alphatest="on" />
+		<widget name="bt_info" position="1300,930" size="35,35" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/StyleFHD/images/key_help.png" alphatest="on" />
 		<widget name="text_info" position="1340,930" size="360,35" zPosition="1" font="Regular;20" halign="left" foregroundColor="#00ffffff" backgroundColor="#102e2e2e" transparent="1" />
 	</screen>

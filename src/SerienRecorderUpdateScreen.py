@@ -34,10 +34,6 @@ class checkGitHubUpdate:
 	def checkForUpdate(self):
 		writeTestLog("Check for update")
 		import ssl
-		if ssl.OPENSSL_VERSION_NUMBER < 268439552:
-			Notifications.AddPopup("Leider ist die Suche nach SerienRecorder Updates auf Ihrer Box technisch nicht möglich - bitte deaktivieren Sie die automatische Plugin-Update Funktion, in den SerienRecorder Einstellungen, um diese Meldung zu unterdrücken!", MessageBox.TYPE_INFO, timeout=0)
-			return
-
 		if hasattr(ssl, '_create_unverified_context'):
 			ssl._create_default_https_context = ssl._create_unverified_context
 		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
@@ -95,9 +91,9 @@ class checkGitHubUpdateScreen(Screen):
 			<widget name="progressslider" position="5,%d" size="%d,25" borderWidth="1" zPosition="1" backgroundColor="#00242424"/>
 			<widget name="status" position="5,%d" size="%d,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
 			<widget name="separator" position="%d,%d" size="%d,5" backgroundColor="#00808080" zPosition="6" />
-			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_ok" position="%d,%d" size="%d,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
-			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_exit" position="%d,%d" size="%d,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>""" % (50, 100, DESKTOP_WIDTH - 100, DESKTOP_HEIGHT - 180, "SerienRecorder Update",
 						DESKTOP_WIDTH - 110, DESKTOP_HEIGHT - 405,

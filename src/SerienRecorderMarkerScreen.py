@@ -251,8 +251,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		SerienRecorder.getCover(self, serien_name, serien_id)
 
 	def readSerienMarker(self, SelectSerie=None):
-		if SelectSerie:
-			self.SelectSerie = SelectSerie
+		if SelectSerie: self.SelectSerie = SelectSerie
 		markerList = []
 		numberOfDeactivatedSeries = 0
 
@@ -335,9 +334,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self.chooseMenuList.setList(map(self.buildList, markerList))
 			if self.SelectSerie:
 				try:
-					idx = zip(*markerList)[1].index(self.SelectSerie)
+					idx = zip(*markerList)[0].index(self.SelectSerie)
 					self['menu_list'].moveToIndex(idx)
-				except Exception, e:
+				except:
 					pass
 			self.loading = False
 			self.getCover()
@@ -1005,7 +1004,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self['title'].setText("SerienRecorder - Einstellungen für '%s':" % self.Serie)
 		self['text_red'].setText("Abbrechen")
 		self['text_green'].setText("Speichern")
-		self['text_ok'].setText("Ordner auswählen")
+		self['text_ok'].setText("Verzeichnis auswählen")
 		global showAllButtons
 		if not showAllButtons:
 			self['text_0'].setText("Abbrechen")
