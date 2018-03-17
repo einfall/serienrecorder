@@ -24,13 +24,13 @@ import datetime, os, re, urllib2, sys, time
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.6.6-beta'
+SRVERSION = '3.6.7-beta'
 
 def writeTestLog(text):
-	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
-		open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", 'w').close()
+	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/TestLogs"):
+		open("/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/TestLogs", 'w').close()
 
-	writeLogFile = open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", "a")
+	writeLogFile = open("/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/TestLogs", "a")
 	writeLogFile.write('%s\n' % text)
 	writeLogFile.close()
 

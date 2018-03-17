@@ -1,13 +1,13 @@
 ﻿<screen name="SerienRecorder3.0" position="center,center" size="1280,720" title="Serien Recorder">
-	<ePixmap position="0,0" size="1280,720" zPosition="-11" transparent="0" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/bg.png" />
+	<ePixmap position="0,0" size="1280,720" zPosition="-11" transparent="0" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/bg.png" />
 
 	<widget name="title" font="Regular;24" position="55,10" size="860,30" valign="center" halign="center" transparent="1" />
 	<widget name="headline" font="Regular;24" position="55,40" size="860,30" valign="center" halign="center" transparent="1" />
-	<widget name="config" position="60,80" size="850,582" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel70_1200.png" />
-	<widget name="menu_list" position="60,80" size="850,582" foregroundColor="yellow" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel70_1200.png" />
-	<widget name="log" position="60,80" size="850,582" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel70_1200.png" />
-	<widget name="popup_bg" position="920,10" size="310,320" backgroundColor="#000000" transparent="1" zPosition="5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/popup_bg.png" />
-	<widget name="popup_list" position="920,10" size="310,320" backgroundColor="#00181d20" zPosition="10" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel25_1200.png" />
+	<widget name="config" position="60,80" size="850,582" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/sel70_1200.png" />
+	<widget name="menu_list" position="60,80" size="850,582" foregroundColor="yellow" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/sel70_1200.png" />
+	<widget name="log" position="60,80" size="850,582" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/sel70_1200.png" />
+	<widget name="popup_bg" position="920,10" size="310,320" backgroundColor="#000000" transparent="1" zPosition="5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/popup_bg.png" />
+	<widget name="popup_list" position="920,10" size="310,320" backgroundColor="#00181d20" zPosition="10" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/sel25_1200.png" />
 	<widget name="cover" position="980,10" size="200,200" transparent="0" alphatest="blend" />
 
 	<widget name="Web_Channel" position="100,45" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
@@ -15,8 +15,8 @@
 	<widget name="alt_STB_Channel" position="720,45" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
 	<widget name="separator" position="60,80" size="850,2" backgroundColor="#00aaaaaa" zPosition="6" />
 
-	<widget name="list" position="60,80" size="850,582" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel25_1200.png" />
-	<widget name="popup_list2" position="920,10" size="310,320" backgroundColor="#00181d20" zPosition="10" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel25_1200.png" />
+	<widget name="list" position="60,80" size="850,582" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/sel25_1200.png" />
+	<widget name="popup_list2" position="920,10" size="310,320" backgroundColor="#00181d20" zPosition="10" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/sel25_1200.png" />
 
 	<widget name="config_information" position="920,100" size="310,320" zPosition="3" backgroundColor="#000000" />
 	<widget name="config_information_text" position="923,103" size="304,314" zPosition="5" font="Regular;18" halign="left" transparent="1" />
@@ -37,22 +37,22 @@
 	<widget name="text_blue" position="940,680" size="290,25" zPosition="1" font="Regular;20" halign="center" transparent="1" />
 
 	<!-- Buttons -->
-	<widget name="bt_ok" position="930,219" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_ok.png" alphatest="on" />
-	<widget name="bt_exit" position="930,247" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_exit.png" alphatest="on" />
-	<widget name="bt_text" position="930,275" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_text.png" alphatest="on" />
-	<widget name="bt_epg" position="930,303" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_epg.png" alphatest="on" />
-	<widget name="bt_info" position="930,331" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_help.png" alphatest="on" />
-	<widget name="bt_menu" position="930,359" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_menu.png" alphatest="on" />
-	<widget name="bt_0" position="930,387" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_0.png" alphatest="on" />
-	<widget name="bt_1" position="930,415" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_1.png" alphatest="on" />
-	<widget name="bt_2" position="930,443" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_2.png" alphatest="on" />
-	<widget name="bt_3" position="930,471" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_3.png" alphatest="on" />
-	<widget name="bt_4" position="930,499" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_4.png" alphatest="on" />
-	<widget name="bt_5" position="930,527" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_5.png" alphatest="on" />
-	<widget name="bt_6" position="930,555" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_6.png" alphatest="on" />
-	<widget name="bt_7" position="930,583" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_7.png" alphatest="on" />
-	<widget name="bt_8" position="930,611" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_8.png" alphatest="on" />
-	<widget name="bt_9" position="930,639" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/key_9.png" alphatest="on" />
+	<widget name="bt_ok" position="930,219" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_ok.png" alphatest="on" />
+	<widget name="bt_exit" position="930,247" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_exit.png" alphatest="on" />
+	<widget name="bt_text" position="930,275" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_text.png" alphatest="on" />
+	<widget name="bt_epg" position="930,303" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_epg.png" alphatest="on" />
+	<widget name="bt_info" position="930,331" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_help.png" alphatest="on" />
+	<widget name="bt_menu" position="930,359" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_menu.png" alphatest="on" />
+	<widget name="bt_0" position="930,387" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_0.png" alphatest="on" />
+	<widget name="bt_1" position="930,415" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_1.png" alphatest="on" />
+	<widget name="bt_2" position="930,443" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_2.png" alphatest="on" />
+	<widget name="bt_3" position="930,471" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_3.png" alphatest="on" />
+	<widget name="bt_4" position="930,499" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_4.png" alphatest="on" />
+	<widget name="bt_5" position="930,527" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_5.png" alphatest="on" />
+	<widget name="bt_6" position="930,555" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_6.png" alphatest="on" />
+	<widget name="bt_7" position="930,583" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_7.png" alphatest="on" />
+	<widget name="bt_8" position="930,611" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_8.png" alphatest="on" />
+	<widget name="bt_9" position="930,639" size="35,25" zPosition="1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/skins/Skin2/images/key_9.png" alphatest="on" />
 
 	<widget name="text_ok" position="965,220" size="260,25" zPosition="1" font="Regular;20" halign="left" transparent="1" />
 	<widget name="text_exit" position="965,248" size="260,25" zPosition="1" font="Regular;20" halign="left" transparent="1" />

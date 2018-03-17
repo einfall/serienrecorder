@@ -21,9 +21,9 @@ class ShowStartupInfo(Screen):
 	skin = """
 		<screen name="SerienRecorderHints" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
 			<widget name="srlog" position="5,5" size="%d,%d" font="Regular;21" valign="left" halign="top" foregroundColor="#FFFFFF" transparent="1" zPosition="5"/>
-			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_ok" position="%d,%d" size="%d,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
-			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_exit" position="%d,%d" size="%d,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>""" % (10, 10, DESKTOP_WIDTH - 20, DESKTOP_HEIGHT - 20, ("SerienRecorder InfoText"),
 		                DESKTOP_WIDTH - 30, DESKTOP_HEIGHT - 80,
@@ -35,7 +35,7 @@ class ShowStartupInfo(Screen):
 
 	def __init__(self, session):
 		self.session = session
-		self.serienRecInfoFilePath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/StartupInfoText"
+		self.serienRecInfoFilePath = "/usr/lib/enigma2/python/Plugins/Extensions/SerienRecorder/StartupInfoText"
 
 		Screen.__init__(self, session)
 
