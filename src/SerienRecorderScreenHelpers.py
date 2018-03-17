@@ -92,13 +92,13 @@ def setSkinProperties(self, isLayoutFinshed=True):
 							[buttonText_na, "Konflikt-Liste", "YouTube (lang: Wikipedia)"],
 							[buttonText_na, "Merkzettel", ""],
 							["Neue Serienstarts", buttonText_na, "Hilfe"],
-							["Serien Beschreibung", buttonText_na, "globale Einstellungen"])
+							["Serien Beschreibung", buttonText_na, "Einstellungen"])
 	else:
 		self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
 							[buttonText_na, "Konflikt-Liste", "YouTube/Wikipedia"],
 							[buttonText_na, "Merkzettel", ""],
 							["Neue Serienstarts", buttonText_na, "Hilfe"],
-							["Serien Beschreibung", buttonText_na, "globale Einstellungen"])
+							["Serien Beschreibung", buttonText_na, "Einstellungen"])
 
 	if showAllButtons:
 		Skin1_Settings(self)

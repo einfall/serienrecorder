@@ -34,6 +34,10 @@ class checkGitHubUpdate:
 	def checkForUpdate(self):
 		writeTestLog("Check for update")
 		import ssl
+		if ssl.OPENSSL_VERSION_NUMBER < 268439552:
+			Notifications.AddPopup("Leider ist die Suche nach SerienRecorder Updates auf Ihrer Box technisch nicht möglich - bitte deaktivieren Sie die automatische Plugin-Update Funktion, in den SerienRecorder Einstellungen, um diese Meldung zu unterdrücken!", MessageBox.TYPE_INFO, timeout=0)
+			return
+
 		if hasattr(ssl, '_create_unverified_context'):
 			ssl._create_default_https_context = ssl._create_unverified_context
 		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)

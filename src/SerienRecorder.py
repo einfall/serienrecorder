@@ -220,6 +220,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.runAutocheckAtExit = ConfigYesNo(default = False)
 	config.plugins.serienRec.downloadCover = ConfigYesNo(default = False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default = False)
+	config.plugins.serienRec.createPlaceholderCover = ConfigYesNo(default = True)
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default = True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default = True)
 	config.plugins.serienRec.writeErrorLog = ConfigYesNo(default = False)
@@ -389,7 +390,7 @@ def retry(times, func, *args, **kwargs):
 	run()
 	return deferred
 
-def getCover(self, serien_name, serien_id):
+def getCover(self, serien_name, serien_id, auto_check = False):
 	if not config.plugins.serienRec.downloadCover.value:
 		return
 
@@ -415,12 +416,17 @@ def getCover(self, serien_name, serien_id):
 	if fileExists(serien_nameCover):
 		if self is not None and config.plugins.serienRec.showCover.value:
 			showCover(serien_nameCover, self, serien_nameCover)
-	elif serien_id:
+	elif serien_id and (config.plugins.serienRec.showCover.value or (config.plugins.serienRec.downloadCover.value and auto_check)):
 		try:
 			posterURL = SeriesServer().doGetCoverURL(int(serien_id), serien_name)
 			if posterURL:
 				downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
+			else:
+				if config.plugins.serienRec.createPlaceholderCover.value:
+					open(serien_nameCover, "a").close()
 		except:
+			if config.plugins.serienRec.createPlaceholderCover.value:
+				open(serien_nameCover, "a").close()
 			getCoverDataError("failed", self, serien_nameCover)
 
 def getCoverDataError(error, self, serien_nameCover):
@@ -2578,8 +2584,8 @@ class serienRecCheckForRecording():
 			# Statistik
 			self.speedEndTime = time.clock()
 			speedTime = (self.speedEndTime - self.speedStartTime)
-			writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------" % str(speedTime), True)
-			print "---------' Auto-Check beendet ( Ausführungsdauer: %s Sek.)'----------------------------------------------------------------------------" % str(speedTime)
+			writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'-------------------------------------------------------------------------" % speedTime, True)
+			print "---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'----------------------------------------------------------------------------" % speedTime
 
 			if config.plugins.serienRec.longLogFileName.value:
 				shutil.copy(logFile, logFileSave)
@@ -3112,7 +3118,7 @@ class serienRecCheckForRecording():
 							cCursor = dbSerRec.cursor()
 							if seriesID is not None and seriesID != 0:
 								try:
-									getCover(None, serienTitle, seriesID)
+									getCover(None, serienTitle, seriesID, True)
 								except:
 									writeLog("' %s - Abruf des Covers fehlgeschlagen - ignored '" % serienTitle, True)
 									print "' %s - Abruf des Covers fehlgeschlagen - ignored '" % serienTitle
@@ -3742,8 +3748,8 @@ class serienRecCheckForRecording():
 		if self.countTimerFromWishlist > 0:
 			writeLog("%s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist), True)
 			print "[SerienRecorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist)
-		writeLog("---------' Auto-Check beendet (Ausführungsdauer: %s Sek.)'---------------------------------------------------------------------------" % str(speedTime), True)
-		print "---------' Auto-Check beendet (Ausführungsdauer: %s Sek.)'-------------------------------------------------------------------------------" % str(speedTime)
+		writeLog("---------' Auto-Check beendet (Ausführungsdauer: %3.2f Sek.)'---------------------------------------------------------------------------" % speedTime, True)
+		print "---------' Auto-Check beendet (Ausführungsdauer: %3.2f Sek.)'-------------------------------------------------------------------------------" % speedTime
 		if (config.plugins.serienRec.showNotification.value in ("2", "3")) and (not self.manuell):
 			statisticMessage = "Serien vorgemerkt: %s/%s\nTimer erstellt: %s\nTimer aktualisiert: %s\nTimer mit Konflikten: %s\nTimer vom Merkzettel: %s" % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer), str(self.countTimerUpdate), str(self.countNotActiveTimer), str(self.countTimerFromWishlist))
 			newSeasonOrEpisodeMessage = ""
@@ -4613,9 +4619,9 @@ class serienRecTimer(Screen, HelpableScreen):
 		if showTitle:
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			if self.filter:
-				self['title'].setText("Timer-Liste: %s Timer sind vorhanden." % len(timerList))
+				self['title'].setText("Timer-Liste: %s ausstehende Timer" % len(timerList))
 			else:
-				self['title'].setText("Timer-Liste: %s Aufnahme(n) und %s Timer sind vorhanden." % (deltimer, len(timerList)-deltimer))
+				self['title'].setText("Timer-Liste: %s abgeschlossene und %s ausstehende Timer" % (deltimer, len(timerList)-deltimer))
 
 		if config.plugins.serienRec.recordListView.value == 0:
 			timerList.sort(key=lambda t : t[4])
@@ -6174,16 +6180,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		if readConfig:
 			ReadConfigFile()
 
-		self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
-							[buttonText_na, buttonText_na, "About"],
-							[buttonText_na, buttonText_na, buttonText_na],
-							[buttonText_na, buttonText_na, buttonText_na],
-							[buttonText_na, buttonText_na, "Sender zuordnen"])
-
 		self.setupSkin()
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
+		#global showAllButtons
+		#if showAllButtons:
+		#	Skin1_Settings(self)
 
 		self.setupModified = False
 		self.SkinType = config.plugins.serienRec.SkinType.value
@@ -6240,20 +6240,6 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 	def setSkinProperties(self):
 		setSkinProperties(self)
 
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
-		else:
-			self.displayMode = 2
-			self.updateMenuKeys()
-
-			self.displayTimer = eTimer()
-			if isDreamOS():
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
-		
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
@@ -6262,25 +6248,21 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		InitSkin(self)
 		
 		self['config'] = ConfigList([])
-		#self['config'].list.setItemHeight(22) funktioniert nicht
 		self['config'].show()
+
+		self['config_information'].show()
+		self['config_information_text'].show()
 
 		self['title'].setText("SerienRecorder - Einstellungen:")
 		self['text_red'].setText("Defaultwerte")
 		self['text_green'].setText("Speichern")
-		self['text_ok'].setText("Verzeichnis auswählen")
+		self['text_ok'].setText("Ordner auswählen")
 		self['text_yellow'].setText("in Datei speichern")
 		self['text_blue'].setText("aus Datei laden")
 		self['text_menu'].setText("Sender zuordnen")
 
-		self['config_information'].show()
-		self['config_information_text'].show()
 		global showAllButtons
 		if not showAllButtons:
-			self['text_0'].setText("Abbrechen")
-			self['text_1'].setText("About")
-			#self['text_3'].setText("IMAP-Test")
-
 			self['bt_red'].show()
 			self['bt_green'].show()
 			#self['bt_ok'].show()
@@ -6298,7 +6280,14 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
-			#self['text_3'].show()
+		else:
+			self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, buttonText_na],
+								[buttonText_na, buttonText_na, "Hilfe"],
+								[buttonText_na, buttonText_na, "Sender zuordnen"])
+
+
 
 	def showManual(self):
 		if OperaBrowserInstalled:
@@ -6635,7 +6624,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			self.list.append(getConfigListEntry("Versuche Timer aus dem EPG zu aktualisieren:", config.plugins.serienRec.eventid))
 			if config.plugins.serienRec.eventid.value:
 				self.list.append(getConfigListEntry("    EPG Suchgrenzen in Minuten:", config.plugins.serienRec.epgTimeSpan))
-			self.list.append(getConfigListEntry("Immer aufnehmen, wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
+			self.list.append(getConfigListEntry("Immer Timer anlegen, wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
 			if config.plugins.serienRec.forceRecording.value:
 				self.list.append(getConfigListEntry("    maximal X Tage auf Wiederholung warten:", config.plugins.serienRec.TimeSpanForRegularTimer))
 			self.list.append(getConfigListEntry("Anzahl der Aufnahmen pro Episode:", config.plugins.serienRec.NoOfRecords))
@@ -6704,6 +6693,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			if config.plugins.serienRec.downloadCover.value:
 				self.list.append(getConfigListEntry("    Speicherort der Cover:", config.plugins.serienRec.coverPath))
 				self.list.append(getConfigListEntry("    Zeige Cover:", config.plugins.serienRec.showCover))
+				self.list.append(getConfigListEntry("    Platzhalter anlegen wenn Cover nicht vorhanden:", config.plugins.serienRec.createPlaceholderCover))
 			self.list.append(getConfigListEntry("Korrektur der Schriftgröße in Listen:", config.plugins.serienRec.listFontsize))
 			self.list.append(getConfigListEntry("Staffel-Filter in Sendetermine Ansicht:", config.plugins.serienRec.seasonFilter))
 			self.list.append(getConfigListEntry("Timer-Filter in Sendetermine Ansicht:", config.plugins.serienRec.timerFilter))
@@ -6919,6 +6909,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 																"  - Wenn 'Zeige Cover' auf 'ja' steht, werden alle Cover heruntergeladen.\n"
 																"  - Wenn 'Zeige Cover' auf 'nein' steht, werden beim Auto-Check nur Cover der Serien-Marker heruntergeladen.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.showCover :               ("Bei 'nein' werden keine Cover angezeigt.", "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.createPlaceholderCover :  ("Bei 'ja' werden Platzhalter Dateien erzeugt wenn kein Cover vorhanden ist - das hat den Vorteil, dass nicht immer wieder nach dem Cover gesucht wird.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.listFontsize :            ("Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.intensiveTimersuche :     ("Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.", "intensive_Suche"),
 			config.plugins.serienRec.sucheAufnahme :           ("Bei 'ja' wird ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv.\n"
@@ -6951,7 +6942,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.writeLogAdded :           ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogDisk :            ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Aufnahmen vorhanden ist.", "Das_Log"),
 			config.plugins.serienRec.writeLogTimeRange :       ("Bei 'ja' erfolgen Einträge in die log-Datei, wenn die zu timende Folge nicht in der erlaubten Zeitspanne (%s:%s - %s:%s) liegt, "
-			                                                    "sowie wenn gemäß der Einstellung 'Immer aufnehmen, wenn keine Wiederholung gefunden wird' = 'ja' "
+			                                                    "sowie wenn gemäß der Einstellung 'Immer Timer anlegen, wenn keine Wiederholung gefunden wird' = 'ja' "
 																"ein Timer ausserhalb der erlaubten Zeitspanne angelegt wird." % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2), str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Das_Log"),
 			config.plugins.serienRec.writeLogTimeLimit :       ("Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der Sendetermin für die zu timende Folge in der Verganhenheit, \n"
 			                                                    "oder mehr als die in 'Timer für X Tage erstellen' eingestellte Anzahl von Tagen in der Zukunft liegt (jetzt also nach %s)." % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))), "Das_Log"),
@@ -7099,6 +7090,7 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 		config.plugins.serienRec.piconPath.save()
 		config.plugins.serienRec.downloadCover.save()
 		config.plugins.serienRec.showCover.save()
+		config.plugins.serienRec.createPlaceholderCover.save()
 		config.plugins.serienRec.listFontsize.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
@@ -8163,7 +8155,8 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self.session.open(serienRecAboutScreen)
 
 	def recSetup(self):
-		self.session.openWithCallback(self.setupClose, serienRecSetup)
+		if self.modus == "menu_list":
+			self.session.openWithCallback(self.setupClose, serienRecSetup)
 
 	def setupClose(self, result):
 		if not result[2]:
@@ -8271,7 +8264,8 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = "%s: Staffel eingeben:" % self.aSerie)
 
 	def keyRed(self):
-		check = self['menu_list'].getCurrent()
+		if self.modus == "menu_list":
+			check = self['menu_list'].getCurrent()
 		if check is None:
 			print "[SerienRecorder] Added-File leer."
 			return
@@ -8285,7 +8279,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.delAdded = True
 
 	def keyGreen(self):
-		if self.delAdded:
+		if self.modus == "menu_list" and self.delAdded:
 			cCursor = dbSerRec.cursor()
 			cCursor.executemany("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", self.dbData)
 			dbSerRec.commit()
@@ -8293,7 +8287,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 		self.close()
 
 	def keyYellow(self):
-		if len(self.addedlist_tmp) != 0:
+		if self.modus == "menu_list" and len(self.addedlist_tmp) != 0:
 			if config.plugins.serienRec.addedListSorted.value:
 				self.addedlist_tmp = self.addedlist[:]
 				self['text_yellow'].setText("Sortieren")

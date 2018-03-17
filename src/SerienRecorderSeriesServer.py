@@ -6,7 +6,7 @@ from SerienRecorderHelpers import *
 
 
 # Constants
-SERIES_SERVER_URL = 'https://www.serienserver.de/cache/cache.php'
+SERIES_SERVER_URL = 'http://www.serienserver.de/cache/cache.php'
 REQUEST_PARAMETER = "?device=" + STBHelpers.getSTBType() + "&version=SR" + SRVERSION + "&uuid=" + STBHelpers.getHardwareUUID()
 
 try:
