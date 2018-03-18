@@ -1,0 +1,12 @@
+{{#each menus}}
+<ul class="nav nav-sidebar">
+{{#if_isactive title}} <li class="active">{{else}} <li>{{/if_isactive}}<a href="{{href}}">{{title}}</a></li>
+{{#if submenus}}
+<ul>
+    {{#each submenus}}
+<li><a href="{{href}}">{{title}}</a></li>
+{{/each}}
+</ul>
+{{/if}}
+</ul>
+{{/each}}
