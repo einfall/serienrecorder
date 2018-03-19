@@ -120,20 +120,29 @@
             <h4 class="sub-header"><strong>Staffel auswählen</strong> <kbd>OK</kbd></h4>
             <div class="row">
                 <p>Über die <kbd>OK</kbd> Taste können für die ausgewählte Serie die Staffeln ausgewählt werden, die bei der Timer-Erstellung berücksichtigt werden sollen.
-                    Mehrfachauswahl ist möglich, allerdings schließen einige der Auswahlmöglichkeiten alle anderen aus, z.B. <strong>Manuell</strong> (schließt alle anderen Einstellungen aus), oder <strong>Alle</strong> (beinhaltet alle anderen Einstellungen, außer <strong>Specials</strong>).
+                    Mehrfachauswahl ist möglich, allerdings schließen einige der Auswahlmöglichkeiten alle anderen aus, z.B. <strong>Manuell</strong> (schließt alle anderen Einstellungen aus), oder <strong>Alle</strong> (beinhaltet alle anderen Einstellungen, außer <strong>Specials</strong>). Dieses Fenster wird mit <kbd>EXIT</kbd> zum speichern geschlossen.
                 </p>
-                <ul>
-                    <li><strong>Manuell:</strong> Der Serien-Marker ist von dem automatischen Suchlauf ausgeschlossen, es können nur manuell Timer über die Sendetermine Ansicht angelegt werden.</li>
-                    <li><strong>Alle:</strong> Der SerienRecorder wird Timer für alle Staffeln erstellen, <u>ohne</u> Specials.</li>
-                    <li><strong>Specials:</strong> Nimmt spezielle Folgen auf, die nicht in das Schema SnnEmm passen. Das kann z.B. „F“ wie Folge sein (öfter bei ORF), auch S oder TÜ usw.</li>
-                    <li><strong>folgende:</strong> Gilt nur in Verbindung mit einer Staffelauswahl darunter und bewirkt das ab der ausgewählten Staffel auch alle folgenden getimert werden. </li>
-                </ul>
-                <div class="thumbnail with-caption">
+				<div class="thumbnail with-caption">
                     <img src="images/staffel-auswaehlen.jpg" alt="Staffeln für einen Serien-Marker auswählen" align="center">
                     <p>
                         <small>Staffeln für einen Serien-Marker auswählen</small>
                     </p>
                 </div>
+                <ul>
+                    <li><strong>Manuell:</strong> Der Serien-Marker ist von dem automatischen Suchlauf ausgeschlossen, es können nur manuell Timer über die Sendetermine Ansicht angelegt werden.</li>
+                    <li><strong>Alle:</strong> Der SerienRecorder wird Timer für alle Staffeln erstellen, <u>ohne</u> Specials.</li>
+                    <li><strong>Specials:</strong> Nimmt spezielle Folgen auf, die nicht in das Schema SnnEmm passen. Das kann z.B. „F“ wie Folge sein (öfter bei ORF), auch S oder TÜ usw.</li>
+                    <li><strong>folgende:</strong> Gilt nur in Verbindung mit einer Staffelauswahl darunter und bewirkt das ab der ausgewählten Staffel auch alle folgenden getimert werden. Was aber nicht für "00" gilt, denn dies ist für Serien <u>ohne</u> Staffel-Einteilung. </li>
+					<li><strong>00 :</strong> Dies ist für Serien, die keine Staffel-Einteilung haben, wie z.B Tatort. Dazu ist es wichtig, alles andere abzuwählen und nur "00" zu aktivieren (siehe ähnlich unterem Screenshot). Dies wird dann mit <kbd>EXIT</kbd> zum bestätigen geschlossen, worauf sich dann eine Eingabemaske öffnet, wo man einstellt, ab welcher Episode Timer erstellt werden sollen. </li>
+					<br><br>
+					<div class="thumbnail with-caption">
+                    <img src="images/staffel00.png" alt="Staffel 00 für einen Serien-Marker auswählen" align="center">
+                    <p>
+                        <small>Staffel 00 für einen Serien-Marker auswählen</small>
+                    </p>
+                </div>
+                </ul>
+                
             </div>
             <span id="sendetermine" class="anchor"></span>
 			
