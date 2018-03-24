@@ -71,7 +71,7 @@
                 </p>
 				<br>
 			<div class="alert alert-info" role="alert">Je nach Einstellung kann der SerienRecorder entweder in dieser Ansicht oder mit der Serien-Marker Ansicht gestartet werden.
-                    Startet man mit der SerienMarker Ansicht, kommt man mit <kbd>lang Exit</kbd> in die Serien-Planer Ansicht.</div>
+                    Startet man mit der Serien-Marker Ansicht, kommt man mit <kbd>lang Exit</kbd> in die Serien-Planer Ansicht.</div>
 			
 <!-- Die Farbtasten -->			
 			
@@ -102,11 +102,11 @@
 					
 				</ul>
 				<br>
-				<p>Mit der <kbd>OK</kbd> Taste wird die gerade selektierte Serie als SerienMarker dem SerienRecorder (SR) hinzugefügt, dabei ist es egal, in welcher der beiden Ansichten man sich befindet.
+				<p>Mit der <kbd>OK</kbd> Taste wird die gerade selektierte Serie als Serien-Marker dem SerienRecorder (SR) hinzugefügt, dabei ist es egal, in welcher der beiden Ansichten man sich befindet.
 				<br>Das Hinzufügen von Serien wird unter <a href="serie-hinzufügen.htm">Serie/Marker hinzufügen</a> genauer beschrieben.
 				</p>
 				<p>
-                    Ist für eine der angezeigten Serien bereits ein SerienMarker vorhanden, wird der Eintrag in <span class="greenfont">grüner Schrift</span> dargestellt.
+                    Ist für eine der angezeigten Serien bereits ein Serien-Marker vorhanden, wird der Eintrag in <span class="greenfont">grüner Schrift</span> dargestellt.
 				</p>
 				<p>Zusätzlich gibt es folgende Symbole an den Zeilen:<br/>
 				<ul>	
@@ -117,15 +117,23 @@
 				</p>
             </div>
 			<br><br>
+			
+<!-- Senderzuordnung -->			
+			
             <span id="sender-zuordnen" class="anchor"></span>
 			
             <h4 class="sub-header"><kbd class="green">Sender zuordnen</kbd></h4>
             <div class="row">
-				<p>Die Senderzuordnung wird idR mit <kbd class="green">GRÜN</kbd> aufgerufen, außer beim ersten Start des SR wird diese sofort gestartet, um die eigenen Sender den Sendernamen von WL zuordnen. Dies ist notwendig, da manche Sender auf WL einen leicht anderen Namen tragen, als der auf Eurer Box. Die automatische Zuordnung <kbd class="blue">BLAU</kbd> kann zwar einige Sender schon vorab richtig zuordnen, aber trotzdem muss man selbst noch meist ein paar Sender zuordnen, indem man auf einem selektierten Sender die <kbd>OK</kbd> Taste drückt. Auf der WL-Seite wird idR nicht unterschieden zwischen SD und HD Sendern, also muss man selbst dafür Sorge tragen, das den WL Sendern, falls gewünscht, Eure HD Sender zugeordnet werden. 
-				<br><br>Man kann noch zusätzlich „alternative Sender“ angeben, die dann zur Timererstellung genutzt werden, falls es Konflikte gibt. Für die alternativen Sender ist es erforderlich, das man 2 Bouquets auf der Box angelegt hat. Eines für die "normalen" Sender und eines für die alternativen Sender. Dies muss dann auch in den globalen Einstellungen aktiviert sein.
-				<br>In der Senderzuordnung lässt sich auch mit der Taste <kbd>MENÜ</kbd> für einzelne Sender ein individueller Vor- und Nachlauf einstellen. Dies ist von Vorteil, wenn ein Sender gerne mal Sendetermine um einige Minuten verschiebt, evtl. auch ohne es im EPG zu zeigen.
-				<br><br>Innerhalb der Senderzuordnung kann man mit <kbd class="green">Aktualisieren</kbd> die Senderliste der WL-Seite aktualisieren. Dies ist nötig, wenn sich der Name eines Senders auf der WL Webseite geändert hat, sei es, weil sich der Name wirklich geändert hat oder weil WL den Namen für sich intern geändert hat.
-				<br>Mit <kbd class="red">ROT</kbd> werden die Sender aktiviert oder deaktiviert - und mit <kbd class="red">lang ROT</kbd> können Sender gelöscht werden.
+				<p>Die Senderzuordnung wird idR mit <kbd class="green">GRÜN</kbd> aufgerufen, außer beim ersten Start des SR wird diese sofort gestartet, um die eigenen Sender den Sendernamen von Wunschliste (WL) zuzuordnen. Dies ist notwendig, da manche Sender auf WL einen leicht anderen Namen tragen, als der auf Eurer Box. Die automatische Zuordnung <kbd class="blue">BLAU</kbd> kann zwar einige Sender schon vorab richtig zuordnen, aber trotzdem muss man selbst noch meist ein paar Sender zuordnen, indem man auf einem selektierten Sender die <kbd>OK</kbd> Taste drückt. Auf der WL-Seite wird idR nicht unterschieden zwischen SD und HD Sendern, also muss man selbst dafür Sorge tragen, das den WL Sendern, falls gewünscht, Eure HD Sender zugeordnet werden. 
+				<br>Hat man mehrere Bouquets angelegt, werden diese bei der Auswahl der Sender nacheinander angezeigt, weshalb man dann schon mal weiter runter scrollen muss, bis man den richtigen Sender gefunden hat, um ihn auszuwählen.
+				</p>
+				<p>Man kann noch zusätzlich „alternative Sender“ angeben, die dann zur Timererstellung genutzt werden, falls es Konflikte gibt. Für die alternativen Sender ist es erforderlich, das man mind. 2 Bouquets auf der Box angelegt hat. Dann muss man noch in der Einstellung <a href="einstellungen.htm#bouquets-auswählen"><strong><u>Bouquets auswählen</u></strong></a> eines für die "normalen" Sender und eines für die alternativen Sender zuordnen. Hier wird dann idR als "alternativer Sender" die SD Variante eines HD-Senders genutzt.
+				</p>
+				<p>In der Senderzuordnung lässt sich auch mit der Taste <kbd>MENÜ</kbd> für einzelne Sender ein individueller Vor- und Nachlauf einstellen. Dies ist von Vorteil, wenn ein Sender gerne mal Sendetermine um einige Minuten verschiebt, evtl. auch ohne es im EPG zu zeigen.
+				</p>
+				<p>Innerhalb der Senderzuordnung kann man mit <kbd class="green">Aktualisieren</kbd> die Senderliste der WL-Seite aktualisieren. Dies ist nötig, falls ein neuer Sender dazu kommt oder wenn sich der Name eines Senders auf der WL Webseite geändert hat, sei es, weil sich der Name wirklich geändert hat oder weil WL den Namen für sich intern geändert hat.
+				</p>
+				<p>Mit <kbd class="red">ROT</kbd> werden die Sender aktiviert oder deaktiviert - und mit <kbd class="red">lang ROT</kbd> können Sender gelöscht werden.
 				</p>
             </div>
 			<div class="alert alert-info" role="alert">
@@ -134,11 +142,11 @@
 			<br><br>		
             <span id="serien-marker" class="anchor"></span>
 		
-            <h4 class="sub-header"><kbd class="yellow">SerienMarker</kbd></h4>
+            <h4 class="sub-header"><kbd class="yellow">Serien-Marker</kbd></h4>
             <div class="row">
-                <p>Mit <kbd class="yellow">GELB</kbd> gelangt man in die SerienMarker Ansicht. Damit eine Serie beim automatischen Suchlauf (und damit bei der Erstellung von Timern) berücksichtigt wird, muss die Serie dem SerienRecorder zunächst hinzugefügt werden.
-                Die SerienMarker Ansicht zeigt die Serien an, für die ein SerienMarker angelegt wurde.</p>
-                <p>Eine genaue Beschreibung der SerienMarker Ansicht ist unter <a href="serienmarker.htm">SerienMarker</a> beschrieben.</p>
+                <p>Mit <kbd class="yellow">GELB</kbd> gelangt man in die Serien-Marker Ansicht. Damit eine Serie beim automatischen Suchlauf (und damit bei der Erstellung von Timern) berücksichtigt wird, muss die Serie dem SerienRecorder zunächst hinzugefügt werden.
+                Die Serien-Marker Ansicht zeigt die Serien an, für die ein Serien-Marker angelegt wurde.</p>
+                <p>Eine genaue Beschreibung der Serien-Marker Ansicht ist unter <a href="serienmarker.htm">Serien-Marker</a> beschrieben.</p>
             </div>
 			<br><br>
             <span id="timer-liste" class="anchor"></span>
@@ -172,8 +180,8 @@
 				</tr>
 				<tr class="success"> 
 					<td><kbd class="yellow">GELB</kbd></td> 
-					<td>SerienMarker</td> 
-					<td><a href="serienmarker.htm"><strong><u>SerienMarker</u></strong></a></td> 
+					<td>Serien-Marker</td> 
+					<td><a href="serienmarker.htm"><strong><u>Serien-Marker</u></strong></a></td> 
 				</tr>
 				<tr> 
 					<td><kbd class="blue">BLAU</kbd></td> 

@@ -46,7 +46,7 @@
             <div id="sidebar-menu"></div>
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-            <h1 class="page-header">Sonstige Funktionen &nbsp; &nbsp; &nbsp; &nbsp;(in Arbeit)</h1>
+            <h1 class="page-header">Sonstige Funktionen</h1>
             <div class="row">
                 <p class="lead">
                    Auf dieser Seite werden weitere Funktionen des SerienRecorder (SR) vorgestellt. Die Beispielscreenshots sind mit verschiedenen Skins erstellt worden und können bei dem jeweiligen User natürlich anders aussehen.
@@ -59,9 +59,15 @@
 				<br>	
                 <ul>
 				<p>Cover von den jeweiligen Serien dienen der "Verschönerung" der Ansicht im SerienRecorder (SR), die dann mit einem entsprechenden Skin angezeigt werden können.
+				<br>Dafür ist es notwendig, das man vom SerienRecorder (SR) <a href="einstellungen.htm#cover-herunterladen"><strong><u>Cover herunterladen</u></strong></a> lässt. Diese werden dann beim Scrollen durch die verschiedenen Listen der Serien heruntergeladen und angezeigt, wenn so eingestellt. Am Anfang ist die Bedienung des SR teilweise zäh bzw. hakelig, da die Cover für die jeweils selektierte Serie noch heruntergeladen werden muss. Sind für die Serien die Cover vorhanden, geht das Scrollen wieder flüssig, außer dort, wo keine Cover gefunden werden konnten, denn dort wird jedes mal beim Scrollen versucht, ein Cover nachzuladen, weshalb es sinnvoll ist, die Option, <a href="einstellungen.htm#cover-herunterladen"><strong><u>"Platzhalter anlegen"</u></strong></a>, zu aktivieren.
+				</p>
+				<p>Wenn man vom SerienRecorder (SR) automatisch <a href="einstellungen.htm#s+s-verzeichnis-anlegen"><strong><u>Serien- oder Serien+Staffel-Verzeichnisse</u></strong></a> anlegen lässt und auch <a href="einstellungen.htm#cover-herunterladen"><strong><u>Cover herunterladen</u></strong></a> aktiviert ist, werden bei der Timererstellung bzw. beim Auto-Check auch Cover für Serien- oder Serien+Staffel-Verzeichnisse angelegt, mit dem Namen "folder.jpg". Diese können dann in einem Player, z.B. in der VTI eigenen Movielist, angezeigt werden. 
+				<br>Ist die Option <strong><u>Serien- oder Serien+Staffel-Verzeichnisse</u></strong> anlegen <strong><u>nicht</u></strong> aktiviert, aber für einzelne (oder auch alle) Serien hat man im Marker-Menü ein <a href="serienmarker.htm#serien-menu"><strong><u>"vom globalen Setup abweichender Speicherort der Aufnahmen:"</u></strong></a> eingestellt, werden dafür <strong><u>keine</u></strong> Verzeichnis-Cover geladen.
+				</p>
+				<p>Lässt man vom SR nur Serienverzeichnisse anlegen, aber für manche Serien wird ein <strong>"vom globalen Setup abweichender Speicherort der Aufnahmen:"</strong> auch zusätzlich ein Staffelverzeichnis genutzt, dann werden trotzdem auch hierfür nur Serien-Verzeichnis-Cover angelegt.
 				</p>
 				<br>
-				<p><h4><strong>Beispiel Screenshot für eine Anzeige mit Cover</strong></h4></p>
+				<p><h4><strong>Beispiel Screenshot für eine Anzeige mit Cover im SR</strong></h4></p>
                 <div class="thumbnail with-caption">
                     <img src="images/serienmarker02.jpg" alt="Serien-Marker Ansicht mit Cover" align="center">
 
@@ -147,11 +153,11 @@
 				<ul>	
                 <p>Mithilfe der Funktion Merkzettel können Serien-Episoden "vorgemerkt" werden, damit für diese dann vom SR ein Timer angelegt wird. Dabei werden sämtliche Einschränkungen, die für "normale" Timer gelten, auch beachtet. Allerdings werden natürlich keine Staffeleinschränkungen beachtet, es wird genau die vorgemerkte Episode versucht zu timern.
 				</p>
-				<p>Der Merkzettel wird mit Taste <kbd>7</kbd> geöffnet. Dort lassen sich dann mit <kbd>OK</kbd> neue Eintäge anlegen. 
+				<p>Der Merkzettel wird mit Taste <kbd>7</kbd> geöffnet. Dort lassen sich dann mit <kbd>OK</kbd> neue Einträge anlegen. 
 				<br>Danach muss man noch "Staffel", "von Episode" und "bis Episode" eingeben, wobei letztere beiden auch gleich sein können, wenn nur EINE Episode vorgemerkt werden soll. Hat man alles erledigt, werden mit <kbd class="green">Speichern</kbd> alle Änderungen übernommen.
 				<br>Mit <kbd class="red">Eintrag löschen</kbd>, lässt sich der gerade selektierte Eintrag der Liste löschen und mit <kbd class="blue">Liste leeren</kbd> werden ALLE Einträge dieser Liste gelöscht.
 				</p>
-				<p>Diese Liste lässt sich auch mit <kbd class="yellow">GELB</kbd> in zwei Arten "sortiert" anzeigen, in alphabetischer Rheihenfolge und so, wie man sie zeitlich erstellt hat.
+				<p>Diese Liste lässt sich auch mit <kbd class="yellow">GELB</kbd> in zwei Arten "sortiert" anzeigen, in alphabetischer Reihenfolge und so, wie man sie zeitlich erstellt hat.
 				</p>
 				<br>
 				<p><h4><strong>Beispiel Screenshot für den Merkzettel</strong></h4></p>
@@ -173,7 +179,7 @@
                 <ul>
 				<p>Mit dieser Anzeige werden Serien-/Staffelstarts angezeigt, welche dann auch direkt mit der <kbd>OK</kbd> Taste dem SR hinzugefügt werden können. Je nach Anzeige-Modus, der mit <kbd class="yellow">GELB</kbd> gewechselt werden kann, werden entweder alle Staffelstarts oder aber nur Serienstarts die mit Staffel01/Episode01 beginnen, der nächsten Tage angezeigt.
 				</p>
-				<p>Die Daten für die Serien-/Staffelstart Ansicht werden von unserem SerienServer generiert und zeigen immer nur Serien der im SerienRecorder zugewiesenen Sender an. Es macht ja keinen Sinn hier Serien anzuzeigen, die auf Sendern ausgestrahlt werden, die man selbst nicht empfangen kann. 
+				<p>Die Daten für die Serien-/Staffelstart Ansicht werden von unserem SerienServer generiert und zeigen immer nur Serien der im SerienRecorder zugewiesenen Sender an. Es würde ja keinen Sinn ergeben, hier Serien anzuzeigen, die auf Sendern ausgestrahlt werden, die man selbst nicht empfangen kann. 
 				</p>
 				<br>
 				<p><h4><strong>Beispiel Screenshot für eine Anzeige der Staffelstarts</strong></h4></p>
