@@ -51,6 +51,10 @@ def SelectSkin():
 	global skin
 	skin = default_skin
 
+	if "FHD" in config.plugins.serienRec.SkinType.value and DESKTOP_WIDTH < 1920:
+		config.plugins.serienRec.SkinType.value = ""
+		config.save()
+
 	if config.plugins.serienRec.SkinType.value == "Skinpart":
 		try:
 			from skin import lookupScreen
@@ -111,6 +115,7 @@ def InitSkin(self):
 	global skinName
 
 	self.skinName = skinName
+
 	if skin:
 		try:
 			SRSkin = open(skin)

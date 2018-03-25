@@ -24,7 +24,7 @@ import datetime, os, re, urllib2, sys, time
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.6.7-beta'
+SRVERSION = '3.6.8-beta'
 
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
@@ -59,7 +59,7 @@ def decodeCP1252(txt, replace=False):
 	return txt
 
 def doReplaces(txt):
-	txt = txt.replace('...','').replace('..','').replace(':','')
+	txt = txt.replace('...','').replace('..','').replace(':','').replace('/',' ')
 	txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
 	txt = txt.replace("'", '')
 	txt = re.sub(r"\[.*\]", "", txt).strip()

@@ -327,7 +327,7 @@ else:
 	VPSPluginAvailable = True
 
 
-SR_OperatingManual = "file://usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html"
+SR_OperatingManual = "http://einfall.github.io/serienrecorder/"
 
 # init Opera Webbrowser
 if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/HbbTV/browser.pyo"):
@@ -634,6 +634,19 @@ def getAlreadyAdded(serie, searchOnlyActiveTimers = False):
 	rows = cCursor.fetchall()
 	cCursor.close()
 	return rows
+
+def getRecordDirectories():
+	global dbSerRec
+	directories = []
+	cCursor = dbSerRec.cursor()
+	cCursor.execute("SELECT distinct(AufnahmeVerzeichnis) FROM SerienMarker WHERE AufnahmeVerzeichnis NOT NULL")
+	for row in cCursor:
+		(AufnahmeVerzeichnis,) = row
+		if AufnahmeVerzeichnis:
+			directories.append(AufnahmeVerzeichnis)
+	cCursor.close()
+	directories.append(config.plugins.serienRec.savetopath.value)
+	return directories
 
 def getDirname(serien_name, staffel):
 	global dbSerRec
@@ -2599,8 +2612,17 @@ class serienRecCheckForRecording():
 			# in den deep-standby fahren.
 			self.askForDSB()
 			return
-		
-		
+
+		# Versuche Verzeichnisse zu erreichen
+		try:
+			writeLog("\nPrüfe konfigurierte Aufnahmeverzeichnisse:", True)
+			recordDirectories = getRecordDirectories()
+			for directory in recordDirectories:
+				writeLog("   %s" % directory, True)
+				os.path.exists(directory)
+		except:
+			writeLog("Es konnten nicht alle Aufnahmeverzeichnisse gefunden werden", True)
+
 		# suche nach neuen Serien, Covern und Planer-Cache
 		if (not self.manuell) and (config.plugins.serienRec.firstscreen.value == "0") and config.plugins.serienRec.planerCacheEnabled.value:
 			self.startCheck2()
@@ -2608,9 +2630,10 @@ class serienRecCheckForRecording():
 			self.startCheck3()
 
 	def startCheck2(self):
+		webChannels = getWebSenderAktiv()
+		writeLog("\nAnzahl aktiver Websender: %d" % len(webChannels), True)
 		writeLog("\nLaden der SerienPlaner-Daten gestartet ...", True)
 
-		webChannels = getWebSenderAktiv()
 		markers = getAllMarkers()
 		downloadPlanerDataResults = []
 		for daypage in range(int(config.plugins.serienRec.planerCacheSize.value)):
@@ -6896,8 +6919,8 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.TimerName :               ("Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
 																"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden."
 																"In diesem Fall funktioniert aber die Funktion 'Zeige ob die Episode als Aufnahme auf der HDD ist' nicht, weil der Dateiname die nötigen Informationen nicht enthält.", "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.selectBouquets :          ("Bei 'ja' werden 2 Bouquets (Standard und Alternativ) für die Sender-Zuordnung verwendet werden.\n"
-			                                                    "Bei 'nein' wird das erste Bouquet für die Sender-Zuordnung benutzt.", "Bouquet_Auswahl"),
+			config.plugins.serienRec.selectBouquets :          ("Bei 'ja' können 2 Bouquets (Standard und Alternativ) für die Sender-Zuordnung verwendet werden.\n"
+			                                                    "Bei 'nein' werden alle Bouquets (in einer Liste zusammengefasst) für die Sender-Zuordnung benutzt.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.MainBouquet :             ("Auswahl, welches Bouquet bei der Sender-Zuordnung als Standard verwendet werden soll.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.AlternativeBouquet :      ("Auswahl, welches Bouquet bei der Sender-Zuordnung als Alternative verwendet werden soll.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.useAlternativeChannel :   ("Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "
@@ -7212,7 +7235,7 @@ class serienRecChannelSetup(Screen, ConfigListScreen, HelpableScreen):
 		cCursor.execute("SELECT Vorlaufzeit, Nachlaufzeit, vps FROM Channels WHERE LOWER(WebChannel)=?", (self.webSender.lower(),))
 		row = cCursor.fetchone()
 		if not row:
-			row = (None, None, None)
+			row = (None, None, 0)
 		(Vorlaufzeit, Nachlaufzeit, vps) = row
 		cCursor.close()
 
@@ -8686,7 +8709,7 @@ class serienRecWishlist(Screen, HelpableScreen):
 			self.wishlist_tmp.remove(zeile)
 			self.wishlist.remove(zeile)
 			self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
-			self.delAdded = True;
+			self.delAdded = True
 			
 	def keyGreen(self):
 		if self.delAdded:
@@ -9304,7 +9327,7 @@ class serienRecMain(Screen, HelpableScreen):
 			if self.loading:
 				return
 				
-			self.session.open(Browser, True, "file:///usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/Help/SerienRecorder.html")
+			self.session.open(Browser, True, SR_OperatingManual)
 		else:
 			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
 			
