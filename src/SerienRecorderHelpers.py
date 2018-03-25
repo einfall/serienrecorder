@@ -59,7 +59,7 @@ def decodeCP1252(txt, replace=False):
 	return txt
 
 def doReplaces(txt):
-	txt = txt.replace('...','').replace('..','').replace(':','').replace('/',' ')
+	txt = txt.replace('...','').replace('..','').replace(':','').replace('/','-')
 	txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
 	txt = txt.replace("'", '')
 	txt = re.sub(r"\[.*\]", "", txt).strip()
