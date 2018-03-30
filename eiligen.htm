@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="./favicon.ico">
+
+    <title>SerienRecorder Anleitung - Für die ganz Eiligen</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="./css/serienrecorder.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            
+            <a class="navbar-brand" href="#">SerienRecorder Anleitung</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+                <li><img id="logo" src="images/plugin.png"></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+            <div id="sidebar-menu"></div>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <h1 class="page-header">Für die ganz Eiligen bzw. die, die schnell ein Ergebnis sehen wollen.</h1>
+            <div class="row">
+                <p class="lead">
+                    Hier soll nur kurz und knapp erklärt werden, wie man eine Serie anlegt und die dazu nötigsten Einstellungen macht. Damit kann man schon mal "schnell" testen, ob der SerienRecorder (SR) grundsätzlich funktioniert und man lernt schon mal ein paar Funktionen kennen.
+                </p>
+				<p>Nach der <a href="index.htm#installation"><strong><u>Installation</u></strong></a> und dem Start des SR, muss als Erstes die <a href="serienplaner.htm#sender-zuordnen"><strong><u>Senderzuordnung</u></strong></a> erledigt werden. Dies ist am Anfang das Wichtigste, damit die Sender auf der Box denen von der Wunschliste (WL) Webseite zugeordnet werden, da die Sendernamen auf WL teilweise anders bezeichnet sind. Es wird auf WL idR auch nicht unterschieden zwischen SD und HD Sendern, weshalb man selbst dafür sorgen muss, das die eigenen "richtigen" Sender denen von WL zugeordnet werden.
+				<br>Es ist auch anzuraten, ALLE Sender, von denen man gedenkt etwas aufzunehmen, zuzuordnen, denn nur von diesen bekommt man in der Serien-Planer Ansicht auch Serien angezeigt. Zudem besteht das Problem, wenn eine Serie hinzugefügt wird, die auf einem <strong>"nicht zugeordneten Sender"</strong> ausgestrahlt wird, kann diese dann "logischerweise" <strong>NICHT</strong> getimert werden.
+				</p>
+				<p>Nachdem die Senderzuordnung erledigt ist, kann man beginnen noch ein paar Einstellungen zu tätigen.
+				<br>Dazu drückt man <kbd>Menü</kbd>, um die <a href="einstellungen.htm"><strong><u>Globalen Einstellungen</u></strong></a> zu öffnen.
+				</p>
+                <p>Die ersten Optionen sind noch nicht wichtig, wie z.B. der Speicherort der Aufnahmen, denn der wird erstmal vom System übernommen.
+				<br>Wir scrollen runter bis zur Rubrik <strong>"Auto-check"</strong>. Dort stellen wir bei <strong>"Automatischen Suchlauf ausführen"</strong> ein <strong>"zur gewählten Uhrzeit"</strong>. Darunter stellen wir dann die Uhrzeit für den Suchlauf z.B. auf <strong>"13:00"</strong>. Somit würde jeden Tag um 13:00 Uhr ein Auto-Check (AC) ausgeführt.
+				<br>Danach stellen wir noch <strong>"Timer für x Tage erstellen"</strong> auf <strong>"08"</strong> ein, womit dann bei einem AC die Episoden der zu verarbeitenden Serien für die nächsten 8 Tage getimert würden.
+				</p>
+				<p>Evtl. noch "interessant", die Skin-Einstellung weiter unten. Sollte der SR nicht (annähernd) bildschirmfüllend sein, sollte man diese Optionen mal durch testen. Falls dies nicht hilft, dann in "seinem" Skin-Thread nachschauen bzw. nachfragen, ob es einen Skinpart für den SR gibt. Es gibt auch Skins bzw. Skin-Parts mit EXTRA Großer Schrift.
+				</p>
+				<p>Der SR ist jetzt soweit eingestellt, das man mit dem Hinzufügen von Serien mit Standardeinstellungen beginnen kann. Die Timer werden so erstellt, das diese im Standard-Aufnahme-Verzeichnis der Box landen, welches idR <strong>/media/hdd/movie/</strong> ist.
+				</p>
+				<p><strong><u>Hier ein „Quickie“ für die ganz eiligen: </u></strong>
+				<br><br>SR starten => <kbd>OK</kbd>, um die Werbung wegzudrücken => Mit <kbd class="red">ROT</kbd> auf Tagesübersicht wechseln, falls Top 30 angezeigt wird => auf eine Serie (zum Testen) gehen, die frühestens in 15 min beginnt => <kbd>OK</kbd> drücken => Jetzt (in der SerienMarker-Ansicht) ist die Serie hinzugefügt und wird, mit den Standard-Einstellungen, im Hauptaufnahmeverzeichnis der Box (idR <strong>/media/hdd/movie/</strong>) getimert, indem wir <kbd>laaang EPG</kbd> drücken => Das kann jetzt einen Moment (zwischen ein paar Sek. und ca. 2 Minuten) dauern, denn der AC läuft => Danach wird ein Fenster mit dem Ergebnis angezeigt => Jetzt so häufig <kbd>EXIT</kbd> drücken, bis wir aus dem SR raus sind => Nachschauen ob der Timer erstellt wurde => Warten, ob die Aufnahme beginnt. Fertig.
+				<br>Nun können wir auch noch weitere Serien hinzufügen und auch die TEST-Serie ggf. in der Serien-Marker Ansicht löschen.
+				</p>
+				<br>
+				<p><strong><u>Und nun etwas ausführlicher </u></strong>
+				<br><br>
+				Nachdem die Installation, Senderzuordnung und die ersten Einstellungen gemacht sind, können wir dazu übergehen, die erste Serie zum SR hinzuzufügen.
+				<br>Am Anfang ist es am einfachsten, eine Serie über die Serien-Planer Ansicht als Marker dem SR hinzuzufügen. Dazu selektieren wir eine Serie (zum Testen), die frühestens in 15 min beginnt und drücken <kbd>OK</kbd>. Damit wird die Serie dem SR als Marker hinzugefügt und die Ansicht wechselt automatisch in die Marker Ansicht. Hier lassen sich noch, für jede Serie einzeln, diverse Einstellungen tätigen, indem man auf einer selektierten Serie <kbd>Menü</kbd> betätigt, was aber für die erste Serie (zum Testen) nicht relevant ist.
+				<br>Für die soeben hinzugefügte Serie sollen nun auch Timer erstellt werden, was wir mit der Taste <kbd>EPG/Info</kbd> auslösen. Nun läuft der Auto-Check (AC), was zwischen ein paar Sek. und ca. 2 Minuten dauern kann, abhängig von Leistung der Box und dem Internet. Im Anschluss daran wird das Ergebnis in einem neuen Fenster gezeigt, was das gerade erstellte Log darstellt, welches auch idR im SerienRecorder Plugin-Verzeichnis zu finden ist.
+				</p>
+				<p>Jetzt den SR verlassen, indem man so häufig <kbd>EXIT</kbd> drückt, bis der SR beendet ist. Nun  nachsehen, ob der Timer erstellt wurde und abwarten, ob das System die Aufnahme ausführt. Der SR erstellt nur die Timer und ist nicht für die anschließende Aufnahme zuständig.
+				<br>Da wir die Serie über die Serien-Planer Ansicht hinzugefügt haben, wo nur Serien auf Sendern angezeigt werden, die man auch zugeordnet hat, dürften also auch keine weiteren Probleme auftauchen.
+				</p>
+				<p>Nun können wir auch noch weitere Serien hinzufügen und auch die TEST-Serie ggf. in der Serien-Marker Ansicht mit <kbd class="red">lang ROT</kbd> löschen. Die weiteren Serien können nun auch über die <a href="serie-hinzufügen.htm"><strong><u>anderen Wege</u></strong></a> zum SR hinzugefügt werden, da man ja jetzt "seine" eigenen Serien hinzugefügt, die man auch schauen möchte.
+				</p>
+				<br><br><br><br>
+				<div class="center"><a href="timer-liste.htm"><strong>[Seitenanfang]</strong></a> &nbsp; &nbsp; &nbsp; &nbsp;<a href="index.htm"><strong>[Startseite]</strong></a></div>
+				<br><br><br><br>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="./js/bootstrap.min.js"></script>
+<script src="./js/handlebars.runtime.js"></script>
+<script src="./js/sidebar-nav-template.js"></script>
+<script src="./js/sidebar-nav.js"></script>
+<!-- Die Sidebar scrollt auf das aktive Element -->
+<script>
+$(document).ready(function () {
+	var sidebar = $('.sidebar');
+	var offset = $('.active').offset().top-70;
+    sidebar.animate({
+        scrollTop: offset
+    }, 'slow');
+});
+</script>
+<!-- Die Sidebar scrollt auf das aktive Element -->
+</body>
+</html>
