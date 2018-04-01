@@ -101,10 +101,13 @@
 				<br>
 <!-- Episoden-Liste -->
 				<span id="episodenliste" class="anchor"></span>
-				<h3 class="sub-header"><strong>Episoden-Liste</strong></h3>
+				<h3 class="sub-header"><strong>Episoden-Liste&nbsp; &nbsp;<kbd>5</kbd></strong></h3>
 				<br>
+				<div class="alert alert-danger">
+                    <strong>WICHTIG: </strong> Die Episoden-Liste lässt sich <strong>NICHT</strong> aus der <u>Serien-Planer Ansicht</u> heraus aufrufen, denn dort startet man damit den IMAP-Test.
+            </div>
 				<ul>
-                <p>Die Daten für die <strong>Episoden-Liste</strong> werden von <a href="https://www.thetvdb.com/" target="_blank">TheTVDB.com</a> geholt, da der SerienRecorder diese nicht mehr von Wunschliste.de (WL) beziehen darf. Der Nachteil dabei ist, das nicht alles gleich bezeichnet ist, wie auf WL. Auf TheTVDB werden z.B. Specials anders bezeichnet als auf WL, was evtl. zu Problemen führen kann. Sollte also jemandem auffallen, das es in dieser Hinsicht "Fehler" gibt, ist ein Feedback im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765" target="_blank">VU+ Support Forum</a> erwünscht.
+                <p>Die Daten für die <strong>Episoden-Liste</strong> werden von <a href="https://www.thetvdb.com/" target="_blank">TheTVDB.com</a> geholt, da der SerienRecorder diese nicht mehr von Wunschliste.de (WL) beziehen darf. Der Nachteil dabei ist, das nicht alles gleich bezeichnet ist, wie auf WL. Auf <strong>TheTVDB</strong> werden z.B. Specials anders bezeichnet als auf WL, was evtl. zu Problemen führen kann. Sollte also jemandem auffallen, das es in dieser Hinsicht "Fehler" gibt, ist ein Feedback im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765" target="_blank">VU+ Support Forum</a> erwünscht.
 				</p>
 				<p>Die Episoden mit einem grünen Haken sind bereits in der Datenbank (DB) vorhanden und werden nicht mehr getimert, wogegen die mit dem roten x nicht in der DB stehen und bei Ausstrahlung getimert werden, sofern von den Einstellungen her nichts dagegen spricht.
 				</p>
@@ -128,7 +131,7 @@
 								
 <!-- Konflikt-Liste -->				
 				<span id="konfliktliste" class="anchor"></span>
-				<h3 class="sub-header"><strong>Konflikt-Liste</strong></h3>
+				<h3 class="sub-header"><strong>Konflikt-Liste&nbsp; &nbsp;<kbd>6</kbd></strong></h3>
 				<br>
 				<ul>
                 <p>Die <strong>Konflikt-Liste</strong> wird mit Taste <kbd>6</kbd> geöffnet. Hier werden die Timer angezeigt, welche wegen eines Konflikts deaktiviert angelegt wurden. Es besteht also Handlungsbedarf seitens des Users, den/die Konflikt(e) zu beheben.
@@ -148,7 +151,7 @@
 				
 <!-- Merkzettel -->				
 				<span id="merkzettel" class="anchor"></span>
-				<h3 class="sub-header"><strong>Merkzettel</strong></h3>
+				<h3 class="sub-header"><strong>Merkzettel&nbsp; &nbsp;<kbd>7</kbd></strong></h3>
 				<br>
 				<ul>	
                 <p>Mithilfe der Funktion Merkzettel können Serien-Episoden "vorgemerkt" werden, damit für diese dann vom SR ein Timer angelegt wird. Dabei werden sämtliche Einschränkungen, die für "normale" Timer gelten, auch beachtet. Allerdings werden natürlich keine Staffeleinschränkungen beachtet, es wird genau die vorgemerkte Episode versucht zu timern.
@@ -174,11 +177,11 @@
 				
 <!-- Neue Serienstarts -->				
 				<span id="serienstarts" class="anchor"></span>
-				<h3 class="sub-header"><strong>Neue Serienstarts</strong></h3>
+				<h3 class="sub-header"><strong>Neue Serienstarts&nbsp; &nbsp;<kbd>3</kbd></strong></h3>
 				<br>	
                 <ul>
-				<p>Mit dieser Anzeige werden Serien-/Staffelstarts der nächsten Tage angezeigt, entweder alle Staffelstarts oder aber nur Serienstarts die mit Staffel<strong>01</strong>/Episode<strong>01</strong> beginnen. Der Anzeige-Modus kann mit <kbd class="yellow">GELB</kbd> gewechselt werden.
-				<br>Serien, die bereits als Marker im SerienRecorder (SR) vorhanden sind, werden in <span class="greenfont"><strong>grüner Schrift</strong></span> dargestellt.
+				<p>Mit dieser Ansicht, die mit Taste <kbd>3</kbd> geöffnet wird, werden Serien-/Staffelstarts der nächsten Tage angezeigt, entweder alle Staffelstarts oder aber nur Serienstarts die mit Staffel<strong>01</strong>/Episode<strong>01</strong> beginnen. Der Anzeige-Modus kann mit <kbd class="yellow">GELB</kbd> gewechselt werden.
+				<br>Serien, die bereits als aktiver Marker im SerienRecorder (SR) vorhanden sind, werden in <span class="greenfont"><strong>grüner Schrift</strong></span>, deaktivierte Marker werden in <span class="redfont"><strong>roter Schrift</strong></span> dargestellt.
 				</p>
 				<p>Die gerade selektierte Serie kann dann auch direkt mit der <kbd>OK</kbd> Taste dem SR hinzugefügt werden. Hierbei ist zu beachten, das es bei Serien, die schon im SR als Marker vorhanden sind, <strong>"Sonderregelungen"</strong> gibt.
 				<ul>
@@ -187,6 +190,7 @@
 				</li>
 				<li>Das gilt analog auch für die Senderbeschränkung, wenn also der Marker z.B. auf "Pro7" eingeschränkt, die neue Staffel aber jetzt laut Staffelstart Screen auf "Pro7 Maxx" ausgestrahlt wird, dann wird der Sender dem Marker hinzugefügt.
 				</li>
+				
 				</ul>
 				</p>
 				<p>Die Daten für die Serien-/Staffelstart Ansicht werden von unserem SerienServer generiert und zeigen immer nur Serien der im SerienRecorder zugewiesenen Sender an. Es würde ja keinen Sinn ergeben, hier Serien anzuzeigen, die auf Sendern ausgestrahlt werden, die man selbst nicht empfangen kann. 
@@ -220,10 +224,10 @@
 				
 <!-- Serien Beschreibung -->				
 				<span id="serienbeschreibung" class="anchor"></span>
-				<h3 class="sub-header"><strong>Serien Beschreibung</strong></h3>
+				<h3 class="sub-header"><strong>Serien Beschreibung&nbsp; &nbsp;<kbd>4</kbd></strong></h3>
 				<br>	
                 <ul>
-				<p>Hierüber kann zu der selektierten Serie eine Beschreibung angezeigt werden, welche von <a href="https://www.thetvdb.com/" target="_blank">TheTVDB.com</a> heruntergeladen wird. Es gibt dort nicht für jede Serie Einträge, weshalb man manchmal die Meldung bekommt "Keine Serieninformationen vorhanden".				
+				<p>Die Serien Beschreibung wird mit Taste <kbd>4</kbd> geöffnet und zeigt zu der selektierten Serie eine Beschreibung an, welche von <a href="https://www.thetvdb.com/" target="_blank">TheTVDB.com</a> heruntergeladen wird. Es gibt dort nicht für jede Serie Einträge, weshalb man manchmal die Meldung bekommt "Keine Serieninformationen vorhanden".				
 				<br>Die Serienbeschreibungen von Wunschliste.de darf im SR nicht mehr verwendet werden, daher hat man sich für diese "Quelle" entschieden.
 				</p>
 				<br>
