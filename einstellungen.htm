@@ -310,6 +310,7 @@
 							<div class="bs-callout bs-callout-info">Im Gegensatz zur "Wunschliste TV-Planer E-Mail", wo nur die Serien für den einen Tag berücksichtigt werden, erstellt der SR seine Timer für den Bereich von x Tagen. Was aber nicht bedeutet, das über die Mail nur die Serienfolgen für einen Tag erstellt werden, denn der SR nutzt im normalfall nur die Info, welche Serien in der Mail stehen. Dann geht der SR "ganz normal" hin und erstellt Timer für diese Serien für die eingestellten x Tage. Nur wenn der SerienServer nicht erreichbar ist, um die Sendetermine abzurufen, werden für den AC auch die Ausstrahlungstermine für die Serien aus der Mail benutzt. </div>
                         </p>
                     </li>
+					<span id="früheste-zeit" class="anchor"></span>
                     <li>
                         <strong>Früheste Zeit für Timer:</strong>
                         <p>
@@ -326,6 +327,11 @@
                             Nachtwiederholung der Serie aufgenommen wird.
                         </p>
                     </li>
+					<br>
+					<div class="alert alert-info" role="alert">Schränkt man einen Marker mit <strong>"Früheste und Späteste Zeit"</strong> ein, so das für diesen Marker z.B. nur Timer erstellt werden sollen, die zwischen 22:00 und 05:00 Uhr liegen, bekäme man evtl. das Problem, das zu dieser Zeit entweder kein Sendetermin ist oder aber in dieser Zeit ein Konflikt besteht. Das Resultat wäre, der SerienRecorder erstellt keinen Timer. Aber auch dafür gibt es (natürlich) eine Lösung.
+					<br>Die option heißt <a href="einstellungen.htm#immer-aufnehmen"><strong><u>Immer aufnehmen wenn keine Wiederholung gefunden wird</u></strong></a>. Wenn dies aktiviert ist, werden auch Timer erstellt, die außerhalb der Zeitspanne <strong>"Früheste und Späteste Zeit"</strong> liegen, sofern innerhalb der Zeitspanne eine Timererstellung nicht möglich ist.
+					</div>
+					<br>
                     <li>
                         <strong>Versuche aus dem EPG zu aktualisieren:</strong>
                         <p>
@@ -334,12 +340,14 @@
                             Daten von Wunschliste.de verwendet den Timer zu korrigieren. Es wird z.B. der Titel und die Beschreibung geändert oder die Start-/Endzeit angepasst.
                         </p>
                     </li>
+										
+					<span id="immer-aufnehmen" class="anchor"></span>
                     <li>
                         <strong>Immer aufnehmen wenn keine Wiederholung gefunden wird:</strong>
                         <p>
                             Verhindert, dass durch einen der oben gesetzten Filter eine Sendung nicht aufgenommen wird. Sollte für eine Sendung im angegebenen Zeitraum
                             (siehe nachfolgende Option) keine Wiederholung gefunden werden, wird trotzdem ein Timer erstellt, auch wenn die Sendung außerhalb der in
-                            "Früheste Zeit/Späteste Zeit für Timer" angegeben Zeit ausgestrahlt wird.
+                            <a href="einstellungen.htm#früheste-zeit"><strong><u>"Früheste Zeit/Späteste Zeit für Timer"</u></strong></a> angegeben Zeit ausgestrahlt wird.
                         </p>
                         <ul>
                             <li>
