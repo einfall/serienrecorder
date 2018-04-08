@@ -45,7 +45,7 @@
 		
         <div class="row">
 			<div class="col-xs-10">Wer Fehler oder vergessene Funktionen entdeckt, Bitte eine PN (Konversation) an <a href="https://www.vuplus-support.org/wbb4/index.php?user/79460-marti-win7/" target="_blank"><strong>@Marti_win7</strong></a> im VTI-Forum.</div>
-			<div class="col-xs-2">Letztes Update 07.04.2018</div>
+			<div class="col-xs-2">Letztes Update 08.04.2018</div>
 		</div>
 		<br>
 		<h1 class="page-header">Einleitung</h1>
@@ -98,9 +98,14 @@
 		<h2 class="sub-header">Installation</h2>
         <div class="row">
           <p>Download und Installation geschieht i.d.R. über den <strong>Feed</strong>. Diesen erreicht man im VTI über <kbd class="blue">Blau</kbd> ==> <kbd class="red">Rot</kbd> und dann <kbd>OK</kbd> um die Erweiterungen zu öffnen. Danach ist der SR im VTI unter MENÜ ==> ERWEITERUNGEN zu finden. Natürlich lässt sich der SR auch mit Hilfe des Plugins "MultiQuickButton" auf eine Taste der Fernbedienung legen oder mit Hilfe von Navigations-Plugins starten.</p>
-		  <p>Der SerienRecorder wird auf der Box in das Verzeichnis <strong>/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/</strong> installiert.
-		  </p>
-		  <p>Es gibt auch die Möglichkeit sich eine <strong>Release</strong>- oder auch <strong>Beta-Version</strong> aus dem gitHub <a href="https://github.com/einfall/serienrecorder" target="_blank">		https://github.com/einfall/serienrecorder</a> zu laden. 
+		  <ul>
+		  <li>
+		  Der SerienRecorder wird auf der Box in das Verzeichnis <strong>/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/</strong> installiert.
+		  </li>
+		  <li>Die Datenbank <strong>SerienRecorder.db</strong> wird allerdings in dem Verzeichnis <strong>/etc/enigma2/</strong> gespeichert, weil dieses Verzeichnis auch von den System-Backup-Funktionen mitgesichert wird.
+		  </li>
+		  </ul>
+		  <p>Es gibt auch die Möglichkeit sich eine <strong>Release</strong>- oder auch <strong>Beta-Version</strong> aus dem gitHub <a href="https://github.com/einfall/serienrecorder" target="_blank"><strong>https://github.com/einfall/serienrecorder</strong></a> zu laden. 
 			Zu den Beta-Versionen sei gesagt, dass diese auch immer Fehler beinhalten können. In den Beta-Versionen werden Bugs gefixt und/oder Features dem SR hinzugefügt. Diese neuen Features müssen natürlich erst getestet werden, wofür sich "löblicherweise" immer User finden, bevor diese Features in eine Release-Version kommen.
 			<div class="alert alert-danger" role="alert">
 			Es muss an dieser Stelle allerdings darauf hingewiesen werden, dass eine Beta-Version eine Testversion ist und u.U. in manchen Situationen zu Abstürzen oder ungewünschtem Verhalten führen kann, sie wird also auf eigene Gefahr benutzt. Daher ist es Ratsam sich vorher ein Image-Backup anzulegen.
