@@ -54,6 +54,7 @@ var data =
 		{ href: "sonstige.htm#serienbeschreibung", title: "Serienbeschreibung"},
     ]},
 	{href: "faq.htm", title: "FAQ / HGF / WTW",},
+	{href: "begriffe.htm", title: "Index",},
 	{href: "changelog.htm", title: "Changelog / Updates",},	
 ]};
 var html = template(data);
