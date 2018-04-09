@@ -41,7 +41,9 @@ var data =
 		{ href: "serienmarker.htm#tastatur-sm", title: "Tastaturbelegung"},
     ]},
 	{href: "eiligen.htm", title: "Für die ganz Eiligen",},
-	{href: "serie-hinzufügen.htm", title: "Serie/Marker hinzufügen",},
+	{href: "serie-hinzufügen.htm", title: "Serie/Marker hinzufügen", submenus: [
+	    { href: "serie-hinzufügen.htm#filme", title: "Filme"},
+	]},
 	{href: "suche.htm", title: "Die Suche",},
 	{href: "timer-liste.htm", title: "Timer-Liste",},
 	{href: "sonstige.htm", title: "Sonstige Funktionen", submenus: [
