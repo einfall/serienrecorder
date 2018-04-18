@@ -1,10 +1,13 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Marker Screen
-
+from Components.ConfigList import ConfigListScreen
+from Components.config import getConfigListEntry
+from Screens.Screen import Screen
 from SerienRecorderScreenHelpers import *
 from SerienRecorder import *
 from SerienRecorderHelpers import *
+from SerienRecorderDatabase import *
 
 # Tageditor
 from Screens.MovieSelection import getPreferredTagEditor
@@ -24,6 +27,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.displayTimer_conn = None
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 
 		if not SerienRecorder.showMainScreen:
 			self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
@@ -256,27 +260,14 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		markerList = []
 		numberOfDeactivatedSeries = 0
 
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		sql = "SELECT SerienMarker.ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, COUNT(StaffelAuswahl.ID) AS ErlaubteStaffelCount FROM SerienMarker LEFT JOIN StaffelAuswahl ON StaffelAuswahl.ID = SerienMarker.ID LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID GROUP BY Serie"
-		if config.plugins.serienRec.markerSort.value == '1':
-			sql += " ORDER BY REPLACE(REPLACE(REPLACE(REPLACE(LOWER(Serie), 'the ', ''), 'das ', ''), 'die ', ''), 'der ', '')"
-		else:
-			sql += " ORDER BY LOWER(Serie)"
-		cCursor.execute(sql)
-		cMarkerList = cCursor.fetchall()
-		for row in cMarkerList:
-			(ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount) = row
+		markers = self.database.getAllMarkers(True if config.plugins.serienRec.markerSort.value == '1' else False)
+		for marker in markers:
+			(ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount) = marker
 			if alleSender:
 				sender = ['Alle',]
 			else:
-				sender = []
-				cSender = SerienRecorder.dbSerRec.cursor()
-				cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=? ORDER BY LOWER(ErlaubterSender)", (ID,))
-				cSenderList = cSender.fetchall()
-				if len(cSenderList) > 0:
-					sender = list(zip(*cSenderList)[0])
-				cSender.close()
-			
+				sender = self.database.getMarkerChannels(Serie, False)
+
 			if AlleStaffelnAb == -2: 		# 'Manuell'
 				staffeln = ['Manuell',]
 			elif AlleStaffelnAb == 0:		# 'Alle'
@@ -284,13 +275,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				staffeln = []
 				if ErlaubteStaffelCount > 0:
-					cStaffel = SerienRecorder.dbSerRec.cursor()
-					cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
-					cStaffelList = cStaffel.fetchall()
-					if len(cStaffelList) > 0:
-						staffeln = list(zip(*cStaffelList)[0])
-						staffeln.sort()
-					cStaffel.close()
+					staffeln = self.database.getAllowedSeasons(ID, AlleStaffelnAb)
+					staffeln.sort()
 				if AlleStaffelnAb < 999999:
 					staffeln.append('ab %s' % AlleStaffelnAb)
 				if AbEpisode > 0:
@@ -328,8 +314,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				Nachlaufzeit = 0
 
 			markerList.append((ID, Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert))
-				
-		cCursor.close()
+
 		self['title'].setText("Serien Marker - %d/%d Serien vorgemerkt." % (len(markerList)-numberOfDeactivatedSeries, len(markerList)))
 		if len(markerList) != 0:
 			self.chooseMenuList.setList(map(self.buildList, markerList))
@@ -438,53 +423,32 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			staffeln.extend(range(config.plugins.serienRec.max_season.value+1))
 			mode_list = [0,]*len(staffeln)
 			index_list = range(len(staffeln))
-			cCursor = SerienRecorder.dbSerRec.cursor()
-			cCursor.execute("SELECT ID, AlleStaffelnAb, AbEpisode, TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
-			row = cCursor.fetchone()
-			if row:
-				(ID, AlleStaffelnAb, self.AbEpisode, TimerForSpecials) = row
-				if AlleStaffelnAb == -2:		# 'Manuell'
-					mode_list[0] = 1
-				else:	
-					if AlleStaffelnAb == 0:		# 'Alle'
-						mode_list[1] = 1
-					else:
-						if bool(TimerForSpecials):
-							mode_list[2] = 1
-						cStaffel = SerienRecorder.dbSerRec.cursor()
-						cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
-						cStaffelList = cStaffel.fetchall()
-						if AlleStaffelnAb >= 999999:
-							cStaffelList = []
-							cStaffel = SerienRecorder.dbSerRec.cursor()
-							cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
-							cStaffelList = cStaffel.fetchall()
-							if len(cStaffelList) > 0:
-								cStaffelList = zip(*cStaffelList)[0]
-							for staffel in cStaffelList:
-								mode_list[staffel + 4] = 1
-						elif (AlleStaffelnAb > 0) and (AlleStaffelnAb <= (len(staffeln)-4)):
-							cStaffelList = []
-							mode_list[AlleStaffelnAb + 4] = 1
-							mode_list[3] = 1
-							cStaffel = SerienRecorder.dbSerRec.cursor()
-							cStaffel.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (ID, AlleStaffelnAb))
-							cStaffelList = cStaffel.fetchall()
-							if len(cStaffelList) > 0:
-								cStaffelList = zip(*cStaffelList)[0]
-							for staffel in cStaffelList:
-								mode_list[staffel + 4] = 1
-								if (staffel + 1) == AlleStaffelnAb:
-									mode_list[AlleStaffelnAb + 4] = 0
-									AlleStaffelnAb = staffel
-						if self.AbEpisode > 0:
-							mode_list[4] = 1
-							
-						cStaffel.close()
-					
+			(ID, AlleStaffelnAb, self.AbEpisode, TimerForSpecials) = self.database.getMarkerSeasonSettings(self.select_serie)
+
+			if AlleStaffelnAb == -2:		# 'Manuell'
+				mode_list[0] = 1
 			else:
-				print "kein Eintrag in DB (SerienMarker)"
-			cCursor.close()
+				if AlleStaffelnAb == 0:		# 'Alle'
+					mode_list[1] = 1
+				else:
+					if bool(TimerForSpecials):
+						mode_list[2] = 1
+					cStaffelList = self.database.getAllowedSeasons(ID, AlleStaffelnAb)
+					if AlleStaffelnAb >= 999999:
+						for staffel in cStaffelList:
+							mode_list[staffel + 4] = 1
+					elif (AlleStaffelnAb > 0) and (AlleStaffelnAb <= (len(staffeln)-4)):
+						mode_list[AlleStaffelnAb + 4] = 1
+						mode_list[3] = 1
+						for staffel in cStaffelList:
+							mode_list[staffel + 4] = 1
+							if (staffel + 1) == AlleStaffelnAb:
+								mode_list[AlleStaffelnAb + 4] = 0
+								AlleStaffelnAb = staffel
+
+					if self.AbEpisode > 0:
+						mode_list[4] = 1
+
 			if mode_list.count(1) == 0:
 				mode_list[0] = 1
 			self.staffel_liste = zip(staffeln, mode_list, index_list)
@@ -509,7 +473,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				print "[SerienRecorder] Serien Marker leer."
 				return
 
-			getSender = SerienRecorder.getWebSenderAktiv()
+			getSender = self.database.getActiveChannels()
 			if len(getSender) != 0:
 				self.modus = "popup_list2"
 				self['popup_list'].show()
@@ -519,25 +483,16 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				getSender.insert(0, 'Alle')
 				mode_list = [0,]*len(getSender)
 				index_list = range(len(getSender))
-				cCursor = SerienRecorder.dbSerRec.cursor()
-				cCursor.execute("SELECT ID, alleSender FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
-				row = cCursor.fetchone()
-				if row:
-					(ID, alleSender) = row
-					if alleSender:
-						mode_list[0] = 1
-					else:
-						cSender = SerienRecorder.dbSerRec.cursor()
-						cSender.execute("SELECT ErlaubterSender FROM SenderAuswahl WHERE ID=?", (ID,))
-						for row in cSender:
-							(sender,) = row
-							if sender in getSender:
-								idx = getSender.index(sender)
-								mode_list[idx] = 1
-						cSender.close()
+				channels = self.database.getMarkerChannels(self.select_serie)
+				if len(channels) > 0:
+					for channel in channels:
+						if channel in getSender:
+							idx = getSender.index(channel)
+							mode_list[idx] = 1
 				else:
-					print "kein Eintrag in DB (SerienMarker)"
-				cCursor.close()
+					# No channels assigned to marker => Alle
+					mode_list[0] = 1
+
 				self.sender_liste = zip(getSender, mode_list, index_list)
 				self.chooseMenuList_popup.setList(map(self.buildList2, self.sender_liste))
 
@@ -561,12 +516,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def callDisableAll(self, answer):
 		if answer:
 			self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
-			cCursor = SerienRecorder.dbSerRec.cursor()
-			mask = (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
-			cCursor.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=ErlaubteSTB &(~?)", (mask,))
-			SerienRecorder.dbSerRec.commit()
+			self.database.disableAllMarkers(config.plugins.serienRec.BoxID.value)
 			self.readSerienMarker()
-			cCursor.close()
 		else:
 			return
 
@@ -581,16 +532,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.removeSerienMarker(self.selected_serien_name, answer)
 		
 	def removeSerienMarker(self, serien_name, answer):
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		if answer:
-			print "[SerienRecorder] lösche %s aus der added liste" % serien_name
-			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=?", (serien_name.lower(),))
-		cCursor.execute("DELETE FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
-		cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
-		cCursor.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (serien_name.lower(),))
-		cCursor.execute("DELETE FROM SerienMarker WHERE LOWER(Serie)=?", (serien_name.lower(),))
-		SerienRecorder.dbSerRec.commit()
-		cCursor.close()
+		self.database.removeMarker(serien_name, answer)
 		self.changesMade = True
 		SerienRecorder.writeLog("\nSerien Marker für ' %s ' wurde entfernt" % serien_name, True)
 		self['title'].instance.setForegroundColor(parseColor("red"))
@@ -605,17 +547,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 			else:
 				self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
-				cCursor = SerienRecorder.dbSerRec.cursor()
-				cCursor.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", (self.selected_serien_name.lower(),))
-				row = cCursor.fetchone()
-				if row:
-					(ID, ErlaubteSTB) = row
-					if ErlaubteSTB is not None:
-						ErlaubteSTB ^= (1 << (int(config.plugins.serienRec.BoxID.value) - 1)) 
-						cCursor.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=? WHERE ID=?", (ErlaubteSTB, ID))
-						SerienRecorder.dbSerRec.commit()
-					self.readSerienMarker(self.selected_serien_name)
-				cCursor.close()
+				self.database.changeMarkerStatus(self.selected_serien_name, config.plugins.serienRec.BoxID.value)
+				self.readSerienMarker(self.selected_serien_name)
 					
 	def keyRedLong(self):
 		if self.modus == "menu_list":
@@ -625,16 +558,10 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 			else:
 				self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
-				cCursor = SerienRecorder.dbSerRec.cursor()
-				cCursor.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", (self.selected_serien_name.lower(),))
-				row = cCursor.fetchone()
-				if row:
-					print "gefunden."
-					if config.plugins.serienRec.confirmOnDelete.value:
-						self.session.openWithCallback(self.callSaveMsg, MessageBox, "Soll '%s' wirklich entfernt werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
-					else:
-						self.session.openWithCallback(self.callDelMsg, MessageBox, "Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
-				cCursor.close()
+				if config.plugins.serienRec.confirmOnDelete.value:
+					self.session.openWithCallback(self.callSaveMsg, MessageBox, "Soll '%s' wirklich entfernt werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
+				else:
+					self.session.openWithCallback(self.callDelMsg, MessageBox, "Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 
 	def disableAll(self):
 		if self.modus == "menu_list":
@@ -650,12 +577,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		AbEpisode = 0
 		AlleStaffelnAb = 999999
 		TimerForSpecials = 0
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		cCursor.execute("SELECT ID, AbEpisode FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
-		row = cCursor.fetchone()
-		if row:
-			(ID, AbEpisode) = row
-			cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID=?", (ID,))
+		self.database.removeAllMarkerSeasons(self.select_serie)
+		(ID, AlleStaffelnAb, AbEpisode, TimerForSpecials) = self.database.getMarkerSeasonSettings(self.select_serie)
+		if ID:
 			liste = self.staffel_liste[1:]
 			liste = zip(*liste)
 			if 1 in liste[1]:
@@ -688,7 +612,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 								except:
 									AlleStaffelnAb = 0
 									break
-						if (index == 4) and (mode != 1):		
+						if (index == 4) and (mode != 1):
 							AbEpisode = 0
 						elif (index > 4) and mode == 1:
 							if str(staffel).isdigit():
@@ -697,12 +621,12 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 									continue
 								elif (staffel + 1) == AlleStaffelnAb:
 									AlleStaffelnAb = staffel
-								else:	
-									cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, staffel))
+								else:
+									self.database.setMarkerSeason(ID, staffel)
 			else:
 				AlleStaffelnAb = -2
 				AbEpisode = 0
-			
+
 		self.changesMade = True
 		global runAutocheckAtExit
 		runAutocheckAtExit = True
@@ -710,34 +634,30 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 			config.plugins.serienRec.tvplaner_last_full_check.save()
 			configfile.save()
-		cCursor.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=?, AbEpisode=?, TimerForSpecials=? WHERE LOWER(Serie)=?", (AlleStaffelnAb, AbEpisode, TimerForSpecials, self.select_serie.lower()))
-		SerienRecorder.dbSerRec.commit()
-		cCursor.close()
+		self.database.updateMarkerSeasonsSettings(self.select_serie, AlleStaffelnAb, AbEpisode, TimerForSpecials)
 		self.readSerienMarker()
 
 	def insertSenderMarker(self):
-		print self.select_serie
 		alleSender = 0
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		cCursor.execute("SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?", (self.select_serie.lower(),))
-		row = cCursor.fetchone()
-		if row:
-			(ID,) = row
-			cCursor.execute("DELETE FROM SenderAuswahl WHERE ID=?", (ID,))
-			liste = self.sender_liste[1:]
-			liste = zip(*liste)
-			if 1 in liste[1]:
-				idx = liste[1].index(1)
-				for row in self.sender_liste:
-					(sender, mode, index) = row
-					if (index == 0) and (mode == 1):		# 'Alle'
-						alleSender = 1
-						break
-					elif mode == 1:		# Sender erlaubt
-						cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, sender))
-			else:
-				alleSender = 1
-			
+		self.database.removeAllMarkerChannels(self.select_serie)
+		markerID = self.database.getMarkerID(self.select_serie)
+		liste = self.sender_liste[1:]
+		liste = zip(*liste)
+		data = []
+		if 1 in liste[1]:
+			for row in self.sender_liste:
+				(sender, mode, index) = row
+				if (index == 0) and (mode == 1):		# 'Alle'
+					alleSender = 1
+					break
+				elif mode == 1:		# Sender erlaubt
+					data.append((markerID, sender))
+			self.database.setMarkerChannels(data)
+		else:
+			alleSender = 1
+
+		self.database.setAllChannelsToMarker(self.select_serie, alleSender)
+
 		self.changesMade = True
 		global runAutocheckAtExit
 		runAutocheckAtExit = True
@@ -745,9 +665,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 			config.plugins.serienRec.tvplaner_last_full_check.save()
 			configfile.save()
-		cCursor.execute("UPDATE OR IGNORE SerienMarker SET alleSender=? WHERE LOWER(Serie)=?", (alleSender, self.select_serie.lower()))
-		SerienRecorder.dbSerRec.commit()
-		cCursor.close()
+
 		self.readSerienMarker()
 
 	def keyBlue(self):
@@ -800,10 +718,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def selectEpisode(self, episode):
 		if str(episode).isdigit():
-			print episode
-			cCursor = SerienRecorder.dbSerRec.cursor()
-			cCursor.execute("UPDATE OR IGNORE SerienMarker SET AbEpisode=? WHERE LOWER(Serie)=?", (int(episode), self.select_serie.lower()))
-			SerienRecorder.dbSerRec.commit()
+			self.database.setMarkerEpisode(episode, self.select_serie)
 		self.insertStaffelMarker()
 			
 	def __onClose(self):
@@ -852,6 +767,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.Serie = Serie
+		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"red": (self.cancel, "Änderungen verwerfen und zurück zur Serien-Marker-Ansicht"),
@@ -874,16 +790,8 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		if showAllButtons:
 			Skin1_Settings(self)
 
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		cCursor.execute(
-			"SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase FROM SerienMarker WHERE LOWER(Serie)=?",
-			(self.Serie.lower(),))
-		row = cCursor.fetchone()
-		if not row:
-			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1)
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase) = row
-		cCursor.close()
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase) = self.database.getMarkerSettings(self.Serie)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -1352,13 +1260,10 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			tags = pickle.dumps(self.serienmarker_tags)
 
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=? WHERE LOWER(Serie)=?"
-		cCursor.execute(sql, (
-		self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
+		self.database.setMarkerSettings(self.Serie, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),
-		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), self.Serie.lower()))
-		SerienRecorder.dbSerRec.commit()
+		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value)))
+
 		self.close(True)
 
 	def cancel(self):

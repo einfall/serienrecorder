@@ -2,6 +2,8 @@
 
 # This file contain some helper functions
 # which called from other SerienRecorder modules
+import base64
+
 from Components.config import config
 from Components.AVSwitch import AVSwitch
 
@@ -24,7 +26,7 @@ import datetime, os, re, urllib2, sys, time
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.6.8-beta'
+SRVERSION = '3.6.9-beta'
 
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
@@ -33,16 +35,6 @@ def writeTestLog(text):
 	writeLogFile = open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", "a")
 	writeLogFile.write('%s\n' % text)
 	writeLogFile.close()
-
-def writeErrorLog(text):
-	if config.plugins.serienRec.writeErrorLog.value:
-		ErrorLogFile = "%sErrorLog" % config.plugins.serienRec.LogFilePath.value
-		if not fileExists(ErrorLogFile):
-			open(ErrorLogFile, 'w').close()
-
-		writeLogFile = open(ErrorLogFile, "a")
-		writeLogFile.write("%s: %s\n----------------------------------------------------------\n\n" % (time.strftime("%d.%m.%Y - %H:%M:%S", time.localtime()), text))
-		writeLogFile.close()
 
 def decodeISO8859_1(txt, replace=False):
 	txt = unicode(txt, 'ISO-8859-1')
@@ -67,10 +59,10 @@ def doReplaces(txt):
 
 def getSeriesIDByURL(url):
 	result = None
-	seriesID = re.findall('epg_print.pl\?s=([0-9]+)', url)
-	if seriesID:
-		result = seriesID[0]
-
+	if url:
+		seriesID = re.findall('epg_print.pl\?s=([0-9]+)', url)
+		if seriesID:
+			result = seriesID[0]
 	return result
 
 def isDreamOS():
@@ -115,6 +107,31 @@ def checkCI(servref = None, cinum = 0):
 		return cinum
 
 	return -1
+
+def encrypt(key, clear):
+	enc = []
+	for i in range(len(clear)):
+		key_c = key[i % len(key)]
+		enc_c = chr((ord(clear[i]) + ord(key_c)) % 256)
+		enc.append(enc_c)
+	return base64.urlsafe_b64encode("".join(enc))
+
+def decrypt(key, enc):
+	dec = []
+	enc = base64.urlsafe_b64decode(enc)
+	for i in range(len(enc)):
+		key_c = key[i % len(key)]
+		dec_c = chr((256 + ord(enc[i]) - ord(key_c)) % 256)
+		dec.append(dec_c)
+	return "".join(dec)
+
+def getmac(interface):
+	try:
+		mac = open('/sys/class/net/'+interface+'/address').readline()
+	except:
+		mac = "00:00:00:00:00:00"
+	return mac[0:17]
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #

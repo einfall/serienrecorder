@@ -14,6 +14,7 @@ from SerienRecorderHelpers import *
 from SerienRecorderAboutScreen import *
 from SerienRecorderScreenHelpers import *
 from SerienRecorderSeriesServer import *
+from SerienRecorderDatabase import *
 import SerienRecorder
 
 class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
@@ -32,6 +33,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self.chooseMenuList = None
 		self.chooseMenuList_popup = None
 		self.chooseMenuList_popup2 = None
+		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 
 		from difflib import SequenceMatcher
 		self.sequenceMatcher = SequenceMatcher(" ".__eq__, "", "")
@@ -79,20 +81,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self.timer_default_conn = self.timer_default.timeout.connect(self.showChannels)
 		else:
 			self.timer_default.callback.append(self.showChannels)
-
-		# cCursor = SerienRecorder.dbSerRec.cursor()
-		# cCursor.execute("SELECT * FROM Channels")
-		# row = cCursor.fetchone()
-		# if row:
-		# 	cCursor.close()
-		# 	self.onLayoutFinish.append(self.showChannels)
-		# else:
-		# 	cCursor.close()
-		# 	if config.plugins.serienRec.selectBouquets.value:
-		# 		self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
-		# 	else:
-		# 		self.stbChannelList = STBHelpers.buildSTBChannelList()
-		# 	self.onLayoutFinish.append(self.readWebChannels)
 
 		self.onLayoutFinish.append(self.setSkinProperties)
 		self.onLayoutFinish.append(self.__onLayoutFinished)
@@ -144,9 +132,9 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self['popup_list2'] = self.chooseMenuList_popup2
 		self['popup_list2'].hide()
 
-		self['title'].setText("Lade Web-Sender / STB-Sender...")
+		self['title'].setText("Lade Wunschliste-Sender...")
 
-		self['Web_Channel'].setText("Web-Sender")
+		self['Web_Channel'].setText("Wunschliste")
 		self['STB_Channel'].setText("STB-Sender")
 		self['alt_STB_Channel'].setText("alt. STB-Sender")
 
@@ -198,18 +186,16 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self.showChannels()
 
 	def __onLayoutFinished(self):
-		self['title'].setText("Lade Web-Sender / STB-Sender...")
+		self['title'].setText("Lade Wunschliste-Sender...")
 		self.timer_default.start(0)
 
 	def showChannels(self):
 		self.timer_default.stop()
 		self.serienRecChannelList = []
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, alternativSTBChannel, alternativServiceRef, Erlaubt FROM Channels ORDER BY LOWER(WebChannel)")
-		for row in cCursor:
-			(webSender, servicename, serviceref, altservicename, altserviceref, status) = row
+		channels = self.database.getChannels(True)
+		for channel in channels:
+			(webSender, servicename, serviceref, altservicename, altserviceref, status) = channel
 			self.serienRecChannelList.append((webSender, servicename, altservicename, status))
-		cCursor.close()
 
 		if len(self.serienRecChannelList) != 0:
 			self['title'].setText("Sender zuordnen")
@@ -219,11 +205,11 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def readWebChannels(self):
 		print "[SerienRecorder] call webpage.."
-		self['title'].setText("Lade Web-Sender...")
+		self['title'].setText("Lade Wunschliste-Sender...")
 		try:
 			self.createWebChannels(SeriesServer().doGetWebChannels(), False)
 		except:
-			self['title'].setText("Fehler beim Laden der Web-Sender")
+			self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
 
 	def createWebChannels(self, webChannelList, autoMatch):
 		if webChannelList:
@@ -232,25 +218,25 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 			if len(webChannelList) != 0:
 				self['title'].setText("Erstelle Sender-Liste...")
-				cCursor = SerienRecorder.dbSerRec.cursor()
 
 				# Get existing channels from database
-				cCursor.execute("SELECT WebChannel, STBChannel FROM Channels")
-				dbChannels = cCursor.fetchall()
+				dbChannels = self.database.getChannelPairs()
 
 				if autoMatch:
 					# Get all unassigned web channels and try to find the STB channel equivalent
 					# Update only matching channels in list
-					sql = "UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?"
+					#sql = "UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?"
 					unassignedWebChannels = self.getUnassignedWebChannels(dbChannels)
 
+					channels = []
 					for webChannel in unassignedWebChannels:
 						# Unmapped web channel
 						(servicename, serviceref) = self.findWebChannelInSTBChannels(webChannel)
 						if servicename and serviceref:
-							cCursor.execute(sql, (servicename, serviceref, 1, webChannel.lower()))
+							channels.append((servicename, serviceref, 1, webChannel.lower()))
 							self.serienRecChannelList.append((webChannel, servicename, "", "1"))
 
+						self.database.updateChannels(channels)
 						self.changesMade = True
 						global runAutocheckAtExit
 						runAutocheckAtExit = True
@@ -269,13 +255,12 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 						self.session.open(MessageBox, "Die SerienRecorder Senderliste ist aktuell,\nes wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
 						self.showChannels()
 					else:
-						sql = "INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)"
+						channels = []
 						for webChannel in newWebChannels:
-							cCursor.execute(sql, (webChannel, "", "", 0))
+							channels.append((webChannel, "", "", 0))
 							self.serienRecChannelList.append((webChannel, "", "", "0"))
+						self.database.addChannels(channels)
 
-				SerienRecorder.dbSerRec.commit()
-				cCursor.close()
 			else:
 				print "[SerienRecorder] webChannel list leer.."
 
@@ -287,7 +272,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			print "[SerienRecorder] get webChannel error.."
 
-		self['title'].setText("Web-Sender / STB-Sender")
+		self['title'].setText("Wunschliste-Sender / STB-Sender")
 
 	@staticmethod
 	def getMissingWebChannels(webChannels, dbChannels):
@@ -380,17 +365,12 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self.stbChannelList.insert(0, ("", ""))
 			self.chooseMenuList_popup.setList(map(self.buildList_popup, self.stbChannelList))
 			idx = 0
-			cCursor = SerienRecorder.dbSerRec.cursor()
-			cCursor.execute("SELECT STBChannel, alternativSTBChannel FROM Channels WHERE LOWER(WebChannel)=?", (self['list'].getCurrent()[0][0].lower(),))
-			row = cCursor.fetchone()
-			if row:
-				(stbChannel, altstbChannel) = row
-				if stbChannel:
-					try:
-						idx = zip(*self.stbChannelList)[0].index(stbChannel)
-					except:
-						pass
-			cCursor.close()
+			(stbChannel, altstbChannel) = self.database.getSTBChannel(self['list'].getCurrent()[0][0])
+			if stbChannel:
+				try:
+					idx = zip(*self.stbChannelList)[0].index(stbChannel)
+				except:
+					pass
 			self['popup_list'].moveToIndex(idx)
 			self['title'].setText("Standard STB-Sender für %s:" % self['list'].getCurrent()[0][0])
 		elif config.plugins.serienRec.selectBouquets.value:
@@ -403,17 +383,12 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				self.stbChannelList.insert(0, ("", ""))
 				self.chooseMenuList_popup2.setList(map(self.buildList_popup, self.stbChannelList))
 				idx = 0
-				cCursor = SerienRecorder.dbSerRec.cursor()
-				cCursor.execute("SELECT STBChannel, alternativSTBChannel FROM Channels WHERE LOWER(WebChannel)=?", (self['list'].getCurrent()[0][0].lower(),))
-				row = cCursor.fetchone()
-				if row:
-					(stbChannel, altstbChannel) = row
-					if stbChannel:
-						try:
-							idx = zip(*self.stbChannelList)[0].index(altstbChannel)
-						except:
-							pass
-				cCursor.close()
+				(stbChannel, altstbChannel) = self.database.getSTBChannel(self['list'].getCurrent()[0][0])
+				if stbChannel:
+					try:
+						idx = zip(*self.stbChannelList)[0].index(altstbChannel)
+					except:
+						pass
 				self['popup_list2'].moveToIndex(idx)
 				self['title'].setText("alternativer STB-Sender für %s:" % self['list'].getCurrent()[0][0])
 			else:
@@ -438,16 +413,10 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				altstbSender = self['popup_list2'].getCurrent()[0][0]
 				altstbRef = self['popup_list2'].getCurrent()[0][1]
 				print "[SerienRecorder] select:", chlistSender, stbSender, stbRef, altstbSender, altstbRef
-				cCursor = SerienRecorder.dbSerRec.cursor()
-				sql = "UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, alternativSTBChannel=?, alternativServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?"
-				if stbSender != "" or altstbSender != "":
-					cCursor.execute(sql, (stbSender, stbRef, altstbSender, altstbRef, 1, chlistSender.lower()))
-				else:
-					cCursor.execute(sql, (stbSender, stbRef, altstbSender, altstbRef, 0, chlistSender.lower()))
+				channels = []
+				self.database.updateChannels(channels, True)
 				self.changesMade = True
 				runAutocheckAtExit = True
-				SerienRecorder.dbSerRec.commit()
-				cCursor.close()
 				self['title'].setText("Sender zuordnen")
 				self.showChannels()
 		else:
@@ -468,16 +437,14 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			stbSender = self['popup_list'].getCurrent()[0][0]
 			stbRef = self['popup_list'].getCurrent()[0][1]
 			print "[SerienRecorder] select:", chlistSender, stbSender, stbRef
-			cCursor = SerienRecorder.dbSerRec.cursor()
-			sql = "UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?"
+			channels = []
 			if stbSender != "":
-				cCursor.execute(sql, (stbSender, stbRef, 1, chlistSender.lower()))
+				channels.append((stbSender, stbRef, 1, chlistSender.lower()))
 			else:
-				cCursor.execute(sql, (stbSender, stbRef, 0, chlistSender.lower()))
+				channels.append((stbSender, stbRef, 0, chlistSender.lower()))
+			self.database.updateChannels(channels)
 			self.changesMade = True
 			runAutocheckAtExit = True
-			SerienRecorder.dbSerRec.commit()
-			cCursor.close()
 			self['title'].setText("Sender zuordnen")
 			self.showChannels()
 
@@ -492,29 +459,14 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			sender_status = self['list'].getCurrent()[0][2]
 			print sender_status
 
-			cCursor = SerienRecorder.dbSerRec.cursor()
-			cCursor.execute("SELECT WebChannel, STBChannel, ServiceRef, Erlaubt FROM Channels WHERE LOWER(WebChannel)=?", (chlistSender.lower(),))
-			row = cCursor.fetchone()
-			if row:
-				(webSender, servicename, serviceref, status) = row
-				sql = "UPDATE OR IGNORE Channels SET Erlaubt=? WHERE LOWER(WebChannel)=?"
-				if int(status) == 0:
-					cCursor.execute(sql, (1, chlistSender.lower()))
-					print "[SerienRecorder] change to:", webSender, servicename, serviceref, "1"
-					self['title'].instance.setForegroundColor(parseColor("red"))
-					self['title'].setText("")
-					self['title'].setText("Sender '- %s -' wurde aktiviert." % webSender)
-				else:
-					cCursor.execute(sql, (0, chlistSender.lower()))
-					print "[SerienRecorder] change to:",webSender, servicename, serviceref, "0"
-					self['title'].instance.setForegroundColor(parseColor("red"))
-					self['title'].setText("")
-					self['title'].setText("Sender '- %s -' wurde deaktiviert." % webSender)
-				self.changesMade = True
-				runAutocheckAtExit = True
-				SerienRecorder.dbSerRec.commit()
+			self.database.changeChannelStatus(chlistSender)
+			self['title'].instance.setForegroundColor(parseColor("red"))
+			self['title'].setText("")
+			self['title'].setText("Sender '- %s -' wurde geändert." % chlistSender)
 
-			cCursor.close()
+			self.changesMade = True
+			runAutocheckAtExit = True
+
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.showChannels()
 
@@ -529,16 +481,16 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
 			else:
 				self.stbChannelList = STBHelpers.buildSTBChannelList()
-			self['title'].setText("Lade Web-Sender...")
+			self['title'].setText("Lade Wunschliste-Sender...")
 			try:
 				self.createWebChannels(SeriesServer().doGetWebChannels(), False)
 			except:
-				self['title'].setText("Fehler beim Laden der Web-Sender")
+				self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
 		else:
 			print "[SerienRecorder] channel-list ok."
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.autoMatch, MessageBox, "Es wird versucht für alle nicht zugeordneten Web-Sender einen passenden STB-Sender zu finden, dabei werden zunächst HD Sender bevorzugt.\n\nDies kann, je nach Umfang der Senderliste, einige Zeit (u.U. einige Minuten) dauern - bitte haben Sie Geduld!\n\nAutomatische Zuordnung jetzt durchführen?", MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.autoMatch, MessageBox, "Es wird versucht für alle nicht zugeordneten Wunschliste-Sender einen passenden STB-Sender zu finden, dabei werden zunächst HD Sender bevorzugt.\n\nDies kann, je nach Umfang der Senderliste, einige Zeit (u.U. einige Minuten) dauern - bitte haben Sie Geduld!\n\nAutomatische Zuordnung jetzt durchführen?", MessageBox.TYPE_YESNO)
 
 	def autoMatch(self, execute):
 		if execute:
@@ -550,7 +502,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			try:
 				self.createWebChannels(SeriesServer().doGetWebChannels(), True)
 			except:
-				self['title'].setText("Fehler beim Laden der Web-Sender")
+				self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
 
 	def keyRedLong(self):
 		check = self['list'].getCurrent()
@@ -559,26 +511,17 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 		else:
 			self.selected_sender = self['list'].getCurrent()[0][0]
-			cCursor = SerienRecorder.dbSerRec.cursor()
-			cCursor.execute("SELECT * FROM Channels WHERE LOWER(WebChannel)=?", (self.selected_sender.lower(),))
-			row = cCursor.fetchone()
-			if row:
-				print "gefunden."
-				if config.plugins.serienRec.confirmOnDelete.value:
-					self.session.openWithCallback(self.channelDelete, MessageBox, "Soll '%s' wirklich entfernt werden?" % self.selected_sender, MessageBox.TYPE_YESNO, default = False)
-				else:
-					self.channelDelete(True)
-			cCursor.close()
+			if config.plugins.serienRec.confirmOnDelete.value:
+				self.session.openWithCallback(self.channelDelete, MessageBox, "Soll '%s' wirklich entfernt werden?" % self.selected_sender, MessageBox.TYPE_YESNO, default = False)
+			else:
+				self.channelDelete(True)
+
 			self.showChannels()
 
 	def channelDelete(self, answer):
 		if not answer:
 			return
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		cCursor.execute("DELETE FROM SenderAuswahl WHERE LOWER(ErlaubterSender)=?", (self.selected_sender.lower(),))
-		cCursor.execute("DELETE FROM Channels WHERE LOWER(WebChannel)=?", (self.selected_sender.lower(),))
-		SerienRecorder.dbSerRec.commit()
-		cCursor.close()
+		self.database.removeChannel(self.selected_sender)
 		self.changesMade = True
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Sender '- %s -' entfernt." % self.selected_sender)

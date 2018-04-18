@@ -4,19 +4,21 @@
 
 from SerienRecorder import *
 from SerienRecorderScreenHelpers import *
+from SerienRecorderDatabase import *
 
 class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session, serien_name, serie_url, serien_cover):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
+		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 		self.modus = "menu_list"
 		self.session = session
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 		self.serien_id = 0
 		self.serien_cover = serien_cover
-		self.addedEpisodes = SerienRecorder.getAlreadyAdded(self.serien_name)
+		self.addedEpisodes = self.database.getTimerForSeries(self.serien_name)
 		self.episodes_list_cache = {}
 		self.aStaffel = None
 		self.aFromEpisode = None
@@ -226,15 +228,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
 		if seasonEpisodeString != "S00E00":
 			title = None
-
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		if not title:
-			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (self.serien_name.lower(), season.lower(), str(episode).zfill(2).lower()))
-		else:
-			cCursor.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=? OR Titel='')", (self.serien_name.lower(), season.lower(), str(episode).zfill(2).lower(), title.lower(), "dump"))
-
-		SerienRecorder.dbSerRec.commit()
-		cCursor.close()
+		self.database.removeTimer(self.serien_name, season, episode, title, None, None, None)
 
 	def keyOK(self):
 		if self.loading:
@@ -270,9 +264,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				if isAlreadyAdded:
 					self.removeFromDB(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][3])
 				else:
-					SerienRecorder.addToAddedList(self.serien_name, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][3])
+					self.database.addToTimerList(self.serien_name, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][3], int(time.time()), "", "", 0, 1)
 
-				self.addedEpisodes = SerienRecorder.getAlreadyAdded(self.serien_name)
+				self.addedEpisodes = self.database.getTimerForSeries(self.serien_name)
 				self.chooseMenuList.setList(map(self.buildList_episodes, current_episodes_list))
 
 	def keyYellow(self):
@@ -287,7 +281,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		#if len(self.episodes_list_cache) >= self.page:
 		if self.page in self.episodes_list_cache:
 			if len(self.episodes_list_cache[self.page]) != 0:
-				if SerienRecorder.addToWishlist(self.serien_name, self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][0]):
+				if self.database.addBookmark(self.serien_name, self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][0], config.plugins.serienRec.NoOfRecords.value):
 					self.session.open(MessageBox, "Die Episode wurde zum Merkzettel hinzugefügt", MessageBox.TYPE_INFO, timeout = 10)
 
 	def nextPage(self):
@@ -341,7 +335,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			print "[SerienRecorder] Staffel: %s" % self.aStaffel
 			print "[SerienRecorder] von Episode: %s" % self.aFromEpisode
 			print "[SerienRecorder] bis Episode: %s" % self.aToEpisode
-			if SerienRecorder.addToAddedList(self.serien_name, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump"):
+			if self.database.addToTimerList(self.serien_name, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
 				self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 
 	def keyBlue(self):

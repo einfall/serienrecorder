@@ -159,7 +159,7 @@ class SeriesServer:
 				more = int(searchResults['more'])
 		except:
 			resultList = []
-		return more, resultList
+		return start, more, resultList
 
 	def doGetCoverURL(self, seriesID, seriesName):
 		try:

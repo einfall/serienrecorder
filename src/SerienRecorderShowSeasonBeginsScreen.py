@@ -5,6 +5,7 @@
 from SerienRecorder import *
 from SerienRecorderHelpers import *
 from SerienRecorderSeriesServer import *
+from SerienRecorderDatabase import *
 import os, re, threading
 
 class downloadSeasonBegins(threading.Thread):
@@ -33,6 +34,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.piconLoader = PiconLoader()
 		self.picloader = None
 		self.filter = False
+		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok": (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
@@ -68,7 +70,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.changesMade = False
 		self.proposalList = []
 		self.transmissions = {}
-		self.serviceRefs = getActiveServiceRefs()
+		self.serviceRefs = self.database.getActiveServiceRefs()
 		self.onLayoutFinish.append(self.__onLayoutFinish)
 		self.onLayoutFinish.append(self.setSkinProperties)
 		self.onClose.append(self.__onClose)
@@ -121,7 +123,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 	def readProposal(self):
 		self.timer_default.stop()
 
-		webChannels = getWebSenderAktiv()
+		webChannels = self.database.getActiveChannels()
 		self.proposalList = []
 
 		transmissionResults = downloadSeasonBegins(webChannels)
@@ -135,7 +137,8 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			self.buildProposalList()
 
 	def buildProposalList(self):
-		markers = getAllMarkers()
+		markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
+
 		self.proposalList = []
 
 		if self.filter:
@@ -155,8 +158,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			if lowerCaseSeriesName in markers:
 				markerFlag = 1 if markers[lowerCaseSeriesName] else 2
 
-			url = "http://www.wunschliste.de/epg_print.pl?s=%d" % event['id']
-			self.proposalList.append([seriesName, event['season'], event['channel'].encode('utf-8'), event['start'], url, markerFlag])
+			self.proposalList.append([seriesName, event['season'], event['channel'].encode('utf-8'), event['start'], event['id'], markerFlag])
 
 		if self.filter:
 			self['title'].setText("%d neue Serien gefunden:" % len(self.proposalList))
@@ -166,11 +168,11 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.chooseMenuList.setList(map(self.buildList, self.proposalList))
 		if self['menu_list'].getCurrent():
 			serien_name = self[self.modus].getCurrent()[0][0]
-			serien_url = self[self.modus].getCurrent()[0][4]
-			self.getCover(serien_name, serien_url)
+			serien_id = self[self.modus].getCurrent()[0][4]
+			SerienRecorder.getCover(self, serien_name, serien_id)
 
 	def buildList(self, entry):
-		(Serie, Staffel, Sender, UTCTime, Url, MarkerFlag) = entry
+		(Serie, Staffel, Sender, UTCTime, ID, MarkerFlag) = entry
 
 		icon = imageNone = "%simages/black.png" % serienRecMainPath
 		imageNeu = "%simages/neu.png" % serienRecMainPath
@@ -231,8 +233,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		check = self[self.modus].getCurrent()
 		if check is None:
 			return
-		url = self[self.modus].getCurrent()[0][4]
-		serien_id = getSeriesIDByURL(url)
+		serien_id = self[self.modus].getCurrent()[0][4]
 		if serien_id > 0:
 			serien_name = self[self.modus].getCurrent()[0][0]
 			self.session.open(serienRecShowInfo, serien_name, serien_id)
@@ -256,63 +257,19 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			print "[SerienRecorder] Proposal-DB leer."
 			return
 		else:
-			(Serie, Staffel, Sender, UTCTime, Url, MarkerFlag) = self[self.modus].getCurrent()[0]
-			(ID, AbStaffel, AlleSender) = self.checkMarker(Serie)
-			if ID > 0:
-				cCursor = SerienRecorder.dbSerRec.cursor()
-				if str(Staffel).isdigit():
-					if AbStaffel > Staffel:
-						cCursor.execute("SELECT * FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel=?", (ID, Staffel))
-						row = cCursor.fetchone()
-						if not row:
-							cCursor.execute(
-								"INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, Staffel))
-							cCursor.execute("SELECT * FROM StaffelAuswahl WHERE ID=? ORDER DESC BY ErlaubteStaffel", (ID,))
-							staffel_Liste = cCursor.fetchall()
-							for row in staffel_Liste:
-								(ID, ErlaubteStaffel) = row
-								if AbStaffel == (ErlaubteStaffel + 1):
-									AbStaffel = ErlaubteStaffel
-								else:
-									break
-							cCursor.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=? WHERE ID=?", (AbStaffel, ID))
-							cCursor.execute("DELETE FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel>=?",	(ID, AbStaffel))
-				else:
-					cCursor.execute("UPDATE OR IGNORE SerienMarker SET TimerForSpecials=1 WHERE ID=?", (ID,))
-
-				if not AlleSender:
-					cCursor.execute("SELECT * FROM SenderAuswahl WHERE ID=? AND ErlaubterSender=?", (ID, Sender))
-					row = cCursor.fetchone()
-					if not row:
-						cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
-
-				SerienRecorder.dbSerRec.commit()
-				cCursor.close()
+			(Serie, Staffel, Sender, UTCTime, ID, MarkerFlag) = self[self.modus].getCurrent()[0]
+			(existingID, AbStaffel, AlleSender) = self.database.getMarkerSeasonAndChannelSettings(Serie)
+			if existingID > 0:
+				# Add season and channel of selected series to marker
+				self.database.updateMarkerSeasonAndChannelSettings(existingID, AbStaffel, Staffel, AlleSender, Sender)
+				# Activate marker
+				self.database.setMarkerStatusForBoxID(Serie, config.plugins.serienRec.BoxID.value, True)
 			else:
-				cCursor = SerienRecorder.dbSerRec.cursor()
-				if config.plugins.serienRec.defaultStaffel.value == "0":
-					cCursor.execute(
-						"INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, 0, 1, -1)", (Serie, Url))
-					ID = cCursor.lastrowid
-				else:
-					if str(Staffel).isdigit():
-						cCursor.execute(
-							"INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel) VALUES (?, ?, ?, ?, -1)", (Serie, Url, AbStaffel, AlleSender))
-						ID = cCursor.lastrowid
-						cCursor.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (ID, Staffel))
-					else:
-						cCursor.execute(
-							"INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, useAlternativeChannel, TimerForSpecials) VALUES (?, ?, ?, ?, -1, 1)", (Serie, Url, AbStaffel, AlleSender))
-						ID = cCursor.lastrowid
-					cCursor.execute("INSERT OR IGNORE INTO SenderAuswahl (ID, ErlaubterSender) VALUES (?, ?)", (ID, Sender))
-				erlaubteSTB = 0xFFFF
 				if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
-					erlaubteSTB = 0
-					erlaubteSTB |= (1 << (int(config.plugins.serienRec.BoxID.value) - 1))
-				cCursor.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)", (ID, erlaubteSTB))
-				SerienRecorder.dbSerRec.commit()
-				cCursor.close()
-
+					boxID = config.plugins.serienRec.BoxID.value
+				else:
+					boxID = None
+				self.database.addMarker(ID, Serie, boxID)
 
 			self.changesMade = True
 			global runAutocheckAtExit
@@ -322,16 +279,6 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 			self.buildProposalList()
 			self.chooseMenuList.setList(map(self.buildList, self.proposalList))
-
-	@staticmethod
-	def checkMarker(mSerie):
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		cCursor.execute("SELECT ID, AlleStaffelnAb, alleSender FROM SerienMarker WHERE LOWER(Serie)=?", (mSerie.lower(),))
-		row = cCursor.fetchone()
-		if not row:
-			row = (0, 999999, 0)
-		cCursor.close()
-		return row
 
 	def keyYellow(self):
 		if self.filter:
@@ -343,34 +290,26 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyLeft(self):
 		self[self.modus].pageUp()
 		serien_name = self[self.modus].getCurrent()[0][0]
-		serien_url = self[self.modus].getCurrent()[0][4]
-		self.getCover(serien_name, serien_url)
+		serien_id = self[self.modus].getCurrent()[0][4]
+		SerienRecorder.getCover(self, serien_name, serien_id)
 
 	def keyRight(self):
 		self[self.modus].pageDown()
 		serien_name = self[self.modus].getCurrent()[0][0]
-		serien_url = self[self.modus].getCurrent()[0][4]
-		self.getCover(serien_name, serien_url)
+		serien_id = self[self.modus].getCurrent()[0][4]
+		SerienRecorder.getCover(self, serien_name, serien_id)
 
 	def keyDown(self):
 		self[self.modus].down()
 		serien_name = self[self.modus].getCurrent()[0][0]
-		serien_url = self[self.modus].getCurrent()[0][4]
-		self.getCover(serien_name, serien_url)
+		serien_id = self[self.modus].getCurrent()[0][4]
+		SerienRecorder.getCover(self, serien_name, serien_id)
 
 	def keyUp(self):
 		self[self.modus].up()
 		serien_name = self[self.modus].getCurrent()[0][0]
-		serien_url = self[self.modus].getCurrent()[0][4]
-		self.getCover(serien_name, serien_url)
-
-	def getCover(self, serienName, url):
-		serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-		if serien_id:
-			serien_id = serien_id[0]
-		self.ErrorMsg = "'getCover()'"
-		#SerienRecorder.writeLog("serienRecShowEpisodeInfo(): ID: %s  Serie: %s" % (str(serien_id), serienName))
-		SerienRecorder.getCover(self, serienName, serien_id)
+		serien_id = self[self.modus].getCurrent()[0][4]
+		SerienRecorder.getCover(self, serien_name, serien_id)
 
 	def __onClose(self):
 		self.stopDisplayTimer()

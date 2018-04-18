@@ -32,7 +32,6 @@ class checkGitHubUpdate:
 		self.session = session
 
 	def checkForUpdate(self):
-		writeTestLog("Check for update")
 		import ssl
 		if ssl.OPENSSL_VERSION_NUMBER < 268439552:
 			Notifications.AddPopup("Leider ist die Suche nach SerienRecorder Updates auf Ihrer Box technisch nicht möglich - bitte deaktivieren Sie die automatische Plugin-Update Funktion, in den SerienRecorder Einstellungen, um diese Meldung zu unterdrücken!", MessageBox.TYPE_INFO, timeout=0)
@@ -48,11 +47,9 @@ class checkGitHubUpdate:
 			latestRelease = json.load(rawData)
 			#latestRelease = data[0]
 			latestVersion = latestRelease['tag_name'][1:]
-			writeTestLog("Get latest version from github: %s" % latestVersion)
 
 			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
 			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
-			writeTestLog("Installed version: %s" % config.plugins.serienRec.showversion.value)
 			remoteversion.extend((max([len(remoteversion), len(version)]) - len(remoteversion)) * '0')
 			remoteversion = map(lambda x: int(x), remoteversion)
 			version.extend((max([len(remoteversion), len(version)]) - len(version)) * '0')
@@ -75,7 +72,6 @@ class checkGitHubUpdate:
 						break
 
 				if downloadURL:
-					writeTestLog("New version available at: %s [%d]" % (downloadURL, downloadFileSize))
 					self.session.open(checkGitHubUpdateScreen, self.session, updateName, updateInfo, downloadURL, downloadFileSize)
 		except:
 			Notifications.AddPopup("Unerwarteter Fehler beim Überprüfen der SerienRecorder Version", MessageBox.TYPE_INFO, timeout=3)
@@ -173,7 +169,6 @@ class checkGitHubUpdateScreen(Screen):
 			return
 		else:
 			self.filePath = "/tmp/%s" % self.downloadURL.split('/')[-1]
-			writeTestLog("Start download to: %s" % self.filePath)
 			self['status'].setText("Download wurde gestartet, bitte warten...")
 			self.progress = 0
 			self.inProgres = True
@@ -189,7 +184,6 @@ class checkGitHubUpdateScreen(Screen):
 
 	def cmdData(self, data):
 		self['srlog'].setText(data)
-		writeTestLog(data)
 
 	def updateProgressBar(self):
 		if self.downloadDone:
@@ -219,13 +213,11 @@ class checkGitHubUpdateScreen(Screen):
 			self.progressTimerConnection = None
 
 	def downloadFinished(self, result):
-		writeTestLog("Download finished: %s" % result)
 		self.downloadDone = True
 		self.progress = 0
 		self['status'].setText("")
 
 		if fileExists(self.filePath):
-			writeTestLog("Download successful - start installation")
 			self['status'].setText("Installation wurde gestartet, bitte warten...")
 
 			if isDreamOS():
@@ -237,26 +229,20 @@ class checkGitHubUpdateScreen(Screen):
 				self.console.dataAvail.append(self.cmdData)
 				command = "opkg update && opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.filePath)
 
-			writeTestLog("Executing command: %s" % command)
 			self.console.execute(command)
 		else:
-			writeTestLog("Download failed")
 			self.downloadError("Downloaded file does not exist")
 
 	def downloadError(self, result):
 		self.stopProgressTimer()
-		writeTestLog("Failed to download update: %s" % result)
 		Notifications.AddPopup("Der Download der neuen SerienRecorder Version ist fehlgeschlagen.\nDas Update wird abgebrochen.", type=MessageBox.TYPE_INFO, timeout=10)
 		self.close()
 
 	def finishedPluginUpdate(self, retval):
-		writeTestLog("Installation finished")
 		self.console.kill()
 		self.stopProgressTimer()
 		if fileExists(self.filePath):
-			writeTestLog("Remove package from: %s" % self.filePath)
 			os.remove(self.filePath)
-		writeTestLog("Show restart notification")
 		self.session.openWithCallback(self.restartGUI, MessageBox, text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", type=MessageBox.TYPE_YESNO)
 
 	def restartGUI(self, doRestart):
@@ -265,8 +251,5 @@ class checkGitHubUpdateScreen(Screen):
 		configfile.save()
 
 		if doRestart:
-			writeTestLog("Restart...")
 			self.session.open(Screens.Standby.TryQuitMainloop, 3)
-		else:
-			writeErrorLog("Close without restart")
 		self.close()

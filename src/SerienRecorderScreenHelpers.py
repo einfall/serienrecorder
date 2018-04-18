@@ -3,6 +3,7 @@
 # This file contains the SerienRecoder Screen Helpers
 
 import SerienRecorder
+from SerienRecorderDatabase import SRDatabase
 from SerienRecorderHelpers import *
 
 from Tools.Directories import fileExists
@@ -445,28 +446,15 @@ class serienRecBaseScreen():
 		else:
 			self.close(False)
 
-	def dataError(self, error, url=None):
-		if url:
-			SerienRecorder.writeErrorLog("   serienRecEpisodes(): %s\n   Url: %s" % (error, url))
-		else:
-			SerienRecorder.writeErrorLog("   serienRecEpisodes(): %s" % error)
-		print error
-
 	def stopDisplayTimer(self):
 		if self.displayTimer:
 			self.displayTimer.stop()
 			self.displayTimer = None
 
 	def getCover(self, serienName):
-		cCursor = SerienRecorder.dbSerRec.cursor()
-		cCursor.execute("SELECT Url FROM SerienMarker WHERE LOWER(Serie)=?", (serienName.lower(), ))
-		row = cCursor.fetchone()
-		cCursor.close()
 		serien_id = None
-		if row:
-			(url, ) = row
-			serien_id = re.findall('epg_print.pl\?s=([0-9]+)', url)
-			if serien_id:
-				serien_id = serien_id[0]
-		self.ErrorMsg = "'getCover()'"
+		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		url = database.getMarkerURL(serienName)
+		if url:
+			serien_id = SerienRecorder.getSeriesIDByURL(url)
 		SerienRecorder.getCover(self, serienName, serien_id)
