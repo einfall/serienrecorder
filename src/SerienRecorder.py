@@ -397,7 +397,7 @@ def getCover(self, serien_name, serien_id, auto_check = False):
 	png_serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
 
 	try:
-		if not self and config.plugins.serienRec.showCover.value:
+		if self and config.plugins.serienRec.showCover.value:
 			self['cover'].hide()
 			global coverToShow
 			coverToShow = serien_nameCover
@@ -413,7 +413,7 @@ def getCover(self, serien_name, serien_id, auto_check = False):
 			os.rename(png_serien_nameCover, serien_nameCover)
 
 		if fileExists(serien_nameCover):
-			if not self and config.plugins.serienRec.showCover.value:
+			if self and config.plugins.serienRec.showCover.value:
 				showCover(serien_nameCover, self, serien_nameCover)
 		elif serien_id and (config.plugins.serienRec.showCover.value or (config.plugins.serienRec.downloadCover.value and auto_check)):
 			try:
@@ -1964,10 +1964,10 @@ class serienRecCheckForRecording():
 				transmission = self.tempDB.getTransmissionForTimerUpdate(serien_name, staffel, episode)
 				if transmission:
 					(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = transmission
-					#new_title = "%s - S%sE%s - %s" % (new_serien_name, str(new_staffel).zfill(2), str(new_episode).zfill(2), new_serien_title)
+				#new_title = "%s - S%sE%s - %s" % (new_serien_name, str(new_staffel).zfill(2), str(new_episode).zfill(2), new_serien_title)
 
 				(margin_before, margin_after) = self.database.getMargins(serien_name, webChannel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
-		
+
 				# event_matches = STBHelpers.getEPGEvent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 				event_matches = STBHelpers.getEPGEvent(['RITBDSE',(stbRef, 0, int(serien_time)+(int(margin_before) * 60), -1)], stbRef, serien_name, int(serien_time)+(int(margin_before) * 60))
 				new_event_matches = None
@@ -1977,16 +1977,16 @@ class serienRecCheckForRecording():
 					# Old event not found but new one with different start time
 					event_matches = new_event_matches
 				#else:
-					# Wenn die Sendung zur ursprünglichen Startzeit im EPG gefunden wurde
-					#new_serien_time = serien_time
+				# Wenn die Sendung zur ursprünglichen Startzeit im EPG gefunden wurde
+				#new_serien_time = serien_time
 
+				(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
 				if event_matches and len(event_matches) > 0:
-					(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
 					for event_entry in event_matches:
 						eit = int(event_entry[1])
 						start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
 						end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
-						
+
 						print "[SerienRecorder] try to modify enigma2 Timer:", title, serien_time
 
 						if str(staffel) is 'S' and str(episode) is '0':
@@ -1997,16 +1997,16 @@ class serienRecCheckForRecording():
 						try:
 							# suche in aktivierten Timern
 							timerUpdated = self.updateTimer(recordHandler.timer_list + recordHandler.processed_timers, eit, end_unixtime, episode,
-														  new_serien_title, serien_name, serien_time,
-														  staffel, start_unixtime, stbRef, title,
-														  dirname)
+															new_serien_title, serien_name, serien_time,
+															staffel, start_unixtime, stbRef, title,
+															dirname)
 
-							# if not timerUpdated:
-							# 	# suche in deaktivierten Timern
-							# 	self.updateTimer(recordHandler.processed_timers, eit, end_unixtime, episode,
-							#                               new_serien_title, serien_name, serien_time,
-							#                               staffel, start_unixtime, stbRef, title,
-							#                               dirname)
+						# if not timerUpdated:
+						# 	# suche in deaktivierten Timern
+						# 	self.updateTimer(recordHandler.processed_timers, eit, end_unixtime, episode,
+						#                               new_serien_title, serien_name, serien_time,
+						#                               staffel, start_unixtime, stbRef, title,
+						#                               dirname)
 
 						except Exception:
 							print "[SerienRecorder] Modifying enigma2 Timer failed:", title, serien_time
@@ -5596,10 +5596,10 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 #			self.list.append(getConfigListEntry("    Mailbox alle <n> Minuten überprüfen:", config.plugins.serienRec.imap_check_interval))
 			self.list.append(getConfigListEntry("    Voller Suchlauf mindestens einmal im Erstellungszeitraum:", config.plugins.serienRec.tvplaner_full_check))
 			self.list.append(getConfigListEntry("    Timer nur aus der TV-Planer E-Mail anlegen:", config.plugins.serienRec.tvplaner_skipSerienServer))
-			self.list.append(getConfigListEntry("    Serien aufnehmen:", config.plugins.serienRec.tvplaner_series))
+			self.list.append(getConfigListEntry("    Timer für Serien anlegen:", config.plugins.serienRec.tvplaner_series))
 			if config.plugins.serienRec.tvplaner_series.value:
 				self.list.append(getConfigListEntry("        Neue TV-Planer Serien nur auf dieser Box aktivieren:", config.plugins.serienRec.tvplaner_series_activeSTB))
-			self.list.append(getConfigListEntry("    Filme aufnehmen:", config.plugins.serienRec.tvplaner_movies))
+			self.list.append(getConfigListEntry("    Timer für Filme anlegen:", config.plugins.serienRec.tvplaner_movies))
 			if config.plugins.serienRec.tvplaner_movies.value:
 				self.list.append(getConfigListEntry("        Neue TV-Planer Filme nur auf dieser Box aktivieren:", config.plugins.serienRec.tvplaner_movies_activeSTB))
 				self.list.append(getConfigListEntry("        Speicherort für Filme:", config.plugins.serienRec.tvplaner_movies_filepath))
@@ -5810,9 +5810,9 @@ class serienRecSetup(Screen, ConfigListScreen, HelpableScreen):
 			config.plugins.serienRec.imap_mail_subject :       ("Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)", ""),
 			config.plugins.serienRec.imap_check_interval :     ("Die Mailbox wird alle <n> Minuten überprüft (default: 30)", ""),
 			config.plugins.serienRec.tvplaner_create_marker :  ("Bei 'ja' werden nicht vorhandene Serien Marker automatisch erzeugt", ""),
-			config.plugins.serienRec.tvplaner_series :         ("Bei 'ja' werden Serien aufgenommen", ""),
+			config.plugins.serienRec.tvplaner_series :         ("Bei 'ja' werden Timer für Serien angelegt", ""),
 			config.plugins.serienRec.tvplaner_series_activeSTB: ("Bei 'ja' werden neue TV-Planer Serien nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.", ""),
-			config.plugins.serienRec.tvplaner_movies :         ("Bei 'ja' werden Filme aufgenommen", ""),
+			config.plugins.serienRec.tvplaner_movies :         ("Bei 'ja' werden Timer für Filme angelegt", ""),
 			config.plugins.serienRec.tvplaner_movies_activeSTB: ("Bei 'ja' werden neue TV-Planer Filme nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.", ""),
 			config.plugins.serienRec.tvplaner_movies_filepath :("Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Filmen gespeichert werden.", "Speicherort_der_Aufnahme"),
 			config.plugins.serienRec.tvplaner_movies_createsubdir :            ("Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis (z.B.\n'%s<Filmname>/') für die Aufnahmen erstellt." % config.plugins.serienRec.tvplaner_movies_filepath.value, ""), 	

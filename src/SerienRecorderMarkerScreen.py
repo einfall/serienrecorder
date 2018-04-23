@@ -483,7 +483,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				getSender.insert(0, 'Alle')
 				mode_list = [0,]*len(getSender)
 				index_list = range(len(getSender))
-				channels = self.database.getMarkerChannels(self.select_serie)
+				channels = self.database.getMarkerChannels(self.select_serie, False)
 				if len(channels) > 0:
 					for channel in channels:
 						if channel in getSender:
