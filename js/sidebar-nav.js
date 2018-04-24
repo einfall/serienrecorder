@@ -46,6 +46,7 @@ var data =
 	]},
 	{href: "suche.htm", title: "Die Suche",},
 	{href: "timer-liste.htm", title: "Timer-Liste",},
+	{href: "tv-planer-mail.htm", title: "TV-Planer Mail",},
 	{href: "sonstige.htm", title: "Sonstige Funktionen", submenus: [
 	    { href: "sonstige.htm#cover", title: "Cover"},
         { href: "sonstige.htm#picons", title: "Picons"},
