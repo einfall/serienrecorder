@@ -246,7 +246,7 @@
                             <li>
                                 <i><u>Manuell:</u></i>
                                 <p>Es wird kein automatischer Suchlauf durchgeführt, der Benutzer muss den Suchlauf manuell über die <kbd>EPG</kbd> Taste starten.
-								<br>Ist die <a href="einstellungen.htm#tv-planer-mail"><strong><u>"Wunschliste TV-Planer E-Mail"</u></strong></a> Funktion aktiviert, werden mit <kbd>EPG</kbd> nur die Serien aus der Wunschliste-Mail verarbeitet und mit <kbd>lang EPG</kbd> wird ein voller Suchlauf über alle aktiven Serien gemacht.
+								<br>Ist die <a href="tv-planer-mail.htm"><strong><u>"Wunschliste TV-Planer E-Mail"</u></strong></a> Funktion aktiviert, werden mit <kbd>EPG</kbd> nur die Serien aus der Wunschliste-Mail verarbeitet und mit <kbd>lang EPG</kbd> wird ein voller Suchlauf über alle aktiven Serien gemacht.
 								</p>
                             </li>
                             <li>
@@ -285,16 +285,51 @@
                     <span id="tv-planer-mail" class="anchor"></span>
 					<li>
                         <strong>Wunschliste TV-Planer E-Mail nutzen:</strong>
-                        <p>Hierzu Bitte die PDF-Anleitung aus dem ersten Post im VTI-Forum runterladen. Da sind alle Informationen drin enthalten, die man benötigt, um dies einzurichten.</p>
-						<p>
-						<a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765" target="_blank">VTI-Forum</a>
-						<br>Download / Ansicht: <a href="https://www.vuplus-support.org/wbb4/index.php?attachment/172626-tv-planer-anleitung-v3-pdf/" target="_blank">TV-Planer Anleitung</a>
+						<p>Wird diese Option mit <strong>Ja</strong> aktiviert, dann werden weitere Optionen sichtbar.
 						</p>
-						<p>Eine neue Option steht nicht in der TV-Planer Anleitung, und zwar <strong>"Timer nur aus der TV-Planer E-Mail anlegen"</strong>
-						<br>Dies ist für diejenigen interessant die ihre Serien komplett bei Wunschliste verwalten wollen, also auch dort markieren welche Episoden sie bereits gesehen/aufgezeichnet haben.Die neue Funktion "Timer nur aus der TV-Planer E-Mail anlegen" sorgt dafür, dass der Suchlauf auf dem SerienServer übersprungen wird und nur die Timer erstellt die in der TV-Planer E-Mail vorhanden sind. Es werden nach wie vor Serien-Marker angelegt und auch ALLE Einstellungen im SR beachtet.
+						<ul>
+						<li><strong>IMAP Server:</strong>
+						</li>
+						<li><strong>IMAP Server SSL:</strong>
+						</li>
+						<li><strong>IMAP Server Port:</strong>
+						</li>
+						<li><strong>IMAP Login:</strong>
+						</li>
+						<li><strong>IMAP Passwort:</strong>
+						</li>
+						<li><strong>IMAP Mailbox:</strong>
+						</li>
+						<li><strong>TV-Planer Subject:</strong>
+						</li>
+						<li><strong>maximales Alter der E-Mail (Tage):</strong>
+						</li>
+						<li><strong>Voller Suchlauf mindestens einmal im Erstellungszeitraum:</strong>
+						</li>
+						<li><strong>Timer nur aus der TV-Planer E-Mail anlegen:</strong>
+						</li>
+						<li><strong>Timer für Serien anlegen:</strong>
+							<ul>
+							<li><strong>Neue TV-Planer Serien nur auf dieser Box aktivieren:</strong>
+							</li>
+							</ul>
+						</li>
+						<li><strong>Timer für Filme anlegen:</strong>
+							<ul>
+							<li><strong>Neue TV-Planer Filme nur auf dieser Box aktivieren:</strong>
+							</li>
+							<li><strong>Speicherort für Filme:</strong>
+							</li>
+							<li><strong>Unterverzeichnis für jeden Film:</strong>
+							</li>
+							</ul>
+						</li>
+						</ul>
+						<br>
+						<p>In dem separaten Artikel <a href="tv-planer-mail.htm"><strong>Die TV-Planer Mail von Wunschliste.de</strong></a> werden die obigen Optionen genauer beschrieben und erläutert.
 						</p>
-						<div class="bs-callout bs-callout-info">Eins sei dazu noch gesagt, es ist idR sehr sinnvoll, die Option "Voller Suchlauf mindestens einmal im Erstellungszeitraum" zu aktivieren, denn damit ist sichergestellt, das mind einmal in x Tagen ein voller Suchlauf über alle aktiven Serien gemacht wird.</div>
 					</li>	
+						<br>
 					<li>
                         <strong>Timer für X Tage erstellen:</strong>
                         <p>
@@ -302,7 +337,7 @@
 						<ol type="a">
 							<li><strong><u>3-4 Tage : </u></strong>Dies ist ein "guter" Wert, wenn man Serien dabei hat, die "häufiger" schon mal verschoben werden, sei es nur am gleichen Tag für eine größere Zeitspanne oder aber auch erst an anderen Tagen gesendet werden. Wenn man hier schon Timer für die nächste Woche erstellt, kann es passieren, das diese Timer bis zum Sendetermin nicht vom SR während der Aktualisierung beim AC korrekt geändert werden können, da die Verschiebung des Sendetermins zu groß war.
 							</li>
-							<li><strong><u>8-10 Tage : </u></strong>Hiermit gibt es "eigentlich" auch keine Probleme, denn die meisten Serien haben ja ihren festen Sendeplatz. Die meisten Serien werden ja, wenn überhaupt, nur um wenige Minuten verschoben, was der SR korregiert, sofern man das Aktualisieren in den Einstellungen aktiviert hat. Wenn man bei WL einen Vorlauf von 1 Tag eingestellt hat, werden im SR bei "Timer für 8 Tage erstellen", bei wöchtl. Serien, sowohl der Timer für diese als auch der Timer für die nächste Woche erstellt. 
+							<li><strong><u>8-10 Tage : </u></strong>Hiermit gibt es "eigentlich" auch keine Probleme, denn die meisten Serien haben ja ihren festen Sendeplatz. Die meisten Serien werden ja, wenn überhaupt, nur um wenige Minuten verschoben, was der SR korrigiert, sofern man das Aktualisieren in den Einstellungen aktiviert hat. Wenn man bei WL einen Vorlauf von 1 Tag eingestellt hat, werden im SR bei "Timer für 8 Tage erstellen", bei wöchtl. Serien, sowohl der Timer für diese als auch der Timer für die nächste Woche erstellt. 
 							<br>Dies hat den Vorteil, das man einerseits eine Art "Ausfallsicherung" hat, falls der SR mal einen "Total-Ausfall" hat (was sehr selten vorkommt), dann hat man wenigstens noch genug Zeit um abzuwarten ob der Fehler behoben werden kann bzw genug Zeit sich um die manuelle Erstellung der Timer zu kümmern. Andererseits bietet das Timern über einen größeren Zeitraum den Vorteil, das man schon Timer für nächste Woche erstellt hat und es keine konflickte mit evt. manuell erstellten Timern von anderen Aufnahmen (Filme, Dokus etc) hat. Wenn die Frau oder Kinder gerne das EPG auf Tage im voraus durchforsten und "unzählige" Timer für alles mögliche erstellen, dann kann es schon mal eng werden, für den SR seine Timer zu erstellen.
 							</li>
 						</ol>	
