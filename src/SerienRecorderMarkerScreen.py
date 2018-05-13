@@ -3,6 +3,7 @@
 # This file contains the SerienRecoder Marker Screen
 from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry
+from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
 from SerienRecorderScreenHelpers import *
 from SerienRecorder import *
@@ -718,7 +719,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def selectEpisode(self, episode):
 		if str(episode).isdigit():
-			self.database.setMarkerEpisode(episode, self.select_serie)
+			self.database.setMarkerEpisode(self.select_serie, episode)
 		self.insertStaffelMarker()
 			
 	def __onClose(self):

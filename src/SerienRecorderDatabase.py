@@ -328,7 +328,7 @@ class SRDatabase:
 
 	def removeMovieMarkers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM SerienMarker WHERE Url LIKE 'http://www.wunschliste.de/spielfilm%'")
+		cur.execute("DELETE FROM SerienMarker WHERE Url LIKE 'https://www.wunschliste.de/spielfilm%'")
 		cur.close()
 
 
@@ -491,13 +491,12 @@ class SRDatabase:
 		cur.close()
 		return timer
 
-	def addMarker(self, seriesID, name, boxID):
+	def addMarker(self, url, name, boxID):
 		result = False
 		cur = self._srDBConn.cursor()
 		cur.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", [name.lower()])
 		row = cur.fetchone()
 		if not row:
-			url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
 			cur.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (name, url))
 			erlaubteSTB = 0xFFFF
 			if boxID:

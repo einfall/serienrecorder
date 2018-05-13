@@ -668,7 +668,7 @@ def getEmailData():
 				if part.get_content_type() == 'text/html':
 					return part.get_payload()
 
-	writeLog("\n---------' Laden TV-Planer E-Mail '---------------------------------------------------------------\n", True)
+	writeLog("\n---------' Lade TV-Planer E-Mail '---------------------------------------------------------------\n", True)
 	
 	# get emails
 	if len(config.plugins.serienRec.imap_server.value) == 0:
@@ -1086,16 +1086,25 @@ def getEmailData():
 			# url stored in marker isn't the final one, it is corrected later
 			url = transmissiondict[seriesname][0][-1]
 			try:
-				seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
 				boxID = None
-				if url.startswith(
-						'https://www.wunschliste.de/serie') and config.plugins.serienRec.tvplaner_series_activeSTB.value or url.startswith(
-					'https://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+				if url.startswith('https://www.wunschliste.de/serie'):
+					seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
+					if seriesID > 0:
+						url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
+					else:
+						url = None
+					if config.plugins.serienRec.tvplaner_series_activeSTB.value:
+						boxID = config.plugins.serienRec.BoxID.value
+
+				if url.startswith('https://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
 					boxID = config.plugins.serienRec.BoxID.value
 
-				if database.addMarker(seriesID, doReplaces(seriesname), boxID):
+				if url and database.addMarker(url, doReplaces(seriesname), boxID):
 					writeLog("\nSerien Marker für ' %s ' wurde angelegt" % doReplaces(seriesname), True)
 					print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
+				else:
+					writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % doReplaces(seriesname), True)
+					print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % doReplaces(seriesname)
 			except:
 				writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % doReplaces(seriesname), True)
 				print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % doReplaces(seriesname)
@@ -2329,7 +2338,7 @@ class serienRecCheckForRecording():
 										try:
 											writeLog("' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker wird wieder aus Datenbank gelöscht '" % (serienTitle, row[0]), True)
 											print "[SerienRecorder] ' %s - TV-Planer Marker ist Duplikat zu %s - TV-Planer Marker gelöscht '" % (serienTitle, row[0])
-											cCursor.execute("SELECT ID FROM SerienMarker WHERE Serie=? AND Url LIKE 'http://www.wunschliste.de/serie%'", (serienTitle,))
+											cCursor.execute("SELECT ID FROM SerienMarker WHERE Serie=? AND Url LIKE 'https://www.wunschliste.de/serie%'", (serienTitle,))
 											rowTVPlaner = cCursor.fetchone()
 											if rowTVPlaner:
 												cCursor.execute("DELETE FROM SerienMarker WHERE ID=?", (rowTVPlaner[0],))

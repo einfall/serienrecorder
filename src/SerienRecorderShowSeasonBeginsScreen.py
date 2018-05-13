@@ -263,13 +263,14 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				# Add season and channel of selected series to marker
 				self.database.updateMarkerSeasonAndChannelSettings(existingID, AbStaffel, Staffel, AlleSender, Sender)
 				# Activate marker
-				self.database.setMarkerStatusForBoxID(Serie, config.plugins.serienRec.BoxID.value, True)
+				self.database.setMarkerStatus(Serie, config.plugins.serienRec.BoxID.value, True)
 			else:
 				if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
 					boxID = config.plugins.serienRec.BoxID.value
 				else:
 					boxID = None
-				self.database.addMarker(ID, Serie, boxID)
+				url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(ID)
+				self.database.addMarker(url, Serie, boxID)
 
 			self.changesMade = True
 			global runAutocheckAtExit

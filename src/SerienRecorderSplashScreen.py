@@ -22,15 +22,16 @@ class ShowSplashScreen(Screen):
 	versionHeight = 30
 	versionFontSize = 18
 	if DESKTOP_WIDTH > 1280:
-		screenWidth *= 2
-		screenHeight *= 2
-		imageWidth *= 2
-		imageHeigt *= 2
-		imagePath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/splashscreen_x2.png"
-		versionPosX *= 2
-		versionPosY *= 2
-		versionHeight *= 2
-		versionFontSize *= 2
+		factor = 1.5
+		screenWidth *= factor
+		screenHeight *= factor
+		imageWidth *= factor
+		imageHeigt *= factor
+		imagePath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/splashscreen_x15.png"
+		versionPosX *= factor
+		versionPosY *= factor
+		versionHeight *= factor
+		versionFontSize *= factor
 
 	skin = """
 		<screen name="SerienRecorderSplash" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
