@@ -414,6 +414,10 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				altstbRef = self['popup_list2'].getCurrent()[0][1]
 				print "[SerienRecorder] select:", chlistSender, stbSender, stbRef, altstbSender, altstbRef
 				channels = []
+				if stbSender != "" or altstbSender != "":
+					channels.append((stbSender, stbRef, altstbSender, altstbRef, 1, chlistSender.lower()))
+				else:
+					channels.append((stbSender, stbRef, altstbSender, altstbRef, 0, chlistSender.lower()))
 				self.database.updateChannels(channels, True)
 				self.changesMade = True
 				runAutocheckAtExit = True

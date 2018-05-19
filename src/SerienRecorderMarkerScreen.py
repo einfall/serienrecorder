@@ -379,7 +379,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self.session.openWithCallback(self.readSerienMarker, SerienRecorder.serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
 
 	def keyOK(self):
-		if self.modus == "popup_list":
+		if self.modus == "popup_list":	# Staffel
 			self.select_serie = self['menu_list'].getCurrent()[0][1]
 			select_staffel = self['popup_list'].getCurrent()[0][0]
 			select_mode = self['popup_list'].getCurrent()[0][1]
@@ -389,10 +389,35 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				select_mode = 1
 			else:
 				select_mode = 0
+
 			self.staffel_liste[select_index] = list(self.staffel_liste[select_index])
 			self.staffel_liste[select_index][1] = select_mode
+
+			if select_mode == 1:
+				if select_index == 0:	# 'Manuell'
+					for index in range(1, 3):
+						# Disable all other special rows
+						self.staffel_liste[index] = list(self.staffel_liste[index])
+						self.staffel_liste[index][1] = 0
+				if select_index == 1:	# Alle
+					for index in [0, 3]:
+						# Disable 'Manuell' and 'folgende'
+						self.staffel_liste[index] = list(self.staffel_liste[index])
+						self.staffel_liste[index][1] = 0
+				if select_index == 0 or select_index == 1:  # 'Manuell' oder 'Alle'
+					for index in range(4, len(self.staffel_liste)):
+						# Disable all other season rows
+						self.staffel_liste[index] = list(self.staffel_liste[index])
+						self.staffel_liste[index][1] = 0
+
+				if select_index >= 3:	# Any season
+					for index in [0, 1]:
+						# Disable 'Manuell' and 'Alle'
+						self.staffel_liste[index] = list(self.staffel_liste[index])
+						self.staffel_liste[index][1] = 0
+
 			self.chooseMenuList_popup.setList(map(self.buildList2, self.staffel_liste))
-		elif self.modus == "popup_list2":
+		elif self.modus == "popup_list2":	# Sender
 			self.select_serie = self['menu_list'].getCurrent()[0][1]
 			select_sender = self['popup_list'].getCurrent()[0][0]
 			select_mode = self['popup_list'].getCurrent()[0][1]
@@ -404,6 +429,17 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				select_mode = 0
 			self.sender_liste[select_index] = list(self.sender_liste[select_index])
 			self.sender_liste[select_index][1] = select_mode
+			if select_mode == 1:
+				if select_index == 0:	# 'Alle'
+					# Disable any other channels
+					for index in range(1, len(self.sender_liste)):
+						# Disable all other season rows
+						self.sender_liste[index] = list(self.sender_liste[index])
+						self.sender_liste[index][1] = 0
+				if select_index >= 1:  	# Any channel
+					# Disable 'Alle'
+					self.sender_liste[0] = list(self.sender_liste[0])
+					self.sender_liste[0][1] = 0
 			self.chooseMenuList_popup.setList(map(self.buildList2, self.sender_liste))
 		else:
 			self.staffelSelect()
@@ -420,7 +456,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			
-			staffeln = ["Manuell", "Alle", "Specials", "folgende"]
+			staffeln = ["Manuell", "Alle", "Specials", "Staffeln ab"]
 			staffeln.extend(range(config.plugins.serienRec.max_season.value+1))
 			mode_list = [0,]*len(staffeln)
 			index_list = range(len(staffeln))
@@ -574,68 +610,58 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				self.session.openWithCallback(self.callDisableAll, MessageBox, "Wollen Sie alle Serien-Marker für diese Box deaktivieren?", MessageBox.TYPE_YESNO, default = False)
 
 	def insertStaffelMarker(self):
-		print self.select_serie
-		AbEpisode = 0
-		AlleStaffelnAb = 999999
-		TimerForSpecials = 0
-		self.database.removeAllMarkerSeasons(self.select_serie)
 		(ID, AlleStaffelnAb, AbEpisode, TimerForSpecials) = self.database.getMarkerSeasonSettings(self.select_serie)
 		if ID:
+			self.database.removeAllMarkerSeasons(self.select_serie)
 			liste = self.staffel_liste[1:]
 			liste = zip(*liste)
 			if 1 in liste[1]:
-				#staffeln = ['Manuell','Alle','Specials','folgende',...]
+				#staffel_liste = ['Manuell','Alle','Specials','folgende',...]
 				for row in self.staffel_liste:
 					(staffel, mode, index) = row
-					if (index == 0) and (mode == 1):		# 'Manuell'
-						AlleStaffelnAb = -2
-						AbEpisode = 0
-						TimerForSpecials = 0
-						break
-					elif (index == 1) and (mode == 1):		# 'Alle'
-						AlleStaffelnAb = 0
-						AbEpisode = 0
-						TimerForSpecials = 0
-						break
-					else:
-						if (index == 2) and (mode == 1):		#'Specials'
+					if mode == 1:
+						if index == 0:	# 'Manuell'
+							AlleStaffelnAb = -2
+							AbEpisode = 0
+							TimerForSpecials = 0
+							break
+						elif index == 1:		# 'Alle'
+							AlleStaffelnAb = 0
+							AbEpisode = 0
+							TimerForSpecials = 0
+							break
+						elif index == 2:		#'Specials'
 							TimerForSpecials = 1
-						if (index == 3) and (mode == 1):		#'folgende'
+						elif index == 3:		#'folgende'
 							liste = self.staffel_liste[5:]
 							liste.reverse()
 							liste = zip(*liste)
 							if 1 in liste[1]:
 								idx = liste[1].index(1)
 								AlleStaffelnAb = liste[0][idx]
-								try:
-									idx = liste[1].index(0, idx+1, len(liste[1]))
-									AlleStaffelnAb = liste[0][idx-1]
-								except:
-									AlleStaffelnAb = 0
-									break
-						if (index == 4) and (mode != 1):
+								break
+						elif index > 4:
+								AlleStaffelnAb = 999999
+								AbEpisode = 0
+								self.database.setMarkerSeason(ID, staffel)
+					else:
+						if index == 4:
 							AbEpisode = 0
-						elif (index > 4) and mode == 1:
-							if str(staffel).isdigit():
-								if staffel >= AlleStaffelnAb:
-									#break
-									continue
-								elif (staffel + 1) == AlleStaffelnAb:
-									AlleStaffelnAb = staffel
-								else:
-									self.database.setMarkerSeason(ID, staffel)
+
 			else:
 				AlleStaffelnAb = -2
 				AbEpisode = 0
 
-		self.changesMade = True
-		global runAutocheckAtExit
-		runAutocheckAtExit = True
+		self.database.updateMarkerSeasonsSettings(self.select_serie, AlleStaffelnAb, AbEpisode, TimerForSpecials)
+
 		if config.plugins.serienRec.tvplaner_full_check.value:
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 			config.plugins.serienRec.tvplaner_last_full_check.save()
 			configfile.save()
-		self.database.updateMarkerSeasonsSettings(self.select_serie, AlleStaffelnAb, AbEpisode, TimerForSpecials)
+
+		self.changesMade = True
+		global runAutocheckAtExit
+		runAutocheckAtExit = True
 		self.readSerienMarker()
 
 	def insertSenderMarker(self):

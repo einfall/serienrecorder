@@ -2246,7 +2246,10 @@ class serienRecCheckForRecording():
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(time.time())
 			config.plugins.serienRec.tvplaner_last_full_check.save()
 			configfile.save()
-			fullCheck = "- keine TV-Planer Daten - voller Suchlauf '"
+			if config.plugins.serienRec.tvplaner.value:
+				fullCheck = "- keine TV-Planer Daten - voller Suchlauf '"
+			else:
+				fullCheck = "- voller Suchlauf '"
 		elif config.plugins.serienRec.tvplaner_full_check.value and (int(config.plugins.serienRec.tvplaner_last_full_check.value) + (int(config.plugins.serienRec.checkfordays.value) - 1) * 86400) < int(time.time()):
 			self.markers = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value)
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(time.time())
@@ -4378,7 +4381,8 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			boxID = None
 		else:
 			boxID = config.plugins.serienRec.BoxID.value
-		if database.addMarker(Id, Serie, boxID):
+		url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(Id)
+		if database.addMarker(url, Serie, boxID):
 			writeLog("\nSerien Marker für ' %s ' wurde angelegt" % Serie, True)
 			self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % Serie)
 			self['title'].instance.setForegroundColor(parseColor("green"))
@@ -8553,7 +8557,8 @@ class serienRecMain(Screen, HelpableScreen):
 			else:
 				boxID = config.plugins.serienRec.BoxID.value
 
-			if self.database.addMarker(serien_id, serien_name, boxID):
+			url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(serien_id)
+			if self.database.addMarker(url, serien_name, boxID):
 				writeLog("\nSerien Marker für ' %s ' wurde angelegt" % serien_name, True)
 				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("green"))
