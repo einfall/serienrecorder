@@ -394,18 +394,27 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self.staffel_liste[select_index][1] = select_mode
 
 			if select_mode == 1:
+				deselectRange = None
 				if select_index == 0:	# 'Manuell'
-					for index in range(1, 3):
-						# Disable all other special rows
-						self.staffel_liste[index] = list(self.staffel_liste[index])
-						self.staffel_liste[index][1] = 0
+					# Disable all other special rows
+					deselectRange = range(1, 3)
 				if select_index == 1:	# Alle
-					for index in [0, 3]:
-						# Disable 'Manuell' and 'folgende'
+					# Disable 'Manuell' and 'folgende'
+					deselectRange = [0, 3]
+				if select_index == 2:  # Specials
+					# Disable 'Manuell' and 'Alle'
+					deselectRange = [0, 1]
+				if select_index == 4:  # 0
+					# Disable 'Manuell', 'Alle' and 'folgende'
+					deselectRange = [0, 1, 3]
+
+				if deselectRange:
+					for index in deselectRange:
 						self.staffel_liste[index] = list(self.staffel_liste[index])
 						self.staffel_liste[index][1] = 0
-				if select_index == 0 or select_index == 1:  # 'Manuell' oder 'Alle'
-					for index in range(4, len(self.staffel_liste)):
+
+				if select_index == 0 or select_index == 1 or select_index == 4:  # 'Manuell', 'Alle' or '0'
+					for index in range((5 if select_index == 4 else 4), len(self.staffel_liste)):
 						# Disable all other season rows
 						self.staffel_liste[index] = list(self.staffel_liste[index])
 						self.staffel_liste[index][1] = 0
@@ -456,7 +465,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			
-			staffeln = ["Manuell", "Alle", "Specials", "Staffeln ab"]
+			staffeln = ["Manuell", "Alle (inkl. Specials)", "Specials", "Staffeln ab"]
 			staffeln.extend(range(config.plugins.serienRec.max_season.value+1))
 			mode_list = [0,]*len(staffeln)
 			index_list = range(len(staffeln))
@@ -548,7 +557,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			serien_url = self['menu_list'].getCurrent()[0][2]
 			
 			print serien_url
-			self.session.openWithCallback(self.callTimerAdded, SerienRecorder.serienRecSendeTermine, serien_id, serien_name, serien_url, self.serien_nameCover)
+			self.session.openWithCallback(self.callTimerAdded, serienRecSendeTermine, serien_id, serien_name, serien_url, self.serien_nameCover)
 
 	def callDisableAll(self, answer):
 		if answer:
@@ -616,6 +625,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			liste = self.staffel_liste[1:]
 			liste = zip(*liste)
 			if 1 in liste[1]:
+				TimerForSpecials = 0
+				AlleStaffelnAb = 999999
 				#staffel_liste = ['Manuell','Alle','Specials','folgende',...]
 				for row in self.staffel_liste:
 					(staffel, mode, index) = row
@@ -625,24 +636,22 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 							AbEpisode = 0
 							TimerForSpecials = 0
 							break
-						elif index == 1:		# 'Alle'
+						if index == 1:		# 'Alle'
 							AlleStaffelnAb = 0
 							AbEpisode = 0
 							TimerForSpecials = 0
 							break
-						elif index == 2:		#'Specials'
+						if index == 2:		#'Specials'
 							TimerForSpecials = 1
-						elif index == 3:		#'folgende'
+						if index == 3:		#'folgende'
 							liste = self.staffel_liste[5:]
 							liste.reverse()
 							liste = zip(*liste)
 							if 1 in liste[1]:
 								idx = liste[1].index(1)
 								AlleStaffelnAb = liste[0][idx]
-								break
-						elif index > 4:
-								AlleStaffelnAb = 999999
-								AbEpisode = 0
+						if index > 4:
+							if staffel != AlleStaffelnAb:
 								self.database.setMarkerSeason(ID, staffel)
 					else:
 						if index == 4:
@@ -1295,3 +1304,710 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 	def cancel(self):
 		self.close(False)
+
+
+class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
+	def __init__(self, session, serien_id, serien_name, serie_url, serien_cover):
+		serienRecBaseScreen.__init__(self, session)
+		Screen.__init__(self, session)
+		HelpableScreen.__init__(self)
+		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		self.session = session
+		self.picload = ePicLoad()
+		self.serien_name = serien_name
+		self.addedEpisodes = self.database.getTimerForSeries(serien_name, False)
+		self.serie_url = serie_url
+		self.serien_cover = serien_cover
+		self.skin = None
+		self.serien_id = serien_id
+		self.serien_wl_id = 0
+		self.ErrorMsg = ''
+		self.countTimer = 0
+
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"ok": (self.keyOK, "umschalten ausgewählter Sendetermin aktiviert/deaktiviert"),
+			"cancel": (self.keyCancel, "zurück zur Serien-Marker-Ansicht"),
+			"left": (self.keyLeft, "zur vorherigen Seite blättern"),
+			"right": (self.keyRight, "zur nächsten Seite blättern"),
+			"up": (self.keyUp, "eine Zeile nach oben"),
+			"down": (self.keyDown, "eine Zeile nach unten"),
+			"red": (self.keyRed, "zurück zur Serien-Marker-Ansicht"),
+			"green": (self.keyGreen, "Timer für aktivierte Sendetermine erstellen"),
+			"yellow": (self.keyYellow, "umschalten Filter (aktive Sender) aktiviert/deaktiviert"),
+			"blue": (self.keyBlue, "Ansicht Timer-Liste öffnen"),
+			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
+			"startTeletext": (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
+			"startTeletext_long": (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
+			"0"	: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
+			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
+			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
+			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
+			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
+		}, -1)
+		self.helpList[0][2].sort()
+
+		self["helpActions"] = ActionMap(["SerienRecorderActions" ,], {
+			"displayHelp"      : self.showHelp,
+			"displayHelp_long" : self.showManual,
+		}, 0)
+
+		self.FilterMode = 1
+		self.title_txt = "aktive Sender"
+
+		self.changesMade = False
+
+		self.setupSkin()
+
+		self.sendetermine_list = []
+		self.loading = True
+
+		self.onLayoutFinish.append(self.searchEvents)
+		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
+	def callHelpAction(self, *args):
+		HelpableScreen.callHelpAction(self, *args)
+
+	def setSkinProperties(self):
+		setSkinProperties(self)
+
+		self['text_red'].setText("Abbrechen")
+		self['text_ok'].setText("Auswahl")
+		if self.FilterMode is 1:
+			self['text_yellow'].setText("Filter umschalten")
+			self.title_txt = "aktive Sender"
+		elif self.FilterMode is 2:
+			self['text_yellow'].setText("Filter ausschalten")
+			self.title_txt = "Marker Sender"
+		else:
+			self['text_yellow'].setText("Filter einschalten")
+			self.title_txt = "alle"
+		self['text_blue'].setText("Timer-Liste")
+
+		self.displayTimer = None
+		global showAllButtons
+		if showAllButtons:
+			Skin1_Settings(self)
+		else:
+			self.displayMode = 2
+			self.updateMenuKeys()
+
+			self.displayTimer = eTimer()
+			if isDreamOS():
+				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
+			else:
+				self.displayTimer.callback.append(self.updateMenuKeys)
+			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+
+	def setupSkin(self):
+		InitSkin(self)
+
+		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
+		self.chooseMenuList.l.setItemHeight(int(50 *skinFactor))
+		self['menu_list'] = self.chooseMenuList
+		self['menu_list'].show()
+
+		self['title'].setText("Lade Web-Sender / STB-Sender...")
+
+		if config.plugins.serienRec.showCover.value:
+			self['cover'].show()
+
+		global showAllButtons
+		if not showAllButtons:
+			self['bt_red'].show()
+			self['bt_green'].show()
+			self['bt_ok'].show()
+			self['bt_yellow'].show()
+			self['bt_blue'].show()
+			self['bt_exit'].show()
+			self['bt_text'].show()
+			self['bt_info'].show()
+			self['bt_menu'].show()
+
+			self['text_red'].show()
+			self['text_green'].show()
+			self['text_ok'].show()
+			self['text_yellow'].show()
+			self['text_blue'].show()
+			self['text_0'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
+
+	def serieInfo(self):
+		if self.loading:
+			return
+
+		serien_id = getSeriesIDByURL(self.serie_url)
+		if serien_id:
+			self.session.open(SerienRecorder.serienRecShowInfo, self.serien_name, serien_id)
+
+	# self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
+		#				  MessageBox.TYPE_INFO, timeout=10)
+
+	def youtubeSearch(self):
+		super(self.__class__, self).youtubeSearch(self.serien_name)
+
+	def WikipediaSearch(self):
+		super(self.__class__, self).WikipediaSearch(self.serien_name)
+
+	def setupClose(self, result):
+		if not result[2]:
+			self.close()
+		else:
+			if result[0]:
+				if config.plugins.serienRec.timeUpdate.value:
+					serienRecCheckForRecording(self.session, False, False)
+
+			if result[1]:
+				self.searchEvents()
+
+	def searchEvents(self, result=None):
+		self['title'].setText("Suche ' %s '" % self.serien_name)
+		print "[SerienRecorder] suche ' %s '" % self.serien_name
+		print self.serie_url
+
+		transmissions = None
+		if self.serie_url:
+			self.serien_wl_id = getSeriesIDByURL(self.serie_url)
+			if self.serien_wl_id is None or self.serien_wl_id == 0:
+				# This is a marker created by TV Planer function - get id from server
+				try:
+					self.serien_wl_id = SeriesServer().getIDByFSID(self.serie_url[str.rindex(self.serie_url, '/' ) +1:])
+				except:
+					self.serien_wl_id = 0
+
+			if self.serien_wl_id != 0:
+				print self.serien_wl_id
+
+				SerienRecorder.getCover(self, self.serien_name, self.serien_wl_id)
+
+				if self.FilterMode is 0:
+					webChannels = []
+				elif self.FilterMode is 1:
+					webChannels = self.database.getActiveChannels()
+				else:
+					webChannels = self.database.getMarkerChannels(self.serien_name)
+
+				try:
+					if len(webChannels) > 0:
+						transmissions = SeriesServer().doGetTransmissions(self.serien_wl_id, 0, webChannels)
+				except:
+					transmissions = None
+			else:
+				transmissions = None
+
+		self.resultsEvents(transmissions)
+
+	def resultsEvents(self, transmissions):
+		if transmissions is None:
+			self['title'].setText("Fehler beim Abrufen der Termine für ' %s '" % self.serien_name)
+			return
+		self.sendetermine_list = []
+
+		# Update added list in case of made changes
+		if self.changesMade:
+			self.addedEpisodes = self.database.getTimerForSeries(self.serien_name, False)
+
+		# build unique dir list by season
+		dirList = {}
+		# build unique channel list
+		channelList = {}
+		# build unique margins
+		marginList = {}
+
+		SerieStaffel = None
+		AbEpisode = None
+		try:
+			(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, [self.serien_name])[0]
+		except:
+			SerienRecorder.writeLog("Fehler beim Filtern nach Staffel", True)
+
+		for serien_name ,sender ,startzeit ,endzeit ,staffel ,episode ,title ,status in transmissions:
+			seasonAllowed = True
+			if config.plugins.serienRec.seasonFilter.value:
+				seasonAllowed = self.isSeasonAllowed(staffel, episode, SerieStaffel, AbEpisode)
+
+			if seasonAllowed:
+				datum = time.strftime("%d.%m.%y", time.localtime(startzeit))
+				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+
+				bereits_vorhanden = False
+				if config.plugins.serienRec.sucheAufnahme.value:
+					if not staffel in dirList:
+						dirList[staffel] = getDirname(self.database, serien_name, staffel)
+
+					(dirname, dirname_serie) = dirList[staffel]
+					if str(episode).isdigit():
+						if int(episode) == 0:
+							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True, title) and True or False
+						else:
+							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True) and True or False
+					else:
+						bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, True) and True or False
+
+				if bereits_vorhanden:
+					addedType = 1
+				else:
+					if not sender in marginList:
+						marginList[sender] = self.database.getMargins(serien_name, sender, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
+
+					(margin_before, margin_after) = marginList[sender]
+
+					# check 2 (im timer file)
+					start_unixtime = startzeit - (int(margin_before) * 60)
+
+					if self.isTimerAdded(sender, staffel, episode, int(start_unixtime), title):
+						addedType = 2
+					elif self.isAlreadyAdded(staffel, episode, title):
+						addedType = 3
+					else:
+						addedType = 0
+
+				if not config.plugins.serienRec.timerFilter.value or config.plugins.serienRec.timerFilter.value and addedType == 0:
+					startTime = time.strftime("%H.%M", time.localtime(startzeit))
+					endTime = time.strftime("%H.%M", time.localtime(endzeit))
+					self.sendetermine_list.append \
+						([serien_name, sender, datum, startTime, endTime, staffel, episode, title, status, addedType])
+
+		if len(self.sendetermine_list):
+			self['text_green'].setText("Timer erstellen")
+
+		self.chooseMenuList.setList(map(self.buildList_termine, self.sendetermine_list))
+		self.loading = False
+		self['title'].setText("%s Sendetermine für ' %s ' gefunden. (%s)" %
+		(str(len(self.sendetermine_list)), self.serien_name, self.title_txt))
+
+	@staticmethod
+	def buildList_termine(entry):
+		(serien_name, sender, datum, start, end, staffel, episode, title, status, addedType) = entry
+
+		# addedType: 0 = None, 1 = on HDD, 2 = Timer available, 3 = in DB
+
+		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+
+		imageMinus = "%simages/minus.png" % serienRecMainPath
+		imagePlus = "%simages/plus.png" % serienRecMainPath
+		imageNone = "%simages/black.png" % serienRecMainPath
+
+		if int(status) == 0:
+			leftImage = imageMinus
+		else:
+			leftImage = imagePlus
+
+		imageHDD = imageNone
+		imageTimer = imageNone
+		if addedType == 1:
+			titleColor = None
+			imageHDD = "%simages/hdd_icon.png" % serienRecMainPath
+		elif addedType == 2:
+			titleColor = parseColor('blue').argb()
+			imageTimer = "%simages/timer.png" % serienRecMainPath
+		elif addedType == 3:
+			titleColor = parseColor('green').argb()
+		else:
+			titleColor = parseColor('red').argb()
+
+		foregroundColor = parseColor('foreground').argb()
+
+		return [entry,
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor,
+				 loadPNG(leftImage)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0,
+				 RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender, foregroundColor, foregroundColor),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 150 * skinFactor,
+				 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s %s" % (datum, start)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 7 * skinFactor, 30 * skinFactor,
+				 22 * skinFactor, loadPNG(imageTimer)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 30 * skinFactor, 30 * skinFactor,
+				 22 * skinFactor, loadPNG(imageHDD)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0,
+				 RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, foregroundColor, foregroundColor),
+				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 498 * skinFactor,
+				 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title),
+				 titleColor, titleColor)
+				]
+
+	def isAlreadyAdded(self, season, episode, title=None):
+		result = False
+		# Title is only relevant if season and episode is 0
+		# this happen when Wunschliste has no episode and season information
+		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
+		if seasonEpisodeString != "S00E00":
+			title = None
+		if not title:
+			for addedEpisode in self.addedEpisodes:
+				if addedEpisode[0] == season and addedEpisode[1] == episode:
+					result = True
+					break
+		else:
+			for addedEpisode in self.addedEpisodes:
+				if addedEpisode[0] == season and addedEpisode[1] == episode and addedEpisode[2] == title:
+					result = True
+					break
+
+		return result
+
+	def isTimerAdded(self, sender, season, episode, start_unixtime, title=None):
+		result = False
+		if not title:
+			for addedEpisode in self.addedEpisodes:
+				if addedEpisode[0] == season and addedEpisode[1] == episode and addedEpisode[
+					3] == sender.lower() and int(start_unixtime) - (int(STBHelpers.getEPGTimeSpan()) * 60) <= \
+						addedEpisode[4] <= int(start_unixtime) + (int(STBHelpers.getEPGTimeSpan()) * 60):
+					result = True
+					break
+		else:
+			for addedEpisode in self.addedEpisodes:
+				if ((addedEpisode[0] == season and addedEpisode[1] == episode) or addedEpisode[2] == title) and \
+						addedEpisode[3] == sender.lower() and int(start_unixtime) - (
+						int(STBHelpers.getEPGTimeSpan()) * 60) <= addedEpisode[4] <= int(start_unixtime) + (
+						int(STBHelpers.getEPGTimeSpan()) * 60):
+					result = True
+					break
+
+		return result
+
+	def getTimes(self):
+		changesMade = False
+		self.countTimer = 0
+		if len(self.sendetermine_list) != 0:
+			lt = time.localtime()
+			self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
+			print "\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
+			SerienRecorder.writeLog(
+				"\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit,
+				True)
+			for serien_name, sender, datum, startzeit, endzeit, staffel, episode, title, status, rightimage in self.sendetermine_list:
+				if int(status) == 1:
+					# initialize strings
+					seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+					label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
+
+					# formatiere start/end-zeit
+					(day, month, year) = datum.split('.')
+					(start_hour, start_min) = startzeit.split('.')
+					(end_hour, end_min) = endzeit.split('.')
+
+					start_unixtime = TimeHelpers.getUnixTimeAll(start_min, start_hour, day, month)
+
+					if int(start_hour) > int(end_hour):
+						end_unixtime = TimeHelpers.getNextDayUnixtime(end_min, end_hour, day, month)
+					else:
+						end_unixtime = TimeHelpers.getUnixTimeAll(end_min, end_hour, day, month)
+
+					# setze die vorlauf/nachlauf-zeit
+					(margin_before, margin_after) = self.database.getMargins(serien_name, sender,
+																			 config.plugins.serienRec.margin_before.value,
+																			 config.plugins.serienRec.margin_after.value)
+					start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+					end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
+
+					# get VPS settings for channel
+					vpsSettings = self.database.getVPS(serien_name, sender)
+
+					# get tags from marker
+					tags = self.database.getTags(serien_name)
+
+					# get addToDatabase for marker
+					addToDatabase = self.database.getAddToDatabase(serien_name)
+
+					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
+
+					(dirname, dirname_serie) = SerienRecorder.getDirname(self.database, serien_name, staffel)
+
+					# check anzahl auf hdd und added
+					if str(episode).isdigit():
+						if int(episode) == 0:
+							bereits_vorhanden = self.database.getNumberOfTimers(serien_name, staffel, str(int(episode)),
+																				title, searchOnlyActiveTimers=True)
+							bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
+																				 serien_name, False, title)
+						else:
+							bereits_vorhanden = self.database.getNumberOfTimers(serien_name, staffel, str(int(episode)),
+																				searchOnlyActiveTimers=True)
+							bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
+																				 serien_name, False)
+					else:
+						bereits_vorhanden = self.database.getNumberOfTimers(serien_name, staffel, episode,
+																			searchOnlyActiveTimers=True)
+						bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name,
+																			 False)
+
+					(NoOfRecords, preferredChannel, useAlternativeChannel) = self.database.getPreferredMarkerChannels(
+						serien_name, config.plugins.serienRec.useAlternativeChannel.value,
+						config.plugins.serienRec.NoOfRecords.value)
+
+					params = (serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime,
+							  label_serie, staffel, episode, title, dirname, preferredChannel,
+							  bool(useAlternativeChannel), vpsSettings, tags, addToDatabase)
+					if (bereits_vorhanden < NoOfRecords) and (bereits_vorhanden_HDD < NoOfRecords):
+						TimerDone = self.doTimer(params)
+					else:
+						SerienRecorder.writeLog("Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '" % (
+						serien_name, seasonEpisodeString))
+						TimerDone = self.doTimer(params, config.plugins.serienRec.forceManualRecording.value)
+					if TimerDone:
+						# erstellt das serien verzeichnis und kopiert das Cover in das Verzeichnis
+						SerienRecorder.CreateDirectory(serien_name, dirname, dirname_serie)
+
+			SerienRecorder.writeLog("Es wurde(n) %s Timer erstellt." % str(self.countTimer), True)
+			print "[SerienRecorder] Es wurde(n) %s Timer erstellt." % str(self.countTimer)
+			SerienRecorder.writeLog(
+				"---------' Auto-Check beendet '---------------------------------------------------------------------------------------",
+				True)
+			print "---------' Auto-Check beendet '---------------------------------------------------------------------------------------"
+			# self.session.open(serienRecRunAutoCheck, False)
+			self.session.open(serienRecReadLog)
+			if self.countTimer:
+				changesMade = True
+
+		else:
+			self['title'].setText("Keine Sendetermine ausgewählt.")
+			print "[SerienRecorder] keine Sendetermine ausgewählt."
+
+		return changesMade
+
+	def doTimer(self, params, answer=True):
+		if not answer:
+			return False
+		else:
+			(serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie,
+			 staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags,
+			 addToDatabase) = params
+			# check sender
+			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.database.getChannelInfo(sender,
+																											  self.serien_wl_id,
+																											  self.FilterMode)
+
+			TimerOK = False
+			if stbChannel == "":
+				SerienRecorder.writeLog("' %s ' - Kein STB-Kanal gefunden -> ' %s '" % (serien_name, webChannel))
+			elif int(status) == 0:
+				SerienRecorder.writeLog("' %s ' - STB-Kanel deaktiviert -> ' %s '" % (serien_name, webChannel))
+			else:
+				if config.plugins.serienRec.TimerName.value == "0":
+					timer_name = label_serie
+				elif config.plugins.serienRec.TimerName.value == "2":
+					timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title)
+				else:
+					timer_name = serien_name
+
+				if preferredChannel == 1:
+					timer_stbChannel = stbChannel
+					timer_stbRef = stbRef
+					timer_altstbChannel = altstbChannel
+					timer_altstbRef = altstbRef
+				else:
+					timer_stbChannel = altstbChannel
+					timer_stbRef = altstbRef
+					timer_altstbChannel = stbChannel
+					timer_altstbRef = stbRef
+
+				# try to get eventID (eit) from epgCache
+				eit, end_unixtime_eit, start_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(start_unixtime,
+																							  end_unixtime,
+																							  margin_before,
+																							  margin_after, serien_name,
+																							  timer_stbRef)
+				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+
+				konflikt = None
+
+				# versuche timer anzulegen
+				# if checkTuner(start_unixtime_eit, end_unixtime_eit, timer_stbRef):
+				if True:
+					result = SerienRecorder.serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
+														timer_name, "%s - %s" % (seasonEpisodeString, title), eit,
+														False, dirname, vpsSettings, tags, None)
+					if result["result"]:
+						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef,
+											webChannel, eit, addToDatabase):
+							self.countTimer += 1
+							TimerOK = True
+					else:
+						konflikt = result["message"]
+				else:
+					print "[SerienRecorder] Tuner belegt: %s %s" % (label_serie, startzeit)
+					SerienRecorder.writeLog("Tuner belegt: %s %s" % (label_serie, startzeit), True)
+
+				if not TimerOK and useAlternativeChannel:
+					# try to get eventID (eit) from epgCache
+					alt_eit, alt_end_unixtime_eit, alt_start_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(
+						start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_altstbRef)
+					# versuche timer anzulegen
+					# if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit, timer_altstbRef):
+					if True:
+						result = SerienRecorder.serienRecAddTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit),
+															str(alt_end_unixtime_eit), timer_name,
+															"%s - %s" % (seasonEpisodeString, title), alt_eit, False,
+															dirname, vpsSettings, tags, None)
+						if result["result"]:
+							konflikt = None
+							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit),
+												timer_altstbRef, webChannel, alt_eit, addToDatabase):
+								self.countTimer += 1
+								TimerOK = True
+						else:
+							konflikt = result["message"]
+					else:
+						print "[SerienRecorder] Tuner belegt: %s %s" % (label_serie, startzeit)
+						SerienRecorder.writeLog("Tuner belegt: %s %s" % (label_serie, startzeit), True)
+
+				if (not TimerOK) and (konflikt):
+					SerienRecorder.writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, konflikt), True)
+					dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
+
+					result = SerienRecorder.serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
+														timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True,
+														dirname, vpsSettings, tags, None)
+					if result["result"]:
+						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef,
+											webChannel, eit, addToDatabase, False):
+							self.countTimer += 1
+							TimerOK = True
+						self.database.addTimerConflict(dbMessage, start_unixtime_eit, webChannel)
+
+			return TimerOK
+
+	def isSeasonAllowed(self, season, episode, markerSeasons, fromEpisode):
+		if not markerSeasons and not fromEpisode:
+			return True
+
+		allowed = False
+		if -2 in markerSeasons:  # 'Manuell'
+			allowed = False
+		elif (-1 in markerSeasons) and (0 in markerSeasons):  # 'Alle'
+			allowed = True
+		elif str(season).isdigit():
+			if int(season) == 0:
+				if str(episode).isdigit():
+					if int(episode) < int(fromEpisode):
+						allowed = False
+					else:
+						allowed = True
+			elif int(season) in markerSeasons:
+				allowed = True
+			elif -1 in markerSeasons:  # 'folgende'
+				if int(season) >= max(markerSeasons):
+					allowed = True
+		elif self.database.getSpecialsAllowed(self.serien_name):
+			allowed = True
+
+		return allowed
+
+	def keyOK(self):
+		if self.loading:
+			return
+
+		check = self['menu_list'].getCurrent()
+		if check is None:
+			return
+
+		sindex = self['menu_list'].getSelectedIndex()
+		if len(self.sendetermine_list) != 0:
+			if int(self.sendetermine_list[sindex][8]) == 0:
+				self.sendetermine_list[sindex][8] = "1"
+			else:
+				self.sendetermine_list[sindex][8] = "0"
+			self.chooseMenuList.setList(map(self.buildList_termine, self.sendetermine_list))
+
+	def keyLeft(self):
+		self['menu_list'].pageUp()
+
+	def keyRight(self):
+		self['menu_list'].pageDown()
+
+	def keyDown(self):
+		self['menu_list'].down()
+
+	def keyUp(self):
+		self['menu_list'].up()
+
+	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, addToDatabase,
+					TimerAktiviert=True):
+		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+		if not addToDatabase:
+			print "[SerienRecorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+			SerienRecorder.writeLogFilter("timerDebug", "   Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title))
+			result = True
+		else:
+			if self.database.timerExistsByServiceRef(serien_name, stbRef, start_time, start_time):
+				print "[SerienRecorder] Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+				SerienRecorder.writeLog("   Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title))
+				result = True
+			else:
+				self.database.addToTimerList(serien_name, episode, episode, staffel, title, start_time, stbRef,
+											 webChannel, eit, TimerAktiviert)
+				print "[SerienRecorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
+				SerienRecorder.writeLogFilter("timerDebug",
+							   "   Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title))
+				result = True
+
+		return result
+
+	def keyRed(self):
+		if config.plugins.serienRec.refreshViews.value:
+			self.close(self.changesMade)
+		else:
+			self.close(False)
+
+	def keyGreen(self):
+		if self.getTimes():
+			self.changesMade = True
+			self.searchEvents()
+
+	def keyYellow(self):
+		# self['text_red'].setText("")
+		# self['text_green'].setText("")
+		# self['text_yellow'].setText("")
+
+		self.sendetermine_list = []
+		self.loading = True
+		self.chooseMenuList.setList(map(self.buildList_termine, self.sendetermine_list))
+
+		if self.FilterMode is 0:
+			self.FilterMode = 1
+			self['text_yellow'].setText("Filter umschalten")
+			self.title_txt = "aktive Sender"
+		elif self.FilterMode is 1:
+			self.FilterMode = 2
+			self['text_yellow'].setText("Filter ausschalten")
+			self.title_txt = "Marker Sender"
+		else:
+			self.FilterMode = 0
+			self['text_yellow'].setText("Filter einschalten")
+			self.title_txt = "alle"
+
+		print "[SerienRecorder] suche ' %s '" % self.serien_name
+		self['title'].setText("Suche ' %s '" % self.serien_name)
+		print self.serie_url
+
+		if self.FilterMode is 0:
+			webChannels = []
+		elif self.FilterMode is 1:
+			webChannels = self.database.getActiveChannels()
+		else:
+			webChannels = self.database.getMarkerChannels(self.serien_name)
+
+		try:
+			transmissions = SeriesServer().doGetTransmissions(self.serien_wl_id, 0, webChannels)
+		except:
+			transmissions = None
+		self.resultsEvents(transmissions)
+
+	def keyBlue(self):
+		self.session.openWithCallback(self.searchEvents, SerienRecorder.serienRecTimer)
+
+	def __onClose(self):
+		if self.displayTimer:
+			self.displayTimer.stop()
+			self.displayTimer = None
+
+	def keyCancel(self):
+		if config.plugins.serienRec.refreshViews.value:
+			self.close(self.changesMade)
+		else:
+			self.close(False)

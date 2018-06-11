@@ -498,13 +498,11 @@ class SRDatabase:
 		row = cur.fetchone()
 		if not row:
 			cur.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, 0, 1, 1, -1, 0, -1, 0)", (name, url))
-			erlaubteSTB = 0xFFFF
 			if boxID:
-				erlaubteSTB = 0
+				erlaubteSTB = 0xFFFF
 				erlaubteSTB |= (1 << (int(boxID) - 1))
 				cur.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)",(cur.lastrowid, erlaubteSTB))
 			result = True
-
 		cur.close()
 		return result
 

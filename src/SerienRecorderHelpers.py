@@ -26,7 +26,7 @@ import datetime, os, re, urllib2, sys, time
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.6.12-beta'
+SRVERSION = '3.6.13-beta'
 
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
@@ -38,13 +38,6 @@ def writeTestLog(text):
 
 def decodeISO8859_1(txt, replace=False):
 	txt = unicode(txt, 'ISO-8859-1')
-	txt = txt.encode('utf-8')
-	if replace:
-		txt = doReplaces(txt)
-	return txt
-
-def decodeCP1252(txt, replace=False):
-	txt = unicode(txt, 'cp1252')
 	txt = txt.encode('utf-8')
 	if replace:
 		txt = doReplaces(txt)
