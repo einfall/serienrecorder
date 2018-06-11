@@ -1537,7 +1537,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				bereits_vorhanden = False
 				if config.plugins.serienRec.sucheAufnahme.value:
 					if not staffel in dirList:
-						dirList[staffel] = getDirname(self.database, serien_name, staffel)
+						dirList[staffel] = SerienRecorder.getDirname(self.database, serien_name, staffel)
 
 					(dirname, dirname_serie) = dirList[staffel]
 					if str(episode).isdigit():
