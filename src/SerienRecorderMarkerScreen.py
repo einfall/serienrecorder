@@ -9,6 +9,7 @@ from SerienRecorderScreenHelpers import *
 from SerienRecorder import *
 from SerienRecorderHelpers import *
 from SerienRecorderDatabase import *
+from SerienRecorderEpisodesScreen import *
 
 # Tageditor
 from Screens.MovieSelection import getPreferredTagEditor
@@ -1369,7 +1370,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		HelpableScreen.callHelpAction(self, *args)
 
 	def setSkinProperties(self):
-		setSkinProperties(self)
+		super(self.__class__, self).setSkinProperties()
 
 		self['text_red'].setText("Abbrechen")
 		self['text_ok'].setText("Auswahl")
@@ -1400,6 +1401,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
 
 	def setupSkin(self):
+		self.skin = None
 		InitSkin(self)
 
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
@@ -1760,7 +1762,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				True)
 			print "---------' Auto-Check beendet '---------------------------------------------------------------------------------------"
 			# self.session.open(serienRecRunAutoCheck, False)
-			self.session.open(serienRecReadLog)
+			self.session.open(SerienRecorder.serienRecReadLog)
 			if self.countTimer:
 				changesMade = True
 

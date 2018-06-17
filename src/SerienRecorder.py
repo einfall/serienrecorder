@@ -604,39 +604,41 @@ def getDirname(database, serien_name, staffel):
 	if fileExists(germanSeasonNameConfig):
 		seasonDirName = "Staffel"
 
+	dirname = None
+	seasonsubdir = -1
+	isMovie = False
 	row = database.getDirNames(serien_name)
 	if not row:
-		dirname = config.plugins.serienRec.savetopath.value
-		dirname_serie = dirname
-		if config.plugins.serienRec.seriensubdir.value:
-			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
-			dirname_serie = dirname
-			if config.plugins.serienRec.seasonsubdir.value:
-				dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
-	else: 
+		# It is a movie (because there is no marker)
+		isMovie = True
+	else:
 		(dirname, seasonsubdir, url) = row
 		if url.startswith('https://www.wunschliste.de/spielfilm'):
-			path = config.plugins.serienRec.tvplaner_movies_filepath.value
-			isCreateSerienSubDir = config.plugins.serienRec.tvplaner_movies_createsubdir.value
-			isCreateSeasonSubDir = False
-		else:
-			path = config.plugins.serienRec.savetopath.value
-			isCreateSerienSubDir = config.plugins.serienRec.seriensubdir.value
-			isCreateSeasonSubDir = config.plugins.serienRec.seasonsubdir.value
-		if dirname:
-			if not re.search('.*?/\Z', dirname):
-				dirname = "%s/" % dirname
+			isMovie = True
+
+	if isMovie:
+		path = config.plugins.serienRec.tvplaner_movies_filepath.value
+		isCreateSerienSubDir = config.plugins.serienRec.tvplaner_movies_createsubdir.value
+		isCreateSeasonSubDir = False
+	else:
+		path = config.plugins.serienRec.savetopath.value
+		isCreateSerienSubDir = config.plugins.serienRec.seriensubdir.value
+		isCreateSeasonSubDir = config.plugins.serienRec.seasonsubdir.value
+
+	if dirname:
+		if not re.search('.*?/\Z', dirname):
+			dirname = "%s/" % dirname
+		dirname_serie = dirname
+		if (seasonsubdir == -1) and isCreateSeasonSubDir or (seasonsubdir == 1):
+			dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+	else:
+		dirname = path
+		dirname_serie = dirname
+		if isCreateSerienSubDir:
+			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 			dirname_serie = dirname
-			if (seasonsubdir == -1) and isCreateSeasonSubDir or (seasonsubdir == 1):
+			if isCreateSeasonSubDir:
 				dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
-		else:
-			dirname = path
-			dirname_serie = dirname
-			if isCreateSerienSubDir:
-				dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
-				dirname_serie = dirname
-				if isCreateSeasonSubDir:
-					dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 
 	return dirname, dirname_serie
 
@@ -3165,15 +3167,15 @@ class serienRecCheckForRecording():
 
 			if config.plugins.serienRec.splitEventTimer.value != "0" and '/' in str(episode):
 			# Event-Programmierung auflösen -> 01/1x02/1x03
-				writeLogFilter("timerDebug", "   Event-Programmierung gefunden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+				writeLogFilter("timerDebug", "Event-Programmierung gefunden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
 				splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
 
 				alreadyExistsCount = 0
 				for idx,entry in enumerate(splitedSeasonEpisodeList):
-					title = "dump"
+					splitedTitle = "dump"
 					if useTitles:
-						title = splitedTitleList[idx]
-					alreadyExists = self.database.getNumberOfTimers(serien_name, entry[0], entry[1], title, False)
+						splitedTitle = splitedTitleList[idx]
+					alreadyExists = self.database.getNumberOfTimers(serien_name, entry[0], entry[1], splitedTitle, False)
 					if alreadyExists:
 						alreadyExistsCount += 1
 
@@ -3281,10 +3283,10 @@ class serienRecCheckForRecording():
 
 		if not TimerDone:
 			# post processing event recordings
-			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel in eventRecordings[:]:
-				if self.shouldCreateEventTimer(serien_name, staffel, episode, title):
+			for singleTitle, staffel, singleEpisode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel in eventRecordings[:]:
+				if self.shouldCreateEventTimer(serien_name, staffel, singleEpisode, singleTitle):
 					show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
-					writeLog("' %s ' - Einzelepisoden nicht gefunden! -> %s" % (label_serie, show_start), True)
+					writeLog("   ' %s ' - Einzelepisoden nicht gefunden! -> %s" % (label_serie, show_start), True)
 					# programmiere Timer
 					if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, optionalText, vomMerkzettel):
 						TimerDone = True
@@ -3374,14 +3376,14 @@ class serienRecCheckForRecording():
 						splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
 
 						for idx,entry in enumerate(splitedSeasonEpisodeList):
-							title = "dump"
+							splitedTitle = "dump"
 							if useTitles:
-								title = splitedTitleList[idx]
-							alreadyExists = self.database.getNumberOfTimers(serien_name, entry[0], entry[1], title, False)
+								splitedTitle = splitedTitleList[idx]
+							alreadyExists = self.database.getNumberOfTimers(serien_name, entry[0], entry[1], splitedTitle, False)
 							if not alreadyExists and addToDatabase:
 								# Nicht vorhandene Einzelfolgen als bereits aufgenommen markieren
-								self.database.addToTimerList(serien_name, entry[1], entry[1], entry[0], title, int(time.time()), "", "", 0, 1)
-								writeLogFilter("timerDebug", "   Einzelepisode wird nicht mehr aufgenommen: %s S%sE%s - %s" % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), title))
+								self.database.addToTimerList(serien_name, entry[1], entry[1], entry[0], splitedTitle, int(time.time()-10), "", "", 0, 1)
+								writeLogFilter("timerDebug", "   Einzelepisode wird nicht mehr aufgenommen: %s S%sE%s - %s" % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), splitedTitle))
 
 				self.enableDirectoryCreation = True
 				return True
