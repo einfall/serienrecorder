@@ -224,7 +224,7 @@
 				</p>
 				<br>
 				<p>Im Prinzip sollte jeder IMAP E-Mail Account funktionieren. In dieser Anleitung werden 2 Anbieter als Beispiel aufgeführt. Bei anderen wird es ähnlich sein, aber dazu dann bitte bei dem jeweiligen Anbieter in den Details zum IMAP Account nachlesen.
-				<br>Wie die "Mailboxen" für den Empfang von E-Mails heißen, kann man mit dem SerienRecorder abfragen, wenn alle anderen Daten im SR eingetragen sind. Dazu in der <a href="serienplaner.htm"><strong>Serie-Planer Ansicht</strong></a> die Taste <kbd>5</kbd> drücken. Danach sollte eine Benachrichtigung über einen erfolgreichen Abruf angezeigt werden, sofern die Daten richtig eingegeben wurden. Das Ergebnis wird dann im SR-Log gespeichert und kann mittels Taste <kbd>0</kbd> abgerufen werden. In unseren Beispielen heißt es beide male <strong>"INBOX"</strong>.
+				<br>Wie die "Mailboxen" für den Empfang von E-Mails heißen, kann man mit dem SerienRecorder abfragen, wenn alle anderen Daten im SR eingetragen sind. Dazu in der <a href="serienplaner.htm"><strong>Serien-Planer Ansicht</strong></a> die Taste <kbd>5</kbd> drücken. Danach sollte eine Benachrichtigung über einen erfolgreichen Abruf angezeigt werden, sofern die Daten richtig eingegeben wurden. Das Ergebnis wird dann im SR-Log gespeichert und kann mittels Taste <kbd>0</kbd> abgerufen werden. In unseren Beispielen heißt es beide male <strong>"INBOX"</strong>.
 				</p>
 				
 				<br><br>
@@ -325,8 +325,24 @@
 				</ul>
 				<br><br>
 				
+				<span id="imap-eingabe" class="anchor"></span>
+				<ul>
+				<p>Die Daten für den <strong>IMAP-Acount</strong> (Login, Passwort) können auch mit Hilfe der <strong>Config.backup</strong> über den PC eingegeben werden. Das erspart einem das "Sonderzeichensuchen" auf der Fernbedienung für das meist komplexe Passwort.
+				<br>Hierzu muss man in den <a href="einstellungen.htm#config-backup"><strong><u>Globalen Einstellungen</u></strong></a> die aktuellen Einstellungen in die Datei <strong>Config.backup</strong> speichern. Diese "Text-Datei" kann nun mit einem beliebigen Editor am PC bearbeitet werden. 
+				<br>Man sucht die beiden Einträge 
+				<ul>
+				<li><strong>config.plugins.serienRec.imap_login=*</strong></li>
+				<li><strong>config.plugins.serienRec.imap_password=*</strong></li>
+				</ul>
+				<br>
+				und ersetzt die beiden Sternchen (*) durch die jeweilige Zeichenfolge für Login und Passwort. Die Änderungen speichern und die Datei wieder vom PC auf die Box kopieren/überschreiben.
+				<br>Die Config.backup wieder unter den <a href="einstellungen.htm#config-backup"><strong><u>Globalen Einstellungen</u></strong></a> einladen und schon sind Login und Passwort im SR eingegeben.
+				</p>
+				</ul>
+				
+				<br><br>
 				<p>Falls jemand den Auto-Check im SerienRecorder immer am Tag nach dem Empfang der E-Mail macht, muss das <strong>Maximale Alter der E-Mail (Tage):</strong> auf <strong>"1"</strong> gestellt werden. Grundsätzlich wird aber immer nur <strong>EINE</strong> Mail verarbeitet, und zwar die Aktuellste.
-				<br>Mit der Taste <kbd>5</kbd> kann in der <strong>Serie-Planer Ansicht</strong> ein Test durchgeführt werden, dessen Ergebnis wieder in der SR Log Datei zu finden ist. Dort stehen dann ganz unten, alle Mailboxen des E-Mail Accounts sowie ein kleiner Hinweis ganz unten „IMAP Check OK: (1)“. Die 1 steht für die Anzahl der gefundenen TV-Planer E-Mails von Wunschliste.de, die innerhalb von <strong>Maximales Alter der E-Mail (Tage):</strong> gefunden wurden. Steht das <strong>Maximale Alter der E-Mail (Tage):</strong> auf <strong>"3"</strong> und es ist an den Tagen jeweils eine E-Mail eingetroffen, würde dort stehen: „IMAP Check OK: (4)“.
+				<br>Mit der Taste <kbd>5</kbd> kann in der <strong>Serien-Planer Ansicht</strong> ein Test durchgeführt werden, dessen Ergebnis wieder in der SR Log Datei zu finden ist. Dort stehen dann ganz unten, alle Mailboxen des E-Mail Accounts sowie ein kleiner Hinweis ganz unten „IMAP Check OK: (1)“. Die 1 steht für die Anzahl der gefundenen TV-Planer E-Mails von Wunschliste.de, die innerhalb von <strong>Maximales Alter der E-Mail (Tage):</strong> gefunden wurden. Steht das <strong>Maximale Alter der E-Mail (Tage):</strong> auf <strong>"3"</strong> und es ist an den Tagen jeweils eine E-Mail eingetroffen, würde dort stehen: „IMAP Check OK: (4)“.
 				</p>
 				<p>Die Optionen <strong>"Serien timern:"</strong> und <strong>"Filme timern:"</strong> sind dafür gedacht, wenn jemand mehrere Boxen hat, auf denen der SR läuft, die aber alle auf <strong>EINE</strong> Datenbank zugreifen. Hierüber kann man dann z.B. festlegen, das auf einer Box "nur" Filme getimert werden und "keine" Serien.
 				</p>
