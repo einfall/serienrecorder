@@ -44,31 +44,95 @@ Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
 
-CHANGE-LOG v3.6.0:
+CHANGE-LOG v3.7.0:
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
 
 Neue Funktionen:
-	- Staffel Ordner können jetzt auch mit deutschem Namen ("Staffel") angelegt werden, dazu muss man eine Datei mit dem Namen "Staffel" im SerienRecorder Ordner anlegen.
-	- Staffel Filter bei den Sendeterminen (der Filter kann in den globalen Einstellungen aktiviert werden) - danach werden nur noch die Sendetermine angezeigt die den eingestellten Staffeln am Serien-Marker entsprechen.
-	- Es kann jetzt für jeden Serien-Marker eingestellt werden, ob die erstellten Timer in der Timer-Liste gespeichert werden sollen oder nicht. So kann man auch Timer für Sendungen ohne Staffel- und Episodeninformationen erstellen lassen.
-	- Serien-Marker lassen sich jetzt aus dem EPG bzw. aus der Aufnahmeliste erstellen (EPG/INFO lang im Live TV bzw. MENÜ in der Aufnahmeliste).	
-
+	- CI Support bei der Tunerbeschränkung beim Auto-Check (Vielen Dank an hans13 für die Implementierung)
+	- Die zeitlichen Suchgrenzen für die EPG Suche können jetzt über den Punkt "EPG Suchgrenzen in Minuten" eingestellt werden (bisher fest 10 Minuten)
+	- Beim Auto-Check können jetzt Timer nur aus der TV-Planer E-Mail erstellt werden, es erfolgt kein Abgleich mit dem SerienSever ("Timer nur aus der TV-Planer E-Mail anlegen")
+	- Platzhalter Option für Cover - ist sie aktiviert, werden Platzhalter Dateien für die Cover angelegt, die nicht heruntergeladen werden konnten, so wird nicht immer wieder versucht ein nicht vorhandenes Cover zu laden. Sollte das Cover irgendwann aber doch verfügbar sein, muss die Platzhalter Datei manuell gelöscht werden.
+	- Altes Offline Handbuch (Help Ordner) komplett entfernt und durch das Online Handbuch ersetzt (HELP lang) - Vielen Dank an MartiWin7 die ausführliche Anleitung
+	- Such-Ansicht verbessert, wenn man weitere Ergebnisse nachlädt, wird jetzt automatisch der erste nachgeladene neue Treffer selektiert, so muss man nicht erst wieder durch die komplette Liste navigieren um zu den neuen Ergebnissen zu kommen.
+	- Neuer Skin (HD Border) für Fernseher mit Overscan (Danke an mn2000)
+	- Serien-Infos sind wieder verfügbar (Taste 4), sie stammen jetzt allerdings von TheTVDB und sind leider oft nicht so umfangreich wie von Wunschliste - gerade bei deutschen Serien sind die Infos oft fehlerhaft. Aber da jeder die Daten auf der Homepage von TheTVDB korrigieren kann, hoffe ich auf Besserung.
+	- Episoden-Liste und Episoden-Infos werden von The TVDB geholt
+	- Auto-Backup kann jetzt auch nach dem Auto-Check erstellt werden
+	- Timer Filter für Sendetermine
+	- Am Anfang des Auto-Checks werden jetzt alle Aufnahmeverzeichnisse geprüft, damit soll erreicht werden, dass die Festplatte bzw. das NAS aufwacht
+	- Es wird jetzt im Auto-Check auch ausgegeben wie viele Sender zugeordnet wurden
+	- Staffelauswahl am Serien-Marker verbessert - jetzt werden schon bei der Auswahl kollidierende Option abgeschaltet. Wenn z.B. "Alle" ausgewählt wird, werden alle andere Optionen automatisch abgewählt.
+	
 Änderungen:
-	- Verbessertes Threading - es werden nicht mehr zu viele gleichzeitige Threads erstellt - das hat manchmal zu Problemen geführt.
-	- Logausgabe verbessert.
-	- Meldung zum Herunterfahren der Box wird nur noch dann vom SerienRecorder erzeugt, wenn die Box nicht im Standby war.
-
+	- Datenbank Funktionen in eine eigene Klasse refaktoriert.
+	- Optimierte Timer-Aktualisierung (mit verbesserter Logausgabe).
+	- Der Splash Screen wird bei FHD Skins jetzt größer angezeigt
+	- Es gibt jetzt zwei zusätzliche Logausgaben: "Timer konnte nicht gefunden werden" wenn z.B. der Timer manuell gelöscht wurde und "Sendung konnte nicht im EPG gefunden werden" wenn der EPG nicht aktuell ist - in beiden Fällen wird dann keine Aktualisierung durchgeführt.
+	- Geänderte Logausgabe (Anlegen/Löschen von Serien-Markern) und Rechtschreibfehler beseitigt.
+	- EPG Infos (der Sendung) werden jetzt wieder angezeigt, wenn man die Funktion "Serien-Marker anlegen" aus dem EPG nutzt.
+	- Serien-Marker Ansicht und Serien-Marker-Einstellungen in eigene Datei überführt
+	- Geänderte Defaultwerte für einige Einstellungen
+	- Serien-Marker Ansicht wird jetzt geöffnet wenn ein Marker durch den EPG oder Movieliste angelegt wurde
+	- Sender-Zuordnung kann jetzt auch wieder aus der Planer-Ansicht geöffnet werden
+	- Sendetermine Ansicht wird jetzt korrekt aktualisiert, nachdem ein manueller Timer angelegt wurde
+	- Einstellungen Ansicht zeigt jetzt die richtigen (alten) Werte an, nachdem man die Ansicht ohne Speichern beendet hat
+	- Cover in der Neue Serien/Staffel Ansicht werden jetzt korrekt geladen und angezeigt
+	- Aktualisierung von Timern verbessert (die Suche wird jetzt abgebrochen, sobald eine Sendung im EPG gefunden wurde)
+	- Bei der Erstellung oder Änderung von Timern wird dies im Timer Log protokolliert
+	- In Konflikt stehende Einstellungen sind jetzt ausgeblendet
+	- Code Cleanup
+	- Unterstützung von HTTPS bei der Kommunikation mit dem Serien-Server
+	- Kosmetische Anpassungen an Fehlermeldungen bzw. Dialogtitel
+	- "/" im Serienname wird jetzt durch Leerzeichen ersetzt um Probleme bei der Timererstellung bzw. Dateierstellung zu vermeiden
+	- Es konnte vorkommen, dass bei der Wahl mancher SerienRecorder Skins die Box nach dem Start des SerienRecorders nicht mehr bedienbar war, das lag vermutlich daran, dass ein FHD SerienRecorder Skin ausgewählt wurde, der Box Skin aber nur ein HD Skin war. In diesem Fall wird jetzt automatisch auf den "SerienRecorder 1" Skin zurückgeschaltet.
+	- Verbesserte Verfügbarkeitsprüfung beim Erstellen von Verzeichnis (Stichwort: NAS aufwecken)
+	- Begriff "Folgende" in der Staffelauswahl am Serien-Marker durch "Staffeln ab" ersetzt.
+	- Senderauswahl am Serien-Marker verbessert - jetzt wird bei der Auswahl eines Senders die Zeile "Alle" abgewählt und umgekehrt.
+	- Die Sendetermine Ansicht ist jetzt in ein anderes Modul umgezogen
+	- Die Tasten in der Sendetermine Ansicht werden jetzt immer korrekt angezeigt
+	- Die Taste 5 für den IMAP Test in der Serien-Planer Ansicht ist jetzt beschriftet
+	- Bezeichnungen der Optionen für die TV-Planer Funktionen angeglichen
+	
 Bugfixes:
-	- Auto-Update komplett überarbeitet - es sollte jetzt zuverlässig funktionieren (Änderungen werden natürlich erst mit dem nächsten Auto-Update wirksam).
-	- Sonderzeichenbehandlung bei der TV-Planer Funktion.
-	- Fehlerbehebung beim Herunterfahren der Box durch den SerienRecorder.
-	- Möglicher Absturz beim Abrufen von Sendeterminen.
-	- Senderzuordnung wurde komplett überarbeitet - das automatische Zuordnen von Sendern funktioniert jetzt wieder.
-	- Änderungen bei den globalen Einstellungen wegen Änderungen an VTI 13.
-	- Timer für das kommende Jahr wurden nur im Dezember des Vorjahres richtig erstellt.	
+	- Möglicher Fehler beim Aktualisieren von Timern behoben
+	- Die blaue Taste in der Timer-Liste löscht jetzt nur die noch nicht abgearbeiteten Timer (vorher wurden leider alle Timer gelöscht)
+	- Verbessertes Exception Handling um Abstürze wegen fehlender nicht schreibbarer Logdatei zu verhindern
+	- Möglicher Crash beim Laden der Cover behoben
+	- Fehlerverhalten im Umgang mit der Datenbankdatei
+	- Falscher Defaultpfad für die Datenbank
+	- Möglicher Absturz bzw. falsche Verzeichnisse im Log beim Aktualisieren von Timern
+	- Falsche Default Auswahl der Sender am Serien-Marker in der Ansicht
+	- Spielfilm Marker werden wieder automatisch gelöscht
+	- Verzeichnis für Spielfilme korrigiert
+	- Fehler bei der Event-Programmierung behoben (Timer werden jetzt mit den korrekten Namen angelegt)
+	- Behandlung von Aufnahmeverzeichnissen für Spielfilme korrigiert
 
-Viel Spass mit dem SerienRecorder!
+Gelöschte Funktionen:
+	- Option "Staffel-Auswahl für neue Marker" aus den Einstellungen entfernt.
+	- Error-Log Option aus den Einstellungen entfernt
+	- Offline Handbuch (Help Ordner) entfernt
+	- Lokalisierung (Locale Ordner) entfernt
+	
+
+Anmerkungen:
+	- Die Episoden-Liste und die Episoden-Infos sind jetzt wieder verfügbar - die Daten stammen von der TVDB, sind allerdings nicht so umfangreich wie von Wunschliste. Deswegen wurde das Design der Ansicht geändert - da TVDB keine Originaltitel liefert sind die Zeilen in der Episodenliste nicht mehr so hoch wie früher.
+	- Wie bereits bei den Covern und Serien-Infos erwähnt, fehlen oft Serien in der TVDB oder sind unvollständig. Es muss auch noch geprüft werden ob es noch Änderungen geben muss, weil TVDB die Specials mit Staffel 0 kennzeichnet, da wird es sicher Probleme mit den Timer-Einträgen in der SerienRecorder DB geben die ja von WL stammen - Feedback ist also erwünscht.
+	- Das Auto-Backup kann jetzt auch nach dem Auto-Check gemacht werden, dazu habe ich die Option in den Einstellungen geändert. Als neuer Standard ist jetzt das Backup vor dem Auto-Check immer aktiv. Bitte überprüft ob die Einstellungen zum Thema Backup mit der neuen Version noch stimmen.
+	- Man kann jetzt in den globalen Einstellungen in der Rubrik "GUI" einschalten, dass in der Sendetermine-Ansicht nur noch die Termine angezeigt werden, für die es noch keine Timer in der SerienRecorder Datenbank gibt. Es werden also bei aktivem Timer-Filter nur noch nicht aufgenommen Folgen in den Sendeterminen angezeigt. Die neue Option heißt "Timer Filter".
+	- Die Einstellungen werden jetzt standardmäßig immer in der Experten Ansicht geöffnet - so werden Verwirrungen über fehlende Einstellungen vermieden.
+	- Die neue Funktion "CI Support bei der Tunerbeschränkung beim Auto-Check" sorgt dafür, dass max. ein Tuner mit dem CI Modul belegt wird.
+	Gibt es also zwei Sendungen zur gleichen Zeit die auf Sendern laufen die ein CI Modul benötigen, erkennt der SerienRecorder dies und versucht den Timer der zweiten Sendung zu einer anderen Zeit anzulegen.
+	Diese "Konfliktbehandlung" ist bei allen Images nützlich bei denen das Image selbst diese Prüfung nicht durchführt (z.B. beim Original Dreambox Image).
+	Die Funktion ist nur aktiv wenn es eine "/etc/enigma2/ci<n>.xml" (enthält die Zuordnung zwischen Sender und Modul) und im SerienRecorder die Tuner eingeschränkt wurden.
+	- Die Funktion "EPG Suchgrenzen in Minuten" verbessert die Suche im EPG weil auch Sendungen gefunden werden die gegenüber der WL Ausstrahlungszeit eine größere Abweichung hat.
+	Wenn z.B. eine Sendung bei WL mit einer Startzeit von z.B. 3:20 Uhr angegeben ist, hat der SerienRecorder bisher mit +/- 10 Minuten versucht die Sendung im EPG zu finden (also zwischen 3:10 Uhr und 3:30 Uhr).
+	War im EPG aber eine Startzeit von 3:32 Uhr angegeben, wurde sie vom SerienRecorder nicht gefunden um den Timer zu korrigieren. Durch die neue Option lässt sich der Suchbereich einstellen.
+	- Dies ist für diejenigen interessant die ihre Serien komplett bei Wunschliste verwalten wollen, also auch dort markieren welche Episoden sie bereits gesehen/aufgezeichnet haben.
+	Die neue Funktion "Timer nur aus der TV-Planer E-Mail anlegen" sorgt dafür, dass der Suchlauf auf dem SerienServer übersprungen wird und nur die Timer erstellt die in der TV-Planer E-Mail vorhanden sind.
+
+
+Viel Spaß mit dem SerienRecorder!
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel

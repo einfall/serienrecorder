@@ -26,7 +26,7 @@ import datetime, os, re, urllib2, sys, time
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.6.14-beta'
+SRVERSION = '3.7.0'
 
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):

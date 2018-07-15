@@ -6536,6 +6536,7 @@ class serienRecModifyAdded(Screen, HelpableScreen):
 			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = "%s: Staffel eingeben:" % self.aSerie)
 
 	def keyRed(self):
+		check = None
 		if self.modus == "menu_list":
 			check = self['menu_list'].getCurrent()
 		if check is None:
@@ -7195,7 +7196,7 @@ class serienRecMain(Screen, HelpableScreen):
 		self.chooseMenuList_popup = None
 		self.popup_list = []
 		self.piconLoader = PiconLoader()
-		self.database = SRDatabase(serienRecDataBaseFilePath)
+		self.database = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
@@ -7564,6 +7565,7 @@ class serienRecMain(Screen, HelpableScreen):
 			self.close()
 			return
 
+		self.database = SRDatabase(serienRecDataBaseFilePath)
 		if not self.database.hasChannels():
 			print "[SerienRecorder] Channellist is empty !"
 			self.session.openWithCallback(self.readPlanerData, serienRecMainChannelEdit)
