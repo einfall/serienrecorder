@@ -72,7 +72,7 @@ class checkGitHubUpdate:
 						break
 
 				if downloadURL:
-					self.session.open(checkGitHubUpdateScreen, self.session, updateName, updateInfo, downloadURL, downloadFileSize)
+					self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
 		except:
 			Notifications.AddPopup("Unerwarteter Fehler beim Überprüfen der SerienRecorder Version", MessageBox.TYPE_INFO, timeout=3)
 
@@ -107,6 +107,7 @@ class checkGitHubUpdateScreen(Screen):
 						)
 
 	def __init__(self, session, updateName, updateInfo, downloadURL, downloadFileSize):
+		Screen.__init__(self, session)
 		self.session = session
 		self.updateAvailable = False
 		self.updateInfo = updateInfo
@@ -124,9 +125,6 @@ class checkGitHubUpdateScreen(Screen):
 			self.progressTimerConnection = self.progressTimer.timeout.connect(self.updateProgressBar)
 		else:
 			self.progressTimer.callback.append(self.updateProgressBar)
-
-
-		Screen.__init__(self, session)
 
 		self["actions"] = ActionMap(["SerienRecorderActions",], {
 			"ok"    : self.keyOK,
@@ -222,11 +220,11 @@ class checkGitHubUpdateScreen(Screen):
 
 			if isDreamOS():
 				self.console.appClosed.connect(self.finishedPluginUpdate)
-				self.console.dataAvail.connect(self.cmdData)
+				#self.console.dataAvail.connect(self.cmdData)
 				command = "apt-get update && dpkg -i %s && apt-get -f install" % str(self.filePath)
 			else:
 				self.console.appClosed.append(self.finishedPluginUpdate)
-				self.console.dataAvail.append(self.cmdData)
+				#self.console.dataAvail.append(self.cmdData)
 				command = "opkg update && opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.filePath)
 
 			self.console.execute(command)
@@ -240,16 +238,22 @@ class checkGitHubUpdateScreen(Screen):
 
 	def finishedPluginUpdate(self, retval):
 		self.console.kill()
-		self.stopProgressTimer()
+		#self.stopProgressTimer()
+		self['status'].setText("")
 		if fileExists(self.filePath):
 			os.remove(self.filePath)
-		self.session.openWithCallback(self.restartGUI, MessageBox, text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", type=MessageBox.TYPE_YESNO)
+		if retval == 0:
+			config.plugins.serienRec.showStartupInfoText.value = True
+			config.plugins.serienRec.showStartupInfoText.save()
+			configfile.save()
+			self.session.openWithCallback(self.restartGUI, MessageBox, text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", type=MessageBox.TYPE_YESNO)
+		else:
+			self.session.openWithCallback(self.closeUpdate, MessageBox, text="Der SerienRecorder konnte nicht aktualisiert werden!", type=MessageBox.TYPE_ERROR)
 
 	def restartGUI(self, doRestart):
-		config.plugins.serienRec.showStartupInfoText.value = True
-		config.plugins.serienRec.showStartupInfoText.save()
-		configfile.save()
-
 		if doRestart:
 			self.session.open(Screens.Standby.TryQuitMainloop, 3)
+		self.close()
+	
+	def closeUpdate(self):
 		self.close()
