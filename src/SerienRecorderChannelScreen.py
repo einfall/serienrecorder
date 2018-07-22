@@ -10,11 +10,11 @@ from Components.MenuList import MenuList
 from enigma import eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, loadPNG, RT_VALIGN_CENTER, eTimer
 from skin import parseColor
 
-from SerienRecorderHelpers import *
 from SerienRecorderAboutScreen import *
 from SerienRecorderScreenHelpers import *
 from SerienRecorderSeriesServer import *
 from SerienRecorderDatabase import *
+from SerienRecorderHelpers import *
 import SerienRecorder
 
 class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):

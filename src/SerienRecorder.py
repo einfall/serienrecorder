@@ -240,7 +240,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.firstscreen = ConfigSelection(choices = [("0","SerienPlaner"), ("1", "SerienMarker")], default="0")
 	
 	# interne
-	config.plugins.serienRec.version = NoSave(ConfigText(default="036"))
+	config.plugins.serienRec.version = NoSave(ConfigText(default="037"))
 	config.plugins.serienRec.showversion = NoSave(ConfigText(default=SerienRecorderHelpers.SRVERSION))
 	config.plugins.serienRec.screenplaner = ConfigInteger(1, (1,2))
 	config.plugins.serienRec.recordListView = ConfigInteger(0, (0,1))
@@ -1167,10 +1167,14 @@ def initDB():
 			return False
 
 		if not dbVersionMatch:
+			writeLog("Database ist zu alt - sie muss aktualisiert werden...", True)
 			database.close()
 			backupSerienRecDataBaseFilePath = "%sSerienRecorder_old.db" % config.plugins.serienRec.databasePath.value
+			writeLog("Erstelle Datenbank Backup - es kann nach erfolgreichem Update gelöscht werden: %s" % backupSerienRecDataBaseFilePath, True)
 			shutil.copy(serienRecDataBaseFilePath, backupSerienRecDataBaseFilePath)
 			database = SRDatabase(serienRecDataBaseFilePath)
+			database.update(config.plugins.serienRec.dbversion.value)
+			writeLog("Datenbank von Version %s auf Version %s aktualisiert" % (dbVersion, config.plugins.serienRec.dbversion.value), True)
 
 	# Analyze database for query optimizer
 	database.optimize()

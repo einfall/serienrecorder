@@ -120,7 +120,7 @@ class SRDatabase:
 
 		return dbVersion
 
-	def update(self):
+	def update(self, version):
 		"""
 		Update database if too old
 		:return:
@@ -210,6 +210,7 @@ class SRDatabase:
 																  ErlaubteSTB INTEGER, 
 																  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
 
+		cur.execute("UPDATE OR IGNORE dbInfo SET Value=? WHERE Key='Version'", [version])
 		cur.close()
 
 	def optimize(self):
