@@ -101,19 +101,19 @@
 					</p>
 					<div class="alert alert-info" role="alert">Auch wenn es eine <a href="einstellungen.htm#erstelle-backup"><strong><u>Backup-Funktion</u></strong></a> im SerienRecorder (SR) gibt, die man auch ruhig nutzen sollte, denn damit werden alle wichtigen Dateien des SR (extern) gesichert, gibt es keine Funktion, dieses Backup automatisch in den SR wieder einzuladen. Daher muss das Sichern und Wiederherstellen manuell erledigt werden.</div>
 				<ol type="a">	
-					<li><u>Die Datenbank (DB)</u>.
+					<li><u><strong>Die Datenbank (DB)</strong></u>.
 						<br>In der Datenbank sind die "wichtigsten" Daten des SR gespeichert, u.a. die Serien-Marker, die schon getimerten Episoden und die Senderzuordnung.
 						<br>Die DB, <strong>SerienRecorder.db</strong>, befindet sich idR im Verzeichnis <strong>"/etc/enigma2/"</strong> und kann einfach kopiert bzw. gesichert werden. Im neuen System wird sie einfach, nach der Installation des SR und am besten vor dem ersten Start des SR ins Standard-Verzeichnis <strong>"/etc/enigma2/"</strong> kopiert.
 					</li>
-					<li><u>Die Config des SerienRecorder (SR)</u>
+					<li><u><strong>Die Config des SerienRecorder (SR)</strong></u>
 						<p>Die Datei <strong>Config.backup</strong> befindet sich im Plugin Verzeichnis was idR <strong>"/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"</strong> lautet.
 						<br>Die Config des SR lässt sich in den globalen Einstellungen mit <kbd class="yellow">in Datei speichern</kbd> abspeichern, um sie dann zu sichern für den Umzug.
 						<br>Auf dem neuen System wird dann die <strong>Config.backup</strong> vor dem ersten Start des SR in dessen Plugin Verzeichnis kopiert und nach dem Start des SR in den globalen Einstellungen mit <kbd class="blue">aus Datei laden</kbd> wieder eingelesen. Damit werden nicht nur die Einstellungen des SR wiederhergestellt, sondern (falls verwendet) auch idR die Zugangsdaten für WL zum Empfang der TV-Planer-Mail.
 						</p>
 					</li>
 					<li>
-						<u>Die timers.xml</u>
-						<p>In dieser Datei sind die noch ausstehenden Timer der Box enthalten.
+						<u><strong>Die timers.xml</strong></u>
+						<p>Diese befindet sich im Verzeichnis <strong>"/etc/enigma2/"</strong> und dort sind die noch ausstehenden Timer der Box enthalten.
 						</p>
 						<div class="alert alert-info" role="alert">Falls jemand keine noch ausstehenden Timer auf seiner Box sichern muss/möchte, kann er diesen Punkt überspringen.</div>
 						<p>Diese Datei gehört zum System der Box und ist im laufenden Betrieb idR nicht änderbar oder überschreibbar. Sie kann zwar einfach kopiert werden, was das Backup des SR auch macht, aber zum Wiederherstellen auf einem anderen System, muss das neue System erst angehalten werden, dann die Datei ersetzen und danach das System wieder starten.
@@ -124,12 +124,12 @@
 						</p>
 					</li>
 					<li>
-						<u>Die Datei Serienrecorder.log</u>
+						<u><strong>Die Datei Serienrecorder.log</strong></u>
 						<p>Diese Datei (bzw. auch die mit Datum und Uhrzeit im Namen) ist nicht für den Umzug nötig, auch wenn sie im Backup des SR mit gesichert wird. Sie sollte aber nicht "vernachlässigt" werden, da mit dessen Hilfe, Probleme/Fehler bei der Timererstellung des SR auch im Nachhinein evtl. gelöst werden können, wenn man sie lange genug vorhält.
 						<br>Das SR Log steht idR im Plugin Verzeichnis.
 						</p>
 					</li>
-					<li><u>Cover</u>
+					<li><u><strong>Cover</strong></u>
 						<p>Wenn man die Anzeige von Covern im SR nutzt, kann man diese natürlich auch sichern und hinterher wieder rein kopieren, damit das nochmalige herunterladen wegfällt.
 						</p>
 					</li>
