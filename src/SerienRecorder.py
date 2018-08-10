@@ -247,7 +247,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.addedListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.wishListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
-	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.6"))
+	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.7"))
 
 	# Override settings for maxWebRequests, AutoCheckInterval and due to restrictions of Wunschliste.de
 	config.plugins.serienRec.maxWebRequests.setValue(1)
@@ -814,7 +814,7 @@ def getEmailData():
 			self.transmission_save = []
 			self.transmissions = []
 			self.season = '0'
-			self.episode = '0'
+			self.episode = '00'
 		def handle_starttag(self, tag, attrs):
 			# print "Encountered a start tag:", tag, attrs
 			if self.state == 'time' and tag == 'table':
@@ -861,7 +861,8 @@ def getEmailData():
 					self.transmission_save = self.transmission + []
 					self.transmission.append(self.season)
 					self.transmission.append(self.episode)
-					self.season = self.episode = '0'
+					self.season = '0'
+					self.episode = '00'
 					self.state = 'transmission_title'
 			elif self.state == 'transmission_title_end' and tag == 'span' :
 				found = False
@@ -1065,7 +1066,7 @@ def getEmailData():
 		transmission += [ season ]
 		# episode
 		if episode == '':
-			episode = '0'
+			episode = '00'
 		transmission += [ episode ]
 		# title
 		transmission += [ doReplaces(quopri.decodestring(titel)) ]
@@ -1976,7 +1977,12 @@ class serienRecCheckForRecording():
 
 				new_serien_title = serien_title
 				new_serien_time = 0
-				transmission = self.tempDB.getTransmissionForTimerUpdate(serien_name, staffel, episode)
+				transmission = None
+				if str(episode).isdigit():
+					if int(episode) != 0:
+						transmission = self.tempDB.getTransmissionForTimerUpdate(serien_name, staffel, episode)
+				else:
+					transmission = self.tempDB.getTransmissionForTimerUpdate(serien_name, staffel, episode)
 				if transmission:
 					(new_serien_name, new_staffel, new_episode, new_serien_title, new_serien_time) = transmission
 				#new_title = "%s - S%sE%s - %s" % (new_serien_name, str(new_staffel).zfill(2), str(new_episode).zfill(2), new_serien_title)
@@ -2004,7 +2010,7 @@ class serienRecCheckForRecording():
 
 						print "[SerienRecorder] try to modify enigma2 Timer:", title, serien_time
 
-						if str(staffel) is 'S' and str(episode) is '0':
+						if (str(staffel) is 'S' or str(staffel) is '0') and (str(episode) is '0' or str(episode) is '00'):
 							writeLog("' %s - %s '" % (title, dirname), True)
 							writeLog("   Timer kann nicht aktualisiert werden @ %s" % webChannel, True)
 							break
@@ -2524,18 +2530,6 @@ class serienRecCheckForRecording():
 		# in den deep-standby fahren.
 		self.askForDSB()
 
-	# @staticmethod
-	# def downloadTransmissions(seriesID, timeSpan, markerChannels):
-	# 	#print "downloadTransmission"
-	# 	try:
-	# 		transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
-	# 	except:
-	# 		print "downloadTransmissions: failed"
-	# 		global transmissionFailed
-	# 		transmissionFailed = True
-	# 		transmissions = None
-	# 	return transmissions
-
 	def processTransmission(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
 		print "processTransmissions: %r" % serien_name
 		#print data
@@ -2581,7 +2575,7 @@ class serienRecCheckForRecording():
 			# give us an episode number we are unable to differentiate between these specials
 			if not staffel and not episode:
 				staffel = "S"
-				episode = "0"
+				episode = "00"
 
 			# initialize strings
 			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
@@ -2756,13 +2750,10 @@ class serienRecCheckForRecording():
 					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
 					if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
 						continue
-			
-			# if there is no season or episode number it can be a special
-			# but if we have more than one special and wunschliste.de does not
-			# give us an episode number we are unable to differentiate between these specials
+
 			if not staffel and not episode:
-				staffel = "S"
-				episode = "0"
+				staffel = "0"
+				episode = "00"
 			
 			# initialize strings
 			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
@@ -2778,11 +2769,11 @@ class serienRecCheckForRecording():
 			#
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(self.senderListe, sender)
 			if stbChannel == "":
-				writeLogFilter("channels", "' %s ' - STB-Channel nicht gefunden ' -> ' %s '" % (label_serie, webChannel))
+				writeLogFilter("channels", "' %s ' - STB-Sender nicht gefunden ' -> ' %s '" % (label_serie, webChannel))
 				continue
 			
 			if int(status) == 0:
-				writeLogFilter("channels", "' %s ' - STB-Channel deaktiviert -> ' %s '" % (label_serie, webChannel))
+				writeLogFilter("channels", "' %s ' - STB-Sender deaktiviert -> ' %s '" % (label_serie, webChannel))
 				continue
 			
 			##############################
@@ -2798,7 +2789,7 @@ class serienRecCheckForRecording():
 				serieAllowed = True
 			
 			if not serieAllowed:
-				writeLogFilter("allowedSender", "' %s ' - Sender nicht erlaubt -> %s -> %s" % (label_serie, sender, allowedSender))
+				writeLogFilter("channels", "' %s ' - Sender nicht erlaubt -> %s -> %s" % (label_serie, sender, allowedSender))
 				continue
 			
 			##############################
@@ -2816,7 +2807,7 @@ class serienRecCheckForRecording():
 				if int(staffel) == 0:
 					if str(episode).isdigit():
 						if int(episode) < int(AbEpisode):
-							if config.plugins.serienRec.writeLogAllowedSender.value:
+							if config.plugins.serienRec.writeLogAllowedEpisodes.value:
 								liste = staffeln[:]
 								liste.sort()
 								liste.reverse()
@@ -2845,8 +2836,7 @@ class serienRecCheckForRecording():
 					vomMerkzettel = True
 
 			if not serieAllowed:
-				#if config.plugins.serienRec.writeLogAllowedSender.value:
-				if False:
+				if config.plugins.serienRec.writeLogAllowedEpisodes.value:
 					liste = staffeln[:]
 					liste.sort()
 					liste.reverse()

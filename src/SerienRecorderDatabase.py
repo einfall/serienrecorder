@@ -196,6 +196,13 @@ class SRDatabase:
 		except:
 			pass
 
+		try:
+			cur = self._srDBConn.cursor()
+			cur.execute("UPDATE AngelegteTimer SET Episode = '00' WHERE rowid IN (SELECT rowid  FROM AngelegteTimer WHERE Staffel='0' AND (Episode='' OR Episode='0'))")
+			cur.close()
+		except:
+			pass
+
 		cur = self._srDBConn.cursor()
 		cur.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
 																	  StartZeitstempel INTEGER NOT NULL, 
@@ -711,14 +718,14 @@ class SRDatabase:
 		cur = self._srDBConn.cursor()
 		if searchOnlyActiveTimers:
 			if title is None:
-				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND TimerAktiviert=1", (series.lower(), str(season).lower(), episode.lower()))
+				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND TimerAktiviert=1", (series.lower(), str(season).lower(), str(episode).lower()))
 			else:
-				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND TimerAktiviert=1", (series.lower(), str(season).lower(), episode.lower(), title.lower()))
+				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND TimerAktiviert=1", (series.lower(), str(season).lower(), str(episode).lower(), title.lower()))
 		else:
 			if title is None:
-				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (series.lower(), str(season).lower(), episode.lower()))
+				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (series.lower(), str(season).lower(), str(episode).lower()))
 			else:
-				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=?", (series.lower(), str(season).lower(), episode.lower(), title.lower()))
+				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=?", (series.lower(), str(season).lower(), str(episode).lower(), title.lower()))
 		(Anzahl,) = cur.fetchone()
 		cur.close()
 		return Anzahl
@@ -1017,6 +1024,7 @@ class SRTempDatabase:
 
 	def connect(self):
 		self._tempDBConn = sqlite3.connect(":memory:")
+		#self._tempDBConn = sqlite3.connect("/etc/enigma2/SerienRecorderTemp.db")
 		self._tempDBConn.isolation_level = None
 		self._tempDBConn.text_factory = lambda x: str(x.decode("utf-8"))
 

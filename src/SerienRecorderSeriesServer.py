@@ -187,6 +187,8 @@ class SeriesServer:
 		for event in transmissions['events']:
 			if event['season'] is '':
 				event['season'] = '0'
+			if event['episode'] is '':
+				event['episode'] = '00'
 			resultList.append([seriesName.encode('utf-8'), event['channel'].encode('utf-8'), event['start'], event['end'], event['season'], event['episode'], event['title'].encode('utf-8'), "0"])
 
 		return resultList
