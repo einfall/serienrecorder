@@ -26,7 +26,7 @@ import datetime, os, re, urllib2, sys, time
 WebTimeout = 10
 
 STBTYPE = None
-SRVERSION = '3.7.2-beta'
+SRVERSION = '3.7.4-beta'
 
 def writeTestLog(text):
 	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
@@ -44,11 +44,17 @@ def decodeISO8859_1(txt, replace=False):
 	return txt
 
 def doReplaces(txt):
-	txt = txt.replace('...','').replace('..','').replace(':','').replace('/','-')
-	txt = txt.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
-	txt = txt.replace("'", '')
-	txt = re.sub(r"\[.*\]", "", txt).strip()
-	return txt
+	non_allowed_characters = "/.\\:*?<>|\"'"
+	cleanedString = ''
+
+	for c in txt:
+		if c in non_allowed_characters or ord(c) < 32:
+			c = "_"
+		cleanedString += c
+
+	cleanedString = cleanedString.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
+	cleanedString = re.sub(r"\[.*\]", "", cleanedString).strip()
+	return cleanedString
 
 def getSeriesIDByURL(url):
 	result = None
@@ -124,6 +130,25 @@ def getmac(interface):
 	except:
 		mac = "00:00:00:00:00:00"
 	return mac[0:17]
+
+def getChangedSeriesNames(markers):
+	IDs = []
+	for marker in markers:
+		(Serie, WLID) = marker
+		IDs.append(WLID)
+
+	from SerienRecorderSeriesServer import SeriesServer
+	series = SeriesServer().getSeriesNamesAndWLID(IDs)
+
+	result = {}
+	for marker in markers:
+		try:
+			(Serie, WLID) = marker
+			if Serie != series[str(WLID)]:
+				result[str(WLID)] = (Serie, series[str(WLID)])
+		except:
+			continue
+	return result
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -51,6 +51,12 @@ class SeriesServer:
 		except:
 			return 0
 
+	def getSeriesNamesAndWLID(self, wlIDs):
+		try:
+			return self.server.sp.cache.getNamesByWLIDs(wlIDs)
+		except:
+			return {}
+
 	def getSeriesInfo(self, seriesID):
 		infoText = ""
 		try:

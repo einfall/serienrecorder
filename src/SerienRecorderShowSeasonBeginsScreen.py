@@ -137,7 +137,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			self.buildProposalList()
 
 	def buildProposalList(self):
-		markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
+		markers = self.database.getAllMarkerStatusForBoxID(config.plugins.serienRec.BoxID.value)
 
 		self.proposalList = []
 
@@ -151,12 +151,12 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				continue
 
 			seriesName = event['name'].encode('utf-8')
-			lowerCaseSeriesName = seriesName.lower()
+			seriesID = int(event['id'])
 
 			# marker flags: 0 = no marker, 1 = active marker, 2 = inactive marker
 			markerFlag = 0
-			if lowerCaseSeriesName in markers:
-				markerFlag = 1 if markers[lowerCaseSeriesName] else 2
+			if seriesID in markers:
+				markerFlag = 1 if markers[seriesID] else 2
 
 			self.proposalList.append([seriesName, event['season'], event['channel'].encode('utf-8'), event['start'], event['id'], markerFlag])
 

@@ -247,7 +247,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.addedListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.wishListSorted = ConfigYesNo(default = False)
 	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default = False)
-	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.7"))
+	config.plugins.serienRec.dbversion = NoSave(ConfigText(default="3.8"))
 
 	# Override settings for maxWebRequests, AutoCheckInterval and due to restrictions of Wunschliste.de
 	config.plugins.serienRec.maxWebRequests.setValue(1)
@@ -643,6 +643,9 @@ def getDirname(database, serien_name, staffel):
 	return dirname, dirname_serie
 
 def CreateDirectory(serien_name, dirname, dirname_serie, cover_only = False):
+	serien_name = doReplaces(serien_name)
+	#dirname = doReplaces(dirname)
+	#dirname_serie = doReplaces(dirname_serie)
 	if not fileExists(dirname) and not cover_only:
 		print "[SerienRecorder] Erstelle Verzeichnis %s" % dirname
 		writeLog("Erstelle Verzeichnis: ' %s '" % dirname)
@@ -1044,10 +1047,10 @@ def getEmailData():
 			continue
 		
 		# series
-		transmission = [ doReplaces(seriesname) ]
+		transmission = [ seriesname ]
 		# channel
 		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
-		transmission += [ doReplaces(channel) ]
+		transmission += [ channel ]
 		# start time
 		(hour, minute) = starttime.split(':')
 		transmissionstart_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
@@ -1069,7 +1072,7 @@ def getEmailData():
 			episode = '00'
 		transmission += [ episode ]
 		# title
-		transmission += [ doReplaces(quopri.decodestring(titel)) ]
+		transmission += [ quopri.decodestring(titel) ]
 		# last
 		transmission += [ '0' ]
 		# url
@@ -1103,15 +1106,15 @@ def getEmailData():
 					boxID = config.plugins.serienRec.BoxID.value
 
 				if url and not database.markerExists(url):
-					if database.addMarker(url, doReplaces(seriesname), boxID):
-						writeLog("\nSerien Marker für ' %s ' wurde angelegt" % doReplaces(seriesname), True)
-						print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % doReplaces(seriesname)
+					if database.addMarker(url, seriesname, boxID):
+						writeLog("\nSerien Marker für ' %s ' wurde angelegt" % seriesname, True)
+						print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % seriesname
 					else:
-						writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % doReplaces(seriesname), True)
-						print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % doReplaces(seriesname)
+						writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
+						print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
 			except:
-				writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % doReplaces(seriesname), True)
-				print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % doReplaces(seriesname)
+				writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
+				print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
 
 	return transmissiondict
 
@@ -1616,7 +1619,7 @@ class serienRecCheckForRecording():
 				self.epgrefresh_instance = epgrefresh
 				config.plugins.serienRec.autochecktype.addNotifier(self.setEPGRefreshCallback)
 			except Exception as e:
-				writeLog("EPGRefresh not installed! " + str(e), True)
+				writeLog("EPGRefresh plugin nicht installiert! " + str(e), True)
 
 	@staticmethod
 	def createBackup():
@@ -1666,7 +1669,13 @@ class serienRecCheckForRecording():
 				else:
 					self.epgrefresh_instance.removeFinishNotifier(self.startCheck)
 		except Exception as e:
-			writeLog("EPGRefresh (v2.1.1 or higher) not installed! " + str(e), True)
+			try:
+				from Tools.HardwareInfoVu import HardwareInfoVu
+				pass
+			except:
+				writeLog("Um die EPGRefresh Optionen nutzen zu können, muss mindestens die EPGRefresh Version 2.1.1 installiert sein. " + str(e), True)
+
+
 
 	@staticmethod
 	def getNextAutoCheckTimer(lt):
@@ -1785,7 +1794,7 @@ class serienRecCheckForRecording():
 
 		if config.plugins.serienRec.writeLogVersion.value:
 			writeLog("STB Type: %s\nImage: %s" % (STBHelpers.getSTBType(), STBHelpers.getImageVersionString()), True)
-		writeLog("SR Version: %s" % config.plugins.serienRec.showversion.value, True)
+		writeLog("SR Version: %s\nDatenbank Version: %s" % (config.plugins.serienRec.showversion.value, str(self.database.getVersion())), True)
 		writeLog("Skin Auflösung: %s x %s" % (str(getDesktop(0).size().width()), str(getDesktop(0).size().height())), True)
 
 		sMsg = "\nDEBUG Filter: "
@@ -1897,7 +1906,7 @@ class serienRecCheckForRecording():
 			start_m = event["time"][+3:]
 			start_time = TimeHelpers.getUnixTimeWithDayOffset(start_h, start_m, daypage)
 
-			serien_name = doReplaces(event["name"].encode("utf-8"))
+			serien_name = event["name"].encode("utf-8")
 			serien_name_lower = serien_name.lower()
 			sender = event["channel"]
 			title = event["title"].encode("utf-8")
@@ -2315,7 +2324,6 @@ class serienRecCheckForRecording():
 					worker.start()
 
 				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
-					serienTitle = doReplaces(serienTitle)
 					if SerieUrl.startswith('https://www.wunschliste.de/spielfilm'):
 						# temporary marker for movie recording
 						print "[SerienRecorder] ' %s - TV-Planer Film wird ignoriert '" % serienTitle
@@ -4343,7 +4351,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 		if id_Serie == "-1":
 			year_Serie = ""
 
-		name_Serie = doReplaces(name_Serie)
+		#name_Serie = doReplaces(name_Serie)
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name_Serie),
@@ -4359,7 +4367,7 @@ class serienRecAddSerie(Screen, HelpableScreen):
 			print "[SerienRecorder] keine infos gefunden"
 			return
 
-		Serie = doReplaces(self['menu_list'].getCurrent()[0][0])
+		Serie = self['menu_list'].getCurrent()[0][0]
 		Year = self['menu_list'].getCurrent()[0][1]
 		Id = self['menu_list'].getCurrent()[0][2]
 		print Serie, Year, Id
@@ -7623,7 +7631,7 @@ class serienRecMain(Screen, HelpableScreen):
 			headDate = [data["date"]]
 
 
-			markers = self.database.getAllMarkersForBoxID(config.plugins.serienRec.BoxID.value)
+			markers = self.database.getAllMarkerStatusForBoxID(config.plugins.serienRec.BoxID.value)
 			timers = self.database.getTimer(self.page)
 
 			for event in data["events"]:
@@ -7633,8 +7641,9 @@ class serienRecMain(Screen, HelpableScreen):
 				start_m = event["time"][+3:]
 				start_time = TimeHelpers.getUnixTimeWithDayOffset(start_h, start_m, self.page)
 
-				serien_name = doReplaces(event["name"].encode("utf-8"))
+				serien_name = event["name"].encode("utf-8")
 				serien_name_lower = serien_name.lower()
+				serien_id = int(event["id"])
 				sender = event["channel"]
 				title = event["title"].encode("utf-8")
 				staffel = event["season"]
@@ -7648,8 +7657,8 @@ class serienRecMain(Screen, HelpableScreen):
 						aufnahme = True
 
 				# 0 = no marker, 1 = active marker, 2 = deactive marker
-				if serien_name_lower in markers:
-					serieAdded = 1 if markers[serien_name_lower] else 2
+				if serien_id in markers:
+					serieAdded = 1 if markers[serien_id] else 2
 
 				staffel = str(staffel).zfill(2)
 				episode = str(episode).zfill(2)
@@ -7680,7 +7689,6 @@ class serienRecMain(Screen, HelpableScreen):
 				prime = False
 				transmissionTime = event["time"]
 				url = ''
-				serien_id = event["id"]
 				self.daylist[0].append((regional,paytv,neu,prime,transmissionTime,url,serien_name,sender,staffel,episode,title,aufnahme,serieAdded,bereits_vorhanden,serien_id))
 
 			print "[SerienRecorder] Es wurden %s Serie(n) gefunden" % len(self.daylist[0])
@@ -7724,20 +7732,19 @@ class serienRecMain(Screen, HelpableScreen):
 			self.daylist = [[]]
 			headDate = [data["date"]]
 
-			markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
+			markers = self.database.getAllMarkerStatusForBoxID(config.plugins.serienRec.BoxID.value)
 
 			rank = 0
 			for serie in data["series"]:
-				serien_name = doReplaces(serie["name"].encode("utf-8"))
-				serien_name_lower = serien_name.lower()
+				serien_name = serie["name"].encode("utf-8")
+				serien_id = int(serie["id"])
 				average = serie["average"]
 
 				# 0 = no marker, 1 = active marker, 2 = deactive marker
 				serieAdded = 0
-				if serien_name_lower in markers:
-					serieAdded = 1 if markers[serien_name_lower] else 2
+				if serien_id in markers:
+					serieAdded = 1 if markers[serien_id] else 2
 
-				serien_id = serie["id"]
 				rank += 1
 				self.daylist[0].append((serien_name, average, serien_id, serieAdded, rank))
 
@@ -7770,8 +7777,8 @@ class serienRecMain(Screen, HelpableScreen):
 			seriesColor = parseColor('red').argb()
 		else:
 			seriesColor = None
-			if aufnahme:
-				seriesColor = parseColor('blue').argb()
+		if aufnahme:
+			seriesColor = parseColor('blue').argb()
 
 		titleColor = timeColor = parseColor('foreground').argb()
 

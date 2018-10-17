@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pickle
 import shutil
 import sqlite3
@@ -5,7 +6,7 @@ import time
 
 import SerienRecorderHelpers
 import SerienRecorder
-
+import SerienRecorderSeriesServer
 
 class SRDatabase:
 	def __init__(self, dbfilepath):
@@ -199,6 +200,24 @@ class SRDatabase:
 		try:
 			cur = self._srDBConn.cursor()
 			cur.execute("UPDATE AngelegteTimer SET Episode = '00' WHERE rowid IN (SELECT rowid  FROM AngelegteTimer WHERE Staffel='0' AND (Episode='' OR Episode='0'))")
+			cur.close()
+		except:
+			pass
+
+		try:
+			# Update Series-Markers
+			markers = self.getMarkerNamesAndWLID()
+			changedMarkers = SerienRecorderHelpers.getChangedSeriesNames(markers)
+			SerienRecorder.writeLog("Es wurden %d geänderte Seriennamen gefunden" % len(changedMarkers), True)
+
+			cur = self._srDBConn.cursor()
+			for key, val in changedMarkers.items():
+				cur.execute("UPDATE SerienMarker SET Serie = ? WHERE Url = ?", (val[1], 'http://www.wunschliste.de/epg_print.pl?s=' + key))
+				SerienRecorder.writeLog("SerienMarker Tabelle aktualisiert [%s] => [%s]: %d" % (val[0], val[1], cur.rowcount), True)
+				cur.execute("UPDATE AngelegteTimer SET Serie = ? WHERE TRIM(Serie) = ?", (val[1], val[0]))
+				SerienRecorder.writeLog("AngelegteTimer Tabelle aktualisiert [%s]: %d" % (val[1], cur.rowcount), True)
+				cur.execute("UPDATE Merkzettel SET Serie = ? WHERE TRIM(Serie) = ?", (val[1], val[0]))
+				SerienRecorder.writeLog("Merkzettel Tabelle aktualisiert [%s]: %d" % (val[1], cur.rowcount), True)
 			cur.close()
 		except:
 			pass
@@ -444,17 +463,25 @@ class SRDatabase:
 		cur.close()
 		return fromTime, toTime
 
-	def getAllMarkersForBoxID(self, boxID):
+	def getAllMarkerStatusForBoxID(self, boxID):
 		markers = {}
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT LOWER(Serie), ErlaubteSTB FROM SerienMarker LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID")
+		cur.execute("SELECT SUBSTR(Url, INSTR(Url, '=') + 1)  AS wl_id, ErlaubteSTB FROM SerienMarker LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID")
 		rows = cur.fetchall()
 		for row in rows:
-			(seriesName, allowedSTB) = row
+			(wl_id, allowedSTB) = row
 			seriesActivated = True
 			if allowedSTB is not None and not (allowedSTB & (1 << (int(boxID) - 1))):
 				seriesActivated = False
-			markers[seriesName] = seriesActivated
+			markers[int(wl_id)] = seriesActivated
+		cur.close()
+		return markers
+
+	def getMarkerNamesAndWLID(self):
+		cur = self._srDBConn.cursor()
+		sql = "SELECT Serie, SUBSTR(Url, INSTR(Url, '=') + 1)  AS wl_id FROM SerienMarker"
+		cur.execute(sql)
+		markers = cur.fetchall()
 		cur.close()
 		return markers
 
@@ -904,8 +931,8 @@ class SRDatabase:
 		if seriesFilter is not None and len(seriesFilter) > 0:
 			where = ' WHERE Serie IN ('
 			for i in range(len(seriesFilter) - 1):
-				where += '"' + SerienRecorderHelpers.doReplaces(seriesFilter[i]) + '",'
-			where += '"' + SerienRecorderHelpers.doReplaces(seriesFilter[-1]) + '")'
+				where += '"' + seriesFilter[i] + '",'
+			where += '"' + seriesFilter[-1] + '")'
 
 		cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays FROM SerienMarker" + where + " ORDER BY Serie")
 		rows = cur.fetchall()

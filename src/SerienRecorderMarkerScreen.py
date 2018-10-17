@@ -935,7 +935,13 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		HelpableScreen.callHelpAction(self, *args)
 
 	def setSkinProperties(self):
-		setSkinProperties(self)
+		super(self.__class__, self).setSkinProperties()
+
+		self['text_red'].setText("Abbrechen")
+		self['text_green'].setText("Speichern")
+		self['text_ok'].setText("Ordner auswählen")
+
+		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
 		self.skin = None
@@ -948,9 +954,6 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self['config_information_text'].show()
 
 		self['title'].setText("SerienRecorder - Einstellungen für '%s':" % self.Serie)
-		self['text_red'].setText("Abbrechen")
-		self['text_green'].setText("Speichern")
-		self['text_ok'].setText("Ordner auswählen")
 		global showAllButtons
 		if not showAllButtons:
 			self['text_0'].setText("Abbrechen")
@@ -967,12 +970,6 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self['text_ok'].show()
 			self['text_0'].show()
 			self['text_1'].show()
-		else:
-			self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
-								[buttonText_na, buttonText_na, buttonText_na],
-								[buttonText_na, buttonText_na, buttonText_na],
-								[buttonText_na, buttonText_na, "Hilfe"],
-								[buttonText_na, buttonText_na, buttonText_na])
 
 	def createConfigList(self):
 		self.margin_before_index = 1
@@ -1385,20 +1382,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			self.title_txt = "alle"
 		self['text_blue'].setText("Timer-Liste")
 
-		self.displayTimer = None
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
-		else:
-			self.displayMode = 2
-			self.updateMenuKeys()
-
-			self.displayTimer = eTimer()
-			if isDreamOS():
-				self.displayTimer_conn = self.displayTimer.timeout.connect(self.updateMenuKeys)
-			else:
-				self.displayTimer.callback.append(self.updateMenuKeys)
-			self.displayTimer.start(config.plugins.serienRec.DisplayRefreshRate.value * 1000)
+		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
 		self.skin = None
