@@ -1550,8 +1550,6 @@ class serienRecCheckForRecording():
 		self.tvplaner_manuell = tvplaner_manuell
 		print "1__init__ tvplaner_manuell: ", tvplaner_manuell
 		self.newSeriesOrEpisodesFound = False
-		self.color_print = "\033[93m"
-		self.color_end = "\33[0m"
 		self.senderListe = {}
 		self.markers = []
 		self.MessageList = []
@@ -1604,8 +1602,8 @@ class serienRecCheckForRecording():
 			else:
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
-			print "%s[SerienRecorder] Auto-Check Uhrzeit-Timer gestartet.%s" % (self.color_print, self.color_end)
-			print "%s[SerienRecorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
+			print "[SerienRecorder] Auto-Check Uhrzeit-Timer gestartet."
+			print "[SerienRecorder] Verbleibende Zeit: %s Stunden" % (TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))))
 			writeLog("Verbleibende Zeit bis zum nächsten Auto-Check: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if self.manuell:
@@ -1694,7 +1692,7 @@ class serienRecCheckForRecording():
 
 		self.manuell = manuell
 		self.tvplaner_manuell = tvplaner_manuell
-		print "%s[SerienRecorder] settings:%s" % (self.color_print, self.color_end)
+		print "[SerienRecorder] settings:"
 		print "manuell:", manuell
 		print "tvplaner_manuell:", tvplaner_manuell
 		print "uhrzeit check:", config.plugins.serienRec.timeUpdate.value
@@ -1740,7 +1738,7 @@ class serienRecCheckForRecording():
 			if refreshTimerConnection:
 				refreshTimerConnection = None
 
-			print "%s[SerienRecorder] Auto-Check Timer stop.%s" % (self.color_print, self.color_end)
+			print "[SerienRecorder] Auto-Check Timer stop."
 			writeLog("Auto-Check stop.", True)
 
 		if config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
@@ -1752,8 +1750,8 @@ class serienRecCheckForRecording():
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value)*60)) * 1000, True)
 
-			print "%s[SerienRecorder] Auto-Check Uhrzeit-Timer gestartet.%s" % (self.color_print, self.color_end)
-			print "%s[SerienRecorder] Verbleibende Zeit: %s Stunden%s" % (self.color_print, TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), self.color_end)
+			print "[SerienRecorder] Auto-Check Uhrzeit-Timer gestartet."
+			print "[SerienRecorder] Verbleibende Zeit: %s Stunden" % (TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))))
 			writeLog("Auto-Check Uhrzeit-Timer gestartet.", True)
 			writeLog("Verbleibende Zeit: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
@@ -7257,8 +7255,6 @@ class serienRecMain(Screen, HelpableScreen):
 		self.pRegional = 0
 		self.pPaytv = 1
 		self.pPrime = 1
-		self.color_print = "\033[93m"
-		self.color_end = "\33[0m"
 		self.page = 0
 		self.modus = "list"
 		self.loading = True

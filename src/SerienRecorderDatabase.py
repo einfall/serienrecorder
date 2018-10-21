@@ -469,11 +469,14 @@ class SRDatabase:
 		cur.execute("SELECT SUBSTR(Url, INSTR(Url, '=') + 1)  AS wl_id, ErlaubteSTB FROM SerienMarker LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID")
 		rows = cur.fetchall()
 		for row in rows:
-			(wl_id, allowedSTB) = row
-			seriesActivated = True
-			if allowedSTB is not None and not (allowedSTB & (1 << (int(boxID) - 1))):
-				seriesActivated = False
-			markers[int(wl_id)] = seriesActivated
+			try:
+				(wl_id, allowedSTB) = row
+				seriesActivated = True
+				if allowedSTB is not None and not (allowedSTB & (1 << (int(boxID) - 1))):
+					seriesActivated = False
+				markers[int(wl_id)] = seriesActivated
+			except:
+				continue
 		cur.close()
 		return markers
 
