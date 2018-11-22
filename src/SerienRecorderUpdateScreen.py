@@ -119,7 +119,6 @@ class checkGitHubUpdateScreen(Screen):
 		self.downloadFileSize = downloadFileSize
 		self.filePath = None
 		self.console = eConsoleAppContainer()
-
 		self.progressTimer = eTimer()
 		if isDreamOS():
 			self.progressTimerConnection = self.progressTimer.timeout.connect(self.updateProgressBar)
@@ -181,6 +180,7 @@ class checkGitHubUpdateScreen(Screen):
 		self.close()
 
 	def cmdData(self, data):
+		print data
 		self['srlog'].setText(data)
 
 	def updateProgressBar(self):
@@ -211,49 +211,60 @@ class checkGitHubUpdateScreen(Screen):
 			self.progressTimerConnection = None
 
 	def downloadFinished(self, result):
+		print "[SerienRecorder] downloadFinished"
 		self.downloadDone = True
 		self.progress = 0
 		self['status'].setText("")
 
+		print "[SerienRecorder] Filepath: " + self.filePath
 		if fileExists(self.filePath):
 			self['status'].setText("Installation wurde gestartet, bitte warten...")
 
 			if isDreamOS():
 				self.console.appClosed.connect(self.finishedPluginUpdate)
-				#self.console.dataAvail.connect(self.cmdData)
+				self.console.dataAvail.connect(self.cmdData)
 				command = "apt-get update && dpkg -i %s && apt-get -f install" % str(self.filePath)
 			else:
 				self.console.appClosed.append(self.finishedPluginUpdate)
-				#self.console.dataAvail.append(self.cmdData)
+				self.console.dataAvail.append(self.cmdData)
 				command = "opkg update && opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.filePath)
 
-			self.console.execute(command)
+			print "[SerienRecorder] Executing command: " + command
+			retval = self.console.execute(command)
+			print "[SerienRecorder] Return: " + str(retval)
 		else:
-			self.downloadError("Downloaded file does not exist")
+			self.downloadError()
 
-	def downloadError(self, result):
+	def downloadError(self):
 		self.stopProgressTimer()
 		Notifications.AddPopup("Der Download der neuen SerienRecorder Version ist fehlgeschlagen.\nDas Update wird abgebrochen.", type=MessageBox.TYPE_INFO, timeout=10)
 		self.close()
 
 	def finishedPluginUpdate(self, retval):
-		self.console.kill()
+		print "[SerienRecorder] finishPluginUpdate [retval = " + str(retval) + "]"
+		#self.console.kill()
 		#self.stopProgressTimer()
 		self['status'].setText("")
 		if fileExists(self.filePath):
+			print "[SerienRecorder] Removing file: " + self.filePath
 			os.remove(self.filePath)
+
 		if retval == 0:
 			config.plugins.serienRec.showStartupInfoText.value = True
 			config.plugins.serienRec.showStartupInfoText.save()
 			configfile.save()
-			self.session.openWithCallback(self.restartGUI, MessageBox, text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?", type=MessageBox.TYPE_YESNO)
+			self.session.openWithCallback(self.restartGUI, MessageBox,
+			                              text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?",
+			                              type=MessageBox.TYPE_YESNO)
 		else:
-			self.session.openWithCallback(self.closeUpdate, MessageBox, text="Der SerienRecorder konnte nicht aktualisiert werden!", type=MessageBox.TYPE_ERROR)
+			self.session.openWithCallback(self.closeUpdate, MessageBox,
+			                              text="Der SerienRecorder konnte nicht aktualisiert werden!",
+			                              type=MessageBox.TYPE_ERROR)
 
 	def restartGUI(self, doRestart):
 		if doRestart:
 			self.session.open(Screens.Standby.TryQuitMainloop, 3)
 		self.close()
 	
-	def closeUpdate(self):
+	def closeUpdate(self, retval):
 		self.close()

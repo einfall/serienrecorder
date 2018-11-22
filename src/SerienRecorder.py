@@ -945,13 +945,17 @@ def getEmailData():
 					self.state = 'transmission_table'
 			elif self.state == 'transmission_start':
 				# match start time
-				time_regexp=re.compile('(.*?) Uhr')
-				time = time_regexp.findall(data)
-				if len(time) > 0:
-					self.transmission.append(time[0])
-					self.state = 'transmission_url'
+				if data == 'Anzeige':
+					# Skip if row is advertisement
+					self.state = 'transmission'
 				else:
-					self.state = 'error'
+					time_regexp = re.compile('(.*?) Uhr')
+					time = time_regexp.findall(data)
+					if len(time) > 0:
+						self.transmission.append(time[0])
+						self.state = 'transmission_url'
+					else:
+						self.state = 'error'
 			elif self.state == 'transmission_serie':
 				# match serie
 				self.data += data
