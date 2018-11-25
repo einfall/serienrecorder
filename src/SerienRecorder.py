@@ -17,12 +17,12 @@ from Components.Sources.StaticText import StaticText
 
 from Plugins.Plugin import PluginDescriptor
 
-from twisted.web.client import getPage
+#from twisted.web.client import getPage
 from twisted.web.client import downloadPage
-from twisted.web import client, error as weberror
+#from twisted.web import client, error as weberror
 from twisted.internet import reactor, defer
 
-from HTMLParser import HTMLParser
+from Tools.Directories import fileExists
 
 from Tools.NumericalTextInput import NumericalTextInput
 from Tools.LoadPixmap import LoadPixmap
@@ -40,9 +40,6 @@ import Screens.Standby
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, loadPNG, RT_WRAP, eServiceReference, getDesktop, loadJPG, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, gPixmapPtr, ePicLoad, eTimer, eServiceCenter
 import sys, os, base64, re, time, shutil, datetime, codecs, urllib, urllib2, random, itertools, traceback
 from skin import parseColor, loadSkin, parseFont
-import imaplib
-import email
-import quopri
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
 	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
@@ -86,6 +83,7 @@ from SerienRecorderEpisodesScreen import *
 from SerienRecorderMarkerScreen import *
 from SerienRecorderShowSeasonBeginsScreen import *
 from SerienRecorderDatabase import *
+from SerienRecorderTVPlaner import getEmailData, imaptest
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 serienRecCoverPath = "/tmp/serienrecorder/"
@@ -663,464 +661,7 @@ def CreateDirectory(serien_name, dirname, dirname_serie, cover_only = False):
 		if config.plugins.serienRec.seasonsubdir.value:
 			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname):
 				shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname)
-	
-def getEmailData():
-	# extract all html parts
-	def get_html(email_message_instance):
-		maintype = email_message_instance.get_content_maintype()
-		if maintype == 'multipart':
-			for part in email_message_instance.get_payload():
-				if part.get_content_type() == 'text/html':
-					return part.get_payload()
 
-	writeLog("\n---------' Lade TV-Planer E-Mail '---------------------------------------------------------------\n", True)
-	
-	# get emails
-	if len(config.plugins.serienRec.imap_server.value) == 0:
-		writeLog("TV-Planer: imap_server nicht gesetzt", True)
-		return None
-	
-	if len(config.plugins.serienRec.imap_login_hidden.value) == 0:
-		writeLog("TV-Planer: imap_login nicht gesetzt", True)
-		return None
-	
-	if len(config.plugins.serienRec.imap_password_hidden.value) == 0:
-		writeLog("TV-Planer: imap_password nicht gesetzt", True)
-		return None
-	
-	if len(config.plugins.serienRec.imap_mailbox.value) == 0:
-		writeLog("TV-Planer: imap_mailbox nicht gesetzt", True)
-		return None
-	
-	if len(config.plugins.serienRec.imap_mail_subject.value)  == 0:
-		writeLog("TV-Planer: imap_mail_subject nicht gesetzt", True)
-		return None
-	
-	if 1 > config.plugins.serienRec.imap_mail_age.value > 100:
-		config.plugins.serienRec.imap_mail_age.value = 1
-	
-	try:
-		if config.plugins.serienRec.imap_server_ssl.value:
-			mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_server_port.value)
-		else:
-			mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_server_port.value)
-	
-	except imaplib.IMAP4.abort:
-		writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
-		return None
-	
-	except imaplib.IMAP4.error:
-		writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
-		return None
-	
-	try:
-		mail.login(SerienRecorderHelpers.decrypt(SerienRecorderHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-				   SerienRecorderHelpers.decrypt(SerienRecorderHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
-		print "[serienrecorder]: imap login ok"
-	
-	except imaplib.IMAP4.error:
-		writeLog("TV-Planer: Anmeldung auf Server fehlgeschlagen", True)
-		print "[serienrecorder]: imap login failed"
-		return None
-
-	try:
-		mail.select(config.plugins.serienRec.imap_mailbox.value)
-	
-	except imaplib.IMAP4.error:
-		writeLog("TV-Planer: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
-		return None
-	
-	searchstr = TimeHelpers.getMailSearchString()
-	try:
-		result, data = mail.uid('search', None, searchstr)
-		if result != 'OK':
-			writeLog("TV-Planer: Fehler bei der Suche nach TV-Planer E-Mails", True)
-			writeLog("TV-Planer: %s" % data, True)
-			return None
-
-	except imaplib.IMAP4.error:
-		writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
-		writeLog("TV-Planer: %s" % searchstr, True)
-		return None
-	
-	if len(data[0]) == 0:
-		writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
-		writeLog("TV-Planer: %s" % searchstr, True)
-		return None
-	
-	# get the latest email
-	latest_email_uid = data[0].split()[-1] 
-	# fetch the email body (RFC822) for the given UID
-	try:
-		result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
-	except:
-		writeLog("TV-Planer: Laden der E-Mail fehlgeschlagen", True)
-		return None
-	
-	mail.logout()
-	# extract email message including headers and alternate payloads
-	email_message = email.message_from_string(data[0][1])
-	if len(email_message) == 0:
-		writeLog("TV-Planer: leere E-Mail", True)
-		return None
-	
-	# get html of wunschliste
-	html = get_html(email_message)
-	if html is None or len(html) == 0:
-		writeLog("TV-Planer: leeres HTML", True)
-		return None
-
-	# class used for parsing TV-Planer html
-	# States and Changes
-	# ------------------
-	# [error] || [finished] -> [state]
-	# [start]: data && '.*TV-Planer.*?den (.*?)' -> <date> -> [time]
-	# [time]: data && '\(ab (.*?) Uhr' -> <time> -> [transmission_table]
-	# [time]: </div> -> 0:00 -> [transmission_table]
-	# [transmission_table]: <table> -> [transmission]
-	# [transmission]: <tr> -> [transmission_start]
-	# [transmission]: </table> -> [finished]
-	# [transmission_start]: >starttime< -> [transmission_url] | [error]
-	# [transmission_url]: <a> -> url = href -> [transmission_serie]
-	# [transmission_serie]: <strong> -> serie = ''
-	# [transmission_serie]: serie += >serie<
-	# [transmission_serie]: </strong> -> serie -> [transmission_serie_end]
-	# [transmission_serie_end]: <span> -> title == 'Staffel' -> [transmission_season]
-	# [transmission_serie_end]: <span> -> title == 'Episode' -> [transmission_episode]
-	# [transmission_serie_end]: <span> -> title == 'xxx' -> [transmission_transmission_serie_end]
-	# [transmission_serie_end]: <span> -> title != 'Staffel' and title != 'Episode' ->
-	#                          save transmission, Staffel = Episode = '0' -> [transmission_title]
-	# [transmission_title_end]: <span> -> title == 'Staffel' -> recover transmission, [transmission_season]
-	# [transmission_title_end]: <span> -> title == 'Episode' -> recover transmission, [transmission_episode]
-	# [transmission_title_end]: <span> -> title == 'xxx' -> -> recover transmission, [transmission_serie_end]
-	# [transmission_season]: >season< -> [transmission_serie_end]
-	# [transmission_episode]: >episode< -> [transmission_serie_end]
-	# [transmission_title]: <span> -> title = ''
-	# [transmission_title]: title += >title<
-	# [transmission_title]: </span> -> [transmission_title_end]
-	# [transmission_title_end]: </div> -> title -> [transmission_desc]
-	# [transmission_desc]: <div> -> desc = ''
-	# [transmission_desc]: >data< -> data == "bis ..." -> endtime = data -> [transmission_sender] | [error]
-	# [transmission_desc]: >data< -> data == 'FREE-TV NEU' or data == 'NEU'
-	# [transmission_desc]: desc += >desc<
-	# [transmission_desc]: </div> -> desc -> [transmission_endtime]
-	# [transmission_endtime]: >endtime< -> [transmission_sender] | [error]
-	# [transmission_sender]: <img> sender = title -> [transmission_end]
-	# [transmission_end]: </tr> -> [transmission]
-	# 
-	class TVPlaner_HTMLParser(HTMLParser):
-		def __init__(self):
-			HTMLParser.__init__(self)
-			self.state = 'start'
-			self.date = ()
-			self.transmission = []
-			self.transmission_save = []
-			self.transmissions = []
-			self.season = '0'
-			self.episode = '00'
-		def handle_starttag(self, tag, attrs):
-			# print "Encountered a start tag:", tag, attrs
-			if self.state == 'time' and tag == 'table':
-				# no time - starting at 00:00 Uhr
-				self.date = ( self.date, '00:00' )
-				self.state = "transmission"
-			elif self.state == 'transmission_table' and tag == 'table':
-				self.state = 'transmission'
-			elif self.state == 'transmission' and tag == 'tr':
-				self.state = 'transmission_start'
-			elif self.state == 'transmission_start' and tag == 'strong':
-				# next day - reset
-				self.state = 'transmission'
-			elif self.state == 'transmission_url' and tag == 'a':
-				url = ''
-				for name, value in attrs:
-					if name == 'href':
-						url = value
-						break
-				self.transmission.append(url)
-				self.state = 'transmission_serie'
-			elif self.state == 'transmission_serie' and tag == 'strong':
-				self.data = ''
-			elif self.state == 'transmission_title' and tag == 'span':
-				self.data = ''
-			elif self.state == 'transmission_desc' and tag == 'div':
-				self.data = ''
-			elif self.state == 'transmission_serie_end' and tag == 'span' :
-				found = False
-				for name, value in attrs:
-					if name == 'title' and value == 'Staffel':
-						found = True
-						self.state = 'transmission_season'
-						break
-					elif name == 'title' and value == 'Episode':
-						found = True
-						self.state = 'transmission_episode'
-						break
-					elif name == 'title':
-						found = True
-						break
-				if not found:
-					# do copy by creating new object for later recovery
-					self.transmission_save = self.transmission + []
-					self.transmission.append(self.season)
-					self.transmission.append(self.episode)
-					self.season = '0'
-					self.episode = '00'
-					self.state = 'transmission_title'
-			elif self.state == 'transmission_title_end' and tag == 'span' :
-				found = False
-				for name, value in attrs:
-					if name == 'title' and value == 'Staffel':
-						found = True
-						self.state = 'transmission_season'
-						break
-					elif name == 'title' and value == 'Episode':
-						found = True
-						self.state = 'transmission_episode'
-						break
-					elif name == 'title':
-						found = True
-						break
-				if found:
-					# do copy by creating new object for recovery
-					self.transmission = self.transmission_save + []
-					self.transmission_save = []
-			elif self.state == 'transmission_sender' and tag == 'img':
-				# match sender
-				for name, value in attrs:
-					if name == 'title':
-						self.transmission.append(value)
-						break
-				self.state = 'transmission_end'
-		
-		def handle_endtag(self, tag):
-			# print "Encountered an end tag :", tag
-			if self.state == 'transmission_end' and tag == 'tr':
-				print self.transmission
-				self.transmissions.append(tuple(self.transmission))
-				self.transmission = []
-				self.state = 'transmission'
-			elif self.state == 'transmission_serie' and tag == 'strong':
-				# append collected data
-				self.transmission.append(self.data)
-				self.data = ''
-				self.state = 'transmission_serie_end'
-			elif self.state == 'transmission_title' and tag == 'span':
-				# append collected data
-				self.transmission.append(self.data)
-				self.data = ''
-				self.state = 'transmission_title_end'
-			elif self.state == 'transmission_title_end' and tag == 'div':
-				# consume closing div
-				self.state = 'transmission_desc'
-			elif self.state == 'transmission_desc' and tag == 'div':
-				# append collected data
-				self.transmission.append(self.data)
-				self.data = ''
-				self.state = 'transmission_endtime'
-			elif self.state == 'transmission' and tag == 'table':
-				# processing finished without error
-				self.state = 'finished'
-
-		def handle_data(self, data):
-			# print "Encountered some data  : %r" % data
-			if self.state == 'finished' or self.state == 'error':
-				# do nothing
-				self.state = self.state
-			elif self.state == 'start':
-				# match date
-				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016'
-				date_regexp=re.compile('.*TV-Planer.*?den ([0-3][0-9]\.[0-1][0-9]\.20[0-9][0-9])')
-				result = date_regexp.findall(data)
-				if result:
-					self.date = result[0]
-					self.state = 'time'
-			elif self.state == 'time':
-				# match time
-				# '(ab 05:00 Uhr)'
-				time_regexp=re.compile('ab (.*?) Uhr')
-				result = time_regexp.findall(data)
-				if result:
-					self.date = ( self.date, result[0] )
-					self.state = 'transmission_table'
-			elif self.state == 'transmission_start':
-				# match start time
-				if data == 'Anzeige':
-					# Skip if row is advertisement
-					self.state = 'transmission'
-				else:
-					time_regexp = re.compile('(.*?) Uhr')
-					time = time_regexp.findall(data)
-					if len(time) > 0:
-						self.transmission.append(time[0])
-						self.state = 'transmission_url'
-					else:
-						self.state = 'error'
-			elif self.state == 'transmission_serie':
-				# match serie
-				self.data += data
-			elif self.state == 'transmission_season':
-				# match season
-				self.season = data
-				self.state = 'transmission_serie_end'
-			elif self.state == 'transmission_episode':
-				# match episode
-				self.episode = data
-				self.state = 'transmission_serie_end'
-			elif self.state == 'transmission_title':
-				# match title
-				self.data += data
-			elif self.state == 'transmission_desc':
-				# match description
-				if data.startswith('bis:'):
-					# may be empty description
-					time_regexp=re.compile('bis: (.*?) Uhr.*')
-					time = time_regexp.findall(data)
-					if len(time) > 0:
-						self.transmission.append('')
-						self.transmission.append(time[0])
-						self.state = 'transmission_sender'
-					else:
-						self.state = 'error'
-				elif data != 'FREE-TV NEU' and data != "NEU":
-					self.data += data
-			elif self.state == 'transmission_endtime':
-				# match end time
-				time_regexp=re.compile('bis: (.*?) Uhr.*')
-				time = time_regexp.findall(data)
-				if len(time) > 0:
-					self.transmission.append(time[0])
-					self.state = 'transmission_sender'
-				else:
-					self.state = 'error'
-			elif self.state == 'transmission_sender':
-				# match sender
-				self.transmission.append(data)
-				self.state = 'transmission_end'
-	
-	# make one line and convert characters
-	html = html.replace('=\r\n', '').replace('=\n','').replace('=\r', '').replace('\n', '').replace('\r', '')
-	html = html.replace('=3D', '=')
-	
-	parser = TVPlaner_HTMLParser()
-	html = parser.unescape(html).encode('utf-8')
-	if html is None or len(html) == 0:
-		writeLog("TV-Planer: leeres HTML nach HTMLParser", True)
-		return None
-	try:
-		parser.feed(html)
-#		print parser.date
-#		print parser.transmissions
-	except:
-		writeLog("TV-Planer: HTML Parsing abgebrochen", True)
-		return None
-	
-	if parser.state != "finished":
-		writeLog("TV-Planer: HTML Parsing mit Fehler beendet", True)
-		return None
-		
-	# prepare transmissions
-	# [ ( seriesName, channel, start, end, season, episode, title, '0' ) ]
-	# calculate start time and end time of list in E-Mail
-	if len(parser.date) != 2:
-		writeLog("TV-Planer: falsches Datumsformat", True)
-		return None
-	(day, month, year) = parser.date[0].split('.')
-	(hour, minute) = parser.date[1].split(':')
-	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
-	# generate dictionary with final transmissions
-	writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (parser.date[0], parser.date[1]))
-	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (parser.date[0], parser.date[1])
-	transmissiondict = dict()
-	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
-		if url.startswith('https://www.wunschliste.de/spielfilm'):
-			if not config.plugins.serienRec.tvplaner_movies.value:
-				writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % (seriesname), True)
-				print "' %s - Filmaufzeichnung ist deaktiviert '" % (seriesname)
-				continue
-			type = '[ Film ]'
-		elif url.startswith('https://www.wunschliste.de/serie'):
-			if not config.plugins.serienRec.tvplaner_series.value:
-				writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname), True)
-				print "' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname)
-				continue
-			type = '[ Serie ]'
-		else:
-			writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
-			print "' %s - Serienaufzeichnung ist deaktiviert '" % (seriesname)
-			continue
-		
-		# series
-		transmission = [ seriesname ]
-		# channel
-		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
-		transmission += [ channel ]
-		# start time
-		(hour, minute) = starttime.split(':')
-		transmissionstart_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
-		if transmissionstart_unix < liststarttime_unix:
-			transmissionstart_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
-		transmission += [ transmissionstart_unix ]
-		# end time
-		(hour, minute) = endtime.split('.')
-		transmissionend_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
-		if transmissionend_unix < transmissionstart_unix:
-			transmissionend_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
-		transmission += [ transmissionend_unix ]
-		# season
-		if season == '':
-			season = '0'
-		transmission += [ season ]
-		# episode
-		if episode == '':
-			episode = '00'
-		transmission += [ episode ]
-		# title
-		transmission += [ quopri.decodestring(titel) ]
-		# last
-		transmission += [ '0' ]
-		# url
-		transmission += [ url ]
-		# store in dictionary transmissiondict[seriesname] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
-		if seriesname in transmissiondict:
-			transmissiondict[seriesname] += [ transmission ]
-		else:
-			transmissiondict[seriesname] = [ transmission ]
-		writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), type), True)
-		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), type)
-	
-	if config.plugins.serienRec.tvplaner_create_marker.value:
-		database = SRDatabase(serienRecDataBaseFilePath)
-		for seriesname in transmissiondict.keys():
-			# marker isn't in database, create new marker
-			# url stored in marker isn't the final one, it is corrected later
-			url = transmissiondict[seriesname][0][-1]
-			try:
-				boxID = None
-				if url.startswith('https://www.wunschliste.de/serie'):
-					seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
-					if seriesID > 0:
-						url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
-					else:
-						url = None
-					if config.plugins.serienRec.tvplaner_series_activeSTB.value:
-						boxID = config.plugins.serienRec.BoxID.value
-
-				if url.startswith('https://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
-					boxID = config.plugins.serienRec.BoxID.value
-
-				if url and not database.markerExists(url):
-					if database.addMarker(url, seriesname, boxID):
-						writeLog("\nSerien Marker für ' %s ' wurde angelegt" % seriesname, True)
-						print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % seriesname
-					else:
-						writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
-						print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
-			except:
-				writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
-				print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
-
-	return transmissiondict
 
 def initDB():
 	# type: () -> object
@@ -1459,7 +1000,7 @@ class serienRecAddTimer():
 			if logentries:
 				timer.log_entries = logentries
 
-			timer.log(0, "[SerienRecorder] Timer created")
+			timer.log(0, "[SerienRecorder] Timer angelegt")
 
 			conflicts = recordHandler.record(timer)
 			if conflicts:
@@ -1469,20 +1010,20 @@ class serienRecAddTimer():
 
 				return {
 					"result": False,
-					"message": "Conflicting Timer(s) detected! %s" % " / ".join(errors)
+					"message": "In Konflikt stehende Timer vorhanden! %s" % " / ".join(errors)
 				}
 		except Exception, e:
 			print "[%s] <%s>" %(__name__, e)
 			return {
 				"result": False,
-				"message": "Could not add timer '%s'!" % e
+				"message": "Timer konnte nicht angelegt werden '%s'!" % e
 			}
 
 		print "[SerienRecorder] Versuche Timer anzulegen:", name, dirname
 		writeLogFilter("timerDebug", "Versuche Timer anzulegen: ' %s - %s '" % (name, dirname))
 		return {
 			"result": True,
-			"message": "Timer '%s' added" % name,
+			"message": "Timer '%s' angelegt" % name,
 			"eit" : eit
 		}
 
@@ -2933,8 +2474,8 @@ class serienRecCheckForRecording():
 			writeLog("%s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt." % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer)), True)
 			print "[SerienRecorder] %s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt." % (str(self.countActivatedSeries), str(self.countSerien), str(self.countTimer))
 		if self.countNotActiveTimer > 0:
-			writeLog("%s Timer wurde(n) wegen Konfikten deaktiviert erstellt!" % str(self.countNotActiveTimer), True)
-			print "[SerienRecorder] %s Timer wurde(n) wegen Konfikten deaktiviert erstellt!" % str(self.countNotActiveTimer)
+			writeLog("%s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer), True)
+			print "[SerienRecorder] %s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer)
 		if self.countTimerFromWishlist > 0:
 			writeLog("%s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist), True)
 			print "[SerienRecorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(self.countTimerFromWishlist)
@@ -3159,39 +2700,52 @@ class serienRecCheckForRecording():
 			# if the transmission date is on an excluded weekday
 			if str(excludedWeekdays).isdigit():
 				print "[SerienRecorder] - Excluded weekdays check"
-				#writeLog("- Excluded weekdays check", True)
+				# writeLog("- Excluded weekdays check", True)
 				transmissionDate = datetime.date.fromtimestamp((int(timer_start_unixtime)))
 				weekday = transmissionDate.weekday()
-				print "    Serie = %s, Datum = %s, Wochentag = %s" % (label_serie, time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime))), weekday)
-				#writeLog("   Serie = %s, Datum = %s, Wochentag = %s" % (label_serie, time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime))), weekday), True)
+				print "    Serie = %s, Datum = %s, Wochentag = %s" % (
+					label_serie,
+					time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime))),
+					weekday)
+				# writeLog("   Serie = %s, Datum = %s, Wochentag = %s" % (label_serie, time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime))), weekday), True)
 				if excludedWeekdays & (1 << weekday) != 0:
-					writeLogFilter("timeRange", "' %s ' - Wochentag auf der Ausnahmeliste -> ' %s '" % (label_serie, transmissionDate.strftime('%A')))
+					writeLogFilter("timeRange", "' %s ' - Wochentag auf der Ausnahmeliste -> ' %s '" % (
+						label_serie, transmissionDate.strftime('%A')))
 					TimerDone = True
 					continue
 
 			if config.plugins.serienRec.splitEventTimer.value != "0" and '/' in str(episode):
-			# Event-Programmierung auflösen -> 01/1x02/1x03
-				writeLogFilter("timerDebug", "Event-Programmierung gefunden: %s S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
-				splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
+				# Event-Programmierung auflösen -> 01/1x02/1x03
+				writeLogFilter("timerDebug", "Event-Programmierung gefunden: %s S%sE%s - %s" % (
+					serien_name, str(staffel).zfill(2), str(episode).zfill(2), title))
+				splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel,
+				                                                                        title)
 
 				alreadyExistsCount = 0
-				for idx,entry in enumerate(splitedSeasonEpisodeList):
+				for idx, entry in enumerate(splitedSeasonEpisodeList):
 					splitedTitle = "dump"
 					if useTitles:
 						splitedTitle = splitedTitleList[idx]
-					alreadyExists = self.database.getNumberOfTimers(serien_name, entry[0], entry[1], splitedTitle, False)
+					alreadyExists = self.database.getNumberOfTimers(serien_name, entry[0], entry[1],
+					                                                splitedTitle, False)
 					if alreadyExists:
 						alreadyExistsCount += 1
 
 				if len(splitedSeasonEpisodeList) == alreadyExistsCount:
 					# Alle Einzelfolgen wurden bereits aufgenommen - der Event muss nicht mehr aufgenommen werden.
-					writeLogFilter("timerDebug", "   ' %s ' - Timer für Einzelepisoden wurden bereits erstellt -> ' %s '" % (serien_name, check_SeasonEpisode))
+					writeLogFilter("timerDebug",
+					               "   ' %s ' - Timer für Einzelepisoden wurden bereits erstellt -> ' %s '" % (
+						               serien_name, check_SeasonEpisode))
 					TimerDone = True
 					continue
 				elif config.plugins.serienRec.splitEventTimer.value == "2":
 					# Nicht alle Einzelfolgen wurden bereits aufgenommen, es sollen aber Einzelfolgen bevorzugt werden
-					writeLogFilter("timerDebug", "   ' %s ' - Versuche zunächst Timer für Einzelepisoden anzulegen" % serien_name)
-					eventRecordings.append((title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel))
+					writeLogFilter("timerDebug",
+					               "   ' %s ' - Versuche zunächst Timer für Einzelepisoden anzulegen" % serien_name)
+					eventRecordings.append((title, staffel, episode, label_serie, timer_start_unixtime,
+					                        timer_end_unixtime, timer_stbRef, timer_eit, dirname,
+					                        serien_name, webChannel, timer_stbChannel, check_SeasonEpisode,
+					                        vomMerkzettel))
 					continue
 
 			##############################
@@ -3400,7 +2954,7 @@ class serienRecCheckForRecording():
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
 				print "' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
 				writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"]), True)
-				dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
+				dbMessage = result["message"].replace("In Konflikt stehende Timer vorhanden!", "").strip()
 				
 				result = serienRecAddTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name, "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title), eit, True, dirname, vpsSettings, tags, None)
 				if result["result"]:
@@ -5730,6 +5284,7 @@ class serienRecFileList(Screen, HelpableScreen):
 			"ok":     (self.keyOk, "ins ausgewählte Verzeichnis wechseln"),
 			"green":  (self.keyGreen, "ausgewähltes Verzeichnis übernehmen"),
 			"red":    (self.keyRed, "ausgewähltes Verzeichnis löschen"),
+			"yellow": (self.keyYellow, "auf globales Aufnahmeverzeichnis zurücksetzen"),
 			"blue":   (self.keyBlue, "neues Verzeichnis anlegen"),
 		}, -1)
 		self.helpList[0][2].sort()
@@ -5764,6 +5319,7 @@ class serienRecFileList(Screen, HelpableScreen):
 		self['text_red'].setText("Verzeichnis löschen")
 		self['text_green'].setText("Speichern")
 		self['text_ok'].setText("Auswahl")
+		self['text_yellow'].setText("Zurücksetzen")
 		self['text_blue'].setText("Verzeichnis anlegen")
 		global showAllButtons
 		if not showAllButtons:
@@ -5773,6 +5329,7 @@ class serienRecFileList(Screen, HelpableScreen):
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
+			self['bt_yellow'].show()
 			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
@@ -5780,6 +5337,7 @@ class serienRecFileList(Screen, HelpableScreen):
 			self['text_red'].show()
 			self['text_green'].show()
 			self['text_ok'].show()
+			self['text_yellow'].show()
 			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
@@ -5808,15 +5366,25 @@ class serienRecFileList(Screen, HelpableScreen):
 		try:
 			os.rmdir(self['menu_list'].getSelection()[0])
 		except:
+			self.session.open(MessageBox,
+			                  "Das Verzeichnis %s konnte nicht gelöscht werden." % self['menu_list'].getSelection()[0],
+			                  MessageBox.TYPE_INFO, timeout=5)
 			pass
 		self.updateFile()
 		
 	def keyGreen(self):
 		directory = self['menu_list'].getSelection()[0]
-		if (directory.endswith("/")):
+		if directory.endswith("/"):
 			self.fullpath = self['menu_list'].getSelection()[0]
 		else:
 			self.fullpath = "%s/" % self['menu_list'].getSelection()[0]
+
+		if self.fullpath == config.plugins.serienRec.savetopath.value:
+			self.fullpath = ""
+		self.close(self.fullpath)
+
+	def keyYellow(self):
+		self.fullpath = ""
 		self.close(self.fullpath)
 
 	def keyBlue(self):
@@ -7227,7 +6795,7 @@ class serienRecMain(Screen, HelpableScreen):
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-			"5"		: (self.imaptest, "IMAP Test"),
+			"5"		: (self.imapTest, "IMAP Test"),
 		}, -1)
 		self.helpList[0][2].sort()
 		
@@ -7282,67 +6850,8 @@ class serienRecMain(Screen, HelpableScreen):
 			self.onFirstExecBegin.append(self.startScreen)
 		self.onClose.append(self.__onClose)
 
-	def imaptest(self):
-		try:
-			if config.plugins.serienRec.imap_server_ssl.value:
-				mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
-										 config.plugins.serienRec.imap_server_port.value)
-			else:
-				mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value,
-									 config.plugins.serienRec.imap_server_port.value)
-
-		except:
-			self.session.open(MessageBox, "Verbindung zum E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
-			return None
-
-		try:
-			mail.login(SerienRecorderHelpers.decrypt(SerienRecorderHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-					   SerienRecorderHelpers.decrypt(SerienRecorderHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
-
-		except imaplib.IMAP4.error:
-			self.session.open(MessageBox, "Anmeldung am E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
-			return None
-
-		try:
-			import string
-
-			writeLog("Postfächer:", True)
-			result, data = mail.list('""', '*')
-			if result == 'OK':
-				for item in data[:]:
-					x = item.split()
-					mailbox = string.join(x[2:])
-					writeLog("%s" % mailbox, True)
-		except imaplib.IMAP4.error:
-			self.session.open(MessageBox, "Abrufen der Postfächer vom E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen", True)
-
-		try:
-			mail.select(config.plugins.serienRec.imap_mailbox.value)
-
-		except imaplib.IMAP4.error:
-			self.session.open(MessageBox, "Postfach [%r] nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
-			mail.logout()
-			return None
-
-		searchstr = TimeHelpers.getMailSearchString()
-		writeLog("IMAP Check: %s" % searchstr, True)
-		try:
-			result, data = mail.uid('search', None, searchstr)
-			writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
-			if result != 'OK':
-				writeLog("IMAP Check: %s" % data, True)
-
-		except imaplib.IMAP4.error:
-			self.session.open(MessageBox, "Fehler beim Abrufen der TV-Planer E-Mail", MessageBox.TYPE_INFO, timeout=10)
-			writeLog("IMAP Check: Fehler beim Abrufen der Mailbox", True)
-			writeLog("IMAP Check: %s" % mail.error.message, True)
-
-		mail.logout()
-		self.session.open(MessageBox, "IMAP Test abgeschlossen - siehe Log", MessageBox.TYPE_INFO, timeout=10)
+	def imapTest(self):
+		imaptest(self.session)
 
 	def showInfoText(self):
 		self.session.openWithCallback(self.startScreen, ShowStartupInfo)
@@ -8037,8 +7546,8 @@ def autostart(reason, **kwargs):
 			print "[SerienRecorder] Auto-Check: AUS"
 
 		#API
-		from SerienRecorderResource import addWebInterfaceForDreamMultimedia
-		addWebInterfaceForDreamMultimedia(session)
+		#from SerienRecorderResource import addWebInterfaceForDreamMultimedia
+		#addWebInterfaceForDreamMultimedia(session)
 
 
 

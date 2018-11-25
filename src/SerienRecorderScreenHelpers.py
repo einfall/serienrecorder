@@ -378,7 +378,7 @@ class serienRecBaseScreen():
 		self.session.open(SerienRecorder.serienRecShowSeasonBegins)
 
 	def serieInfo(self):
-		self.session.open(SerienRecorder.serienRecShowInfo, self.serien_name, self.serie_url)
+		self.session.open(SerienRecorder.serienRecShowInfo, self.serien_name, self.serien_id)
 
 	def showConflicts(self):
 		self.session.open(SerienRecorder.serienRecShowConflicts)

@@ -369,7 +369,8 @@ class SRDatabase:
 			if AufnahmeVerzeichnis:
 				directories.append(AufnahmeVerzeichnis)
 		cur.close()
-		directories.append(defaultSavePath)
+		if defaultSavePath not in directories:
+			directories.append(defaultSavePath)
 		return directories
 
 	def getDirNames(self, series):
@@ -835,9 +836,9 @@ class SRDatabase:
 	def updateChannels(self, data, withAlternativeChannels = False):
 		cur = self._srDBConn.cursor()
 		if withAlternativeChannels:
-			cur.executemany("UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, alternativSTBChannel=?, alternativServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?", data)
+			cur.executemany("UPDATE Channels SET STBChannel=?, ServiceRef=?, alternativSTBChannel=?, alternativServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?", data)
 		else:
-			cur.executemany("UPDATE OR IGNORE Channels SET STBChannel=?, ServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?", data)
+			cur.executemany("UPDATE Channels SET STBChannel=?, ServiceRef=?, Erlaubt=? WHERE LOWER(WebChannel)=?", data)
 		cur.close()
 
 	def addChannels(self, data):

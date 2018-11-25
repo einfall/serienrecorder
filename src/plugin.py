@@ -3,7 +3,7 @@ from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 import os
 import SerienRecorder
-import SerienRecorderResource
+#import SerienRecorderResource
 import SerienRecorderHelpers
 import SerienRecorderSeriesServer
 import SerienRecorderScreenHelpers
@@ -20,7 +20,7 @@ serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 def SRstart(session, **kwargs):
 
 	for file_name in (('SerienRecorder', SerienRecorder),
-					  ('SerienRecorderResource', SerienRecorderResource),
+					  #('SerienRecorderResource', SerienRecorderResource),
 					  ('SerienRecorderSeriesServer', SerienRecorderSeriesServer),
 					  ('SerienRecorderScreenHelpers', SerienRecorderScreenHelpers),
 					  ('SerienRecorderHelpers', SerienRecorderHelpers),
@@ -71,9 +71,9 @@ def Plugins(**kwargs):
 	return [
 		PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART],
 						 fnc=SerienRecorder.autostart, wakeupfnc=SerienRecorder.getNextWakeup),
-		PluginDescriptor(name="SerienRecorder", description="Record your favourite series.",
+		PluginDescriptor(name="SerienRecorder", description="Nie wieder eine Folge deiner Lieblingsserie verpassen",
 						 where=[PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=SRstart),
-		PluginDescriptor(name="SerienRecorder", description="Record your favourite series.",
+		PluginDescriptor(name="SerienRecorder", description="Nie wieder eine Folge deiner Lieblingsserie verpassen",
 						 where=[PluginDescriptor.WHERE_EXTENSIONSMENU], fnc=SRstart),
 		PluginDescriptor(name="SerienRecorder", description="Serien-Marker hinzufügen...",
 						 where=[PluginDescriptor.WHERE_MOVIELIST], fnc=movielist, needsRestart=False),

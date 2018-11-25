@@ -1147,8 +1147,6 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			if self['config'].instance.getCurrentIndex() == 0:
 				print res
 				self.savetopath.value = res
-				if self.savetopath.value == "":
-					self.savetopath.value = None
 				self.changedEntry()
 
 	def tagEditFinished(self, res):
@@ -1321,6 +1319,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		self.serien_wl_id = 0
 		self.ErrorMsg = ''
 		self.countTimer = 0
+		self.countNotActiveTimer = 0
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok": (self.keyOK, "umschalten ausgewählter Sendetermin aktiviert/deaktiviert"),
@@ -1445,7 +1444,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					serienRecCheckForRecording(self.session, False, False)
+					SerienRecorder.serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.searchEvents()
@@ -1659,6 +1658,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 	def getTimes(self):
 		changesMade = False
 		self.countTimer = 0
+		self.countNotActiveTimer = 0
 		if len(self.sendetermine_list) != 0:
 			lt = time.localtime()
 			self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
@@ -1700,11 +1700,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					# get addToDatabase for marker
 					addToDatabase = self.database.getAddToDatabase(serien_name)
 
-					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
-
 					(dirname, dirname_serie) = SerienRecorder.getDirname(self.database, serien_name, staffel)
 
-					# check anzahl auf hdd und added
+					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 					if str(episode).isdigit():
 						if int(episode) == 0:
 							bereits_vorhanden = self.database.getNumberOfTimers(serien_name, staffel, str(int(episode)),
@@ -1741,6 +1739,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 			SerienRecorder.writeLog("Es wurde(n) %s Timer erstellt." % str(self.countTimer), True)
 			print "[SerienRecorder] Es wurde(n) %s Timer erstellt." % str(self.countTimer)
+			if self.countNotActiveTimer > 0:
+				SerienRecorder.writeLog("%s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer), True)
+				print "[SerienRecorder] %s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer)
 			SerienRecorder.writeLog(
 				"---------' Auto-Check beendet '---------------------------------------------------------------------------------------",
 				True)
@@ -1844,7 +1845,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 				if (not TimerOK) and (konflikt):
 					SerienRecorder.writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, konflikt), True)
-					dbMessage = result["message"].replace("Conflicting Timer(s) detected!", "").strip()
+					dbMessage = result["message"].replace("In Konflikt stehende Timer vorhanden!", "").strip()
 
 					result = SerienRecorder.serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
 														timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True,
@@ -1852,7 +1853,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					if result["result"]:
 						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef,
 											webChannel, eit, addToDatabase, False):
-							self.countTimer += 1
+							self.countNotActiveTimer += 1
 							TimerOK = True
 						self.database.addTimerConflict(dbMessage, start_unixtime_eit, webChannel)
 
