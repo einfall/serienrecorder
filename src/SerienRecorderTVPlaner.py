@@ -7,14 +7,14 @@ import string
 import time
 from HTMLParser import HTMLParser
 
-import SerienRecorderHelpers
+import SerienRecorder
+from SerienRecorderHelpers import decrypt, getmac
 from Components.config import config
 from Screens.MessageBox import MessageBox
-from SerienRecorder import *
 from SerienRecorderDatabase import SRDatabase
 from SerienRecorderHelpers import TimeHelpers
 from SerienRecorderSeriesServer import SeriesServer
-
+from SerienRecorderLogWriter import SRLogger
 
 def getEmailData():
 	# extract all html parts
@@ -25,27 +25,27 @@ def getEmailData():
 				if part.get_content_type() == 'text/html':
 					return part.get_payload()
 
-	SerienRecorder.writeLog("\n---------' Lade TV-Planer E-Mail '---------------------------------------------------------------\n", True)
+	SRLogger.writeLog("\n---------' Lade TV-Planer E-Mail '---------------------------------------------------------------\n", True)
 
 	# get emails
 	if len(config.plugins.serienRec.imap_server.value) == 0:
-		SerienRecorder.writeLog("TV-Planer: imap_server nicht gesetzt", True)
+		SRLogger.writeLog("TV-Planer: imap_server nicht gesetzt", True)
 		return None
 
 	if len(config.plugins.serienRec.imap_login_hidden.value) == 0:
-		SerienRecorder.writeLog("TV-Planer: imap_login nicht gesetzt", True)
+		SRLogger.writeLog("TV-Planer: imap_login nicht gesetzt", True)
 		return None
 
 	if len(config.plugins.serienRec.imap_password_hidden.value) == 0:
-		SerienRecorder.writeLog("TV-Planer: imap_password nicht gesetzt", True)
+		SRLogger.writeLog("TV-Planer: imap_password nicht gesetzt", True)
 		return None
 
 	if len(config.plugins.serienRec.imap_mailbox.value) == 0:
-		SerienRecorder.writeLog("TV-Planer: imap_mailbox nicht gesetzt", True)
+		SRLogger.writeLog("TV-Planer: imap_mailbox nicht gesetzt", True)
 		return None
 
 	if len(config.plugins.serienRec.imap_mail_subject.value)  == 0:
-		SerienRecorder.writeLog("TV-Planer: imap_mail_subject nicht gesetzt", True)
+		SRLogger.writeLog("TV-Planer: imap_mail_subject nicht gesetzt", True)
 		return None
 
 	if 1 > config.plugins.serienRec.imap_mail_age.value > 100:
@@ -58,20 +58,20 @@ def getEmailData():
 			mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_server_port.value)
 
 	except imaplib.IMAP4.abort:
-		SerienRecorder.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
+		SRLogger.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
 		return None
 
 	except imaplib.IMAP4.error:
-		SerienRecorder.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
+		SRLogger.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
 		return None
 
 	try:
-		mail.login(SerienRecorderHelpers.decrypt(SerienRecorderHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-				   SerienRecorderHelpers.decrypt(SerienRecorderHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+		mail.login(decrypt(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
+				   decrypt(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
 		print "[serienrecorder]: imap login ok"
 
 	except imaplib.IMAP4.error:
-		SerienRecorder.writeLog("TV-Planer: Anmeldung auf Server fehlgeschlagen", True)
+		SRLogger.writeLog("TV-Planer: Anmeldung auf Server fehlgeschlagen", True)
 		print "[serienrecorder]: imap login failed"
 		return None
 
@@ -79,25 +79,25 @@ def getEmailData():
 		mail.select(config.plugins.serienRec.imap_mailbox.value)
 
 	except imaplib.IMAP4.error:
-		SerienRecorder.writeLog("TV-Planer: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
+		SRLogger.writeLog("TV-Planer: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
 		return None
 
 	searchstr = TimeHelpers.getMailSearchString()
 	try:
 		result, data = mail.uid('search', None, searchstr)
 		if result != 'OK':
-			SerienRecorder.writeLog("TV-Planer: Fehler bei der Suche nach TV-Planer E-Mails", True)
-			SerienRecorder.writeLog("TV-Planer: %s" % data, True)
+			SRLogger.writeLog("TV-Planer: Fehler bei der Suche nach TV-Planer E-Mails", True)
+			SRLogger.writeLog("TV-Planer: %s" % data, True)
 			return None
 
 	except imaplib.IMAP4.error:
-		SerienRecorder.writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
-		SerienRecorder.writeLog("TV-Planer: %s" % searchstr, True)
+		SRLogger.writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
+		SRLogger.writeLog("TV-Planer: %s" % searchstr, True)
 		return None
 
 	if len(data[0]) == 0:
-		SerienRecorder.writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
-		SerienRecorder.writeLog("TV-Planer: %s" % searchstr, True)
+		SRLogger.writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
+		SRLogger.writeLog("TV-Planer: %s" % searchstr, True)
 		return None
 
 	# get the latest email
@@ -106,20 +106,20 @@ def getEmailData():
 	try:
 		result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
 	except:
-		SerienRecorder.writeLog("TV-Planer: Laden der E-Mail fehlgeschlagen", True)
+		SRLogger.writeLog("TV-Planer: Laden der E-Mail fehlgeschlagen", True)
 		return None
 
 	mail.logout()
 	# extract email message including headers and alternate payloads
 	email_message = email.message_from_string(data[0][1])
 	if len(email_message) == 0:
-		SerienRecorder.writeLog("TV-Planer: leere E-Mail", True)
+		SRLogger.writeLog("TV-Planer: leere E-Mail", True)
 		return None
 
 	# get html of wunschliste
 	html = get_html(email_message)
 	if html is None or len(html) == 0:
-		SerienRecorder.writeLog("TV-Planer: leeres HTML", True)
+		SRLogger.writeLog("TV-Planer: leeres HTML", True)
 		return None
 
 	# class used for parsing TV-Planer html
@@ -354,48 +354,48 @@ def getEmailData():
 	parser = TVPlaner_HTMLParser()
 	html = parser.unescape(html).encode('utf-8')
 	if html is None or len(html) == 0:
-		SerienRecorder.writeLog("TV-Planer: leeres HTML nach HTMLParser", True)
+		SRLogger.writeLog("TV-Planer: leeres HTML nach HTMLParser", True)
 		return None
 	try:
 		parser.feed(html)
 		print parser.date
 		print parser.transmissions
 	except:
-		SerienRecorder.writeLog("TV-Planer: HTML Parsing abgebrochen", True)
+		SRLogger.writeLog("TV-Planer: HTML Parsing abgebrochen", True)
 		return None
 
 	if parser.state != "finished":
-		SerienRecorder.writeLog("TV-Planer: HTML Parsing mit Fehler beendet", True)
+		SRLogger.writeLog("TV-Planer: HTML Parsing mit Fehler beendet", True)
 		return None
 
 	# prepare transmissions
 	# [ ( seriesName, channel, start, end, season, episode, title, '0' ) ]
 	# calculate start time and end time of list in E-Mail
 	if len(parser.date) != 2:
-		SerienRecorder.writeLog("TV-Planer: falsches Datumsformat", True)
+		SRLogger.writeLog("TV-Planer: falsches Datumsformat", True)
 		return None
 	(day, month, year) = parser.date[0].split('.')
 	(hour, minute) = parser.date[1].split(':')
 	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
 	# generate dictionary with final transmissions
-	SerienRecorder.writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (parser.date[0], parser.date[1]))
+	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (parser.date[0], parser.date[1]))
 	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (parser.date[0], parser.date[1])
 	transmissiondict = dict()
 	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
 		if url.startswith('https://www.wunschliste.de/spielfilm'):
 			if not config.plugins.serienRec.tvplaner_movies.value:
-				SerienRecorder.writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % seriesname, True)
+				SRLogger.writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % seriesname, True)
 				print "' %s - Filmaufzeichnung ist deaktiviert '" % seriesname
 				continue
 			transmissiontype = '[ Film ]'
 		elif url.startswith('https://www.wunschliste.de/serie'):
 			if not config.plugins.serienRec.tvplaner_series.value:
-				SerienRecorder.writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % seriesname, True)
+				SRLogger.writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % seriesname, True)
 				print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
 				continue
 			transmissiontype = '[ Serie ]'
 		else:
-			SerienRecorder.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
+			SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
 			print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
 			continue
 
@@ -435,7 +435,7 @@ def getEmailData():
 			transmissiondict[seriesname] += [ transmission ]
 		else:
 			transmissiondict[seriesname] = [ transmission ]
-			SerienRecorder.writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype), True)
+			SRLogger.writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype), True)
 		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype)
 
 	if config.plugins.serienRec.tvplaner_create_marker.value:
@@ -460,13 +460,13 @@ def getEmailData():
 
 				if url and not database.markerExists(url):
 					if database.addMarker(url, seriesname, boxID):
-						SerienRecorder.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % seriesname, True)
+						SRLogger.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % seriesname, True)
 						print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % seriesname
 					else:
-						SerienRecorder.writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
+						SRLogger.writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
 						print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
 			except:
-				SerienRecorder.writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
+				SRLogger.writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
 				print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
 
 	return transmissiondict
@@ -483,53 +483,53 @@ def imaptest(session):
 
 	except:
 		session.open(MessageBox, "Verbindung zum E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-		SerienRecorder.writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
+		SRLogger.writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
 		return None
 
 	try:
-		mail.login(SerienRecorderHelpers.decrypt(SerienRecorderHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-				   SerienRecorderHelpers.decrypt(SerienRecorderHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+		mail.login(decrypt(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
+				   decrypt(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
 
 	except imaplib.IMAP4.error:
 		session.open(MessageBox, "Anmeldung am E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-		SerienRecorder.writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
+		SRLogger.writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
 		return None
 
 	try:
 		import string
 
-		SerienRecorder.writeLog("Postfächer:", True)
+		SRLogger.writeLog("Postfächer:", True)
 		result, data = mail.list('""', '*')
 		if result == 'OK':
 			for item in data[:]:
 				x = item.split()
 				mailbox = string.join(x[2:])
-				SerienRecorder.writeLog("%s" % mailbox, True)
+				SRLogger.writeLog("%s" % mailbox, True)
 	except imaplib.IMAP4.error:
 		session.open(MessageBox, "Abrufen der Postfächer vom E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-		SerienRecorder.writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen", True)
+		SRLogger.writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen", True)
 
 	try:
 		mail.select(config.plugins.serienRec.imap_mailbox.value)
 
 	except imaplib.IMAP4.error:
 		session.open(MessageBox, "Postfach [%r] nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, MessageBox.TYPE_INFO, timeout=10)
-		SerienRecorder.writeLog("IMAP Check: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
+		SRLogger.writeLog("IMAP Check: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
 		mail.logout()
 		return None
 
 	searchstr = TimeHelpers.getMailSearchString()
-	SerienRecorder.writeLog("IMAP Check: %s" % searchstr, True)
+	SRLogger.writeLog("IMAP Check: %s" % searchstr, True)
 	try:
 		result, data = mail.uid('search', None, searchstr)
-		SerienRecorder.writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
+		SRLogger.writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
 		if result != 'OK':
-			SerienRecorder.writeLog("IMAP Check: %s" % data, True)
+			SRLogger.writeLog("IMAP Check: %s" % data, True)
 
 	except imaplib.IMAP4.error:
 		session.open(MessageBox, "Fehler beim Abrufen der TV-Planer E-Mail", MessageBox.TYPE_INFO, timeout=10)
-		SerienRecorder.writeLog("IMAP Check: Fehler beim Abrufen der Mailbox", True)
-		SerienRecorder.writeLog("IMAP Check: %s" % mail.error.message, True)
+		SRLogger.writeLog("IMAP Check: Fehler beim Abrufen der Mailbox", True)
+		SRLogger.writeLog("IMAP Check: %s" % mail.error.message, True)
 
 	mail.logout()
 	session.open(MessageBox, "IMAP Test abgeschlossen - siehe Log", MessageBox.TYPE_INFO, timeout=10)

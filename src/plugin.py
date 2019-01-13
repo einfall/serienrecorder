@@ -13,9 +13,18 @@ import SerienRecorderChannelScreen
 import SerienRecorderSplashScreen
 import SerienRecorderStartupInfoScreen
 import SerienRecorderMarkerScreen
-import SerienRecorderShowSeasonBeginsScreen
-
-serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
+import SerienRecorderSeasonBeginsScreen
+import SerienRecorderSeriesInfoScreen
+import SerienRecorderConflictsScreen
+import SerienRecorderFileListScreen
+import SerienRecorderLogScreen
+import SerienRecorderSearchResultScreen
+import SerienRecorderSetupScreen
+import SerienRecorderTimerListScreen
+import SerienRecorderWishlistScreen
+import SerienRecorderMainScreen
+import SerienRecorderTVPlaner
+import SerienRecorderLogWriter
 
 def SRstart(session, **kwargs):
 
@@ -30,16 +39,27 @@ def SRstart(session, **kwargs):
 					  ('SerienRecorderSplashScreen', SerienRecorderSplashScreen),
 					  ('SerienRecorderStartupInfoScreen', SerienRecorderStartupInfoScreen),
 					  ('SerienRecorderMarkerScreen', SerienRecorderMarkerScreen),
-					  ('SerienRecorderShowSeasonBeginScreen', SerienRecorderShowSeasonBeginsScreen)):
-		if fileExists(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0])):
-			if (int(os.path.getmtime(os.path.join(serienRecMainPath, "%s.pyo" % file_name[0]))) < int(
-					os.path.getmtime(os.path.join(serienRecMainPath, "%s.py" % file_name[0])))):
+					  ('SerienRecorderSeasonBeginScreen', SerienRecorderSeasonBeginsScreen),
+					  ('SerienRecorderSeriesInfoScreen', SerienRecorderSeriesInfoScreen),
+					  ('SerienRecorderConflictsScreen', SerienRecorderConflictsScreen),
+					  ('SerienRecorderFileListScreen', SerienRecorderFileListScreen),
+					  ('SerienRecorderLogScreen', SerienRecorderLogScreen),
+					  ('SerienRecorderSearchResultScreen', SerienRecorderSearchResultScreen),
+					  ('SerienRecorderSetupScreen', SerienRecorderSetupScreen),
+					  ('SerienRecorderTimerListScreen', SerienRecorderTimerListScreen),
+					  ('SerienRecorderWishlistScreen', SerienRecorderWishlistScreen),
+					  ('SerienRecorderMainScreen', SerienRecorderMainScreen),
+					  ('SerienRecorderTVPlaner', SerienRecorderTVPlaner),
+					  ('SerienRecorderLogWriter', SerienRecorderLogWriter)):
+		if fileExists(os.path.join(SerienRecorder.serienRecMainPath, "%s.pyo" % file_name[0])):
+			if (int(os.path.getmtime(os.path.join(SerienRecorder.serienRecMainPath, "%s.pyo" % file_name[0]))) < int(
+					os.path.getmtime(os.path.join(SerienRecorder.serienRecMainPath, "%s.py" % file_name[0])))):
 				reload(file_name[1])
 		else:
 			reload(file_name[1])
 
 	try:
-		session.open(SerienRecorder.serienRecMain)
+		session.open(SerienRecorderMainScreen.serienRecMainScreen)
 	except:
 		import traceback
 		traceback.print_exc()
@@ -47,19 +67,19 @@ def SRstart(session, **kwargs):
 
 # Movielist
 def movielist(session, service, **kwargs):
-	from enigma import eServiceCenter, eServiceReference, iServiceInformation
+	from enigma import eServiceCenter
 
 	def handleSeriesSearchEnd(seriesName=None):
 		if seriesName:
-			session.open(SerienRecorder.serienRecMarker, seriesName)
+			session.open(SerienRecorderMarkerScreen.serienRecMarker, seriesName)
 
 	serviceHandler = eServiceCenter.getInstance()
 	info = serviceHandler.info(service)
 	seriesName = info and info.getName(service) or ""
 	if seriesName:
 		SerienRecorder.initDB()
-		session.open(SerienRecorder.serienRecAddSerie, seriesName)
-		session.openWithCallback(handleSeriesSearchEnd, SerienRecorder.serienRecAddSerie, seriesName)
+		session.open(SerienRecorderSearchResultScreen.serienRecSearchResultScreen, seriesName)
+		session.openWithCallback(handleSeriesSearchEnd, SerienRecorderSearchResultScreen.serienRecSearchResultScreen, seriesName)
 
 # Event Info
 def eventinfo(session, servicelist, **kwargs):

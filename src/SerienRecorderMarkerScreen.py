@@ -1,15 +1,36 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Marker Screen
-from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry
+import time, cPickle as pickle
+
+from Components.ActionMap import ActionMap, HelpableActionMap
+from Components.ConfigList import ConfigListScreen, ConfigList
+from Components.config import config, ConfigInteger, getConfigListEntry, ConfigText, ConfigYesNo, configfile, ConfigSelection, NoSave, ConfigClock
+from Components.MenuList import MenuList
+
 from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
-from SerienRecorderScreenHelpers import *
-from SerienRecorder import *
-from SerienRecorderHelpers import *
-from SerienRecorderDatabase import *
-from SerienRecorderEpisodesScreen import *
+from Screens.MessageBox import MessageBox
+
+from Tools.Directories import fileExists
+
+from enigma import ePicLoad, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER, loadPNG
+from skin import parseColor
+
+if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
+	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
+else:
+	from Screens.VirtualKeyBoard import VirtualKeyBoard as NTIVirtualKeyBoard
+
+from SerienRecorderScreenHelpers import serienRecBaseScreen, longButtonText, InitSkin, skinFactor, setMenuTexts
+from SerienRecorder import serienRecDataBaseFilePath, getCover, \
+	serienRecMainPath, VPSPluginAvailable, serienRecCheckForRecording
+import SerienRecorder
+from SerienRecorderHelpers import getSeriesIDByURL, STBHelpers, TimeHelpers, getDirname
+from SerienRecorderDatabase import SRDatabase
+from SerienRecorderEpisodesScreen import serienRecEpisodes
+from SerienRecorderSeriesServer import SeriesServer
+from SerienRecorderLogWriter import SRLogger
 
 # Tageditor
 from Screens.MovieSelection import getPreferredTagEditor
@@ -29,66 +50,48 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.displayTimer_conn = None
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
-		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		self.database = SRDatabase(serienRecDataBaseFilePath)
+		self.select_serie = ""
+		self.staffel_liste = []
+		self.sender_liste = []
+		self.AbEpisode = 0
 
-		if not SerienRecorder.showMainScreen:
-			self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-				"ok"       : (self.keyOK, "zur Staffelauswahl"),
-				"cancel"   : (self.keyCancel, "SerienRecorder beenden"),
-				"red"	   : (self.keyRed, "umschalten ausgewählter Serien-Marker aktiviert/deaktiviert"),
-				"red_long" : (self.keyRedLong, "ausgewählten Serien-Marker löschen"),
-				"green"    : (self.keyGreen, "zur Senderauswahl"),
-				"yellow"   : (self.keyYellow, "Sendetermine für ausgewählte Serien anzeigen"),
-				"blue"	   : (self.keyBlue, "Ansicht Timer-Liste öffnen"),
-				"info"	   : (self.keyCheck, "Suchlauf für Timer mit TV-Planer starten"),
-				"info_long": (self.keyCheckLong, "Suchlauf für Timer starten"),
-				"left"     : (self.keyLeft, "zur vorherigen Seite blättern"),
-				"right"    : (self.keyRight, "zur nächsten Seite blättern"),
-				"up"       : (self.keyUp, "eine Zeile nach oben"),
-				"down"     : (self.keyDown, "eine Zeile nach unten"),
-				"menu"     : (self.markerSetup, "Menü für Serien-Einstellungen öffnen"),
-				"menu_long": (self.recSetup, "Menü für globale Einstellungen öffnen"),
-				"startTeletext"       : (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
-				"startTeletext_long"  : (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
-				"cancel_long" : (self.keyExit, "zurück zur Serienplaner-Ansicht"),
-				"0"		   : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
-				"1"		   : (self.searchSeries, "Serie manuell suchen"),
-				"3"		   : (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
-				"4"		   : (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
-			    "5"		   : (self.episodeList, "Episoden der ausgewählten Serie anzeigen"),
-				"6"		   : (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
-				"7"		   : (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-				"9"		   : (self.disableAll, "Alle Serien-Marker für diese Box-ID deaktivieren"),
-			}, -1)
+		if config.plugins.serienRec.firstscreen.value == "0":
+			self.showMainScreen = True
 		else:
-			self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-				"ok"       : (self.keyOK, "zur Staffelauswahl"),
-				"cancel"   : (self.keyCancel, "zurück zur Serienplaner-Ansicht"),
-				"red"	   : (self.keyRed, "umschalten ausgewählter Serien-Marker aktiviert/deaktiviert"),
-				"red_long" : (self.keyRedLong, "ausgewählten Serien-Marker löschen"),
-				"green"    : (self.keyGreen, "zur Senderauswahl"),
-				"yellow"   : (self.keyYellow, "Sendetermine für ausgewählte Serien anzeigen"),
-				"blue"	   : (self.keyBlue, "Ansicht Timer-Liste öffnen"),
-				"info"	   : (self.keyCheck, "Suchlauf für Timer starten"),
-				"info_long": (self.keyCheckLong, "Suchlauf für TV-Planer Timer starten"),
-				"left"     : (self.keyLeft, "zur vorherigen Seite blättern"),
-				"right"    : (self.keyRight, "zur nächsten Seite blättern"),
-				"up"       : (self.keyUp, "eine Zeile nach oben"),
-				"down"     : (self.keyDown, "eine Zeile nach unten"),
-				"menu"     : (self.markerSetup, "Menü für Serien-Einstellungen öffnen"),
-				"menu_long": (self.recSetup, "Menü für globale Einstellungen öffnen"),
-				"startTeletext"       : (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
-				"startTeletext_long"  : (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
-				"cancel_long" : (self.keyExit, "zurück zur Serienplaner-Ansicht"),
-				"0"		   : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
-				"1"		   : (self.searchSeries, "Serie manuell suchen"),
-				"3"		   : (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
-				"4"		   : (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
-			    "5"		   : (self.episodeList, "Episoden der ausgewählten Serie anzeigen"),
-				"6"		   : (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
-				"7"		   : (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-				"9"		   : (self.disableAll, "Alle Serien-Marker für diese Box-ID deaktivieren"),
-			}, -1)
+			self.showMainScreen = False
+
+		actions = {
+			"ok"            : (self.keyOK, "zur Staffelauswahl"),
+			"cancel"        : (self.keyCancel, "zurück zur Serienplaner-Ansicht"),
+			"red"	        : (self.keyRed, "umschalten ausgewählter Serien-Marker aktiviert/deaktiviert"),
+			"red_long"      : (self.keyRedLong, "ausgewählten Serien-Marker löschen"),
+			"green"         : (self.keyGreen, "zur Senderauswahl"),
+			"yellow"        : (self.keyYellow, "Sendetermine für ausgewählte Serien anzeigen"),
+			"blue"	        : (self.keyBlue, "Ansicht Timer-Liste öffnen"),
+			"info"	        : (self.keyCheck, "Suchlauf für Timer starten"),
+			"left"          : (self.keyLeft, "zur vorherigen Seite blättern"),
+			"right"         : (self.keyRight, "zur nächsten Seite blättern"),
+			"up"            : (self.keyUp, "eine Zeile nach oben"),
+			"down"          : (self.keyDown, "eine Zeile nach unten"),
+			"menu"          : (self.markerSetup, "Menü für Serien-Einstellungen öffnen"),
+			"menu_long"     : (self.recSetup, "Menü für globale Einstellungen öffnen"),
+			"startTeletext" : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
+			"0"		        : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
+			"1"		        : (self.searchSeries, "Serie manuell suchen"),
+			"3"		        : (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
+			"4"		        : (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
+			"5"		        : (self.episodeList, "Episoden der ausgewählten Serie anzeigen"),
+			"6"		        : (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
+			"7"		        : (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
+			"8"		        : (self.updateMarkers, "Serien-Marker aktualisieren"),
+			"9"		        : (self.disableAll, "Alle Serien-Marker für diese Box-ID deaktivieren"),
+		}
+
+		if not self.showMainScreen:
+			actions["cancel_long"] = (self.keyExit, "zurück zur Serienplaner-Ansicht")
+
+		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", actions, -1)
 		self.helpList[0][2].sort()
 		
 		self["helpActions"] = ActionMap(["SerienRecorderActions",], {
@@ -120,19 +123,20 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.num_bt_text[1][0] = "Serie suchen"
 		self.num_bt_text[0][1] = "Episoden-Liste"
 		self.num_bt_text[2][2] = "Timer suchen"
+		self.num_bt_text[3][1] = "Marker aktualisieren"
 		self.num_bt_text[4][1] = "Alle deaktivieren"
 
 		if longButtonText:
 			self.num_bt_text[4][2] = "Setup Serie (lang: global)"
 			self['text_red'].setText("An/Aus (lang: Löschen)")
 			self['text_blue'].setText("Timer-Liste")
-			if not SerienRecorder.showMainScreen:
+			if not self.showMainScreen:
 				self.num_bt_text[0][2] = "Exit (lang: Serienplaner)"
 		else:
 			self.num_bt_text[4][2] = "Setup Serie/global"
 			self['text_red'].setText("(De)aktivieren/Löschen")
 			self['text_blue'].setText("Timer-Liste")
-			if not SerienRecorder.showMainScreen:
+			if not self.showMainScreen:
 				self.num_bt_text[0][2] = "Exit/Serienplaner"
 
 		super(self.__class__, self).startDisplayTimer()
@@ -156,8 +160,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
 
-		global showAllButtons
-		if not showAllButtons:
+		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -183,21 +186,34 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def markerSetup(self):
 		if self['menu_list'].getCurrent() is None:
 			return
-		serien_name = self['menu_list'].getCurrent()[0][1]
-		self.session.openWithCallback(self.SetupFinished, serienRecMarkerSetup, serien_name)
+		self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
+		self.session.openWithCallback(self.setupFinished, serienRecMarkerSetup, self.selected_serien_name)
 
-	def SetupFinished(self, result):
+	def setupFinished(self, result):
 		if result:
 			self.changesMade = True
-			global runAutocheckAtExit
-			runAutocheckAtExit = True
+			SerienRecorder.runAutocheckAtExit = True
 			if config.plugins.serienRec.tvplaner_full_check.value:
 				config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 				config.plugins.serienRec.tvplaner_last_full_check.save()
 				configfile.save()
-			self.readSerienMarker()
+		self.readSerienMarker(self.selected_serien_name)
 		return
-		
+
+	def updateMarkers(self):
+		self.session.openWithCallback(self.executeUpdateMarkers, MessageBox, "Sollen die Namen der Serien-Marker aktualisieren werden?", MessageBox.TYPE_YESNO)
+
+	def executeUpdateMarkers(self, execute):
+		if execute:
+			updatedMarkers = self.database.updateSeriesMarker()
+			self.readSerienMarker()
+			message = "Es mussten keine Serien-Marker umbenannt werden."
+			if len(updatedMarkers) > 0:
+				message = "Folgende Serien-Marker wurden umbenannt:\n\n"
+				message += "\n".join(updatedMarkers)
+
+			self.session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=10)
+
 	def serieInfo(self):
 		if self.loading:
 			return
@@ -210,7 +226,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_url = self['menu_list'].getCurrent()[0][2]
 		serien_id = getSeriesIDByURL(serien_url)
 		if serien_id:
-			self.session.open(SerienRecorder.serienRecShowInfo, serien_name, serien_id)
+			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
+			self.session.open(serienRecShowInfo, serien_name, serien_id)
 			#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
 			#				  MessageBox.TYPE_INFO, timeout=10)
 
@@ -228,13 +245,10 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
 				#				  MessageBox.TYPE_INFO, timeout=10)
 
-	def youtubeSearch(self):
-		serien_name = self['menu_list'].getCurrent()[0][1]
-		super(self.__class__, self).youtubeSearch(serien_name)
-
-	def WikipediaSearch(self):
-		serien_name = self['menu_list'].getCurrent()[0][1]
-		super(self.__class__, self).WikipediaSearch(serien_name)
+	def wunschliste(self):
+		#serien_name = self['menu_list'].getCurrent()[0][1]
+		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][2])
+		super(self.__class__, self).wunschliste(serien_id)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -254,7 +268,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
 		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][2])
 		self.ErrorMsg = "'getCover()'"
-		SerienRecorder.getCover(self, serien_name, serien_id)
+		getCover(self, serien_name, serien_id)
 
 	def readSerienMarker(self, SelectSerie=None):
 		if SelectSerie:
@@ -324,7 +338,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				try:
 					idx = zip(*markerList)[1].index(self.SelectSerie)
 					self['menu_list'].moveToIndex(idx)
-				except Exception, e:
+				except Exception:
 					pass
 			self.loading = False
 			self.getCover()
@@ -362,22 +376,20 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 49 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText, foregroundColor, foregroundColor)
 			]
 
-	def keyCheckLong(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			print "[SerienRecorder] Serien Marker leer."
-			return
-		if self.modus == "menu_list":
-			self.session.openWithCallback(self.readSerienMarker, SerienRecorder.serienRecRunAutoCheck, True)
-		self.readSerienMarker()
-
 	def keyCheck(self):
 		check = self['menu_list'].getCurrent()
 		if check is None:
 			print "[SerienRecorder] Serien Marker leer."
 			return
 		if self.modus == "menu_list":
-			self.session.openWithCallback(self.readSerienMarker, SerienRecorder.serienRecRunAutoCheck, True, config.plugins.serienRec.tvplaner.value)
+			if config.plugins.serienRec.tvplaner.value:
+				self.session.openWithCallback(self.executeAutoCheck, MessageBox, "Bei 'ja' wird der Suchlauf für TV-Planer Timer gestartet, bei 'nein' wird ein voller Suchlauf durchgeführt.", MessageBox.TYPE_YESNO)
+			else:
+				self.executeAutoCheck(False)
+
+	def executeAutoCheck(self, withTVPlaner):
+		from SerienRecorderAutoCheckScreen import serienRecRunAutoCheckScreen
+		self.session.openWithCallback(self.readSerienMarker, serienRecRunAutoCheckScreen, withTVPlaner)
 
 	def keyOK(self):
 		if self.modus == "popup_list":	# Staffel
@@ -501,7 +513,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self.staffel_liste = zip(staffeln, mode_list, index_list)
 			self.chooseMenuList_popup.setList(map(self.buildList2, self.staffel_liste))
 
-	def buildList2(self, entry):
+	@staticmethod
+	def buildList2(entry):
 		(staffel, mode, index) = entry
 		if int(mode) == 0:
 			imageMode = "%simages/minus.png" % serienRecMainPath
@@ -581,7 +594,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def removeSerienMarker(self, serien_name, answer):
 		self.database.removeMarker(serien_name, answer)
 		self.changesMade = True
-		SerienRecorder.writeLog("\nSerien Marker für ' %s ' wurde entfernt" % serien_name, True)
+		SRLogger.writeLog("\nSerien Marker für ' %s ' wurde entfernt" % serien_name, True)
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Serie '- %s -' entfernt." % serien_name)
 		self.readSerienMarker()	
@@ -670,8 +683,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			configfile.save()
 
 		self.changesMade = True
-		global runAutocheckAtExit
-		runAutocheckAtExit = True
+		SerienRecorder.runAutocheckAtExit = True
 		self.readSerienMarker()
 
 	def insertSenderMarker(self):
@@ -696,8 +708,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.database.setAllChannelsToMarker(self.select_serie, alleSender)
 
 		self.changesMade = True
-		global runAutocheckAtExit
-		runAutocheckAtExit = True
+		SerienRecorder.runAutocheckAtExit = True
 		if config.plugins.serienRec.tvplaner_full_check.value:
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 			config.plugins.serienRec.tvplaner_last_full_check.save()
@@ -707,7 +718,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyBlue(self):
 		if self.modus == "menu_list":
-			self.session.openWithCallback(self.readSerienMarker, SerienRecorder.serienRecTimer)
+			from SerienRecorderTimerListScreen import serienRecTimerListScreen
+			self.session.openWithCallback(self.readSerienMarker, serienRecTimerListScreen)
 
 	def searchSeries(self):
 		if self.modus == "menu_list":
@@ -717,13 +729,13 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if serien_name:
 			print serien_name
 			self.changesMade = True
-			global runAutocheckAtExit
-			runAutocheckAtExit = True
+			SerienRecorder.runAutocheckAtExit = True
 			if config.plugins.serienRec.tvplaner_full_check.value:
 				config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 				config.plugins.serienRec.tvplaner_last_full_check.save()
 				configfile.save()
-			self.session.openWithCallback(self.readSerienMarker, SerienRecorder.serienRecAddSerie, serien_name)
+			from SerienRecorderSearchResultScreen import serienRecSearchResultScreen
+			self.session.openWithCallback(self.readSerienMarker, serienRecSearchResultScreen, serien_name)
 
 	def keyLeft(self):
 		if self.modus == "popup_list2":
@@ -767,7 +779,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.modus == "popup_list" or self.modus == "popup_list2":
 			self.keyCancel()
 		else:
-			SerienRecorder.showMainScreen = True
+			print "[SerienRecorder] MarkerScreen exit"
+			import SerienRecorderMainScreen
+			SerienRecorderMainScreen.showMainScreen = True
 			if config.plugins.serienRec.refreshViews.value:
 				self.close(self.changesMade)
 			else:
@@ -788,9 +802,6 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_bg'].hide()
 			self.insertSenderMarker()
 		else:
-			#if not SerienRecorder.showMainScreen:
-				#self.hide()
-				#self.session.openWithCallback(self.readSerienMarker, ShowSplashScreen, config.plugins.serienRec.showversion.value)
 			if config.plugins.serienRec.refreshViews.value:
 				self.close(self.changesMade)
 			else:
@@ -802,9 +813,16 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
+		self.list = []
 		self.session = session
 		self.Serie = Serie
-		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		self.database = SRDatabase(serienRecDataBaseFilePath)
+		self.HilfeTexte = {}
+		self.fromTime_index = 1
+		self.toTime_index = 1
+		self.margin_before_index = 1
+		self.margin_after_index = 1
+		self.NoOfRecords_index = 1
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"red": (self.cancel, "Änderungen verwerfen und zurück zur Serien-Marker-Ansicht"),
@@ -823,12 +841,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		}, 0)
 
 		self.setupSkin()
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
+		if config.plugins.serienRec.showAllButtons.value:
+			setMenuTexts(self)
 
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase) = self.database.getMarkerSettings(self.Serie)
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG) = self.database.getMarkerSettings(self.Serie)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -888,8 +905,14 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			self.addToDatabase = ConfigYesNo(default=True)
 
-		self.preferredChannel = ConfigSelection(choices=[("1", "Standard"), ("0", "Alternativ")],
-												default=str(preferredChannel))
+		if str(updateFromEPG).isdigit():
+			self.updateFromEPG = ConfigYesNo(default=bool(updateFromEPG))
+			self.enable_updateFromEPG = ConfigYesNo(default=True)
+		else:
+			self.updateFromEPG = ConfigYesNo(default=config.plugins.serienRec.eventid.value)
+			self.enable_updateFromEPG = ConfigYesNo(default=False)
+
+		self.preferredChannel = ConfigSelection(choices=[("1", "Standard"), ("0", "Alternativ")], default=str(preferredChannel))
 		self.useAlternativeChannel = ConfigSelection(choices=[("-1", "gemäß Setup (dzt. %s)" % str(
 			config.plugins.serienRec.useAlternativeChannel.value).replace("True", "ja").replace("False", "nein")),
 															  ("0", "nein"), ("1", "ja")],
@@ -954,8 +977,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self['config_information_text'].show()
 
 		self['title'].setText("SerienRecorder - Einstellungen für '%s':" % self.Serie)
-		global showAllButtons
-		if not showAllButtons:
+		if not config.plugins.serienRec.showAllButtons.value:
 			self['text_0'].setText("Abbrechen")
 			self['text_1'].setText("About")
 
@@ -970,54 +992,55 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self['text_ok'].show()
 			self['text_0'].show()
 			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
 
 	def createConfigList(self):
-		self.margin_before_index = 1
 		self.list = []
-		self.list.append(
-			getConfigListEntry("vom globalen Setup abweichender Speicherort der Aufnahmen:", self.savetopath))
+		self.list.append(getConfigListEntry("vom globalen Setup abweichender Speicherort der Aufnahmen:", self.savetopath))
 		if self.savetopath.value:
 			self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", self.seasonsubdir))
 			self.margin_before_index += 1
 
 		self.margin_after_index = self.margin_before_index + 1
 
-		self.list.append(
-			getConfigListEntry("vom globalen Setup abweichenden Timervorlauf aktivieren:", self.enable_margin_before))
+		self.list.append(getConfigListEntry("vom globalen Setup abweichenden Timervorlauf aktivieren:", self.enable_margin_before))
 		if self.enable_margin_before.value:
 			self.list.append(getConfigListEntry("      Timervorlauf (in Min.):", self.margin_before))
 			self.margin_after_index += 1
 
 		self.NoOfRecords_index = self.margin_after_index + 1
 
-		self.list.append(
-			getConfigListEntry("vom globalen Setup abweichenden Timernachlauf aktivieren:", self.enable_margin_after))
+		self.list.append(getConfigListEntry("vom globalen Setup abweichenden Timernachlauf aktivieren:", self.enable_margin_after))
 		if self.enable_margin_after.value:
 			self.list.append(getConfigListEntry("      Timernachlauf (in Min.):", self.margin_after))
 			self.NoOfRecords_index += 1
 
 		self.fromTime_index = self.NoOfRecords_index + 1
 
-		self.list.append(getConfigListEntry("vom globalen Setup abweichende Anzahl der Aufnahmen aktivieren:",
-											self.enable_NoOfRecords))
+		self.list.append(getConfigListEntry("vom globalen Setup abweichende Anzahl der Aufnahmen aktivieren:", self.enable_NoOfRecords))
 		if self.enable_NoOfRecords.value:
 			self.list.append(getConfigListEntry("      Anzahl der Aufnahmen:", self.NoOfRecords))
 			self.fromTime_index += 1
 
 		self.toTime_index = self.fromTime_index + 1
 
-		self.list.append(getConfigListEntry("vom globalen Setup abweichende Früheste Zeit für Timer aktivieren:",
-											self.enable_fromTime))
+		self.list.append(getConfigListEntry("vom globalen Setup abweichende Früheste Zeit für Timer aktivieren:", self.enable_fromTime))
 		if self.enable_fromTime.value:
 			self.list.append(getConfigListEntry("      Früheste Zeit für Timer:", self.fromTime))
 			self.toTime_index += 1
 
-		self.list.append(getConfigListEntry("vom globalen Setup abweichende Späteste Zeit für Timer aktivieren:",
-											self.enable_toTime))
+		self.list.append(getConfigListEntry("vom globalen Setup abweichende Späteste Zeit für Timer aktivieren:", self.enable_toTime))
 		if self.enable_toTime.value:
 			self.list.append(getConfigListEntry("      Späteste Zeit für Timer:", self.toTime))
 
-		if SerienRecorder.VPSPluginAvailable:
+		if config.plugins.serienRec.eventid.value:
+			self.list.append(getConfigListEntry("vom globalen Setup abweichende Timeraktualisierung aus dem EPG aktivieren:", self.enable_updateFromEPG))
+			if self.enable_updateFromEPG.value:
+				self.list.append(getConfigListEntry("      Versuche Timer aus dem EPG zu aktualisieren:", self.updateFromEPG))
+
+		if VPSPluginAvailable:
 			self.list.append(getConfigListEntry("vom Sender Setup abweichende VPS Einstellungen:", self.override_vps))
 			if self.override_vps.value:
 				self.list.append(getConfigListEntry("      VPS für diesen Serien-Marker aktivieren:", self.enable_vps))
@@ -1029,8 +1052,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self.list.append(getConfigListEntry("Bevorzugte Sender-Liste:", self.preferredChannel))
 		self.list.append(getConfigListEntry("Verwende alternative Sender bei Konflikten:", self.useAlternativeChannel))
 
-		self.list.append(
-			getConfigListEntry("Wochentage von der Timer-Erstellung ausschließen:", self.enable_excludedWeekdays))
+		self.list.append(getConfigListEntry("Wochentage von der Timer-Erstellung ausschließen:", self.enable_excludedWeekdays))
 		if self.enable_excludedWeekdays.value:
 			self.list.append(getConfigListEntry("      Montag:", self.excludeMonday))
 			self.list.append(getConfigListEntry("      Dienstag:", self.excludeTuesday))
@@ -1042,7 +1064,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self.list.append(getConfigListEntry("Tags:", self.tags))
 
-	def UpdateMenuValues(self):
+	def updateMenuValues(self):
 		if self['config'].instance.getCurrentIndex() == self.margin_before_index:
 			if self.enable_margin_before.value and not self.margin_before.value:
 				self.margin_before.value = config.plugins.serienRec.margin_before.value
@@ -1069,14 +1091,14 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.chooseTags()
 		else:
 			ConfigListScreen.keyLeft(self)
-			self.UpdateMenuValues()
+			self.updateMenuValues()
 
 	def keyRight(self):
 		if self['config'].getCurrent()[1] == self.tags:
 			self.chooseTags()
 		else:
 			ConfigListScreen.keyRight(self)
-			self.UpdateMenuValues()
+			self.updateMenuValues()
 
 	def keyDown(self):
 		# self.changedEntry()
@@ -1139,8 +1161,8 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			start_dir = self.savetopath.value
 
-		self.session.openWithCallback(self.selectedMediaFile, SerienRecorder.serienRecFileList, start_dir,
-									  "Aufnahme-Verzeichnis auswählen", self.Serie)
+		from SerienRecorderFileListScreen import serienRecFileListScreen
+		self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir, "Aufnahme-Verzeichnis auswählen", self.Serie)
 
 	def selectedMediaFile(self, res):
 		if res is not None:
@@ -1155,10 +1177,10 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.tags.setChoices([len(res) == 0 and "Keine" or ' '.join(res)])
 
 	def chooseTags(self):
-		SerienRecorder.writeLog("Choose tags was called.", True)
+		SRLogger.writeLog("Choose tags was called.", True)
 		preferredTagEditor = getPreferredTagEditor()
 		if preferredTagEditor:
-			SerienRecorder.writeLog("Has preferred tageditor.", True)
+			SRLogger.writeLog("Has preferred tageditor.", True)
 			self.session.openWithCallback(
 				self.tagEditFinished,
 				preferredTagEditor,
@@ -1170,18 +1192,18 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.savetopath: "Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von '%s' gespeichert werden." % self.Serie,
 			self.seasonsubdir: "Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-Verzeichnis für '%s' (z.B.\n'%sSeason 001') erstellt." % (
 			self.Serie, self.savetopath.value),
-			self.enable_margin_before: ("Bei 'ja' kann die Vorlaufzeit für Aufnahmen von '%s' eingestellt werden.\n"
+			self.enable_margin_before: ("Bei 'ja' kann die Vorlaufzeit für Timer von '%s' eingestellt werden.\n"
 										"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Vorlaufzeit.\n"
 										"Ist auch beim aufzunehmenden Sender eine Vorlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.\n"
 										"Bei 'nein' gilt die Einstellung vom globalen Setup.") % self.Serie,
-			self.margin_before: ("Die Vorlaufzeit für Aufnahmen von '%s' in Minuten.\n"
+			self.margin_before: ("Die Vorlaufzeit für Timer von '%s' in Minuten.\n"
 								 "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Vorlaufzeit.\n"
 								 "Ist auch beim aufzunehmenden Sender eine Vorlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.") % self.Serie,
-			self.enable_margin_after: ("Bei 'ja' kann die Nachlaufzeit für Aufnahmen von '%s' eingestellt werden.\n"
+			self.enable_margin_after: ("Bei 'ja' kann die Nachlaufzeit für Timer von '%s' eingestellt werden.\n"
 									   "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Nachlaufzeit.\n"
 									   "Ist auch beim aufzunehmenden Sender eine Nachlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.\n"
 									   "Bei 'nein' gilt die Einstellung vom globalen Setup.") % self.Serie,
-			self.margin_after: ("Die Nachlaufzeit für Aufnahmen von '%s' in Minuten.\n"
+			self.margin_after: ("Die Nachlaufzeit für Timer von '%s' in Minuten.\n"
 								"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Nachlaufzeit.\n"
 								"Ist auch beim aufzunehmenden Sender eine Nachlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.") % self.Serie,
 			self.enable_NoOfRecords: (
@@ -1206,7 +1228,14 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 						  "Die erlaubte Zeitspanne endet um %s:%s Uhr.\n"
 						  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die späteste Zeit für Timer.") % (
 						 self.Serie, str(self.toTime.value[0]).zfill(2), str(self.toTime.value[1]).zfill(2)),
-			self.override_vps: ("Bei 'ja' kann VPS für Aufnahmen von '%s' eingestellt werden.\n"
+			self.enable_updateFromEPG: (
+								"Bei 'ja' kann für Timer von '%s' eingestellt werden ob versucht werden soll diesen aus dem EPG zu aktualisieren.\n"
+								"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timeraktualisierung aus dem EPG.\n"
+								"Bei 'nein' gilt die Einstellung vom globalen Setup.") % self.Serie,
+			self.updateFromEPG: ("Bei 'ja' wird für Timer von '%s' versucht diese aus dem EPG zu aktualisieren.\n"
+						  "Bei 'nein' werden die Timer dieser Serie nicht aus dem EPG aktualisiert.\n"
+						  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timeraktualisierung aus dem EPG.") % self.Serie,
+			self.override_vps: ("Bei 'ja' kann VPS für Timer von '%s' eingestellt werden.\n"
 								"Diese Einstellung hat Vorrang gegenüber der Einstellung des Senders für VPS.\n"
 								"Bei 'nein' gilt die Einstellung vom Sender.") % self.Serie,
 			self.enable_vps: (
@@ -1217,8 +1246,8 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 									  "Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet. Die programmierten Start- und Endzeiten werden eingehalten.\n"
 									  "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.\n"
 									  "Diese Einstellung hat Vorrang gegenüber der Sender Einstellung für VPS.") % self.Serie,
-			self.addToDatabase: "Bei 'nein' werden für die Aufnahmen von '%s' keine Einträge in die Timer-Liste gemacht, sodass die Episoden beliebig oft aufgenommen werden können." % self.Serie,
-			self.preferredChannel: "Auswahl, ob die Standard-Sender oder die alternativen Sender für die Aufnahmen von '%s' verwendet werden sollen." % self.Serie,
+			self.addToDatabase: "Bei 'nein' werden für die Timer von '%s' keine Einträge in die Timer-Liste gemacht, sodass die Episoden beliebig oft aufgenommen werden können." % self.Serie,
+			self.preferredChannel: "Auswahl, ob die Standard-Sender oder die alternativen Sender für die Timer von '%s' verwendet werden sollen." % self.Serie,
 			self.useAlternativeChannel: (
 										"Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "
 										"falls der Timer für '%s' auf dem bevorzugten Sender nicht angelegt werden kann.\n"
@@ -1265,6 +1294,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			AufnahmezeitBis = (self.toTime.value[0] * 60) + self.toTime.value[1]
 
+		if not self.enable_updateFromEPG.value:
+			updateFromEPG = None
+		else:
+			updateFromEPG = self.updateFromEPG.value
+
 		if not self.override_vps.value:
 			vpsSettings = None
 		else:
@@ -1294,7 +1328,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self.database.setMarkerSettings(self.Serie, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),
-		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value)))
+		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG))
 
 		self.close(True)
 
@@ -1307,7 +1341,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
-		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		self.database = SRDatabase(serienRecDataBaseFilePath)
 		self.session = session
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
@@ -1333,8 +1367,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			"yellow": (self.keyYellow, "umschalten Filter (aktive Sender) aktiviert/deaktiviert"),
 			"blue": (self.keyBlue, "Ansicht Timer-Liste öffnen"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
-			"startTeletext": (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
-			"startTeletext_long": (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
+			"startTeletext": (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"	: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
@@ -1398,8 +1431,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
 
-		global showAllButtons
-		if not showAllButtons:
+		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -1427,16 +1459,15 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 		serien_id = getSeriesIDByURL(self.serie_url)
 		if serien_id:
-			self.session.open(SerienRecorder.serienRecShowInfo, self.serien_name, serien_id)
+			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
+			self.session.open(serienRecShowInfo, self.serien_name, serien_id)
 
 	# self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
 		#				  MessageBox.TYPE_INFO, timeout=10)
 
-	def youtubeSearch(self):
-		super(self.__class__, self).youtubeSearch(self.serien_name)
-
-	def WikipediaSearch(self):
-		super(self.__class__, self).WikipediaSearch(self.serien_name)
+	def wunschliste(self):
+		serien_id = getSeriesIDByURL(self.serie_url)
+		super(self.__class__, self).wunschliste(serien_id)
 
 	def setupClose(self, result):
 		if not result[2]:
@@ -1444,7 +1475,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					SerienRecorder.serienRecCheckForRecording(self.session, False, False)
+					serienRecCheckForRecording(self.session, False, False)
 
 			if result[1]:
 				self.searchEvents()
@@ -1467,7 +1498,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			if self.serien_wl_id != 0:
 				print self.serien_wl_id
 
-				SerienRecorder.getCover(self, self.serien_name, self.serien_wl_id)
+				getCover(self, self.serien_name, self.serien_wl_id)
 
 				if self.FilterMode is 0:
 					webChannels = []
@@ -1498,8 +1529,6 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 		# build unique dir list by season
 		dirList = {}
-		# build unique channel list
-		channelList = {}
 		# build unique margins
 		marginList = {}
 
@@ -1508,7 +1537,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		try:
 			(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, [self.serien_name])[0]
 		except:
-			SerienRecorder.writeLog("Fehler beim Filtern nach Staffel", True)
+			SRLogger.writeLog("Fehler beim Filtern nach Staffel", True)
 
 		for serien_name ,sender ,startzeit ,endzeit ,staffel ,episode ,title ,status in transmissions:
 			seasonAllowed = True
@@ -1522,7 +1551,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				bereits_vorhanden = False
 				if config.plugins.serienRec.sucheAufnahme.value:
 					if not staffel in dirList:
-						dirList[staffel] = SerienRecorder.getDirname(self.database, serien_name, staffel)
+						dirList[staffel] = getDirname(self.database, serien_name, staffel)
 
 					(dirname, dirname_serie) = dirList[staffel]
 					if str(episode).isdigit():
@@ -1661,11 +1690,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		self.countNotActiveTimer = 0
 		if len(self.sendetermine_list) != 0:
 			lt = time.localtime()
-			self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
-			print "\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
-			SerienRecorder.writeLog(
-				"\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit,
-				True)
+			uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
+			print "\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % uhrzeit
+			SRLogger.writeLog("\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % uhrzeit, True)
 			for serien_name, sender, datum, startzeit, endzeit, staffel, episode, title, status, rightimage in self.sendetermine_list:
 				if int(status) == 1:
 					# initialize strings
@@ -1700,7 +1727,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					# get addToDatabase for marker
 					addToDatabase = self.database.getAddToDatabase(serien_name)
 
-					(dirname, dirname_serie) = SerienRecorder.getDirname(self.database, serien_name, staffel)
+					(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
 
 					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 					if str(episode).isdigit():
@@ -1730,24 +1757,23 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					if (bereits_vorhanden < NoOfRecords) and (bereits_vorhanden_HDD < NoOfRecords):
 						TimerDone = self.doTimer(params)
 					else:
-						SerienRecorder.writeLog("Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '" % (
+						SRLogger.writeLog("Serie ' %s ' -> Staffel/Episode bereits vorhanden ' %s '" % (
 						serien_name, seasonEpisodeString))
 						TimerDone = self.doTimer(params, config.plugins.serienRec.forceManualRecording.value)
 					if TimerDone:
 						# erstellt das serien verzeichnis und kopiert das Cover in das Verzeichnis
-						SerienRecorder.CreateDirectory(serien_name, dirname, dirname_serie)
+						STBHelpers.createDirectory(serien_name, dirname, dirname_serie)
 
-			SerienRecorder.writeLog("Es wurde(n) %s Timer erstellt." % str(self.countTimer), True)
+			SRLogger.writeLog("Es wurde(n) %s Timer erstellt." % str(self.countTimer), True)
 			print "[SerienRecorder] Es wurde(n) %s Timer erstellt." % str(self.countTimer)
 			if self.countNotActiveTimer > 0:
-				SerienRecorder.writeLog("%s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer), True)
+				SRLogger.writeLog("%s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer), True)
 				print "[SerienRecorder] %s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer)
-			SerienRecorder.writeLog(
-				"---------' Auto-Check beendet '---------------------------------------------------------------------------------------",
-				True)
+			SRLogger.writeLog("---------' Auto-Check beendet '---------------------------------------------------------------------------------------",	True)
 			print "---------' Auto-Check beendet '---------------------------------------------------------------------------------------"
 			# self.session.open(serienRecRunAutoCheck, False)
-			self.session.open(SerienRecorder.serienRecReadLog)
+			from SerienRecorderLogScreen import serienRecReadLog
+			self.session.open(serienRecReadLog)
 			if self.countTimer:
 				changesMade = True
 
@@ -1765,16 +1791,17 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			 staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags,
 			 addToDatabase) = params
 			# check sender
-			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.database.getChannelInfo(sender,
-																											  self.serien_wl_id,
-																											  self.FilterMode)
+			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.database.getChannelInfo(sender, self.serien_wl_id, self.FilterMode)
 
 			TimerOK = False
 			if stbChannel == "":
-				SerienRecorder.writeLog("' %s ' - Kein STB-Kanal gefunden -> ' %s '" % (serien_name, webChannel))
+				SRLogger.writeLog("' %s ' - Kein STB-Kanal gefunden -> ' %s '" % (serien_name, webChannel))
 			elif int(status) == 0:
-				SerienRecorder.writeLog("' %s ' - STB-Kanel deaktiviert -> ' %s '" % (serien_name, webChannel))
+				SRLogger.writeLog("' %s ' - STB-Kanel deaktiviert -> ' %s '" % (serien_name, webChannel))
 			else:
+				from SerienRecorderTimer import serienRecTimer, serienRecBoxTimer
+				timer = serienRecTimer()
+
 				if config.plugins.serienRec.TimerName.value == "0":
 					timer_name = label_serie
 				elif config.plugins.serienRec.TimerName.value == "2":
@@ -1783,14 +1810,10 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					timer_name = serien_name
 
 				if preferredChannel == 1:
-					timer_stbChannel = stbChannel
 					timer_stbRef = stbRef
-					timer_altstbChannel = altstbChannel
 					timer_altstbRef = altstbRef
 				else:
-					timer_stbChannel = altstbChannel
 					timer_stbRef = altstbRef
-					timer_altstbChannel = stbChannel
 					timer_altstbRef = stbRef
 
 				# try to get eventID (eit) from epgCache
@@ -1799,62 +1822,60 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 																							  margin_before,
 																							  margin_after, serien_name,
 																							  timer_stbRef)
-				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
-				konflikt = None
+				updateFromEPG = self.database.getUpdateFromEPG(serien_name)
+				if updateFromEPG is False:
+					start_unixtime_eit = start_unixtime
+					end_unixtime_eit = end_unixtime
+
+				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+				konflikt = ""
 
 				# versuche timer anzulegen
-				# if checkTuner(start_unixtime_eit, end_unixtime_eit, timer_stbRef):
-				if True:
-					result = SerienRecorder.serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
-														timer_name, "%s - %s" % (seasonEpisodeString, title), eit,
-														False, dirname, vpsSettings, tags, None)
-					if result["result"]:
-						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef,
-											webChannel, eit, addToDatabase):
-							self.countTimer += 1
-							TimerOK = True
-					else:
-						konflikt = result["message"]
+				result = serienRecBoxTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
+													timer_name, "%s - %s" % (seasonEpisodeString, title), eit,
+													False, dirname, vpsSettings, tags, None)
+				if result["result"]:
+					timer.addTimerToDB(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase)
+					self.countTimer += 1
+					TimerOK = True
 				else:
-					print "[SerienRecorder] Tuner belegt: %s %s" % (label_serie, startzeit)
-					SerienRecorder.writeLog("Tuner belegt: %s %s" % (label_serie, startzeit), True)
+					konflikt = result["message"]
 
 				if not TimerOK and useAlternativeChannel:
 					# try to get eventID (eit) from epgCache
 					alt_eit, alt_end_unixtime_eit, alt_start_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(
 						start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_altstbRef)
-					# versuche timer anzulegen
-					# if checkTuner(alt_start_unixtime_eit, alt_end_unixtime_eit, timer_altstbRef):
-					if True:
-						result = SerienRecorder.serienRecAddTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit),
-															str(alt_end_unixtime_eit), timer_name,
-															"%s - %s" % (seasonEpisodeString, title), alt_eit, False,
-															dirname, vpsSettings, tags, None)
-						if result["result"]:
-							konflikt = None
-							if self.addRecTimer(serien_name, staffel, episode, title, str(alt_start_unixtime_eit),
-												timer_altstbRef, webChannel, alt_eit, addToDatabase):
-								self.countTimer += 1
-								TimerOK = True
-						else:
-							konflikt = result["message"]
-					else:
-						print "[SerienRecorder] Tuner belegt: %s %s" % (label_serie, startzeit)
-						SerienRecorder.writeLog("Tuner belegt: %s %s" % (label_serie, startzeit), True)
 
-				if (not TimerOK) and (konflikt):
-					SerienRecorder.writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, konflikt), True)
+					updateFromEPG = self.database.getUpdateFromEPG(serien_name)
+					if updateFromEPG is False:
+						alt_start_unixtime_eit = start_unixtime
+						alt_end_unixtime_eit = end_unixtime
+
+					# versuche timer anzulegen
+					result = serienRecBoxTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit),
+														str(alt_end_unixtime_eit), timer_name,
+														"%s - %s" % (seasonEpisodeString, title), alt_eit, False,
+														dirname, vpsSettings, tags, None)
+					if result["result"]:
+						konflikt = None
+						timer.addTimerToDB(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit, addToDatabase)
+						self.countTimer += 1
+						TimerOK = True
+					else:
+						konflikt = result["message"]
+
+				if (not TimerOK) and konflikt:
+					SRLogger.writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, konflikt), True)
 					dbMessage = result["message"].replace("In Konflikt stehende Timer vorhanden!", "").strip()
 
-					result = SerienRecorder.serienRecAddTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
+					result = serienRecBoxTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
 														timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True,
 														dirname, vpsSettings, tags, None)
 					if result["result"]:
-						if self.addRecTimer(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef,
-											webChannel, eit, addToDatabase, False):
-							self.countNotActiveTimer += 1
-							TimerOK = True
+						timer.addTimerToDB(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase, False)
+						self.countNotActiveTimer += 1
+						TimerOK = True
 						self.database.addTimerConflict(dbMessage, start_unixtime_eit, webChannel)
 
 			return TimerOK
@@ -1913,28 +1934,6 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyUp(self):
 		self['menu_list'].up()
 
-	def addRecTimer(self, serien_name, staffel, episode, title, start_time, stbRef, webChannel, eit, addToDatabase,
-					TimerAktiviert=True):
-		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
-		if not addToDatabase:
-			print "[SerienRecorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
-			SerienRecorder.writeLogFilter("timerDebug", "   Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title))
-			result = True
-		else:
-			if self.database.timerExistsByServiceRef(serien_name, stbRef, start_time, start_time):
-				print "[SerienRecorder] Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title)
-				SerienRecorder.writeLog("   Timer bereits vorhanden: %s %s - %s" % (serien_name, seasonEpisodeString, title))
-				result = True
-			else:
-				self.database.addToTimerList(serien_name, episode, episode, staffel, title, start_time, stbRef,
-											 webChannel, eit, TimerAktiviert)
-				print "[SerienRecorder] Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title)
-				SerienRecorder.writeLogFilter("timerDebug",
-							   "   Timer angelegt: %s %s - %s" % (serien_name, seasonEpisodeString, title))
-				result = True
-
-		return result
-
 	def keyRed(self):
 		if config.plugins.serienRec.refreshViews.value:
 			self.close(self.changesMade)
@@ -1947,10 +1946,6 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			self.searchEvents()
 
 	def keyYellow(self):
-		# self['text_red'].setText("")
-		# self['text_green'].setText("")
-		# self['text_yellow'].setText("")
-
 		self.sendetermine_list = []
 		self.loading = True
 		self.chooseMenuList.setList(map(self.buildList_termine, self.sendetermine_list))
@@ -1986,7 +1981,8 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		self.resultsEvents(transmissions)
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.searchEvents, SerienRecorder.serienRecTimer)
+		from SerienRecorderTimerListScreen import serienRecTimerListScreen
+		self.session.openWithCallback(self.searchEvents, serienRecTimerListScreen)
 
 	def __onClose(self):
 		if self.displayTimer:

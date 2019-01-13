@@ -10,6 +10,7 @@ from Components.ScrollLabel import ScrollLabel
 from Components.config import config, configfile
 
 from enigma import getDesktop
+import SerienRecorder
 
 class ShowStartupInfo(Screen):
 	DESKTOP_WIDTH  = getDesktop(0).size().width()
@@ -35,7 +36,7 @@ class ShowStartupInfo(Screen):
 
 	def __init__(self, session):
 		self.session = session
-		self.serienRecInfoFilePath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/StartupInfoText"
+		self.serienRecInfoFilePath = "%sStartupInfoText" % SerienRecorder.serienRecMainPath
 
 		Screen.__init__(self, session)
 
@@ -49,8 +50,8 @@ class ShowStartupInfo(Screen):
 		}, -1)
 
 		self['srlog'] = ScrollLabel()
-		self['text_ok'] = Label(("Exit und nicht mehr anzeigen"))
-		self['text_exit'] = Label(("Exit"))
+		self['text_ok'] = Label("Exit und nicht mehr anzeigen")
+		self['text_exit'] = Label("Exit")
 
 		self.onLayoutFinish.append(self.__onLayoutFinished)
 

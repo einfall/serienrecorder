@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
-import pickle
-import shutil
-import sqlite3
-import time
+import pickle, shutil, sqlite3, time
 
-import SerienRecorderHelpers
-import SerienRecorder
-import SerienRecorderSeriesServer
+from SerienRecorderHelpers import getChangedSeriesNames
+from SerienRecorderLogWriter import SRLogger
 
 class SRDatabase:
 	def __init__(self, dbfilepath):
@@ -66,7 +62,8 @@ class SRDatabase:
 																			vps INTEGER DEFAULT NULL,
 																			excludedWeekdays INTEGER DEFAULT NULL,
 																			tags TEXT,
-																			addToDatabase INTEGER DEFAULT 1)''')
+																			addToDatabase INTEGER DEFAULT 1,
+																			updateFromEPG INTEGER DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -205,22 +202,13 @@ class SRDatabase:
 			pass
 
 		try:
-			# Update Series-Markers
-			markers = self.getMarkerNamesAndWLID()
-			changedMarkers = SerienRecorderHelpers.getChangedSeriesNames(markers)
-			SerienRecorder.writeLog("Es wurden %d geänderte Seriennamen gefunden" % len(changedMarkers), True)
-
 			cur = self._srDBConn.cursor()
-			for key, val in changedMarkers.items():
-				cur.execute("UPDATE SerienMarker SET Serie = ? WHERE Url = ?", (val[1], 'http://www.wunschliste.de/epg_print.pl?s=' + key))
-				SerienRecorder.writeLog("SerienMarker Tabelle aktualisiert [%s] => [%s]: %d" % (val[0], val[1], cur.rowcount), True)
-				cur.execute("UPDATE AngelegteTimer SET Serie = ? WHERE TRIM(Serie) = ?", (val[1], val[0]))
-				SerienRecorder.writeLog("AngelegteTimer Tabelle aktualisiert [%s]: %d" % (val[1], cur.rowcount), True)
-				cur.execute("UPDATE Merkzettel SET Serie = ? WHERE TRIM(Serie) = ?", (val[1], val[0]))
-				SerienRecorder.writeLog("Merkzettel Tabelle aktualisiert [%s]: %d" % (val[1], cur.rowcount), True)
+			cur.execute('ALTER TABLE SerienMarker ADD updateFromEPG INTEGER DEFAULT NULL')
 			cur.close()
 		except:
 			pass
+
+		self.updateSeriesMarker()
 
 		cur = self._srDBConn.cursor()
 		cur.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
@@ -238,6 +226,29 @@ class SRDatabase:
 
 		cur.execute("UPDATE OR IGNORE dbInfo SET Value=? WHERE Key='Version'", [version])
 		cur.close()
+
+	def updateSeriesMarker(self):
+		result = []
+		try:
+			# Update Series-Markers
+			markers = self.getMarkerNamesAndWLID()
+			changedMarkers = getChangedSeriesNames(markers)
+			SRLogger.writeLog("Es wurden %d geänderte Seriennamen gefunden" % len(changedMarkers), True)
+
+			cur = self._srDBConn.cursor()
+			for key, val in changedMarkers.items():
+				cur.execute("UPDATE SerienMarker SET Serie = ? WHERE Url = ?", (val[1], 'http://www.wunschliste.de/epg_print.pl?s=' + key))
+				SRLogger.writeLog("SerienMarker Tabelle aktualisiert [%s] => [%s]: %d" % (val[0], val[1], cur.rowcount), True)
+				cur.execute("UPDATE AngelegteTimer SET Serie = ? WHERE TRIM(Serie) = ?", (val[1], val[0]))
+				SRLogger.writeLog("AngelegteTimer Tabelle aktualisiert [%s]: %d" % (val[1], cur.rowcount), True)
+				cur.execute("UPDATE Merkzettel SET Serie = ? WHERE TRIM(Serie) = ?", (val[1], val[0]))
+				SRLogger.writeLog("Merkzettel Tabelle aktualisiert [%s]: %d" % (val[1], cur.rowcount), True)
+				result.append(val[1])
+			cur.close()
+		except:
+			pass
+
+		return result
 
 	def optimize(self):
 		cur = self._srDBConn.cursor()
@@ -434,6 +445,18 @@ class SRDatabase:
 		cur.close()
 		return bool(result)
 
+	def getUpdateFromEPG(self, series):
+		result = True
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT updateFromEPG FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		row = cur.fetchone()
+		if row:
+			(result,) = row
+		cur.close()
+		if result is None:
+			result = True
+		return bool(result)
+
 	def getSpecialsAllowed(self, series):
 		TimerForSpecials = False
 		cur = self._srDBConn.cursor()
@@ -503,17 +526,17 @@ class SRDatabase:
 
 	def getMarkerSettings(self, series):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
 		row = cur.fetchone()
 		if not row:
-			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1)
+			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1)
 		cur.close()
 		return row
 
 	def setMarkerSettings(self, series, settings):
 		data = settings + (series.lower(), )
 		cur = self._srDBConn.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=? WHERE LOWER(Serie)=?"
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=? WHERE LOWER(Serie)=?"
 		cur.execute(sql, data)
 		cur.close()
 
@@ -585,7 +608,7 @@ class SRDatabase:
 		return Url
 
 	def getMarkerID(self, series):
-		makerID = None
+		markerID = None
 		cur = self._srDBConn.cursor()
 		cur.execute("SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
 		row = cur.fetchone()
@@ -918,6 +941,13 @@ class SRDatabase:
 		cur.execute("DELETE FROM Channels WHERE LOWER(WebChannel)=?", [channel.lower()])
 		cur.close()
 
+	def removeAllChannels(self):
+		cur = self._srDBConn.cursor()
+		cur.execute("DELETE FROM SenderAuswahl")
+		cur.execute("DELETE FROM Channels")
+		cur.execute("VACUUM")
+		cur.close()
+
 	def getAllowedSeasons(self, seriesID, fromSeason):
 		seasons = []
 		cur = self._srDBConn.cursor()
@@ -1059,6 +1089,12 @@ class SRTempDatabase:
 		self._tempDBConn.isolation_level = None
 		self._tempDBConn.text_factory = lambda x: str(x.decode("utf-8"))
 
+	def beginTransaction(self):
+		self._tempDBConn.execute("begin")
+
+	def commitTransaction(self):
+		self._tempDBConn.execute("commit")
+
 	def close(self):
 		if self._tempDBConn:
 			self._tempDBConn.close()
@@ -1090,7 +1126,8 @@ class SRTempDatabase:
 																	AufnahmezeitVon INTEGER,
 																	AufnahmezeitBis INTEGER,
 																	vomMerkzettel INTEGER DEFAULT 0,
-																	excludedWeekdays INTEGER DEFAULT NULL)''')
+																	excludedWeekdays INTEGER DEFAULT NULL,
+																	updateFromEPG INTEGER DEFAULT 1)''')
 
 		cur.close()
 
@@ -1106,14 +1143,14 @@ class SRTempDatabase:
 
 	def addTransmission(self, transmission):
 		cur = self._tempDBConn.cursor()
-		sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+		sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays, updateFromEPG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		cur.execute(sql, transmission[0])
 		cur.close()
 
 	def getTransmissionForTimerUpdate(self, seriesName, season, episode):
 		result = None
 		cur = self._tempDBConn.cursor()
-		cur.execute("SELECT SerieName, Staffel, Episode, Title, StartTime FROM GefundeneFolgen WHERE EventID > 0 AND LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (seriesName.lower(), season.lower(), episode.lower()))
+		cur.execute("SELECT SerieName, Staffel, Episode, Title, StartTime, updateFromEPG FROM GefundeneFolgen WHERE EventID > 0 AND LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (seriesName.lower(), season.lower(), episode.lower()))
 		row = cur.fetchone()
 		if row:
 			result = row
@@ -1146,8 +1183,8 @@ class SRTempDatabase:
 	def removeTransmission(self, seriesName, season, episode, title, startUnixtime, stbRef):
 		cur = self._tempDBConn.cursor()
 		if title:
-			cur.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND StartTime=? AND LOWER(ServiceRef)=?", (seriesName.lower(), str(season).lower(), episode.lower(), title.lower(), startUnixtime, stbRef.lower()))
+			cur.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND (StartTime=? OR alternativStartTime=?) AND LOWER(ServiceRef)=?", (seriesName.lower(), str(season).lower(), episode.lower(), title.lower(), startUnixtime, startUnixtime, stbRef.lower()))
 		else:
-			cur.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartTime=? AND LOWER(ServiceRef)=?", (seriesName.lower(), str(season).lower(), episode.lower(), startUnixtime, stbRef.lower()))
+			cur.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (StartTime=? OR alternativStartTime=?) AND LOWER(ServiceRef)=?", (seriesName.lower(), str(season).lower(), episode.lower(), startUnixtime, startUnixtime, stbRef.lower()))
 		cur.close()
 

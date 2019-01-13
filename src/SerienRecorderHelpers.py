@@ -2,19 +2,16 @@
 
 # This file contain some helper functions
 # which called from other SerienRecorder modules
-import base64
-
 from Components.config import config
 from Components.AVSwitch import AVSwitch
 
 from enigma import eServiceReference, eTimer, eServiceCenter, eEPGCache, ePicLoad, iServiceInformation
 
 from Screens.ChannelSelection import service_types_tv
-from ServiceReference import ServiceReference
 
 from Tools.Directories import fileExists
 
-import datetime, os, re, urllib2, sys, time
+import datetime, os, re, urllib2, sys, time, shutil, base64
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -22,19 +19,10 @@ import datetime, os, re, urllib2, sys, time
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
-# Useragent
-WebTimeout = 10
-
 STBTYPE = None
-SRVERSION = '3.8.0'
-
-def writeTestLog(text):
-	if not fileExists("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"):
-		open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", 'w').close()
-
-	writeLogFile = open("/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs", "a")
-	writeLogFile.write('%s\n' % text)
-	writeLogFile.close()
+SRVERSION = '3.8.6-beta'
+SRDBVERSION = '3.9'
+SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 def decodeISO8859_1(txt, replace=False):
 	txt = unicode(txt, 'ISO-8859-1')
@@ -150,6 +138,98 @@ def getChangedSeriesNames(markers):
 			continue
 	return result
 
+def createBackup():
+	import SerienRecorder
+	from SerienRecorderLogWriter import SRLogger
+	lt = time.localtime()
+
+	# Remove old backups
+	if config.plugins.serienRec.deleteBackupFilesOlderThan.value > 0:
+		SRLogger.writeLog("\nEntferne alte Backup-Dateien und erzeuge neues Backup.", True)
+		now = time.time()
+		logFolderPattern = re.compile('\d{4}\d{2}\d{2}\d{2}\d{2}')
+		for root, dirs, files in os.walk(config.plugins.serienRec.BackupPath.value, topdown=False):
+			for name in dirs:
+				if logFolderPattern.match(name) and os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
+					shutil.rmtree(os.path.join(root, name), True)
+					SRLogger.writeLog("Lösche Ordner: %s" % os.path.join(root, name), True)
+	else:
+		SRLogger.writeLog("Erzeuge neues Backup", True)
+
+	BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
+	if not os.path.exists(BackupPath):
+		try:
+			os.makedirs(BackupPath)
+		except:
+			pass
+	if os.path.isdir(BackupPath):
+		try:
+			if fileExists(SerienRecorder.serienRecDataBaseFilePath):
+				from SerienRecorderDatabase import SRDatabase
+				database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+				database.backup(BackupPath)
+			if fileExists(SRLogger.getLogFilePath()):
+				shutil.copy(SRLogger.getLogFilePath(), BackupPath)
+			if fileExists("/etc/enigma2/timers.xml"):
+				shutil.copy("/etc/enigma2/timers.xml", BackupPath)
+			if fileExists("%sConfig.backup" % SerienRecorder.serienRecMainPath):
+				shutil.copy("%sConfig.backup" % SerienRecorder.serienRecMainPath, BackupPath)
+			STBHelpers.saveEnigmaSettingsToFile(BackupPath)
+			for filename in os.listdir(BackupPath):
+				os.chmod(os.path.join(BackupPath, filename), 0o777)
+		except Exception, e:
+			SRLogger.writeLog("Backup konnte nicht erstellt werden: " + str(e), True)
+
+def getDirname(database, serien_name, staffel):
+	import SerienRecorder
+	if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
+		seasonsubdirfillchar = ' '
+	else:
+		seasonsubdirfillchar = config.plugins.serienRec.seasonsubdirfillchar.value
+	# This is to let the user configure the name of the Sesaon subfolder
+	# If a file called 'Staffel' exists in SerienRecorder folder the folder will be created as "Staffel" instead of "Season"
+	germanSeasonNameConfig = "%sStaffel" % SerienRecorder.serienRecMainPath
+	seasonDirName = "Season"
+	if fileExists(germanSeasonNameConfig):
+		seasonDirName = "Staffel"
+
+	dirname = None
+	seasonsubdir = -1
+	isMovie = False
+	row = database.getDirNames(serien_name)
+	if not row:
+		# It is a movie (because there is no marker)
+		isMovie = True
+	else:
+		(dirname, seasonsubdir, url) = row
+		if url.startswith('https://www.wunschliste.de/spielfilm'):
+			isMovie = True
+
+	if isMovie:
+		path = config.plugins.serienRec.tvplaner_movies_filepath.value
+		isCreateSerienSubDir = config.plugins.serienRec.tvplaner_movies_createsubdir.value
+		isCreateSeasonSubDir = False
+	else:
+		path = config.plugins.serienRec.savetopath.value
+		isCreateSerienSubDir = config.plugins.serienRec.seriensubdir.value
+		isCreateSeasonSubDir = config.plugins.serienRec.seasonsubdir.value
+
+	if dirname:
+		if not re.search('.*?/\Z', dirname):
+			dirname = "%s/" % dirname
+		dirname_serie = dirname
+		if (seasonsubdir == -1) and isCreateSeasonSubDir or (seasonsubdir == 1):
+			dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+	else:
+		dirname = path
+		dirname_serie = dirname
+		if isCreateSerienSubDir:
+			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
+			dirname_serie = dirname
+			if isCreateSeasonSubDir:
+				dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
+
+	return dirname, dirname_serie
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -394,12 +474,117 @@ class STBHelpers:
 	@classmethod
 	def getHardwareUUID(cls):
 		try:
-			file = open("/var/lib/dbus/machine-id", "r")
-			uuid = file.readline().strip()
-			file.close()
+			machineIDFile = open("/var/lib/dbus/machine-id", "r")
+			uuid = machineIDFile.readline().strip()
+			machineIDFile.close()
 		except:
 			uuid = "unknown"
 		return uuid
+
+	@classmethod
+	def saveEnigmaSettingsToFile(cls, path):
+		writeConfFile = open("%sConfig.backup" % path, "w")
+		readSettings = open("/etc/enigma2/settings", "r")
+		for rawData in readSettings.readlines():
+			data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
+			if data:
+				writeConfFile.write(rawData)
+		writeConfFile.close()
+		readSettings.close()
+
+	@classmethod
+	def createDirectory(cls, serien_name, dirname, dirname_serie, cover_only=False):
+		from SerienRecorderLogWriter import SRLogger
+		serien_name = doReplaces(serien_name)
+		# dirname = doReplaces(dirname)
+		# dirname_serie = doReplaces(dirname_serie)
+		if not fileExists(dirname) and not cover_only:
+			print "[SerienRecorder] Erstelle Verzeichnis %s" % dirname
+			SRLogger.writeLog("Erstelle Verzeichnis: ' %s '" % dirname)
+			try:
+				os.makedirs(dirname)
+			except OSError as e:
+				SRLogger.writeLog("Fehler beim Erstellen des Verzeichnisses: %s" % e.strerror)
+		# if e.errno != 17:
+		#	raise
+
+		# Copy cover only if path exists and series sub dir is activated
+		if fileExists(dirname) and config.plugins.serienRec.seriensubdir.value:
+			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
+				shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
+			if config.plugins.serienRec.seasonsubdir.value:
+				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sseries.jpg" % dirname):
+					shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sseries.jpg" % dirname)
+
+	@classmethod
+	def checkTuner(cls, check_start, check_end, check_stbRef):
+		if not config.plugins.serienRec.selectNoOfTuners.value:
+			return True
+
+		cRecords = 1
+		lTuner = []
+		lTimerStart = {}
+		lTimerEnd = {}
+
+		# Aufnahme Tuner braucht CI -1 -> nein, 1 - ja
+		from ServiceReference import ServiceReference
+		provider_ref = ServiceReference(check_stbRef)
+		new_needs_ci_0 = checkCI(provider_ref.ref, 0)
+		new_needs_ci_1 = checkCI(provider_ref.ref, 1)
+
+		check_stbRef = check_stbRef.split(":")[4:7]
+
+		from SerienRecorderTimer import serienRecBoxTimer
+		timers = serienRecBoxTimer.getTimersTime()
+		for name, begin, end, service_ref in timers:
+			# print name, begin, end, service_ref
+			if not ((int(check_end) < int(begin)) or (int(check_start) > int(end))):
+				# print "between"
+				cRecords += 1
+
+				# vorhandener Timer braucht CI -1 -> nein, 1 - ja
+				# provider_ref = ServiceReference(service_ref)
+				timer_needs_ci_0 = checkCI(service_ref.ref, 0)
+				timer_needs_ci_1 = checkCI(service_ref.ref, 1)
+
+				service_ref = str(service_ref).split(":")[4:7]
+				# gleicher service
+				if str(check_stbRef).lower() == str(service_ref).lower():
+					if int(check_start) > int(begin): begin = check_start
+					if int(check_end) < int(end): end = check_end
+					lTimerStart.update({int(begin): int(end)})
+					lTimerEnd.update({int(end): int(begin)})
+				else:
+					# vorhandener und neuer Timer benötigt ein CI
+					if ((timer_needs_ci_0 is not -1) or (timer_needs_ci_1 is not -1)) and (
+							(new_needs_ci_0 is not -1) or (new_needs_ci_1 is not -1)):
+						return False
+					# Anzahl der verwendeten Tuner um 1 erhöhen
+					if not lTuner.count(service_ref):
+						lTuner.append(service_ref)
+
+		if int(check_start) in lTimerStart:
+			l = lTimerStart.items()
+			l.sort(key=lambda x: x[0])
+			for each in l:
+				if (each[0] <= lTimerStart[int(check_start)]) and (each[1] > lTimerStart[int(check_start)]):
+					lTimerStart.update({int(check_start): each[1]})
+
+			if int(check_end) in lTimerEnd:
+				l = lTimerEnd.items()
+				l.sort(key=lambda x: x[0], reverse=True)
+				for each in l:
+					if (each[0] >= lTimerEnd[int(check_end)]) and (each[1] < lTimerEnd[int(check_end)]):
+						lTimerEnd.update({int(check_end): each[1]})
+
+				if lTimerStart[int(check_start)] >= lTimerEnd[int(check_end)]:
+					lTuner.append(check_stbRef)
+
+		if lTuner.count(check_stbRef):
+			return True
+		else:
+			return len(lTuner) < int(config.plugins.serienRec.tuner.value)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #

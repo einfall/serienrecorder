@@ -2,7 +2,7 @@
 
 # This file contains the SerienRecoder Serien Server stuff
 
-from SerienRecorderHelpers import *
+from SerienRecorderHelpers import STBHelpers, SRVERSION
 
 
 # Constants
@@ -112,10 +112,10 @@ class SeriesServer:
 			infoText += "\n\nCast:\n%s" % glue.join(seriesInfo['cast']).encode('utf-8')
 		return infoText
 
-	def getEpisodeInfo(self, id):
+	def getEpisodeInfo(self, seriesID):
 		infoText = ""
 		try:
-			episodeInfo = self.server.sp.cache.getEpisodeInfo(id)
+			episodeInfo = self.server.sp.cache.getEpisodeInfo(seriesID)
 		except:
 			return infoText
 		if 'season' in episodeInfo and 'episode' in episodeInfo:

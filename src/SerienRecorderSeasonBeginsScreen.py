@@ -1,12 +1,20 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Season Begin Screen
+from Screens.Screen import Screen
+from Screens.HelpMenu import HelpableScreen
+from Components.ActionMap import ActionMap, HelpableActionMap
+from Components.config import config
 
-from SerienRecorder import *
-from SerienRecorderHelpers import *
-from SerienRecorderSeriesServer import *
-from SerienRecorderDatabase import *
-import os, re, threading
+from enigma import ePicLoad, eTimer, loadPNG, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_VALIGN_CENTER
+from skin import parseColor
+
+import SerienRecorder
+from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, skinFactor
+from SerienRecorderHelpers import PiconLoader, isDreamOS, PicLoader
+from SerienRecorderSeriesServer import SeriesServer
+from SerienRecorderDatabase import SRDatabase
+import threading, time
 
 class downloadSeasonBegins(threading.Thread):
 	def __init__ (self, webChannels):
@@ -45,8 +53,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			"down": (self.keyDown, "eine Zeile nach unten"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"yellow": (self.keyYellow, "Zeige nur Serien-Starts"),
-			"startTeletext": (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
-			"startTeletext_long": (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
+			"startTeletext": (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"	: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
@@ -71,8 +78,8 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.proposalList = []
 		self.transmissions = {}
 		self.serviceRefs = self.database.getActiveServiceRefs()
-		self.onLayoutFinish.append(self.__onLayoutFinish)
 		self.onLayoutFinish.append(self.setSkinProperties)
+		self.onLayoutFinish.append(self.__onLayoutFinish)
 		self.onClose.append(self.__onClose)
 
 	def callHelpAction(self, *args):
@@ -85,7 +92,6 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_yellow'].setText("Zeige Serienstarts")
 
 		self.num_bt_text[3][0] = buttonText_na
-
 		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
@@ -94,24 +100,26 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
-		global showAllButtons
-		if not showAllButtons:
+
+		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_ok'].show()
 			self['bt_yellow'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
-			#self['bt_info'].show()
+			self['bt_info'].show()
 			self['bt_menu'].show()
 
 			self['text_ok'].show()
 			self['text_yellow'].show()
 			self['text_0'].show()
-			#self['text_1'].show()
-			#self['text_2'].show()
-			#self['text_3'].show()
+			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
 			self['text_4'].show()
 			self['text_6'].show()
 			self['text_7'].show()
+			self['text_8'].show()
+			self['text_9'].show()
 
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
@@ -174,8 +182,8 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 	def buildList(self, entry):
 		(Serie, Staffel, Sender, UTCTime, ID, MarkerFlag) = entry
 
-		icon = imageNone = "%simages/black.png" % serienRecMainPath
-		imageNeu = "%simages/neu.png" % serienRecMainPath
+		icon = imageNone = "%simages/black.png" % SerienRecorder.serienRecMainPath
+		imageNeu = "%simages/neu.png" % SerienRecorder.serienRecMainPath
 
 		if MarkerFlag == 1:
 			setFarbe = parseColor('green').argb()
@@ -236,17 +244,12 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_id = self[self.modus].getCurrent()[0][4]
 		if serien_id > 0:
 			serien_name = self[self.modus].getCurrent()[0][0]
+			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
 			self.session.open(serienRecShowInfo, serien_name, serien_id)
-			#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
-			#			  MessageBox.TYPE_INFO, timeout=10)
 
-	def youtubeSearch(self):
-		serien_name = self[self.modus].getCurrent()[0][0]
-		super(self.__class__, self).youtubeSearch(serien_name)
-
-	def WikipediaSearch(self):
-		serien_name = self[self.modus].getCurrent()[0][0]
-		super(self.__class__, self).WikipediaSearch(serien_name)
+	def wunschliste(self):
+		serien_id = self[self.modus].getCurrent()[0][4]
+		super(self.__class__, self).wunschliste(serien_id)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -273,9 +276,9 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				self.database.addMarker(url, Serie, boxID)
 
 			self.changesMade = True
-			global runAutocheckAtExit
-			runAutocheckAtExit = True
+			SerienRecorder.runAutocheckAtExit = True
 			if config.plugins.serienRec.openMarkerScreen.value:
+				from SerienRecorderMarkerScreen import serienRecMarker
 				self.session.open(serienRecMarker, Serie)
 
 			self.buildProposalList()

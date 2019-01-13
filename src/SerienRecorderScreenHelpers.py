@@ -2,10 +2,6 @@
 
 # This file contains the SerienRecoder Screen Helpers
 
-import SerienRecorder
-from SerienRecorderDatabase import SRDatabase
-from SerienRecorderHelpers import *
-
 from Tools.Directories import fileExists
 from enigma import eListboxPythonMultiContent, gFont, getDesktop, eTimer
 from Components.config import config
@@ -16,11 +12,50 @@ from Components.VideoWindow import VideoWindow
 from Components.ScrollLabel import ScrollLabel
 from Screens.MessageBox import MessageBox
 
-import re
+from SerienRecorder import serienRecMainPath
+from SerienRecorderDatabase import SRDatabase
+from SerienRecorderHelpers import isDreamOS, getSeriesIDByURL, SRMANUALURL
 
-serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
+# check VPS availability
+try:
+	from Plugins.SystemPlugins.vps import Vps
+except ImportError as ie:
+	VPSPluginAvailable = False
+else:
+	VPSPluginAvailable = True
 
-showAllButtons = False
+# init Opera Webbrowser
+# if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/HbbTV/browser.pyo"):
+# 	from Plugins.Extensions.HbbTV.browser import Browser
+# 	OperaBrowserInstalled = True
+# else:
+# 	OperaBrowserInstalled = False
+
+# init Opera Webbrowser
+if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/WebkitHbbTV/hbbtv.pyo"):
+	from Plugins.Extensions.WebkitHbbTV.hbbtv import HbbTVWindow
+	OperaBrowserInstalled = True
+else:
+	OperaBrowserInstalled = False
+
+# init DMM Webbrowser
+if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/Browser/Browser.pyo"):
+	from Plugins.Extensions.Browser.Browser import Browser
+	DMMBrowserInstalled = True
+else:
+	DMMBrowserInstalled = False
+
+import keymapparser
+
+try:
+	keymapparser.removeKeymap("%skeymap.xml" % serienRecMainPath)
+except:
+	pass
+try:
+	keymapparser.readKeymap("%skeymap.xml" % serienRecMainPath)
+except:
+	pass
+
 longButtonText = False
 buttonText_na = "-----"
 skinName = "SerienRecorder3.0"
@@ -28,6 +63,7 @@ skin = "%sskins/SR_Skin.xml" % serienRecMainPath
 default_skinName = skinName
 default_skin = skin
 skinFactor = 1
+num_bt_text = ()
 
 # Check if is Full HD / UHD
 DESKTOP_WIDTH = getDesktop(0).size().width()
@@ -40,8 +76,6 @@ else:
 print "[SerienRecorder] Skinfactor: %s" % skinFactor
 
 def SelectSkin():
-	global showAllButtons
-	showAllButtons = False
 	global longButtonText
 	longButtonText = False
 	global buttonText_na
@@ -62,7 +96,6 @@ def SelectSkin():
 			x, path = lookupScreen("SerienRecorder", 0)
 			if x:
 				skinName = "SerienRecorder"
-				showAllButtons = config.plugins.serienRec.showAllButtons.value
 		except:
 			pass
 
@@ -70,13 +103,12 @@ def SelectSkin():
 		skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
 		skin = skin.replace("//", "/")
 		if config.plugins.serienRec.SkinType.value in ("Skin2", "StyleFHD", "Black Box"):
-			showAllButtons = True
+			config.plugins.serienRec.showAllButtons.value = True
 		if config.plugins.serienRec.SkinType.value in ("Skin2", "AtileHD", "Black Box"):
 			buttonText_na = ""
 	else:
 		if fileExists("%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)):
 			skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
-			showAllButtons = config.plugins.serienRec.showAllButtons.value
 			buttonText_na = ""
 
 
@@ -94,22 +126,21 @@ def setSkinProperties(self, isLayoutFinshed=True):
 
 	if longButtonText:
 		self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
-							[buttonText_na, "Konflikt-Liste", "YouTube (lang: Wikipedia)"],
-							[buttonText_na, "Merkzettel", ""],
+							[buttonText_na, "Konflikt-Liste", "Wunschliste"],
+							[buttonText_na, "Merkzettel", "Timer suchen"],
 							["Neue Serienstarts", buttonText_na, "Hilfe"],
 							["Serien Beschreibung", buttonText_na, "Einstellungen"])
 	else:
 		self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
-							[buttonText_na, "Konflikt-Liste", "YouTube/Wikipedia"],
-							[buttonText_na, "Merkzettel", ""],
+							[buttonText_na, "Konflikt-Liste", "Wunschliste"],
+							[buttonText_na, "Merkzettel", "Timer suchen"],
 							["Neue Serienstarts", buttonText_na, "Hilfe"],
 							["Serien Beschreibung", buttonText_na, "Einstellungen"])
 
-	if showAllButtons:
-		Skin1_Settings(self)
+	if config.plugins.serienRec.showAllButtons.value:
+		setMenuTexts(self)
 
 def InitSkin(self):
-	global showAllButtons
 	global longButtonText
 	global buttonText_na
 	global skin
@@ -123,7 +154,7 @@ def InitSkin(self):
 			self.skin = SRSkin.read()
 			SRSkin.close()
 		except:
-			showAllButtons = False
+			config.plugins.serienRec.showAllButtons.value = False
 			longButtonText = False
 			buttonText_na = "-----"
 
@@ -220,7 +251,7 @@ def InitSkin(self):
 
 	setSkinProperties(self, False)
 
-	if not showAllButtons:
+	if not config.plugins.serienRec.showAllButtons.value:
 		self['bt_red'].hide()
 		self['bt_green'].hide()
 		self['bt_yellow'].hide()
@@ -260,7 +291,7 @@ def InitSkin(self):
 		self['text_8'].hide()
 		self['text_9'].hide()
 
-def Skin1_Settings(self):
+def setMenuTexts(self):
 	self['text_0'].setText(self.num_bt_text[0][0])
 	self['text_1'].setText(self.num_bt_text[1][0])
 	self['text_2'].setText(self.num_bt_text[2][0])
@@ -335,12 +366,14 @@ def updateMenuKeys(self):
 	self['text_3'].setText(self.num_bt_text[3][self.displayMode])
 	self['text_4'].setText(self.num_bt_text[4][self.displayMode])
 
-class serienRecBaseScreen():
+class serienRecBaseScreen:
 	def __init__(self, session):
 		self.session = session
 		self.skin = None
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.displayTimer = None
+		self.skinName = None
+		self.num_bt_text = ()
 
 	def setupSkin(self):
 		InitSkin(self)
@@ -354,9 +387,8 @@ class serienRecBaseScreen():
 
 	def startDisplayTimer(self):
 		self.displayTimer = None
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
+		if config.plugins.serienRec.showAllButtons.value:
+			setMenuTexts(self)
 		else:
 			self.displayMode = 2
 			self.updateMenuKeys()
@@ -372,47 +404,49 @@ class serienRecBaseScreen():
 		updateMenuKeys(self)
 
 	def readLogFile(self):
-		self.session.open(SerienRecorder.serienRecReadLog)
+		from SerienRecorderLogScreen import serienRecReadLog
+		self.session.open(serienRecReadLog)
 
 	def showProposalDB(self):
-		self.session.open(SerienRecorder.serienRecShowSeasonBegins)
+		from SerienRecorderSeasonBeginsScreen import serienRecShowSeasonBegins
+		self.session.open(serienRecShowSeasonBegins)
 
 	def serieInfo(self):
-		self.session.open(SerienRecorder.serienRecShowInfo, self.serien_name, self.serien_id)
+		from SerienRecorderSeriesInfoScreen import serienRecShowInfo
+		self.session.open(serienRecShowInfo, self.serien_name, self.serien_id)
 
 	def showConflicts(self):
-		self.session.open(SerienRecorder.serienRecShowConflicts)
+		from SerienRecorderConflictsScreen import serienRecShowConflicts
+		self.session.open(serienRecShowConflicts)
 
 	def showWishlist(self):
-		self.session.open(SerienRecorder.serienRecWishlist)
+		from SerienRecorderWishlistScreen import serienRecWishlistScreen
+		self.session.open(serienRecWishlistScreen)
 
-	def youtubeSearch(self, searchWord):
-		if SerienRecorder.epgTranslatorInstalled:
-			print "[SerienRecorder] starte youtube suche für %s" % searchWord
-			self.session.open(SerienRecorder.searchYouTube, searchWord)
+	def wunschliste(self, seriesID):
+		url = "https://www.wunschliste.de/" + str(seriesID)
+		if OperaBrowserInstalled:
+			self.session.open(HbbTVWindow, url, None)
+		elif DMMBrowserInstalled:
+			self.session.open(Browser, True, url)
 		else:
-			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "EPGTranslator von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
-
-	def WikipediaSearch(self, searchWord):
-		if SerienRecorder.WikipediaInstalled:
-			print "[SerienRecorder] starte Wikipedia Suche für %s" % searchWord
-			self.session.open(SerienRecorder.wikiSearch, searchWord)
-		else:
-			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Wikipedia von Kashmir", MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
 
 	def showManual(self):
-		if SerienRecorder.OperaBrowserInstalled:
-			self.session.open(SerienRecorder.Browser, SerienRecorder.SR_OperatingManual, True)
-		elif SerienRecorder.DMMBrowserInstalled:
-			self.session.open(SerienRecorder.Browser, True, SerienRecorder.SR_OperatingManual)
+		if OperaBrowserInstalled:
+			self.session.open(HbbTVWindow, SRMANUALURL, None)
+		elif DMMBrowserInstalled:
+			self.session.open(Browser, True, SRMANUALURL)
 		else:
 			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
 
 	def showAbout(self):
-		self.session.open(SerienRecorder.serienRecAboutScreen)
+		from SerienRecorderAboutScreen import serienRecAboutScreen
+		self.session.open(serienRecAboutScreen)
 
 	def recSetup(self):
-		self.session.openWithCallback(self.setupClose, SerienRecorder.serienRecSetup)
+		from SerienRecorderSetupScreen import serienRecSetup
+		self.session.openWithCallback(self.setupClose, serienRecSetup)
 
 	def setupClose(self, result):
 		if not result[2]:
@@ -420,7 +454,8 @@ class serienRecBaseScreen():
 		else:
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					SerienRecorder.serienRecCheckForRecording(self.session, False)
+					from SerienRecorder import serienRecCheckForRecording
+					serienRecCheckForRecording(self.session, False)
 
 	def keyLeft(self):
 		self[self.modus].pageUp()
@@ -453,8 +488,9 @@ class serienRecBaseScreen():
 
 	def getCover(self, serienName):
 		serien_id = None
-		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		from SerienRecorder import serienRecDataBaseFilePath, getCover
+		database = SRDatabase(serienRecDataBaseFilePath)
 		url = database.getMarkerURL(serienName)
 		if url:
-			serien_id = SerienRecorder.getSeriesIDByURL(url)
-		SerienRecorder.getCover(self, serienName, serien_id)
+			serien_id = getSeriesIDByURL(url)
+		getCover(self, serienName, serien_id)

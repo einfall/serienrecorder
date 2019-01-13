@@ -1,17 +1,35 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Episodes Screen
+import re, time
 
-from SerienRecorder import *
-from SerienRecorderScreenHelpers import *
-from SerienRecorderDatabase import *
+from Screens.Screen import Screen
+from Screens.MessageBox import MessageBox
+from Screens.HelpMenu import HelpableScreen
+from Components.ActionMap import ActionMap, HelpableActionMap
+from Components.config import config
+from enigma import ePicLoad, eTimer, loadPNG, RT_HALIGN_LEFT, RT_VALIGN_CENTER, eListboxPythonMultiContent
+from skin import parseColor, parseFont
+from Tools.Directories import fileExists
+
+if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
+	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
+else:
+	from Screens.VirtualKeyBoard import VirtualKeyBoard as NTIVirtualKeyBoard
+
+from SerienRecorder import serienRecDataBaseFilePath, getCover, serienRecMainPath
+from SerienRecorderScreenHelpers import serienRecBaseScreen, skinFactor, updateMenuKeys, setSkinProperties, buttonText_na, setMenuTexts, InitSkin
+from SerienRecorderHelpers import isDreamOS
+from SerienRecorderDatabase import SRDatabase
+from SerienRecorderSeriesServer import SeriesServer
 
 class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session, serien_name, serie_url, serien_cover):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
-		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		self.ErrorMsg = ''
+		self.database = SRDatabase(serienRecDataBaseFilePath)
 		self.modus = "menu_list"
 		self.session = session
 		self.picload = ePicLoad()
@@ -43,8 +61,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"nextBouquet" : (self.nextPage, "Nächste Seite laden"),
 			"prevBouquet" : (self.backPage, "Vorherige Seite laden"),
-			"startTeletext"       : (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
-			"startTeletext_long"  : (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
+			"startTeletext"  : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
@@ -99,8 +116,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
-		global showAllButtons
-		if not showAllButtons:
+
+		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -128,11 +145,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
 
-	def youtubeSearch(self):
-		super(self.__class__, self).youtubeSearch(self.serien_name)
-
-	def WikipediaSearch(self):
-		super(self.__class__, self).WikipediaSearch(self.serien_name)
+	def wunschliste(self):
+		super(self.__class__, self).wunschliste(self.serien_id)
 
 	def searchEpisodes(self):
 		super(self.__class__, self).getCover(self.serien_name)
@@ -163,8 +177,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.page in self.episodes_list_cache:
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 		else:
-			self.ErrorMsg = ''
-			SerienRecorder.getCover(self, self.serien_name, self.serien_id)
+			getCover(self, self.serien_name, self.serien_id)
 			try:
 				episodes = SeriesServer().doGetEpisodes(int(self.serien_id), int(self.page))
 				self.resultsEpisodes(episodes)
@@ -243,7 +256,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.page in self.episodes_list_cache:
 			if len(self.episodes_list_cache[self.page]) != 0:
 				if self.episodes_list_cache[self.page][sindex][2]:
-					self.session.open(SerienRecorder.serienRecShowEpisodeInfo, self.serien_name, self.episodes_list_cache[self.page][sindex][3], self.episodes_list_cache[self.page][sindex][2])
+					self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.serien_id, self.episodes_list_cache[self.page][sindex][3], self.episodes_list_cache[self.page][sindex][2])
 					#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!", MessageBox.TYPE_INFO, timeout=10)
 
 	def keyGreen(self):
@@ -348,16 +361,19 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.stopDisplayTimer()
 
 class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
-	def __init__(self, session, serieName, episodeTitle, episodeID):
+	def __init__(self, session, serieName, serienID, episodeTitle, episodeID):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
+		self.displayMode = 2
 		self.session = session
 		self.picload = ePicLoad()
+		self.serienID = serienID
 		self.serien_name = serieName
 		self.episodeID = episodeID
 		self.episodeTitle = episodeTitle
 		self.skin = None
+		self.displayTimer_conn = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"red"   : (self.keyCancel, "zurück zur vorherigen Ansicht"),
@@ -367,8 +383,7 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 			"up"    : (self.pageUp, "zur vorherigen Seite blättern"),
 			"down"  : (self.pageDown, "zur nächsten Seite blättern"),
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
-			"startTeletext"       : (self.youtubeSearch, "Trailer zur ausgewählten Serie auf YouTube suchen"),
-			"startTeletext_long"  : (self.WikipediaSearch, "Informationen zur ausgewählten Serie auf Wikipedia suchen"),
+			"startTeletext"  : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
@@ -397,11 +412,10 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		self.num_bt_text[4][0] = buttonText_na
 
 		self.displayTimer = None
-		global showAllButtons
-		if showAllButtons:
-			Skin1_Settings(self)
+
+		if config.plugins.serienRec.showAllButtons.value:
+			setMenuTexts(self)
 		else:
-			self.displayMode = 2
 			self.updateMenuKeys()
 
 			self.displayTimer = eTimer()
@@ -421,8 +435,8 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
-		global showAllButtons
-		if not showAllButtons:
+
+		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_red'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
@@ -439,11 +453,8 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
-	def youtubeSearch(self):
-		super(self.__class__, self).youtubeSearch(self.serien_name)
-
-	def WikipediaSearch(self):
-		super(self.__class__, self).WikipediaSearch(self.serien_name)
+	def wunschliste(self):
+		super(self.__class__, self).wunschliste(self.serienID)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)

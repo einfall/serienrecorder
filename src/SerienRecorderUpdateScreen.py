@@ -5,7 +5,6 @@ from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 
 from Tools import Notifications
-from Tools.Directories import fileExists
 
 from Components.Label import Label
 from Components.ActionMap import ActionMap
@@ -14,7 +13,6 @@ from Components.config import config, configfile
 from Components.ProgressBar import ProgressBar
 
 from enigma import getDesktop, eTimer, eConsoleAppContainer
-import urllib
 from twisted.web.client import getPage, downloadPage
 
 import Screens.Standby
