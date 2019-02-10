@@ -518,8 +518,12 @@ class STBHelpers:
 			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
 				shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
 			if config.plugins.serienRec.seasonsubdir.value:
-				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s" % (dirname, config.plugins.serienRec.copyCoverToFolder.value)):
-					shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, config.plugins.serienRec.copyCoverToFolder.value))
+				covername = "series.jpg"
+				if config.plugins.serienRec.copyCoverToFolder.value is "1":
+					covername = "folder.jpg"
+
+				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s" % (dirname, covername)):
+					shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, covername))
 
 	@classmethod
 	def checkTuner(cls, check_start, check_end, check_stbRef):
