@@ -518,11 +518,11 @@ class STBHelpers:
 			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
 				shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
 			if config.plugins.serienRec.seasonsubdir.value:
-				covername = "series.jpg"
+				covername = "series"
 				if config.plugins.serienRec.copyCoverToFolder.value is "1":
-					covername = "folder.jpg"
+					covername = "folder"
 
-				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s" % (dirname, covername)):
+				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname, covername)):
 					shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, covername))
 
 	@classmethod
