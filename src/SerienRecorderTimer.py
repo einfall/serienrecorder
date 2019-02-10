@@ -249,7 +249,7 @@ class serienRecTimer:
 		else:
 			optionalText = ""
 
-		SRLogger.writeLog("\n---------' Erstelle Timer%s '-------------------------------------------------------------------------------\n" % optionalText, True)
+		SRLogger.writeLog("\n---------' Erstelle Timer%s '---------\n" % optionalText, True)
 
 		transmissions = self.tempDB.getTransmissionsOrderedByNumberOfRecordings(NoOfRecords)
 		for transmission in transmissions:
@@ -757,7 +757,7 @@ class serienRecTimer:
 
 	def adjustEPGtimes(self, current_time):
 
-		SRLogger.writeLog("\n---------' Aktualisiere Timer '-------------------------------------------------------------------------------\n", True)
+		SRLogger.writeLog("\n---------' Aktualisiere Timer '---------\n", True)
 
 		##############################
 		#

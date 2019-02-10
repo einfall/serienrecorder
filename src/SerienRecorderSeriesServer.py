@@ -51,9 +51,9 @@ class SeriesServer:
 		except:
 			return 0
 
-	def getSeriesNamesAndWLID(self, wlIDs):
+	def getSeriesNamesAndInfoByWLID(self, wlIDs):
 		try:
-			return self.server.sp.cache.getNamesByWLIDs(wlIDs)
+			return self.server.sp.cache.getNamesAndInfoByWLIDs(wlIDs)
 		except:
 			return {}
 

@@ -14,7 +14,7 @@ from Screens.MessageBox import MessageBox
 
 from Tools.Directories import fileExists
 
-from enigma import ePicLoad, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER, loadPNG
+from enigma import ePicLoad, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_VALIGN_CENTER, loadPNG
 from skin import parseColor
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
@@ -207,10 +207,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if execute:
 			updatedMarkers = self.database.updateSeriesMarker()
 			self.readSerienMarker()
-			message = "Es mussten keine Serien-Marker umbenannt werden."
+			message = "Es musste kein Serien-Marker aktualisiert werden."
 			if len(updatedMarkers) > 0:
-				message = "Folgende Serien-Marker wurden umbenannt:\n\n"
-				message += "\n".join(updatedMarkers)
+				message = "Es wurden %d Serien-Marker aktualisiert.\n\nEine Liste der geänderten Marker wurde ins Log geschrieben." % len(updatedMarkers)
 
 			self.session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=10)
 
@@ -278,7 +277,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 		markers = self.database.getAllMarkers(True if config.plugins.serienRec.markerSort.value == '1' else False)
 		for marker in markers:
-			(ID, Serie, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount) = marker
+			(ID, Serie, Info, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount) = marker
 			if alleSender:
 				sender = ['Alle',]
 			else:
@@ -329,7 +328,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			elif Nachlaufzeit < 0:
 				Nachlaufzeit = 0
 
-			markerList.append((ID, Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert))
+			markerList.append((ID, Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert, Info))
 
 		self['title'].setText("Serien Marker - %d/%d Serien vorgemerkt." % (len(markerList)-numberOfDeactivatedSeries, len(markerList)))
 		if len(markerList) != 0:
@@ -345,7 +344,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		(ID, serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert) = entry
+		(ID, serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info) = entry
 
 		if preferredChannel == 1:
 			senderText = "Std."
@@ -369,11 +368,12 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		folderText = "Dir: %s" % AufnahmeVerzeichnis
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 750 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 450 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 470 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, info, serieColor, serieColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffelText, foregroundColor, foregroundColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 29 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, senderText, foregroundColor, foregroundColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 470 * skinFactor, 29 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, senderText, foregroundColor, foregroundColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, infoText, foregroundColor, foregroundColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 400 * skinFactor, 49 * skinFactor, 450 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText, foregroundColor, foregroundColor)
+			(eListboxPythonMultiContent.TYPE_TEXT, 470 * skinFactor, 49 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText, foregroundColor, foregroundColor)
 			]
 
 	def keyCheck(self):
@@ -845,7 +845,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			setMenuTexts(self)
 
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG) = self.database.getMarkerSettings(self.Serie)
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer) = self.database.getMarkerSettings(self.Serie)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -911,6 +911,13 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			self.updateFromEPG = ConfigYesNo(default=config.plugins.serienRec.eventid.value)
 			self.enable_updateFromEPG = ConfigYesNo(default=False)
+
+		if str(skipSeriesServer).isdigit():
+			self.skipSeriesServer = ConfigYesNo(default=bool(skipSeriesServer))
+			self.enable_skipSeriesServer = ConfigYesNo(default=True)
+		else:
+			self.skipSeriesServer = ConfigYesNo(default=config.plugins.serienRec.tvplaner_skipSerienServer.value)
+			self.enable_skipSeriesServer = ConfigYesNo(default=False)
 
 		self.preferredChannel = ConfigSelection(choices=[("1", "Standard"), ("0", "Alternativ")], default=str(preferredChannel))
 		self.useAlternativeChannel = ConfigSelection(choices=[("-1", "gemäß Setup (dzt. %s)" % str(
@@ -998,50 +1005,55 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 	def createConfigList(self):
 		self.list = []
-		self.list.append(getConfigListEntry("vom globalen Setup abweichender Speicherort der Aufnahmen:", self.savetopath))
+		self.list.append(getConfigListEntry("Abweichender Speicherort der Aufnahmen:", self.savetopath))
 		if self.savetopath.value:
 			self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", self.seasonsubdir))
 			self.margin_before_index += 1
 
 		self.margin_after_index = self.margin_before_index + 1
 
-		self.list.append(getConfigListEntry("vom globalen Setup abweichenden Timervorlauf aktivieren:", self.enable_margin_before))
+		self.list.append(getConfigListEntry("Aktiviere abweichenden Timervorlauf:", self.enable_margin_before))
 		if self.enable_margin_before.value:
 			self.list.append(getConfigListEntry("      Timervorlauf (in Min.):", self.margin_before))
 			self.margin_after_index += 1
 
 		self.NoOfRecords_index = self.margin_after_index + 1
 
-		self.list.append(getConfigListEntry("vom globalen Setup abweichenden Timernachlauf aktivieren:", self.enable_margin_after))
+		self.list.append(getConfigListEntry("Aktiviere abweichenden Timernachlauf:", self.enable_margin_after))
 		if self.enable_margin_after.value:
 			self.list.append(getConfigListEntry("      Timernachlauf (in Min.):", self.margin_after))
 			self.NoOfRecords_index += 1
 
 		self.fromTime_index = self.NoOfRecords_index + 1
 
-		self.list.append(getConfigListEntry("vom globalen Setup abweichende Anzahl der Aufnahmen aktivieren:", self.enable_NoOfRecords))
+		self.list.append(getConfigListEntry("Aktiviere abweichende Anzahl der Aufnahmen:", self.enable_NoOfRecords))
 		if self.enable_NoOfRecords.value:
 			self.list.append(getConfigListEntry("      Anzahl der Aufnahmen:", self.NoOfRecords))
 			self.fromTime_index += 1
 
 		self.toTime_index = self.fromTime_index + 1
 
-		self.list.append(getConfigListEntry("vom globalen Setup abweichende Früheste Zeit für Timer aktivieren:", self.enable_fromTime))
+		self.list.append(getConfigListEntry("Aktiviere abweichende Früheste Zeit für Timer:", self.enable_fromTime))
 		if self.enable_fromTime.value:
 			self.list.append(getConfigListEntry("      Früheste Zeit für Timer:", self.fromTime))
 			self.toTime_index += 1
 
-		self.list.append(getConfigListEntry("vom globalen Setup abweichende Späteste Zeit für Timer aktivieren:", self.enable_toTime))
+		self.list.append(getConfigListEntry("Aktiviere abweichende Späteste Zeit für Timer:", self.enable_toTime))
 		if self.enable_toTime.value:
 			self.list.append(getConfigListEntry("      Späteste Zeit für Timer:", self.toTime))
 
 		if config.plugins.serienRec.eventid.value:
-			self.list.append(getConfigListEntry("vom globalen Setup abweichende Timeraktualisierung aus dem EPG aktivieren:", self.enable_updateFromEPG))
+			self.list.append(getConfigListEntry("Aktiviere abweichende Timeraktualisierung aus dem EPG:", self.enable_updateFromEPG))
 			if self.enable_updateFromEPG.value:
 				self.list.append(getConfigListEntry("      Versuche Timer aus dem EPG zu aktualisieren:", self.updateFromEPG))
 
+		if config.plugins.serienRec.tvplaner.value:
+			self.list.append(getConfigListEntry("Aktiviere abweichende Timererstellung nur aus der TV-Planer E-Mail:", self.enable_skipSeriesServer))
+			if self.enable_skipSeriesServer.value:
+				self.list.append(getConfigListEntry("      Timer nur aus der TV-Planer E-Mail anlegen:", self.skipSeriesServer))
+
 		if VPSPluginAvailable:
-			self.list.append(getConfigListEntry("vom Sender Setup abweichende VPS Einstellungen:", self.override_vps))
+			self.list.append(getConfigListEntry("Aktiviere abweichende VPS Einstellungen:", self.override_vps))
 			if self.override_vps.value:
 				self.list.append(getConfigListEntry("      VPS für diesen Serien-Marker aktivieren:", self.enable_vps))
 				if self.enable_vps.value:
@@ -1052,7 +1064,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self.list.append(getConfigListEntry("Bevorzugte Sender-Liste:", self.preferredChannel))
 		self.list.append(getConfigListEntry("Verwende alternative Sender bei Konflikten:", self.useAlternativeChannel))
 
-		self.list.append(getConfigListEntry("Wochentage von der Timer-Erstellung ausschließen:", self.enable_excludedWeekdays))
+		self.list.append(getConfigListEntry("Wochentage von der Timererstellung ausschließen:", self.enable_excludedWeekdays))
 		if self.enable_excludedWeekdays.value:
 			self.list.append(getConfigListEntry("      Montag:", self.excludeMonday))
 			self.list.append(getConfigListEntry("      Dienstag:", self.excludeTuesday))
@@ -1235,6 +1247,13 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.updateFromEPG: ("Bei 'ja' wird für Timer von '%s' versucht diese aus dem EPG zu aktualisieren.\n"
 						  "Bei 'nein' werden die Timer dieser Serie nicht aus dem EPG aktualisiert.\n"
 						  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timeraktualisierung aus dem EPG.") % self.Serie,
+			self.enable_skipSeriesServer: (
+								"Bei 'ja' kann für Timer von '%s' eingestellt werden ob Timer nur aus der TV-Planer E-Mail angelegt werden sollen.\n"
+								"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timererstellung nur aus der TV-Planer E-Mail.\n"
+								"Bei 'nein' gilt die Einstellung vom globalen Setup.") % self.Serie,
+			self.skipSeriesServer: ("Bei 'ja' werden Timer von '%s' nur aus der TV-Planer E-Mail erstellt.\n"
+						  "Bei 'nein' werden die Timer aus den Daten des SerienServer angelegt.\n"
+						  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timererstellung nur aus der TV-Planer E-Mail.") % self.Serie,
 			self.override_vps: ("Bei 'ja' kann VPS für Timer von '%s' eingestellt werden.\n"
 								"Diese Einstellung hat Vorrang gegenüber der Einstellung des Senders für VPS.\n"
 								"Bei 'nein' gilt die Einstellung vom Sender.") % self.Serie,
@@ -1299,6 +1318,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			updateFromEPG = self.updateFromEPG.value
 
+		if not self.enable_skipSeriesServer.value:
+			skipSeriesServer = None
+		else:
+			skipSeriesServer = self.skipSeriesServer.value
+
 		if not self.override_vps.value:
 			vpsSettings = None
 		else:
@@ -1328,7 +1352,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self.database.setMarkerSettings(self.Serie, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),
-		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG))
+		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer))
 
 		self.close(True)
 
@@ -1535,7 +1559,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		SerieStaffel = None
 		AbEpisode = None
 		try:
-			(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, [self.serien_name])[0]
+			(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays, skipSeriesServer) = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, [self.serien_name])[0]
 		except:
 			SRLogger.writeLog("Fehler beim Filtern nach Staffel", True)
 
@@ -1691,8 +1715,8 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		if len(self.sendetermine_list) != 0:
 			lt = time.localtime()
 			uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
-			print "\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % uhrzeit
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s - (manuell) '-------------------------------------------------------------------------------" % uhrzeit, True)
+			print "\n---------' Starte Auto-Check um %s - (manuell) '---------" % uhrzeit
+			SRLogger.writeLog("\n---------' Starte Auto-Check um %s - (manuell) '---------" % uhrzeit, True)
 			for serien_name, sender, datum, startzeit, endzeit, staffel, episode, title, status, rightimage in self.sendetermine_list:
 				if int(status) == 1:
 					# initialize strings
@@ -1769,8 +1793,8 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			if self.countNotActiveTimer > 0:
 				SRLogger.writeLog("%s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer), True)
 				print "[SerienRecorder] %s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(self.countNotActiveTimer)
-			SRLogger.writeLog("---------' Auto-Check beendet '---------------------------------------------------------------------------------------",	True)
-			print "---------' Auto-Check beendet '---------------------------------------------------------------------------------------"
+			SRLogger.writeLog("---------' Auto-Check beendet '---------",	True)
+			print "---------' Auto-Check beendet '---------"
 			# self.session.open(serienRecRunAutoCheck, False)
 			from SerienRecorderLogScreen import serienRecReadLog
 			self.session.open(serienRecReadLog)

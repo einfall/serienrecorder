@@ -2,8 +2,6 @@
 from Components.AVSwitch import AVSwitch
 from Components.config import config, configfile
 
-from twisted.internet import reactor, defer
-
 from Tools.Directories import fileExists
 
 from Screens.MessageBox import MessageBox
@@ -17,7 +15,7 @@ import NavigationInstance
 
 from Tools import Notifications
 
-import httplib, os, re, threading, Queue, time, shutil, datetime, random
+import httplib, os, threading, Queue, time, shutil, datetime, random
 
 try:
 	import simplejson as json
@@ -61,30 +59,6 @@ startTimerConnection = None
 transmissionFailed = False
 
 #---------------------------------- Common Functions ------------------------------------------
-
-def retry(times, func, *args, **kwargs):
-	"""retry a defer function
-
-	@param times: how many times to retry
-	@param func: defer function
-	"""
-	errorList = []
-	deferred = defer.Deferred()
-	def run():
-		d = func(*args, **kwargs)
-		d.addCallbacks(deferred.callback, error)
-	def error(retryError):
-		errorList.append(retryError)
-		# Retry
-		if len(errorList) < times:
-			SRLogger.writeLog("Fehler beim Abrufen von ' %s ', versuche es noch %d mal..." % (args[1], times - len(errorList)), True)
-			run()
-		# Fail
-		else:
-			SRLogger.writeLog("Abrufen von ' %s ' auch nach mehreren Versuchen nicht möglich!" % args[1], True)
-			deferred.errback('retryError')
-	run()
-	return deferred
 
 def getCover(self, serien_name, serien_id, auto_check = False):
 	if not config.plugins.serienRec.downloadCover.value:
@@ -276,7 +250,6 @@ class serienRecEPGSelection(EPGSelection):
 
 
 class downloadTransmissionsThread(threading.Thread):
-
 	def __init__(self, jobs, results):
 		threading.Thread.__init__(self)
 		self.jobQueue = jobs
@@ -297,6 +270,32 @@ class downloadTransmissionsThread(threading.Thread):
 			isTransmissionFailed = True
 			transmissions = None
 		self.resultQueue.put((isTransmissionFailed, transmissions, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
+
+class processEMailDataThread(threading.Thread):
+	def __init__(self, emailData, jobs, results):
+		threading.Thread.__init__(self)
+		self.jobQueue = jobs
+		self.resultQueue = results
+		self.emailData = emailData
+
+	def run(self):
+		while True:
+			data = self.jobQueue.get()
+			self.process(data)
+			self.jobQueue.task_done()
+
+	def process(self, data):
+		(markerChannels, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays) = data
+		transmissions = []
+		for key in self.emailData.keys():
+			if self.emailData[key][0][0] == seriesTitle:
+				seriesTitle = key
+				break
+		for transmission in self.emailData[seriesTitle]:
+			if transmission[1] in markerChannels:
+				transmissions.append(transmission[0:-1])
+
+		self.resultQueue.put((transmissions, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
 
 class backgroundThread(threading.Thread):
 	def __init__(self, fnc):
@@ -340,7 +339,7 @@ class serienRecCheckForRecording:
 
 		lt = time.localtime()
 		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
-		SRLogger.writeLog("\n---------' %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
+		SRLogger.writeLog("\n---------' %s '---------" % self.uhrzeit, True)
 		self.daypage = 0
 
 		global refreshTimer
@@ -430,25 +429,25 @@ class serienRecCheckForRecording:
 
 		SRLogger.checkFileAccess()
 
-		SRLogger.writeLog("\n---------' %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
+		SRLogger.writeLog("\n---------' %s '---------" % self.uhrzeit, True)
 
 		if not self.manuell and not initDB():
 			self.askForDSB()
 			return
 
 		if not self.database.hasMarkers() and not config.plugins.serienRec.tvplaner and not config.plugins.serienRec.tvplaner_create_marker:
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
+			SRLogger.writeLog("\n---------' Starte Auto-Check um %s '---------" % self.uhrzeit, True)
 			print "[SerienRecorder] check: Tabelle SerienMarker leer."
 			SRLogger.writeLog("Es sind keine Serien-Marker vorhanden - Auto-Check kann nicht ausgeführt werden.", True)
-			SRLogger.writeLog("---------' Auto-Check beendet '---------------------------------------------------------------------------------------", True)
+			SRLogger.writeLog("---------' Auto-Check beendet '---------", True)
 			self.askForDSB()
 			return
 
 		if not self.database.hasChannels():
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s '---------------------------------------------------------------------------------------" % self.uhrzeit, True)
+			SRLogger.writeLog("\n---------' Starte Auto-Check um %s '---------" % self.uhrzeit, True)
 			print "[SerienRecorder] check: Tabelle Channels leer."
 			SRLogger.writeLog("Es wurden keine Sender zugeordnet - Auto-Check kann nicht ausgeführt werden.", True)
-			SRLogger.writeLog("---------' Auto-Check beendet '---------------------------------------------------------------------------------------", True)
+			SRLogger.writeLog("---------' Auto-Check beendet '---------", True)
 			self.askForDSB()
 			return
 
@@ -483,17 +482,17 @@ class serienRecCheckForRecording:
 		self.database.removeExpiredTimerConflicts()
 
 		if self.tvplaner_manuell and config.plugins.serienRec.tvplaner.value:
-			print "\n---------' Starte Check um %s (TV-Planer manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
-			SRLogger.writeLog("\n---------' Starte Check um %s (TV-Planer manuell) '-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Check um %s (TV-Planer manuell) '---------" % self.uhrzeit
+			SRLogger.writeLog("\n---------' Starte Check um %s (TV-Planer manuell) '---------\n" % self.uhrzeit, True)
 		elif self.manuell:
-			print "\n---------' Starte Check um %s (manuell) '-------------------------------------------------------------------------------" % self.uhrzeit
-			SRLogger.writeLog("\n---------' Starte Check um %s (manuell) '-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Check um %s (manuell) '---------" % self.uhrzeit
+			SRLogger.writeLog("\n---------' Starte Check um %s (manuell) '---------\n" % self.uhrzeit, True)
 		elif config.plugins.serienRec.tvplaner.value:
-			print "\n---------' Starte Auto-Check um %s (TV-Planer auto) '-------------------------------------------------------------------------------" % self.uhrzeit
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s (TV-Planer auto) '-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check um %s (TV-Planer auto) '---------" % self.uhrzeit
+			SRLogger.writeLog("\n---------' Starte Auto-Check um %s (TV-Planer auto) '---------\n" % self.uhrzeit, True)
 		else:
-			print "\n---------' Starte Auto-Check um %s (auto)'-------------------------------------------------------------------------------" % self.uhrzeit
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s (auto)'-------------------------------------------------------------------------------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check um %s (auto)'---------" % self.uhrzeit
+			SRLogger.writeLog("\n---------' Starte Auto-Check um %s (auto)'---------\n" % self.uhrzeit, True)
 			if config.plugins.serienRec.showNotification.value in ("1", "3"):
 				Notifications.AddPopup("SerienRecorder Suchlauf nach neuen Timern wurde gestartet.", MessageBox.TYPE_INFO, timeout=3, id="Suchlauf wurde gestartet")
 
@@ -530,8 +529,8 @@ class serienRecCheckForRecording:
 			# Statistik
 			self.speedEndTime = time.clock()
 			speedTime = (self.speedEndTime - self.speedStartTime)
-			SRLogger.writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'-------------------------------------------------------------------------" % speedTime, True)
-			print "[SerienRecorder] ---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'----------------------------------------------------------------------------" % speedTime
+			SRLogger.writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime, True)
+			print "[SerienRecorder] ---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime
 
 			SRLogger.backup()
 
@@ -607,18 +606,18 @@ class serienRecCheckForRecording:
 			config.plugins.serienRec.tvplaner_last_full_check.save()
 			configfile.save()
 			if config.plugins.serienRec.tvplaner.value:
-				fullCheck = "- keine TV-Planer Daten - voller Suchlauf '"
+				fullCheck = "- keine TV-Planer Daten - voller Suchlauf'"
 			else:
-				fullCheck = "- voller Suchlauf '"
+				fullCheck = "- voller Suchlauf'"
 		elif config.plugins.serienRec.tvplaner_full_check.value and (int(config.plugins.serienRec.tvplaner_last_full_check.value) + (int(config.plugins.serienRec.checkfordays.value) - 1) * 86400) < int(time.time()):
 			self.markers = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value)
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(time.time())
 			config.plugins.serienRec.tvplaner_last_full_check.save()
 			configfile.save()
-			fullCheck = "- Zeit abgelaufen - voller Suchlauf '-------"
+			fullCheck = "- Zeit abgelaufen - voller Suchlauf'"
 		else:
 			self.markers = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, self.emailData.keys())
-			fullCheck = "- nur Serien der TV-Planer E-Mail '---------"
+			fullCheck = "- nur Serien der TV-Planer E-Mail'"
 		self.count_url = 0
 		self.countSerien = 0
 		self.countActivatedSeries = 0
@@ -629,14 +628,15 @@ class serienRecCheckForRecording:
 		#       data will be read by the file reader below and used for timer programming
 		if len(self.markers) > 0:
 			while True:
-				if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_skipSerienServer.value:
+				#if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_skipSerienServer.value:
 					# Skip serien server processing
-					break
+				#	break
 
 				global transmissionFailed
 				transmissionFailed = False
 				self.tempDB.cleanUp()
-				SRLogger.writeLog("\n---------' Verarbeite Daten vom Server %s---------------------------\n" % fullCheck, True)
+				SRLogger.writeLog("\n---------' Verarbeite Daten vom Server %s ---------\n" % fullCheck, True)
+				print "[SerienRecorder] Verarbeite Daten vom Server"
 
 				# Create a job queue to keep the jobs processed by the threads
 				# Create a result queue to keep the results of the job threads
@@ -650,7 +650,11 @@ class serienRecCheckForRecording:
 					worker.setDaemon(True)
 					worker.start()
 
-				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
+				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer in self.markers:
+					if config.plugins.serienRec.tvplaner.value and (config.plugins.serienRec.tvplaner_skipSerienServer.value or (skipSeriesServer is not None and skipSeriesServer)):
+						# Skip serien server processing
+						continue
+
 					if SerieUrl.startswith('https://www.wunschliste.de/spielfilm'):
 						# temporary marker for movie recording
 						print "[SerienRecorder] ' %s - TV-Planer Film wird ignoriert '" % serienTitle
@@ -705,7 +709,6 @@ class serienRecCheckForRecording:
 					self.processTransmission(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
 					resultQueue.task_done()
 
-				self.createTimer()
 				break
 		# 
 		# In order to provide an emergency recording service when serien server is down or
@@ -740,54 +743,35 @@ class serienRecCheckForRecording:
 		#
 		if config.plugins.serienRec.tvplaner.value and self.emailData is not None:
 			# check mailbox for TV-Planer EMail and create timer
-			downloads = []
-			self.tempDB.cleanUp()
-			SRLogger.writeLog("\n---------' Verarbeite TV-Planer E-Mail '-----------------------------------------------------------\n", True)
-			download = None
-			ds = defer.DeferredSemaphore(tokens=1)
-			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, self.emailData.keys()):
-				self.countSerien += 1
+			SRLogger.writeLog("\n---------' Verarbeite Daten aus TV-Planer E-Mail '---------\n", True)
+
+			jobQueue = Queue.Queue()
+			resultQueue = Queue.Queue()
+
+			# Create the threads
+			for i in range(2):
+				worker = processEMailDataThread(self.emailData, jobQueue, resultQueue)
+				worker.setDaemon(True)
+				worker.start()
+
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer in self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, self.emailData.keys()):
 				print serienTitle
 				if SerieEnabled:
-					# Download only if series is enabled
+					# Process only if series is enabled
 					if 'Alle' in SerieSender:
 						markerChannels = { x : x for x in webChannels }
 					else:
 						markerChannels = { x : x for x in SerieSender }
-					# markerChannels contains dictionary of all allowed senders
-					self.countActivatedSeries += 1
-					download = retry(0, ds.run, self.downloadEmail, serienTitle, markerChannels)
-					download.addErrback(self.dataError, SerieUrl)
-					download.addCallback(self.processTransmission, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
-					download.addErrback(self.dataError, SerieUrl)
-					downloads.append(download)
 
-			if download:
-				download.addCallbacks(self.createTimer, self.dataError)
-		
-		# this is only for experts that have data files available in a directory
-		# TODO: use saved transmissions for programming timer
-		if config.plugins.serienRec.readdatafromfiles.value and len(self.markers) > 0:
-			# use this only when WL is down and you have copies of the webpages on disk in serienrecorder/data
-			##('RTL Crime', '09.02', '22.35', '23.20', '6', '20', 'Pinocchios letztes Abenteuer')
-			downloads = []
-			SRLogger.writeLog("\n---------' Verarbeite Daten von Dateien '---------------------------------------------------------------\n", True)
-			c1 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>(?:\((.*?)x(.*?)\).)*<span class="titel">(.*?)</span></td></tr>')
-			c2 = re.compile('<tr><td>(.*?)</td><td><span class="wochentag">.*?</span><span class="datum">(.*?).</span></td><td><span class="startzeit">(.*?).Uhr</span></td><td>(.*?).Uhr</td><td>\((?!(\S+x\S+))(.*?)\).<span class="titel">(.*?)</span></td></tr>')
-			ds = defer.DeferredSemaphore(tokens=1)
-			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays in self.markers:
-				self.countSerien += 1
-				if SerieEnabled:
-					# Download only if series is enabled
-					self.countActivatedSeries += 1
-					download = retry(1, ds.run, self.downloadFile, SerieUrl)
-					download.addCallback(self.parseWebpage,c1,c2,serienTitle,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,current_time,future_time,excludedWeekdays)
-					download.addErrback(self.dataError,SerieUrl)
-					downloads.append(download)
-				
-			# run file data check
-			finished = defer.DeferredList(downloads).addCallback(self.createTimer).addErrback(self.dataError)
-		
+					jobQueue.put((markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
+
+			jobQueue.join()
+			while not resultQueue.empty():
+				(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
+				self.processTransmission(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+				resultQueue.task_done()
+
+		self.createTimer()
 		self.checkFinal()
 
 	def createTimer(self, result=True):
@@ -831,8 +815,8 @@ class serienRecCheckForRecording:
 		if countTimerFromWishlist > 0:
 			SRLogger.writeLog("%s Timer vom Merkzettel wurde(n) erstellt!" % str(countTimerFromWishlist), True)
 			print "[SerienRecorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(countTimerFromWishlist)
-		SRLogger.writeLog("---------' Auto-Check beendet (Ausführungsdauer: %3.2f Sek.)'---------------------------------------------------------------------------" % speedTime, True)
-		print "[SerienRecorder] ---------' Auto-Check beendet (Ausführungsdauer: %3.2f Sek.)'-------------------------------------------------------------------------------" % speedTime
+		SRLogger.writeLog("---------' Auto-Check beendet (Ausführungsdauer: %3.2f Sek.)'---------" % speedTime, True)
+		print "[SerienRecorder] ---------' Auto-Check beendet (Ausführungsdauer: %3.2f Sek.)'---------" % speedTime
 		if (config.plugins.serienRec.showNotification.value in ("2", "3")) and (not self.manuell):
 			statisticMessage = "Serien vorgemerkt: %s/%s\nTimer erstellt: %s\nTimer aktualisiert: %s\nTimer mit Konflikten: %s\nTimer vom Merkzettel: %s" % (
 			str(self.countActivatedSeries), str(self.countSerien), str(countTimer), str(countTimerUpdate),
@@ -1042,220 +1026,6 @@ class serienRecCheckForRecording:
 			self.tempDB.addTransmission([(current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays, updateFromEPG)])
 		self.tempDB.commitTransaction()
 
-	# This has been included again to allow direct parsing of stored data files
-	# when serienserver is down.
-	# 
-	# TODO: remove timer programming and return same data as downloadTransmissions()
-	# 
-	def parseWebpage(self, data, c1, c2, serien_name, staffeln, allowedSender, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
-		#data = processDownloadedData(data)
-		self.count_url += 1
-		raw = c1.findall(data)
-		raw2 = c2.findall(data)
-		raw.extend([(a,b,c,d,'0',f,g) for (a,b,c,d,e,f,g) in raw2])
-
-		def y(l):
-			(day, month) = l[1].split('.')
-			(start_hour, start_min) = l[2].split('.')
-			now = datetime.datetime.now()
-			if int(month) < now.month:
-				return time.mktime((int(now.year) + 1, int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))
-			else:
-				return time.mktime((int(now.year), int(month), int(day), int(start_hour), int(start_min), 0, 0, 0, 0))		
-		raw.sort(key=y)
-		
-		# check for parsing error
-		if not raw:
-			# parsing error -> nothing to do
-			return
-		
-		(fromTime, toTime) = self.database.getTimeSpan(serien_name, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
-		if self.noOfRecords < AnzahlAufnahmen:
-			self.noOfRecords = AnzahlAufnahmen
-		
-		TimeSpan_time = int(future_time)
-		if config.plugins.serienRec.forceRecording.value:
-			TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
-		
-		# loop over all transmissions
-		self.tempDB.beginTransaction()
-		for sender,datum,startzeit,endzeit,staffel,episode,title in raw:
-			sender = sender.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','')
-
-			# formatiere start/end-zeit
-			(day, month) = datum.split('.')
-			(start_hour, start_min) = startzeit.split('.')
-			(end_hour, end_min) = endzeit.split('.')
-			
-			start_unixtime = TimeHelpers.getUnixTimeAll(start_min, start_hour, day, month)
-			
-			if int(start_hour) > int(end_hour):
-				end_unixtime = TimeHelpers.getNextDayUnixtime(end_min, end_hour, day, month)
-			else:
-				end_unixtime = TimeHelpers.getUnixTimeAll(end_min, end_hour, day, month)
-			
-			# setze die vorlauf/nachlauf-zeit
-			(margin_before, margin_after) = self.database.getMargins(serien_name, sender, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
-			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
-			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
-
-			# The transmission list is sorted by date, so it is save to break if we reach the time span for regular timers
-			#if config.plugins.serienRec.breakTimersuche.value and (int(start_unixtime) > int(TimeSpan_time)):
-			#		# We reached the maximal time range to look for transmissions, so we can break here
-			#		break
-			
-			if not config.plugins.serienRec.forceRecording.value:
-				if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
-					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
-					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
-					if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
-						continue
-
-			if not staffel and not episode:
-				staffel = "0"
-				episode = "00"
-			
-			# initialize strings
-			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
-			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
-			
-			# Process channel relevant data
-			
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft welche sender aktiviert und eingestellt sind.
-			#
-			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(sender)
-			if stbChannel == "":
-				SRLogger.writeLogFilter("channels", "' %s ' - STB-Sender nicht gefunden ' -> ' %s '" % (label_serie, webChannel))
-				continue
-			
-			if int(status) == 0:
-				SRLogger.writeLogFilter("channels", "' %s ' - STB-Sender deaktiviert -> ' %s '" % (label_serie, webChannel))
-				continue
-			
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft ob der sender zum sender von der Serie aus dem serien marker passt.
-			#
-			serieAllowed = False
-			if 'Alle' in allowedSender:
-				serieAllowed = True
-			elif sender in allowedSender:
-				serieAllowed = True
-			
-			if not serieAllowed:
-				SRLogger.writeLogFilter("channels", "' %s ' - Sender nicht erlaubt -> %s -> %s" % (label_serie, sender, allowedSender))
-				continue
-			
-			##############################
-			#
-			# CHECK
-			#
-			# ueberprueft welche staffel(n) erlaubt sind
-			#
-			serieAllowed = False
-			if -2 in staffeln:                          	# 'Manuell'
-				serieAllowed = False
-			elif (-1 in staffeln) and (0 in staffeln):		# 'Alle'
-				serieAllowed = True
-			elif str(staffel).isdigit():
-				if int(staffel) == 0:
-					if str(episode).isdigit():
-						if int(episode) < int(AbEpisode):
-							if config.plugins.serienRec.writeLogAllowedEpisodes.value:
-								liste = staffeln[:]
-								liste.sort()
-								liste.reverse()
-								if -1 in staffeln:
-									liste.remove(-1)
-									liste[0] = "ab %s" % liste[0]
-								liste.reverse()
-								liste.insert(0, "0 ab E%s" % str(AbEpisode).zfill(2))
-								SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Episode nicht erlaubt -> ' %s ' -> ' %s '" % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
-							continue
-						else:
-							serieAllowed = True
-				elif int(staffel) in staffeln:
-					serieAllowed = True
-				elif -1 in staffeln:		# 'folgende'
-					if int(staffel) >= max(staffeln):
-						serieAllowed = True
-			elif self.database.getSpecialsAllowed(serien_name):
-				serieAllowed = True
-			
-			vomMerkzettel = False
-			if not serieAllowed:
-				if self.database.hasBookmark(serien_name, staffel, episode):
-					SRLogger.writeLog("' %s ' - Timer vom Merkzettel wird angelegt @ %s" % (label_serie, stbChannel), True)
-					serieAllowed = True
-					vomMerkzettel = True
-
-			if not serieAllowed:
-				if config.plugins.serienRec.writeLogAllowedEpisodes.value:
-					liste = staffeln[:]
-					liste.sort()
-					liste.reverse()
-					if -1 in staffeln:
-						liste.remove(-1)
-						liste[0] = "ab %s" % liste[0]
-					liste.reverse()
-					if str(episode).isdigit():
-						if int(episode) < int(AbEpisode):
-							liste.insert(0, "0 ab E%s" % str(AbEpisode).zfill(2))
-					if -2 in staffeln:
-						liste.remove(-2)
-						liste.insert(0, "Manuell")
-					SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '" % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
-				continue
-			
-			##############################
-			#
-			# try to get eventID (eit) from epgCache
-			#
-			eit, new_end_unixtime, new_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
-			alt_eit = 0
-			alt_end_unixtime = end_unixtime
-			alt_start_unixtime = start_unixtime
-			if altstbRef:
-				alt_eit, alt_end_unixtime, alt_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
-			
-			updateFromEPG = self.database.getUpdateFromEPG(serien_name)
-			if updateFromEPG is False:
-				new_start_unixtime = start_unixtime
-				new_end_unixtime = end_unixtime
-				alt_end_unixtime = end_unixtime
-				alt_start_unixtime = start_unixtime
-
-			(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
-			self.tempDB.addTransmission([(current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays, updateFromEPG)])
-		self.tempDB.commitTransaction()
-
-	@staticmethod
-	def downloadFile(url):
-		#print "[Serien Recorder] call %s" % url
-		try:
-			pageFile = open("%sdata/" % serienRecMainPath + url.split("=")[1], "r")
-			text = pageFile.read()
-			pageFile.close()
-		except:
-			text = None
-		return text
-
-	def downloadEmail(self, seriesName, markerChannels):
-		transmissions = []
-		for key in self.emailData.keys():
-			if self.emailData[key][0][0] == seriesName:
-				seriesName = key
-				break
-		for transmission in self.emailData[seriesName]:
-			if transmission[1] in markerChannels:
-				transmissions.append(transmission[0:-1])
-		return transmissions
 
 	def askForDSB(self):
 		if not self.manuell:

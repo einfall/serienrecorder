@@ -20,8 +20,8 @@ import datetime, os, re, urllib2, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.8.6-beta'
-SRDBVERSION = '3.9'
+SRVERSION = '3.8.7-beta'
+SRDBVERSION = '3.9.1'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 def decodeISO8859_1(txt, replace=False):
@@ -122,18 +122,23 @@ def getmac(interface):
 def getChangedSeriesNames(markers):
 	IDs = []
 	for marker in markers:
-		(Serie, WLID) = marker
+		(Serie, Info, WLID) = marker
 		IDs.append(WLID)
 
 	from SerienRecorderSeriesServer import SeriesServer
-	series = SeriesServer().getSeriesNamesAndWLID(IDs)
+	series = SeriesServer().getSeriesNamesAndInfoByWLID(IDs)
 
 	result = {}
+	#from SerienRecorderLogWriter import SRLogger
 	for marker in markers:
 		try:
-			(Serie, WLID) = marker
-			if Serie != series[str(WLID)]:
-				result[str(WLID)] = (Serie, series[str(WLID)])
+			(name, info, wl_id) = marker
+			for serie in series:
+				if str(wl_id) == str(serie['id']):
+					if name != serie['name'] or info != serie['info']:
+						#SRLogger.writeTestLog("Found difference: %s [%s / %s]" % (name, serie['name'], serie['info']))
+						result[str(wl_id)] = dict( old_name = name, new_name = serie['name'], new_info = serie['info'])
+					break
 		except:
 			continue
 	return result
@@ -509,12 +514,12 @@ class STBHelpers:
 		#	raise
 
 		# Copy cover only if path exists and series sub dir is activated
-		if fileExists(dirname) and config.plugins.serienRec.seriensubdir.value:
+		if fileExists(dirname) and config.plugins.serienRec.seriensubdir.value and config.plugins.serienRec.copyCoverToFolder.value:
 			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
-				shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
+				shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
 			if config.plugins.serienRec.seasonsubdir.value:
-				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sseries.jpg" % dirname):
-					shutil.copy("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sseries.jpg" % dirname)
+				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s" % (dirname, config.plugins.serienRec.copyCoverToFolder.value)):
+					shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, config.plugins.serienRec.copyCoverToFolder.value))
 
 	@classmethod
 	def checkTuner(cls, check_start, check_end, check_stbRef):
@@ -609,50 +614,6 @@ class PicLoader:
 
 	def destroy(self):
 		del self.picload
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# imdbVideo
-#
-# ----------------------------------------------------------------------------------------------------------------------
-
-class imdbVideo():
-	def __init__(self):
-		print "imdbvideos.."
-
-	@staticmethod
-	def videolist(url):
-		url += "videogallery"
-		print url
-		headers = { 'User-Agent' : 'Mozilla/5.0' }
-		req = urllib2.Request(url, None, headers)
-		data = urllib2.urlopen(req).read()
-		lst = []
-		videos = re.findall('viconst="(.*?)".*?src="(.*?)" class="video" />', data, re.S)
-		if videos:
-			for id,image in videos:
-				url = "http://www.imdb.com/video/screenplay/%s/imdb/single" % id
-				lst.append((url, image))
-
-		if len(lst) != 0:
-			return lst
-		else:
-			return None
-
-	@staticmethod
-	def stream_url(url):
-		headers = { 'User-Agent' : 'Mozilla/5.0' }
-		req = urllib2.Request(url, None, headers)
-		data = urllib2.urlopen(req).read()
-		stream_url = re.findall('"start":0,"url":"(.*?)"', data, re.S)
-		if stream_url:
-			return stream_url[0]
-		else:
-			return None
-
-	@staticmethod
-	def dataError(error):
-		return None
 
 # ----------------------------------------------------------------------------------------------------------------------
 #

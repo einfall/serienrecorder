@@ -163,6 +163,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.downloadCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.createPlaceholderCover = ConfigYesNo(default=True)
+	config.plugins.serienRec.copyCoverToFolder = ConfigSelection(choices=[("0", "Nein"), ("1", "folder.jpg"), ("2", "series.jpg")], default="1")
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default=True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default=True)
 
@@ -820,6 +821,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				self.list.append(getConfigListEntry("    Zeige Cover:", config.plugins.serienRec.showCover))
 				self.list.append(getConfigListEntry("    Platzhalter anlegen wenn Cover nicht vorhanden:",
 				                                    config.plugins.serienRec.createPlaceholderCover))
+				if config.plugins.serienRec.seriensubdir.value:
+					self.list.append(getConfigListEntry("    Cover in Serien-/Staffelordner kopieren:", config.plugins.serienRec.copyCoverToFolder))
 			self.list.append(
 				getConfigListEntry("Korrektur der Schriftgröße in Listen:", config.plugins.serienRec.listFontsize))
 			self.list.append(
@@ -1161,6 +1164,10 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.createPlaceholderCover: (
 				"Bei 'ja' werden Platzhalter Dateien erzeugt wenn kein Cover vorhanden ist - das hat den Vorteil, dass nicht immer wieder nach dem Cover gesucht wird.",
 				"1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.copyCoverToFolder: (
+				"Bei 'nein' wird das entsprechende Cover nicht in den Serien- und Staffelordner kopiert. Die anderen Optionen bestimmen den Namen der Datei im Staffelordner.\n"
+				"Im Serienordner werden immer Cover mit dem Namen 'folder.jpg' angelegt. Für den Staffelordner kann der Name ausgewählt werden, da einige Movielist Plugins das Cover unter einem anderen Namen suchen.",
+				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.listFontsize: (
 				"Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.",
 				"1.3_Die_globalen_Einstellungen"),
@@ -1402,6 +1409,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.downloadCover.save()
 		config.plugins.serienRec.showCover.save()
 		config.plugins.serienRec.createPlaceholderCover.save()
+		config.plugins.serienRec.copyCoverToFolder.save()
 		config.plugins.serienRec.listFontsize.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
@@ -1452,23 +1460,20 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 	def changeDBQuestion(self, answer):
 		if answer:
+			defaultAnswer = False
 			if not os.path.exists("%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value):
-				self.session.openWithCallback(self.copyDBQuestion, MessageBox,
-				                              "Im ausgewählten Verzeichnis existiert noch keine Datenbank.\nSoll die bestehende Datenbank kopiert werden?",
-				                              MessageBox.TYPE_YESNO, default=True)
-			else:
-				SerienRecorder.serienRecDataBaseFilePath = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
+				defaultAnswer = True
 
-			import Screens.Standby
-			self.session.open(Screens.Standby.TryQuitMainloop, 3)
+			self.session.openWithCallback(self.copyDBQuestion, MessageBox,
+			                              "Soll die bestehende Datenbank in das neu ausgewählte Verzeichnis kopiert werden?",
+			                              MessageBox.TYPE_YESNO, default=defaultAnswer)
 		else:
 			config.plugins.serienRec.databasePath.value = os.path.dirname(SerienRecorder.serienRecDataBaseFilePath)
 			config.plugins.serienRec.databasePath.save()
 			configfile.save()
 			self.close((True, True, True))
 
-	@staticmethod
-	def copyDBQuestion(answer):
+	def copyDBQuestion(self, answer):
 		if answer:
 			try:
 				shutil.copyfile(SerienRecorder.serienRecDataBaseFilePath, "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value)
@@ -1484,6 +1489,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				configfile.save()
 		else:
 			SerienRecorder.serienRecDataBaseFilePath = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
+
+		import Screens.Standby
+		self.session.open(Screens.Standby.TryQuitMainloop, 3)
 
 	def openChannelSetup(self):
 		from SerienRecorderChannelScreen import serienRecMainChannelEdit

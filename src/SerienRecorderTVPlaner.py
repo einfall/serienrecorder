@@ -459,7 +459,7 @@ def getEmailData():
 					boxID = config.plugins.serienRec.BoxID.value
 
 				if url and not database.markerExists(url):
-					if database.addMarker(url, seriesname, boxID):
+					if database.addMarker(url, seriesname, "", boxID):
 						SRLogger.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % seriesname, True)
 						print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % seriesname
 					else:

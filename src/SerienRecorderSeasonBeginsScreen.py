@@ -273,7 +273,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				else:
 					boxID = None
 				url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(ID)
-				self.database.addMarker(url, Serie, boxID)
+				self.database.addMarker(url, Serie, "", boxID)
 
 			self.changesMade = True
 			SerienRecorder.runAutocheckAtExit = True
