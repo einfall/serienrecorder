@@ -74,7 +74,6 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self.timer_default.callback.append(self.readProposal)
 
-		self.changesMade = False
 		self.proposalList = []
 		self.transmissions = {}
 		self.serviceRefs = self.database.getActiveServiceRefs()
@@ -275,8 +274,6 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(ID)
 				self.database.addMarker(url, Serie, "", boxID)
 
-			self.changesMade = True
-			SerienRecorder.runAutocheckAtExit = True
 			if config.plugins.serienRec.openMarkerScreen.value:
 				from SerienRecorderMarkerScreen import serienRecMarker
 				self.session.open(serienRecMarker, Serie)

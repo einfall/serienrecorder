@@ -623,8 +623,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			zeile = self['menu_list'].getCurrent()[0]
 			(txt, serie, staffel, episode, title, start_time, webChannel) = zeile
-			self.dbData.append \
-				((serie.lower(), str(staffel).lower(), episode.lower(), title.lower(), start_time, webChannel.lower()))
+			self.dbData.append((serie.lower(), str(staffel).lower(), episode.lower(), title.lower(), start_time, webChannel.lower()))
 			self.addedlist_tmp.remove(zeile)
 			self.addedlist.remove(zeile)
 			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))

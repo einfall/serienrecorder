@@ -612,12 +612,10 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				boxID = config.plugins.serienRec.BoxID.value
 
 			url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(serien_id)
-			if self.database.addMarker(url, serien_name, boxID):
+			if self.database.addMarker(url, serien_name, '', boxID):
 				SRLogger.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % serien_name, True)
 				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("green"))
-				global runAutocheckAtExit
-				runAutocheckAtExit = True
 				if config.plugins.serienRec.tvplaner_full_check.value:
 					config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 					config.plugins.serienRec.tvplaner_last_full_check.save()
@@ -722,18 +720,6 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyCancel(self):
 		if self.modus == "list":
 			self.stopDisplayTimer()
-
-			if SerienRecorder.runAutocheckAtExit and config.plugins.serienRec.runAutocheckAtExit.value:
-				singleTimer = eTimer()
-				if isDreamOS():
-					self.singleTimer_conn = singleTimer.timeout.connect(
-						SerienRecorder.serienRecCheckForRecording(self.session, True, False))
-				else:
-					singleTimer.callback.append(SerienRecorder.serienRecCheckForRecording(self.session, True, False))
-				singleTimer.start(10000, True)
-
-			# self.hide()
-			# self.showSplashScreen()
 			self.close()
 
 

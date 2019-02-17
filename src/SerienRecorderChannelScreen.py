@@ -263,7 +263,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 						self.database.updateChannels(channels)
 						self.changesMade = True
-						SerienRecorder.runAutocheckAtExit = True
 				else:
 					# Get all new web channels (missing in SR database)
 					(newWebChannels, removedWebChannels) = self.getMissingWebChannels(webChannelList, dbChannels)
@@ -444,7 +443,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 					channels.append((stbSender, stbRef, altstbSender, altstbRef, 0, chlistSender.lower()))
 				self.database.updateChannels(channels, True)
 				self.changesMade = True
-				SerienRecorder.runAutocheckAtExit = True
 				self['title'].setText("Sender zuordnen")
 				self.showChannels()
 		else:
@@ -472,7 +470,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				channels.append((stbSender, stbRef, 0, chlistSender.lower()))
 			self.database.updateChannels(channels)
 			self.changesMade = True
-			SerienRecorder.runAutocheckAtExit = True
 			self['title'].setText("Sender zuordnen")
 			self.showChannels()
 
@@ -492,8 +489,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self['title'].setText("Sender '- %s -' wurde geändert." % chlistSender)
 
 			self.changesMade = True
-			SerienRecorder.runAutocheckAtExit = True
-
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.showChannels()
 

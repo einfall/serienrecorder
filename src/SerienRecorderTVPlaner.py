@@ -25,7 +25,7 @@ def getEmailData():
 				if part.get_content_type() == 'text/html':
 					return part.get_payload()
 
-	SRLogger.writeLog("\n---------' Lade TV-Planer E-Mail '---------------------------------------------------------------\n", True)
+	SRLogger.writeLog("\n---------' Lade TV-Planer E-Mail '---------\n", True)
 
 	# get emails
 	if len(config.plugins.serienRec.imap_server.value) == 0:
@@ -198,6 +198,9 @@ def getEmailData():
 				self.parser_data = ''
 			elif self.state == 'transmission_desc' and tag == 'div':
 				self.parser_data = ''
+			elif self.state == 'transmission_watched' and tag == 'span':
+				self.data = ''
+				self.state = 'transmission_serie_end'
 			elif self.state == 'transmission_serie_end' and tag == 'span' :
 				found = False
 				for name, value in attrs:
@@ -257,7 +260,7 @@ def getEmailData():
 				# append collected data
 				self.transmission.append(self.parser_data)
 				self.parser_data = ''
-				self.state = 'transmission_serie_end'
+				self.state = 'transmission_watched'
 			elif self.state == 'transmission_title' and tag == 'span':
 				# append collected data
 				self.transmission.append(self.parser_data)

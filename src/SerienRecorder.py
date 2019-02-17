@@ -53,7 +53,6 @@ autoCheckFinished = False
 refreshTimer = None
 refreshTimerConnection = None
 coverToShow = None
-runAutocheckAtExit = False
 startTimer = None
 startTimerConnection = None
 transmissionFailed = False
@@ -182,7 +181,7 @@ def initDB():
 				dbVersionMatch = True
 			elif dbVersion > config.plugins.serienRec.dbversion.value:
 				SRLogger.writeLog("Datenbankversion nicht kompatibel: SerienRecorder Version muss mindestens %s sein." % dbVersion)
-				Notifications.AddPopup("Die SerienRecorder Datenbank ist mit dieser Version nicht kompatibel.\nAktualisieren Sie mindestens auf Version %s!" % dbVersion, MessageBox.TYPE_INFO, timeout=10)
+				Notifications.AddPopup("Die SerienRecorder Datenbank ist mit dieser Version nicht kompatibel.\nAktualisieren Sie mindestens auf die SerienRecorder Version %s!" % dbVersion, MessageBox.TYPE_INFO, timeout=10)
 				dbIncompatible = True
 		else:
 			dbIncompatible = True
@@ -374,8 +373,6 @@ class serienRecCheckForRecording:
 
 		if self.manuell:
 			print "[SerienRecorder] checkRecTimer manuell."
-			global runAutocheckAtExit
-			runAutocheckAtExit = False
 			self.startCheck()
 			self.manuell = False
 			self.tvplaner_manuell = False

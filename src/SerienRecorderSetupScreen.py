@@ -159,7 +159,6 @@ def ReadConfigFile():
 		         ("2", "SnnEmm - <Episodentitel>")], default="0")
 	config.plugins.serienRec.refreshViews = ConfigYesNo(default=True)
 	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default=True)
-	config.plugins.serienRec.runAutocheckAtExit = ConfigYesNo(default=False)
 	config.plugins.serienRec.downloadCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.createPlaceholderCover = ConfigYesNo(default=True)
@@ -737,10 +736,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			if config.plugins.serienRec.selectNoOfTuners.value:
 				self.list.append(
 					getConfigListEntry("    maximale Anzahl der zu benutzenden Tuner:", config.plugins.serienRec.tuner))
-			if not isDreamOS():
-				self.list.append(getConfigListEntry("nach Änderungen Suchlauf beim Beenden starten:",
-				                                    config.plugins.serienRec.runAutocheckAtExit))
-		# if config.plugins.serienRec.updateInterval.value == 24:
 		if config.plugins.serienRec.autochecktype.value == "1":
 			self.list.append(getConfigListEntry("Aus Deep-Standby aufwecken:", config.plugins.serienRec.wakeUpDSB))
 		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
@@ -1086,10 +1081,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.tuner: (
 				"Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten.",
 				"Anzahl_der_Tuner"),
-			config.plugins.serienRec.runAutocheckAtExit: (
-				"Bei 'ja' wird nach Beenden des SR automatisch ein Timer-Suchlauf ausgeführt, falls bei den Sendern und/oder Markern Änderungen vorgenommen wurden, "
-				"die Einfluss auf die Erstellung neuer Timer haben. (z.B. neue Serie hinzugefügt, neuer Sender zugewiesen, etc.)",
-				"Suchlauf_beim_Beenden"),
 			config.plugins.serienRec.wakeUpDSB: (
 				"Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
 				"Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die STB im Deep-Standby befindet.",
@@ -1391,7 +1382,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.writeLogVersion.save()
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.deleteOlderThan.save()
-		config.plugins.serienRec.runAutocheckAtExit.save()
 		config.plugins.serienRec.planerCacheEnabled.save()
 		config.plugins.serienRec.planerCacheSize.save()
 		config.plugins.serienRec.forceRecording.save()

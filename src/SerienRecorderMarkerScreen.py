@@ -192,7 +192,6 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def setupFinished(self, result):
 		if result:
 			self.changesMade = True
-			SerienRecorder.runAutocheckAtExit = True
 			if config.plugins.serienRec.tvplaner_full_check.value:
 				config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 				config.plugins.serienRec.tvplaner_last_full_check.save()
@@ -683,7 +682,6 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			configfile.save()
 
 		self.changesMade = True
-		SerienRecorder.runAutocheckAtExit = True
 		self.readSerienMarker()
 
 	def insertSenderMarker(self):
@@ -708,7 +706,6 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.database.setAllChannelsToMarker(self.select_serie, alleSender)
 
 		self.changesMade = True
-		SerienRecorder.runAutocheckAtExit = True
 		if config.plugins.serienRec.tvplaner_full_check.value:
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 			config.plugins.serienRec.tvplaner_last_full_check.save()
@@ -729,7 +726,6 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if serien_name:
 			print serien_name
 			self.changesMade = True
-			SerienRecorder.runAutocheckAtExit = True
 			if config.plugins.serienRec.tvplaner_full_check.value:
 				config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 				config.plugins.serienRec.tvplaner_last_full_check.save()
