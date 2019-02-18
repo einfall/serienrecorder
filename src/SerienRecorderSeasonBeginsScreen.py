@@ -43,6 +43,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.picloader = None
 		self.filter = False
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		self.changesMade = False
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok": (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
@@ -278,6 +279,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				from SerienRecorderMarkerScreen import serienRecMarker
 				self.session.open(serienRecMarker, Serie)
 
+			self.changesMade = True
 			self.buildProposalList()
 			self.chooseMenuList.setList(map(self.buildList, self.proposalList))
 
