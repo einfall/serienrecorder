@@ -122,269 +122,109 @@ def getEmailData():
 		SRLogger.writeLog("TV-Planer: leeres HTML", True)
 		return None
 
-	# class used for parsing TV-Planer html
-	# States and Changes
-	# ------------------
-	# [error] || [finished] -> [state]
-	# [start]: data && '.*TV-Planer.*?den (.*?)' -> <date> -> [time]
-	# [time]: data && '\(ab (.*?) Uhr' -> <time> -> [transmission_table]
-	# [time]: </div> -> 0:00 -> [transmission_table]
-	# [transmission_table]: <table> -> [transmission]
-	# [transmission]: <tr> -> [transmission_start]
-	# [transmission]: </table> -> [finished]
-	# [transmission_start]: >starttime< -> [transmission_url] | [error]
-	# [transmission_url]: <a> -> url = href -> [transmission_serie]
-	# [transmission_serie]: <strong> -> serie = ''
-	# [transmission_serie]: serie += >serie<
-	# [transmission_serie]: </strong> -> serie -> [transmission_serie_end]
-	# [transmission_serie_end]: <span> -> title == 'Staffel' -> [transmission_season]
-	# [transmission_serie_end]: <span> -> title == 'Episode' -> [transmission_episode]
-	# [transmission_serie_end]: <span> -> title == 'xxx' -> [transmission_transmission_serie_end]
-	# [transmission_serie_end]: <span> -> title != 'Staffel' and title != 'Episode' ->
-	#                          save transmission, Staffel = Episode = '0' -> [transmission_title]
-	# [transmission_title_end]: <span> -> title == 'Staffel' -> recover transmission, [transmission_season]
-	# [transmission_title_end]: <span> -> title == 'Episode' -> recover transmission, [transmission_episode]
-	# [transmission_title_end]: <span> -> title == 'xxx' -> -> recover transmission, [transmission_serie_end]
-	# [transmission_season]: >season< -> [transmission_serie_end]
-	# [transmission_episode]: >episode< -> [transmission_serie_end]
-	# [transmission_title]: <span> -> title = ''
-	# [transmission_title]: title += >title<
-	# [transmission_title]: </span> -> [transmission_title_end]
-	# [transmission_title_end]: </div> -> title -> [transmission_desc]
-	# [transmission_desc]: <div> -> desc = ''
-	# [transmission_desc]: >data< -> data == "bis ..." -> endtime = data -> [transmission_sender] | [error]
-	# [transmission_desc]: >data< -> data == 'FREE-TV NEU' or data == 'NEU'
-	# [transmission_desc]: desc += >desc<
-	# [transmission_desc]: </div> -> desc -> [transmission_endtime]
-	# [transmission_endtime]: >endtime< -> [transmission_sender] | [error]
-	# [transmission_sender]: <img> sender = title -> [transmission_end]
-	# [transmission_end]: </tr> -> [transmission]
-	#
-	class TVPlaner_HTMLParser(HTMLParser):
-		def __init__(self):
-			HTMLParser.__init__(self)
-			self.state = 'start'
-			self.date = ()
-			self.transmission = []
-			self.transmission_save = []
-			self.transmissions = []
-			self.season = '0'
-			self.episode = '00'
-			self.parser_data = ''
-		def handle_starttag(self, tag, attrs):
-			# print "Encountered a start tag:", tag, attrs
-			if self.state == 'time' and tag == 'table':
-				# no time - starting at 00:00 Uhr
-				self.date = ( self.date, '00:00' )
-				self.state = "transmission"
-			elif self.state == 'transmission_table' and tag == 'table':
-				self.state = 'transmission'
-			elif self.state == 'transmission' and tag == 'tr':
-				self.state = 'transmission_start'
-			elif self.state == 'transmission_start' and tag == 'strong':
-				# next day - reset
-				self.state = 'transmission'
-			elif self.state == 'transmission_url' and tag == 'a':
-				href = ''
-				for name, value in attrs:
-					if name == 'href':
-						href = value
-						break
-				self.transmission.append(href)
-				self.state = 'transmission_serie'
-			elif self.state == 'transmission_serie' and tag == 'strong':
-				self.parser_data = ''
-			elif self.state == 'transmission_title' and tag == 'span':
-				self.parser_data = ''
-			elif self.state == 'transmission_desc' and tag == 'div':
-				self.parser_data = ''
-			elif self.state == 'transmission_watched' and tag == 'span':
-				self.data = ''
-				self.state = 'transmission_serie_end'
-			elif self.state == 'transmission_serie_end' and tag == 'span' :
-				found = False
-				for name, value in attrs:
-					if name == 'title' and value == 'Staffel':
-						found = True
-						self.state = 'transmission_season'
-						break
-					elif name == 'title' and value == 'Episode':
-						found = True
-						self.state = 'transmission_episode'
-						break
-					elif name == 'title':
-						found = True
-						break
-				if not found:
-					# do copy by creating new object for later recovery
-					self.transmission_save = self.transmission + []
-					self.transmission.append(self.season)
-					self.transmission.append(self.episode)
-					self.season = '0'
-					self.episode = '00'
-					self.state = 'transmission_title'
-			elif self.state == 'transmission_title_end' and tag == 'span' :
-				found = False
-				for name, value in attrs:
-					if name == 'title' and value == 'Staffel':
-						found = True
-						self.state = 'transmission_season'
-						break
-					elif name == 'title' and value == 'Episode':
-						found = True
-						self.state = 'transmission_episode'
-						break
-					elif name == 'title':
-						found = True
-						break
-				if found:
-					# do copy by creating new object for recovery
-					self.transmission = self.transmission_save + []
-					self.transmission_save = []
-			elif self.state == 'transmission_sender' and tag == 'img':
-				# match sender
-				for name, value in attrs:
-					if name == 'title':
-						self.transmission.append(value)
-						break
-				self.state = 'transmission_end'
-
-		def handle_endtag(self, tag):
-			# print "Encountered an end tag :", tag
-			if self.state == 'transmission_end' and tag == 'tr':
-				print self.transmission
-				self.transmissions.append(tuple(self.transmission))
-				self.transmission = []
-				self.state = 'transmission'
-			elif self.state == 'transmission_serie' and tag == 'strong':
-				# append collected data
-				self.transmission.append(self.parser_data)
-				self.parser_data = ''
-				self.state = 'transmission_watched'
-			elif self.state == 'transmission_title' and tag == 'span':
-				# append collected data
-				self.transmission.append(self.parser_data)
-				self.parser_data = ''
-				self.state = 'transmission_title_end'
-			elif self.state == 'transmission_title_end' and tag == 'div':
-				# consume closing div
-				self.state = 'transmission_desc'
-			elif self.state == 'transmission_desc' and tag == 'div':
-				# append collected data
-				self.transmission.append(self.parser_data)
-				self.parser_data = ''
-				self.state = 'transmission_endtime'
-			elif self.state == 'transmission' and tag == 'table':
-				# processing finished without error
-				self.state = 'finished'
-
-		def handle_data(self, data):
-			# print "Encountered some data  : %r" % data
-			if self.state == 'finished' or self.state == 'error':
-				# do nothing
-				self.state = self.state
-			elif self.state == 'start':
-				# match date
-				# 'TV-Planer f=C3=BCr Donnerstag, den 22.12.2016'
-				date_regexp=re.compile('.*TV-Planer.*?den ([0-3][0-9]\.[0-1][0-9]\.20[0-9][0-9])')
-				find_result = date_regexp.findall(data)
-				if find_result:
-					self.date = find_result[0]
-					self.state = 'time'
-			elif self.state == 'time':
-				# match time
-				# '(ab 05:00 Uhr)'
-				time_regexp=re.compile('ab (.*?) Uhr')
-				find_result = time_regexp.findall(data)
-				if find_result:
-					self.date = ( self.date, find_result[0] )
-					self.state = 'transmission_table'
-			elif self.state == 'transmission_start':
-				# match start time
-				time_regexp = re.compile('(.*?) Uhr')
-				startTime = time_regexp.findall(data)
-				if len(startTime) > 0:
-					self.transmission.append(startTime[0])
-					self.state = 'transmission_url'
-				else:
-					self.state = 'transmission'
-			elif self.state == 'transmission_serie':
-				# match serie
-				self.parser_data += data
-			elif self.state == 'transmission_season':
-				# match season
-				self.season = data
-				self.state = 'transmission_serie_end'
-			elif self.state == 'transmission_episode':
-				# match episode
-				self.episode = data
-				self.state = 'transmission_serie_end'
-			elif self.state == 'transmission_title':
-				# match title
-				self.parser_data += data
-			elif self.state == 'transmission_desc':
-				# match description
-				if data.startswith('bis:'):
-					# may be empty description
-					time_regexp=re.compile('bis: (.*?) Uhr.*')
-					endTime = time_regexp.findall(data)
-					if len(endTime) > 0:
-						self.transmission.append('')
-						self.transmission.append(endTime[0])
-						self.state = 'transmission_sender'
-					else:
-						self.state = 'error'
-				elif data != 'FREE-TV NEU' and data != "NEU":
-					self.parser_data += data
-			elif self.state == 'transmission_endtime':
-				# match end time
-				time_regexp=re.compile('bis: (.*?) Uhr.*')
-				endTime = time_regexp.findall(data)
-				if len(endTime) > 0:
-					self.transmission.append(endTime[0])
-					self.state = 'transmission_sender'
-				else:
-					self.state = 'error'
-			elif self.state == 'transmission_sender':
-				# match sender
-				self.transmission.append(data)
-				self.state = 'transmission_end'
-
 	# make one line and convert characters
-	html = html.replace('=\r\n', '').replace('=\n','').replace('=\r', '').replace('\n', '').replace('\r', '')
+	html = html.replace('=\r\n', '').replace('=\n', '').replace('=\r', '').replace('\n', '').replace('\r', '')
 	html = html.replace('=3D', '=')
 
-	parser = TVPlaner_HTMLParser()
-	html = parser.unescape(html).encode('utf-8')
-	if html is None or len(html) == 0:
-		SRLogger.writeLog("TV-Planer: leeres HTML nach HTMLParser", True)
-		return None
 	try:
-		parser.feed(html)
-		print parser.date
-		print parser.transmissions
+
+		def getTextContentByTitle(node, titleValue, default):
+			titleNodes = node.childNodes.getElementsByAttr('title', titleValue)
+			if titleNodes:
+				return titleNodes[0].textContent.encode('utf-8')
+			else:
+				return default
+
+		def getEpisodeTitle(node):
+			childNodes = node.childNodes.getElementsByTagName('a')
+			if childNodes:
+				return childNodes[0].textContent.encode('utf-8')
+			else:
+				return ''
+
+
+		import AdvancedHTMLParser
+		parser = AdvancedHTMLParser.AdvancedHTMLParser()
+		html = parser.unescape(html).encode('utf-8')
+		parser.parseStr(html)
+
+		# Get tables from HTML
+		tables = parser.getElementsByTagName('table')
+
+		# Initialize regular expressions
+		date_regexp = re.compile('.*TV-Planer.*?den ([0-3][0-9]\.[0-1][0-9]\.20[0-9][0-9]).*ab (.*?) Uhr')
+		url_title_regexp = re.compile('.*<a href="([^\?]+)(?:\?.*)?".*><strong.*>(.*)</strong>')
+		endtime_regexp = re.compile('.*bis:\s(.*)\sUhr.*')
+
+		# Get date and time of TV-Planer
+		header = tables[1].getAllChildNodes().getElementsByTagName('div')[0].textContent.encode('utf-8')
+		planerDateTime = date_regexp.findall(header)[0]
+		print planerDateTime
+
+		# Get transmissions
+		transmissions = []
+		transmissionTable = tables[1].getAllChildNodes().getElementsByTagName('table')[0]
+		transmissionRows = transmissionTable.childNodes
+		for transmissionRow in transmissionRows:
+			transmission = []
+			if not transmissionRow.hasAttribute('style'):
+				transmissionColumns = transmissionRow.childNodes
+				# Each transmission row has three columns
+				# [0]: Start time
+				starttime = transmissionColumns[0].textContent.encode('utf-8')
+				if starttime != 'Anzeige':
+					transmission.append(starttime.replace(' Uhr', ''))
+					# [1]: URL, Title, Season, Episode, Info
+					transmissionColumn = transmissionColumns[1]
+					# Season, Episode, Title, Episode info, End time
+					episodeInfo = ['0', '00', '', '', '']
+					divPartIndex = 0
+					for transmissionPart in transmissionColumn.childNodes:
+						if transmissionPart.tagName == 'a':
+							# URL
+							url_title = url_title_regexp.findall(transmissionPart.toHTML().encode('utf-8'))[0]
+							transmission.extend(url_title)
+						if transmissionPart.tagName == 'div' and divPartIndex == 0:
+							# First div element => Season / Episode / Title / e.g. NEU
+							episodeInfo[0] = getTextContentByTitle(transmissionPart, 'Staffel', '0')
+							episodeInfo[1] = getTextContentByTitle(transmissionPart, 'Episode', '00')
+							episodeInfo[2] = getEpisodeTitle(transmissionPart)
+							divPartIndex += 1
+						elif transmissionPart.tagName == 'div' and divPartIndex == 1:
+							# Second div element => Episode info
+							episodeInfo[3] = transmissionPart.textContent.encode('utf-8')
+							divPartIndex += 1
+						elif transmissionPart.tagName == 'div' and divPartIndex == 2:
+							# Third div element => End time
+							endtime = endtime_regexp.findall(transmissionPart.toHTML().encode('utf-8'))
+							if endtime:
+								episodeInfo[4] = endtime[0]
+							divPartIndex += 1
+
+					transmission.extend(episodeInfo)
+					# [2] Channel
+					transmission.append(transmissionColumns[2].textContent.encode('utf-8'))
+					print transmission
+					transmissions.append(transmission)
+
 	except:
 		SRLogger.writeLog("TV-Planer: HTML Parsing abgebrochen", True)
-		return None
-
-	if parser.state != "finished":
-		SRLogger.writeLog("TV-Planer: HTML Parsing mit Fehler beendet", True)
 		return None
 
 	# prepare transmissions
 	# [ ( seriesName, channel, start, end, season, episode, title, '0' ) ]
 	# calculate start time and end time of list in E-Mail
-	if len(parser.date) != 2:
+	if len(planerDateTime) != 2:
 		SRLogger.writeLog("TV-Planer: falsches Datumsformat", True)
 		return None
-	(day, month, year) = parser.date[0].split('.')
-	(hour, minute) = parser.date[1].split(':')
+	(day, month, year) = planerDateTime[0].split('.')
+	(hour, minute) = planerDateTime[1].split(':')
 	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
 	# generate dictionary with final transmissions
-	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (parser.date[0], parser.date[1]))
-	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (parser.date[0], parser.date[1])
+	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (planerDateTime[0], planerDateTime[1]))
+	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (planerDateTime[0], planerDateTime[1])
 	transmissiondict = dict()
-	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in parser.transmissions:
+	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in transmissions:
 		if url.startswith('https://www.wunschliste.de/spielfilm'):
 			if not config.plugins.serienRec.tvplaner_movies.value:
 				SRLogger.writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % seriesname, True)
@@ -457,9 +297,10 @@ def getEmailData():
 						url = None
 					if config.plugins.serienRec.tvplaner_series_activeSTB.value:
 						boxID = config.plugins.serienRec.BoxID.value
-
-				if url.startswith('https://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+				elif url.startswith('https://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
 					boxID = config.plugins.serienRec.BoxID.value
+				else:
+					url = None
 
 				if url and not database.markerExists(url):
 					if database.addMarker(url, seriesname, "", boxID):
@@ -468,9 +309,9 @@ def getEmailData():
 					else:
 						SRLogger.writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
 						print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
-			except:
-				SRLogger.writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
-				print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
+			except Exception as e:
+				SRLogger.writeLog("Serien Marker für ' %s ' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (seriesname, str(e)), True)
+				print "[SerienRecorder] ' %s - Serien Marker konnte wegen eines Fehlers nicht angelegt werden [%s]'" % (seriesname, str(e))
 
 	return transmissiondict
 

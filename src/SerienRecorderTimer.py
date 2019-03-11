@@ -641,13 +641,12 @@ class serienRecTimer:
 					# Event-Programmierung verarbeiten
 					if config.plugins.serienRec.splitEventTimer.value == "1" and '/' in str(episode):
 						splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
-
 						for idx, entry in enumerate(splitedSeasonEpisodeList):
 							splitedTitle = "dump"
 							if useTitles:
 								splitedTitle = splitedTitleList[idx]
 							alreadyExists = self.database.getNumberOfTimers(serien_name, entry[0], entry[1], splitedTitle, False)
-							if not alreadyExists and addToDatabase:
+							if alreadyExists == 0 and addToDatabase:
 								# Nicht vorhandene Einzelfolgen als bereits aufgenommen markieren
 								self.database.addToTimerList(serien_name, entry[1], entry[1], entry[0], splitedTitle, int(time.time() - 10), "", "", 0, 1)
 								SRLogger.writeLogFilter("timerDebug", "   Einzelepisode wird nicht mehr aufgenommen: %s S%sE%s - %s" % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), splitedTitle))

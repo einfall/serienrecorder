@@ -65,7 +65,7 @@ def ReadConfigFile():
 		choices=[("0", "nein"), ("before", "vor dem Suchlauf"), ("after", "nach dem Suchlauf")], default="before")
 	config.plugins.serienRec.BackupPath = ConfigText(default="/media/hdd/SR_Backup/", fixed_size=False,
 	                                                 visible_width=80)
-	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(0, (0, 999))
+	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(5, (5, 999))
 	config.plugins.serienRec.eventid = ConfigYesNo(default=True)
 	config.plugins.serienRec.epgTimeSpan = ConfigInteger(10, (0, 30))
 	# Remove EPGRefresh action for VU+ Boxes
@@ -144,6 +144,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default=True)
 	config.plugins.serienRec.showPicons = ConfigYesNo(default=True)
 	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 35, 1, default=0)
+	config.plugins.serienRec.markerColumnWidth = ConfigSelectionNumber(-200, 200, 10, default=0)
 	config.plugins.serienRec.markerSort = ConfigSelection(choices=[("0", "Alphabetisch"), ("1", "Wunschliste")],
 	                                                      default="0")
 	config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default=True)
@@ -313,6 +314,19 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
+
+		self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
+		                    [buttonText_na, buttonText_na, buttonText_na],
+		                    [buttonText_na, buttonText_na, buttonText_na],
+		                    [buttonText_na, buttonText_na, "Hilfe"],
+		                    [buttonText_na, buttonText_na, "Sender zuordnen"])
+
+		self['text_red'].setText("Defaultwerte")
+		self['text_green'].setText("Speichern")
+		self['text_ok'].setText("Ordner auswählen")
+		self['text_yellow'].setText("in Datei speichern")
+		self['text_blue'].setText("aus Datei laden")
+
 		super(self.__class__, self).startDisplayTimer()
 
 	def updateMenuKeys(self):
@@ -328,39 +342,47 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self['config_information_text'].show()
 
 		self['title'].setText("SerienRecorder - Einstellungen:")
-		self['text_red'].setText("Defaultwerte")
-		self['text_green'].setText("Speichern")
-		self['text_ok'].setText("Ordner auswählen")
-		self['text_yellow'].setText("in Datei speichern")
-		self['text_blue'].setText("aus Datei laden")
-		self['text_menu'].setText("Sender zuordnen")
-
-		self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
-		                    [buttonText_na, buttonText_na, buttonText_na],
-		                    [buttonText_na, buttonText_na, buttonText_na],
-		                    [buttonText_na, buttonText_na, "Hilfe"],
-		                    [buttonText_na, buttonText_na, "Sender zuordnen"])
 
 		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_red'].show()
 			self['bt_green'].show()
-			#self['bt_ok'].show()
 			self['bt_yellow'].show()
 			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
-			#self['bt_8'].show()
 			self['bt_menu'].show()
 
 			self['text_red'].show()
 			self['text_green'].show()
-			# self['text_ok'].show()
 			self['text_yellow'].show()
 			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
 			self['text_2'].show()
 			self['text_3'].show()
+			self['text_4'].show()
+		else:
+			self['text_0'].hide()
+			self['text_1'].hide()
+			self['text_2'].hide()
+			self['text_3'].hide()
+			self['text_4'].hide()
+			self['text_5'].hide()
+			self['text_6'].hide()
+			self['text_7'].hide()
+			self['text_8'].hide()
+			self['text_9'].hide()
+
+			self['bt_0'].hide()
+			self['bt_1'].hide()
+			self['bt_2'].hide()
+			self['bt_3'].hide()
+			self['bt_4'].hide()
+			self['bt_5'].hide()
+			self['bt_6'].hide()
+			self['bt_7'].hide()
+			self['bt_8'].hide()
+			self['bt_9'].hide()
 
 	def keyRed(self):
 		self.session.openWithCallback(self.resetSettings, MessageBox, "Wollen Sie die Einstellungen wirklich zurücksetzen?", MessageBox.TYPE_YESNO, default = False)
@@ -821,6 +843,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(
 				getConfigListEntry("Korrektur der Schriftgröße in Listen:", config.plugins.serienRec.listFontsize))
 			self.list.append(
+				getConfigListEntry("Korrektur der Spaltenbreite der Serien-Marker Ansicht:", config.plugins.serienRec.markerColumnWidth))
+			self.list.append(
 				getConfigListEntry("Staffel-Filter in Sendetermine Ansicht:", config.plugins.serienRec.seasonFilter))
 			self.list.append(
 				getConfigListEntry("Timer-Filter in Sendetermine Ansicht:", config.plugins.serienRec.timerFilter))
@@ -1028,7 +1052,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 					config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2),
 					str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.deleteBackupFilesOlderThan: (
-				"Backup-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht.\n\nBei '0' ist die Funktion deaktiviert.",
+				"Backup-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht.",
 				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.coverPath: (
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Cover gespeichert werden.",
@@ -1161,6 +1185,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.listFontsize: (
 				"Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.",
+				"1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.markerColumnWidth: (
+				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von Standardbreite kann die Spalte schmaler bzw. breiter machen.",
 				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.intensiveTimersuche: (
 				"Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.",
@@ -1401,6 +1428,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.createPlaceholderCover.save()
 		config.plugins.serienRec.copyCoverToFolder.save()
 		config.plugins.serienRec.listFontsize.save()
+		config.plugins.serienRec.markerColumnWidth.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
 		config.plugins.serienRec.selectNoOfTuners.save()

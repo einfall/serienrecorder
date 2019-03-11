@@ -199,8 +199,11 @@ def initDB():
 			SRLogger.writeLog("Erstelle Datenbank Backup - es kann nach erfolgreichem Update gelöscht werden: %s" % backupSerienRecDataBaseFilePath, True)
 			shutil.copy(serienRecDataBaseFilePath, backupSerienRecDataBaseFilePath)
 			database = SRDatabase(serienRecDataBaseFilePath)
-			database.update(config.plugins.serienRec.dbversion.value)
-			SRLogger.writeLog("Datenbank von Version %s auf Version %s aktualisiert" % (dbVersion, config.plugins.serienRec.dbversion.value), True)
+			if database.update(config.plugins.serienRec.dbversion.value):
+				SRLogger.writeLog("Datenbank von Version %s auf Version %s aktualisiert" % (dbVersion, config.plugins.serienRec.dbversion.value), True)
+			else:
+				Notifications.AddPopup("SerienRecorder Datenbank konnte nicht aktualisiert werden. Fehler wurden in die Logdatei geschrieben.\nSerienRecorder wurde beendet!", MessageBox.TYPE_INFO, timeout=10)
+				return False
 
 	# Analyze database for query optimizer
 	database.optimize()

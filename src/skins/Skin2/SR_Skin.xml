@@ -18,8 +18,8 @@
 	<widget name="list" position="60,80" size="850,582" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel25_1200.png" />
 	<widget name="popup_list2" position="920,10" size="310,320" backgroundColor="#00181d20" zPosition="10" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2/images/sel25_1200.png" />
 
-	<widget name="config_information" position="920,100" size="310,320" zPosition="3" backgroundColor="#000000" />
-	<widget name="config_information_text" position="923,103" size="304,314" zPosition="5" font="Regular;18" halign="left" transparent="1" />
+	<widget name="config_information" position="920,400" size="310,260" zPosition="3" backgroundColor="#000000" />
+	<widget name="config_information_text" position="923,403" size="304,254" zPosition="5" font="Regular;14" halign="left" transparent="1" />
 	<!--widget source="config_information_text" position="923,103" size="304,314" zPosition="5" font="Regular;18" halign="left" transparent="1" render="RunningText" options="movetype=running,startpoint=0,direction=top,steptime=90,repeat=20,startdelay=10000,wrap" /-->
 	
 	<widget name="info" position="60,170" size="850,440" font="Regular;24" transparent="1" zPosition="1" />

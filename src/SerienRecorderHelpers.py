@@ -20,7 +20,7 @@ import datetime, os, re, urllib2, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.8.8-beta'
+SRVERSION = '3.8.9-beta'
 SRDBVERSION = '3.9.1'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 

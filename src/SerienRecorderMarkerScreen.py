@@ -55,6 +55,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.staffel_liste = []
 		self.sender_liste = []
 		self.AbEpisode = 0
+		self.columnWidth = int(config.plugins.serienRec.markerColumnWidth.value)
 
 		if config.plugins.serienRec.firstscreen.value == "0":
 			self.showMainScreen = True
@@ -341,8 +342,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self.loading = False
 			self.getCover()
 
-	@staticmethod
-	def buildList(entry):
+	def buildList(self, entry):
 		(ID, serie, url, staffeln, sendern, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info) = entry
 
 		if preferredChannel == 1:
@@ -367,12 +367,12 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		folderText = "Dir: %s" % AufnahmeVerzeichnis
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 450 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 470 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, info, serieColor, serieColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffelText, foregroundColor, foregroundColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 470 * skinFactor, 29 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, senderText, foregroundColor, foregroundColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, 350 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, infoText, foregroundColor, foregroundColor),
-			(eListboxPythonMultiContent.TYPE_TEXT, 470 * skinFactor, 49 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText, foregroundColor, foregroundColor)
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, (410 + self.columnWidth) * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, (470 + self.columnWidth) * skinFactor, 3, (380 + self.columnWidth) * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, info, serieColor, serieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, (410 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffelText, foregroundColor, foregroundColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, (470 + self.columnWidth) * skinFactor, 29 * skinFactor, (380 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, senderText, foregroundColor, foregroundColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, (410 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, infoText, foregroundColor, foregroundColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, (470 + self.columnWidth) * skinFactor, 49 * skinFactor, (380 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText, foregroundColor, foregroundColor)
 			]
 
 	def keyCheck(self):

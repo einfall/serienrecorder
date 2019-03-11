@@ -120,128 +120,167 @@ class SRDatabase:
 
 		return dbVersion
 
+	@staticmethod
+	def hasColumn(rows, columnName):
+		if [item for item in rows if item[1] == columnName]:
+			return True
+		else:
+			return False
+
 	def update(self, version):
 		"""
 		Update database if too old
 		:return:
 		:rtype:
 		"""
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('DROP TABLE NeuerStaffelbeginn')
-			cur.close()
-		except:
-			pass
+		SRLogger.writeLog("Datenbank wird auf die Version %s aktualisiert..." % str(version), True)
+
+		cur = self._srDBConn.cursor()
+		cur.execute("PRAGMA table_info(SerienMarker)")
+		markerRows = cur.fetchall()
+		cur.execute("PRAGMA table_info(AngelegteTimer)")
+		timerRows = cur.fetchall()
+		cur.execute("PRAGMA table_info(Channels)")
+		channelRows = cur.fetchall()
+
+		updateSuccessful = True
+
+		# SerienMarker table updates
+		if not self.hasColumn(markerRows, 'AbEpisode'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD AbEpisode INTEGER DEFAULT 0')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'AbEpisode' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'Staffelverzeichnis'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD Staffelverzeichnis INTEGER DEFAULT -1')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'Staffelverzeichnis' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'TimerForSpecials'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD TimerForSpecials INTEGER DEFAULT 0')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'TimerForSpecials' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'vps'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD vps INTEGER DEFAULT NULL')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'vps' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'excludedWeekdays'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD excludedWeekdays INTEGER DEFAULT NULL')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'excludedWeekdays' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'tags'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD tags TEXT')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'tags' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'addToDatabase'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD addToDatabase INTEGER DEFAULT 1')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'addToDatabase' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'updateFromEPG'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD updateFromEPG INTEGER DEFAULT NULL')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'updateFromEPG' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'skipSeriesServer'):
+			try:
+				cur.execute('ALTER TABLE SerienMarker ADD skipSeriesServer INTEGER DEFAULT NULL')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'skipSeriesServer' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'info'):
+			try:
+				cur.execute("ALTER TABLE SerienMarker ADD info TEXT NOT NULL DEFAULT ''")
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'info' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		# Channels table updates
+		if not self.hasColumn(channelRows, 'vps'):
+			try:
+				cur.execute('ALTER TABLE Channels ADD vps INTEGER DEFAULT 0')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'vps' konnte nicht in der Tabelle 'Channels' angelegt werden [%s]." % str(e), True)
 
 		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD AbEpisode INTEGER DEFAULT 0')
-			cur.close()
+			cur.execute('DROP TABLE IF EXISTS NeuerStaffelbeginn')
 		except:
-			pass
+			updateSuccessful = False
+			SRLogger.writeLog("Tabelle 'NeuerStaffelbeginn' konnte nicht gelöscht werden.", True)
+
+		# AngelegteTimer table updates
+		if not self.hasColumn(timerRows, 'TimerAktiviert'):
+			try:
+				cur.execute('ALTER TABLE AngelegteTimer ADD TimerAktiviert INTEGER DEFAULT 1')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'TimerAktiviert' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
 
 		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD Staffelverzeichnis INTEGER DEFAULT -1')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD TimerForSpecials INTEGER DEFAULT 0')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE AngelegteTimer ADD TimerAktiviert INTEGER DEFAULT 1')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE Channels ADD vps INTEGER DEFAULT 0')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD vps INTEGER DEFAULT NULL')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD excludedWeekdays INTEGER DEFAULT NULL')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD tags TEXT')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD addToDatabase INTEGER DEFAULT 1')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
 			cur.execute("UPDATE AngelegteTimer SET Episode = '00' WHERE rowid IN (SELECT rowid  FROM AngelegteTimer WHERE Staffel='0' AND (Episode='' OR Episode='0'))")
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD updateFromEPG INTEGER DEFAULT NULL')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute('ALTER TABLE SerienMarker ADD skipSeriesServer INTEGER DEFAULT NULL')
-			cur.close()
-		except:
-			pass
-
-		try:
-			cur = self._srDBConn.cursor()
-			cur.execute("ALTER TABLE SerienMarker ADD info TEXT NOT NULL DEFAULT ''")
-			cur.close()
-		except:
-			pass
+		except Exception as e:
+			updateSuccessful = False
+			SRLogger.writeLog("Der Standardwert für die Spalte 'Episode' in der Tabelle 'Angelegte Timer' konnte nicht neu gesetzt werden [%s]." % str(e), True)
 
 		self.updateSeriesMarker()
 
-		cur = self._srDBConn.cursor()
-		cur.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
+		try:
+			cur.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
 																	  StartZeitstempel INTEGER NOT NULL, 
 																	  webChannel TEXT NOT NULL)''')
+		except Exception as e:
+			updateSuccessful = False
+			SRLogger.writeLog("Die Tabelle 'TimerKonflikte' konnte nicht angelegt werden [%s]." % str(e), True)
 
-		cur.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
+
+		try:
+			cur.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
 																  Staffel TEXT NOT NULL, 
 																  Episode TEXT NOT NULL,
 																  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
+		except Exception as e:
+			updateSuccessful = False
+			SRLogger.writeLog("Die Tabelle 'Merkzettel' konnte nicht angelegt werden [%s]." % str(e), True)
 
-		cur.execute('''CREATE TABLE IF NOT EXISTS STBAuswahl (ID INTEGER, 
+
+		try:
+			cur.execute('''CREATE TABLE IF NOT EXISTS STBAuswahl (ID INTEGER, 
 																  ErlaubteSTB INTEGER, 
 																  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
+		except Exception as e:
+			updateSuccessful = False
+			SRLogger.writeLog("Die Tabelle 'STBAuswahl' konnte nicht angelegt werden [%s]." % str(e), True)
 
-		cur.execute("UPDATE OR IGNORE dbInfo SET Value=? WHERE Key='Version'", [version])
+		if updateSuccessful:
+			SRLogger.writeLog("Datenbank wurde erfolgreich aktualisiert - aktualisiere Versiosnummer.", True)
+			cur.execute("UPDATE OR IGNORE dbInfo SET Value=? WHERE Key='Version'", [version])
+		else:
+			SRLogger.writeLog("Fehler beim Aktualisieren der Datenbank - bitte wenden Sie sich mit diesem Log an die Entwickler.", True)
 		cur.close()
+
+		return updateSuccessful
 
 	def updateSeriesMarker(self):
 		result = []
@@ -263,7 +302,7 @@ class SRDatabase:
 				result.append(val['new_name'])
 			cur.close()
 		except:
-			pass
+			SRLogger.writeLog("Fehler beim Aktualisieren der Serien-Marker.")
 
 		return result
 
