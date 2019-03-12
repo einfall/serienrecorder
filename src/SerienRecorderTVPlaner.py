@@ -152,7 +152,7 @@ def getEmailData():
 		tables = parser.getElementsByTagName('table')
 
 		# Initialize regular expressions
-		date_regexp = re.compile('.*TV-Planer.*?den ([0-3][0-9]\.[0-1][0-9]\.20[0-9][0-9]).*ab (.*?) Uhr')
+		date_regexp = re.compile('.*TV-Planer.*?den ([0-3][0-9]\.[0-1][0-9]\.20[0-9][0-9])\s(?:\(ab (.*?) Uhr\))?')
 		url_title_regexp = re.compile('.*<a href="([^\?]+)(?:\?.*)?".*><strong.*>(.*)</strong>')
 		endtime_regexp = re.compile('.*bis:\s(.*)\sUhr.*')
 
@@ -218,7 +218,10 @@ def getEmailData():
 		SRLogger.writeLog("TV-Planer: falsches Datumsformat", True)
 		return None
 	(day, month, year) = planerDateTime[0].split('.')
-	(hour, minute) = planerDateTime[1].split(':')
+	if not planerDateTime[1]:
+		(hour, minute) = ('00', '00')
+	else:
+		(hour, minute) = planerDateTime[1].split(':')
 	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
 	# generate dictionary with final transmissions
 	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (planerDateTime[0], planerDateTime[1]))
