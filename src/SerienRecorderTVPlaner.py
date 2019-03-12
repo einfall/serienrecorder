@@ -214,11 +214,13 @@ def getEmailData():
 	# prepare transmissions
 	# [ ( seriesName, channel, start, end, season, episode, title, '0' ) ]
 	# calculate start time and end time of list in E-Mail
+	missingTime = False
 	if len(planerDateTime) != 2:
 		SRLogger.writeLog("TV-Planer: falsches Datumsformat", True)
 		return None
 	(day, month, year) = planerDateTime[0].split('.')
 	if not planerDateTime[1]:
+		missingTime = True
 		(hour, minute) = ('00', '00')
 	else:
 		(hour, minute) = planerDateTime[1].split(':')
@@ -226,6 +228,8 @@ def getEmailData():
 	# generate dictionary with final transmissions
 	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (planerDateTime[0], planerDateTime[1]))
 	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (planerDateTime[0], planerDateTime[1])
+	if missingTime:
+		SRLogger.writeLog("In der Kopfzeile der TV-Planer E-Mail konnte keine Uhrzeit gefunden werden, bitte kontrollieren Sie die angelegten Timer!\n")
 	transmissiondict = dict()
 	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in transmissions:
 		if url.startswith('https://www.wunschliste.de/spielfilm'):
