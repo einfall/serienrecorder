@@ -140,8 +140,12 @@ def getEmailData():
 			if childNodes:
 				return childNodes[0].textContent.encode('utf-8')
 			else:
-				return ''
-
+				# Movies does not a link to the episode => only country, year
+				childNodes = node.childNodes.getElementsByTagName('span')
+				if childNodes:
+					return childNodes[0].textContent.encode('utf-8')
+				else:
+					return ''
 
 		import AdvancedHTMLParser
 		parser = AdvancedHTMLParser.AdvancedHTMLParser()
@@ -152,7 +156,7 @@ def getEmailData():
 		tables = parser.getElementsByTagName('table')
 
 		# Initialize regular expressions
-		date_regexp = re.compile('.*TV-Planer.*?den ([0-3][0-9]\.[0-1][0-9]\.20[0-9][0-9])\s(?:\(ab (.*?) Uhr\))?')
+		date_regexp = re.compile('.*TV-Planer.*?den ([0-3][0-9]\.[0-1][0-9]\.20[0-9][0-9])\s.(?:\(ab (.*?) Uhr\))?')
 		url_title_regexp = re.compile('.*<a href="([^\?]+)(?:\?.*)?".*><strong.*>(.*)</strong>')
 		endtime_regexp = re.compile('.*bis:\s(.*)\sUhr.*')
 
