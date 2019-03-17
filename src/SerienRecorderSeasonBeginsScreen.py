@@ -201,10 +201,11 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		WochenTag = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 		xtime = time.strftime(WochenTag[time.localtime(int(UTCTime)).tm_wday]+ ", %d.%m.%Y", time.localtime(int(UTCTime)))
 
-		if config.plugins.serienRec.showPicons.value:
+		if config.plugins.serienRec.showPicons.value != "0":
 			picon = loadPNG(imageNone)
-			if Sender:
-				piconPath = self.piconLoader.getPicon(self.serviceRefs.get(Sender))
+			if Sender and self.serviceRefs.get(Sender):
+				# Get picon by reference or by name
+				piconPath = self.piconLoader.getPicon(self.serviceRefs.get(Sender)[0] if config.plugins.serienRec.showPicons.value == "1" else self.serviceRefs.get(Sender)[1])
 				if piconPath:
 					self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
 					picon = self.picloader.load(piconPath)

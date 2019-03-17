@@ -866,11 +866,11 @@ class SRDatabase:
 	def getActiveServiceRefs(self):
 		serviceRefs = {}
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT WebChannel, ServiceRef FROM Channels WHERE Erlaubt=1 ORDER BY LOWER(WebChannel)")
+		cur.execute("SELECT WebChannel, ServiceRef, STBChannel FROM Channels WHERE Erlaubt=1 ORDER BY LOWER(WebChannel)")
 		rows = cur.fetchall()
 		for row in rows:
-			(webChannel, serviceRef) = row
-			serviceRefs[webChannel] = serviceRef
+			(webChannel, serviceRef, stbChannel) = row
+			serviceRefs[webChannel] = (serviceRef, stbChannel)
 		cur.close()
 		return serviceRefs
 

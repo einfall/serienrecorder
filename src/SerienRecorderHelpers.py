@@ -11,7 +11,7 @@ from Screens.ChannelSelection import service_types_tv
 
 from Tools.Directories import fileExists
 
-import datetime, os, re, urllib2, sys, time, shutil, base64
+import datetime, os, re, sys, time, shutil, base64
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -20,7 +20,7 @@ import datetime, os, re, urllib2, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.8.11-beta'
+SRVERSION = '3.8.12-beta'
 SRDBVERSION = '3.9.1'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
@@ -635,11 +635,12 @@ class PiconLoader:
 			return None
 
 		pos = sRef.rfind(':')
-		pos2 = sRef.rfind(':', 0, pos)
-		if pos - pos2 == 1 or self.partnerbox.match(sRef) is not None:
-			sRef = sRef[:pos2].replace(':', '_')
-		else:
-			sRef = sRef[:pos].replace(':', '_')
+		if pos != -1:
+			pos2 = sRef.rfind(':', 0, pos)
+			if pos - pos2 == 1 or self.partnerbox.match(sRef) is not None:
+				sRef = sRef[:pos2].replace(':', '_')
+			else:
+				sRef = sRef[:pos].replace(':', '_')
 		pngname = self.nameCache.get(sRef, "")
 		if pngname == "":
 			pngname = self.findPicon(sRef)

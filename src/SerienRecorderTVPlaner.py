@@ -224,8 +224,12 @@ def getEmailData():
 		return None
 	(day, month, year) = planerDateTime[0].split('.')
 	if not planerDateTime[1]:
-		missingTime = True
-		(hour, minute) = ('00', '00')
+		if transmissions:
+			# Get time of first transmission
+			(hour, minute) = transmissions[0][0].split(':')
+		else:
+			missingTime = True
+			(hour, minute) = ('00', '00')
 	else:
 		(hour, minute) = planerDateTime[1].split(':')
 	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)

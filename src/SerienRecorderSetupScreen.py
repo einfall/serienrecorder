@@ -142,7 +142,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.planerCacheSize = ConfigInteger((int(config.plugins.serienRec.checkfordays.value)), (1, 4))
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1, 9))
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default=True)
-	config.plugins.serienRec.showPicons = ConfigYesNo(default=True)
+	config.plugins.serienRec.showPicons = ConfigSelection(choices=[("0", "nein"), ("1", "ja, über ServiceRef"), ("2", "ja, über Name")], default="1")
 	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 35, 1, default=0)
 	config.plugins.serienRec.markerColumnWidth = ConfigSelectionNumber(-200, 200, 10, default=0)
 	config.plugins.serienRec.markerSort = ConfigSelection(choices=[("0", "Alphabetisch"), ("1", "Wunschliste")],
@@ -163,7 +163,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.downloadCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.createPlaceholderCover = ConfigYesNo(default=True)
-	config.plugins.serienRec.copyCoverToFolder = ConfigSelection(choices=[("0", "Nein"), ("1", "folder.jpg"), ("2", "series.jpg")], default="1")
+	config.plugins.serienRec.copyCoverToFolder = ConfigSelection(choices=[("0", "nein"), ("1", "folder.jpg"), ("2", "series.jpg")], default="1")
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default=True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default=True)
 
@@ -1165,7 +1165,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "
 				"falls der Timer auf dem bevorzugten Sender nicht angelegt werden kann.", "Bouquet_Auswahl"),
 			config.plugins.serienRec.showPicons: (
-				"Bei 'ja' werden in der Hauptansicht auch die Sender-Logos angezeigt.", "1.3_Die_globalen_Einstellungen"),
+				"Gibt an ob und wie Sender-Logos z.B. in der Serien-Planer Ansichten angezeigt werden sollen.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.piconPath: (
 				"Wählen Sie das Verzeichnis aus dem die Sender-Logos geladen werden sollen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.",
 				"1.3_Die_globalen_Einstellungen"),

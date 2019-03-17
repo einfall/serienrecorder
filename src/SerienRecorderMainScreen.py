@@ -529,10 +529,11 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			imageHDDTimer = imageNone
 
-		if config.plugins.serienRec.showPicons.value:
+		if config.plugins.serienRec.showPicons.value != "0":
 			picon = loadPNG(imageNone)
-			if sender:
-				piconPath = self.piconLoader.getPicon(self.serviceRefs.get(sender))
+			if sender and self.serviceRefs.get(sender):
+				# Get picon by reference or name
+				piconPath = self.piconLoader.getPicon(self.serviceRefs.get(sender)[0] if config.plugins.serienRec.showPicons.value == "1" else self.serviceRefs.get(sender)[1])
 				if piconPath:
 					self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
 					picon = self.picloader.load(piconPath)
