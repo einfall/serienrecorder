@@ -304,6 +304,7 @@ def getEmailData():
 			url = transmissiondict[seriesname][0][-1]
 			try:
 				boxID = None
+				marker_type = "Serien Marker"
 				if url.startswith('https://www.wunschliste.de/serie'):
 					seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
 					if seriesID > 0:
@@ -312,21 +313,24 @@ def getEmailData():
 						url = None
 					if config.plugins.serienRec.tvplaner_series_activeSTB.value:
 						boxID = config.plugins.serienRec.BoxID.value
-				elif url.startswith('https://www.wunschliste.de/spielfilm') and config.plugins.serienRec.tvplaner_movies_activeSTB.value:
-					boxID = config.plugins.serienRec.BoxID.value
+				elif url.startswith('https://www.wunschliste.de/spielfilm'):
+					marker_type = "Temporärer Serien Marker"
+					if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+						boxID = config.plugins.serienRec.BoxID.value
 				else:
 					url = None
 
 				if url and not database.markerExists(url):
 					if database.addMarker(url, seriesname, "", boxID):
-						SRLogger.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % seriesname, True)
-						print "[SerienRecorder] ' %s - Serien Marker erzeugt '" % seriesname
+
+						SRLogger.writeLog("\n%s für ' %s ' wurde angelegt" % (marker_type, seriesname), True)
+						print "[SerienRecorder] ' %s - %s erzeugt '" % (seriesname, marker_type)
 					else:
-						SRLogger.writeLog("Serien Marker für ' %s ' konnte nicht angelegt werden" % seriesname, True)
-						print "[SerienRecorder] ' %s - Serien Marker konnte nicht angelegt werden '" % seriesname
+						SRLogger.writeLog("\n%s für ' %s ' konnte nicht angelegt werden" % (marker_type, seriesname), True)
+						print "[SerienRecorder] ' %s - %s konnte nicht angelegt werden '" % (seriesname, marker_type)
 			except Exception as e:
-				SRLogger.writeLog("Serien Marker für ' %s ' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (seriesname, str(e)), True)
-				print "[SerienRecorder] ' %s - Serien Marker konnte wegen eines Fehlers nicht angelegt werden [%s]'" % (seriesname, str(e))
+				SRLogger.writeLog("\n%s für ' %s ' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (marker_type, seriesname, str(e)), True)
+				print "[SerienRecorder] ' %s - %s konnte wegen eines Fehlers nicht angelegt werden [%s]'" % (seriesname, marker_type, str(e))
 
 	return transmissiondict
 
