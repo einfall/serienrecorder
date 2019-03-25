@@ -674,6 +674,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				AlleStaffelnAb = -2
 				AbEpisode = 0
 
+			if AlleStaffelnAb == -2: # 'Manuell'
+				self.session.open(MessageBox, "Mit dieser Einstellung ('Manuell') werden für diesen\nSerien-Marker keine Timer mehr automatisch angelegt!", MessageBox.TYPE_INFO, timeout=10)
+
 		self.database.updateMarkerSeasonsSettings(self.select_serie, AlleStaffelnAb, AbEpisode, TimerForSpecials)
 
 		if config.plugins.serienRec.tvplaner_full_check.value:
@@ -1261,7 +1264,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 									  "Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet. Die programmierten Start- und Endzeiten werden eingehalten.\n"
 									  "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.\n"
 									  "Diese Einstellung hat Vorrang gegenüber der Sender Einstellung für VPS.") % self.Serie,
-			self.addToDatabase: "Bei 'nein' werden für die Timer von '%s' keine Einträge in die Timer-Liste gemacht, sodass die Episoden beliebig oft aufgenommen werden können." % self.Serie,
+			self.addToDatabase: "Bei 'nein' werden für die Timer von '%s' keine Einträge in die Timer-Liste gemacht, sodass die Episoden beliebig oft getimert werden können." % self.Serie,
 			self.preferredChannel: "Auswahl, ob die Standard-Sender oder die alternativen Sender für die Timer von '%s' verwendet werden sollen." % self.Serie,
 			self.useAlternativeChannel: (
 										"Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "

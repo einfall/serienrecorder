@@ -163,6 +163,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.downloadCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.showCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.createPlaceholderCover = ConfigYesNo(default=True)
+	config.plugins.serienRec.refreshPlaceholderCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.copyCoverToFolder = ConfigSelection(choices=[("0", "nein"), ("1", "folder.jpg"), ("2", "series.jpg")], default="1")
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default=True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default=True)
@@ -181,11 +182,10 @@ def ReadConfigFile():
 	else:
 		config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices=choices)
 	config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default=False)
-	config.plugins.serienRec.splitEventTimer = ConfigSelection(
-		choices=[("0", "nein"), ("1", "Timer anlegen"), ("2", "Einzelepisoden bevorzugen")], default="0")
+	config.plugins.serienRec.splitEventTimer = ConfigSelection(choices=[("0", "nein"), ("1", "Timer anlegen"), ("2", "Einzelepisoden bevorzugen")], default="0")
+	config.plugins.serienRec.addSingleTimersForEvent = ConfigSelection(choices=[("0", "nein"), ("1", "ja")], default="0")
 
-	config.plugins.serienRec.firstscreen = ConfigSelection(choices=[("0", "SerienPlaner"), ("1", "SerienMarker")],
-	                                                       default="0")
+	config.plugins.serienRec.firstscreen = ConfigSelection(choices=[("0", "SerienPlaner"), ("1", "SerienMarker")], default="0")
 
 	# interne
 	config.plugins.serienRec.showversion = NoSave(ConfigText(default=SRVERSION))
@@ -780,10 +780,10 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Timername:", config.plugins.serienRec.TimerName))
-			self.list.append(
-				getConfigListEntry("Manuelle Timer immer erstellen:", config.plugins.serienRec.forceManualRecording))
-			self.list.append(
-				getConfigListEntry("Event-Programmierungen behandeln:", config.plugins.serienRec.splitEventTimer))
+			self.list.append(getConfigListEntry("Manuelle Timer immer erstellen:", config.plugins.serienRec.forceManualRecording))
+			self.list.append(getConfigListEntry("Event-Programmierungen behandeln:", config.plugins.serienRec.splitEventTimer))
+			if config.plugins.serienRec.splitEventTimer.value == "2":
+				self.list.append(getConfigListEntry("    Einzelepisoden als 'bereits getimert' markieren:", config.plugins.serienRec.addSingleTimersForEvent))
 
 		tvbouquets = STBHelpers.getTVBouquets()
 		if len(tvbouquets) < 2:
@@ -795,10 +795,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				self.getTVBouquetSelection()
 				if config.plugins.serienRec.setupType.value == "1":
 					self.list.append(getConfigListEntry("    Standard Bouquet:", config.plugins.serienRec.MainBouquet))
-					self.list.append(
-						getConfigListEntry("    Alternatives Bouquet:", config.plugins.serienRec.AlternativeBouquet))
-					self.list.append(getConfigListEntry("    Verwende alternative Sender bei Konflikten:",
-					                                    config.plugins.serienRec.useAlternativeChannel))
+					self.list.append(getConfigListEntry("    Alternatives Bouquet:", config.plugins.serienRec.AlternativeBouquet))
+					self.list.append(getConfigListEntry("    Verwende alternative Sender bei Konflikten:", config.plugins.serienRec.useAlternativeChannel))
 
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("", ConfigNothing()))
@@ -836,8 +834,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			if config.plugins.serienRec.downloadCover.value:
 				self.list.append(getConfigListEntry("    Speicherort der Cover:", config.plugins.serienRec.coverPath))
 				self.list.append(getConfigListEntry("    Zeige Cover:", config.plugins.serienRec.showCover))
-				self.list.append(getConfigListEntry("    Platzhalter anlegen wenn Cover nicht vorhanden:",
-				                                    config.plugins.serienRec.createPlaceholderCover))
+				self.list.append(getConfigListEntry("    Platzhalter anlegen wenn Cover nicht vorhanden:", config.plugins.serienRec.createPlaceholderCover))
+				if config.plugins.serienRec.createPlaceholderCover.value:
+					self.list.append(getConfigListEntry("        Platzhalter regelmäßig aktualisieren:", config.plugins.serienRec.refreshPlaceholderCover))
 				if config.plugins.serienRec.seriensubdir.value:
 					self.list.append(getConfigListEntry("    Cover in Serien-/Staffelordner kopieren:", config.plugins.serienRec.copyCoverToFolder))
 			self.list.append(
@@ -1141,12 +1140,15 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht.",
 				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.splitEventTimer: (
-				"Bei 'Nein' werden Event-Programmierungen (S01E01/1x02/1x03) als eigenständige Sendungen behandelt. "
+				"Bei 'nein' werden Event-Programmierungen (S01E01/1x02/1x03) als eigenständige Sendungen behandelt. "
 				"Ansonsten wird versucht die einzelnen Episoden eines Events erkennen.\n\n"
-				"Bei 'Timer anlegen' wird zwar weiterhin nur ein Timer angelegt, aber die Einzelepisoden werden in der Datenbank als 'bereits aufgenommen' markiert."
+				"Bei 'Timer anlegen' wird zwar weiterhin nur ein Timer angelegt, aber die Einzelepisoden werden in der Datenbank als 'bereits getimert' markiert."
 				"Sollten bereits alle Einzelepisoden vorhanden sein, wird für das Event kein Timer angelegt.\n\n"
 				"Bei 'Einzelepisoden bevorzugen' wird versucht Timer für die Einzelepisoden anzulegen. "
-				"Falls das nicht möglich ist, wird das Event aufgenommen.", "1.3_Die_globalen_Einstellungen"),
+				"Falls das nicht möglich ist, wird ein Timer für das Event erstellt.", "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.addSingleTimersForEvent: (
+				"Bei 'ja' werden die Einzelepisoden in der Datenbank als 'bereits getimert' markiert, falls ein Timer für das Event angelegt werden muss.\n"
+				"Bei 'nein' werden, wenn ein Timer für das Event angelegt werden musste, ggf. später auch Timer für Einzelepisoden angelegt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.TimerName: (
 				"Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
 				"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden."
@@ -1178,6 +1180,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'nein' werden keine Cover angezeigt.", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.createPlaceholderCover: (
 				"Bei 'ja' werden Platzhalter Dateien erzeugt wenn kein Cover vorhanden ist - das hat den Vorteil, dass nicht immer wieder nach dem Cover gesucht wird.",
+				"1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.refreshPlaceholderCover: (
+				"Bei 'ja' wird in regelmäßigen Abständen (alle 60 Tage) nach einem Cover für die Serie gesucht um die Platzhalter Datei zu ersetzen.",
 				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.copyCoverToFolder: (
 				"Bei 'nein' wird das entsprechende Cover nicht in den Serien- und Staffelordner kopiert. Die anderen Optionen bestimmen den Namen der Datei im Staffelordner.\n"
@@ -1449,6 +1454,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.bouquetList.value = ""
 		config.plugins.serienRec.bouquetList.save()
 		config.plugins.serienRec.splitEventTimer.save()
+		config.plugins.serienRec.addSingleTimersForEvent.save()
 		config.plugins.serienRec.justplay.value = bool(int(self.kindOfTimer.value) & (1 << self.__C_JUSTPLAY__))
 		config.plugins.serienRec.zapbeforerecord.value = bool(
 			int(self.kindOfTimer.value) & (1 << self.__C_ZAPBEFORERECORD__))

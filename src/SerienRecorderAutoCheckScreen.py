@@ -75,7 +75,7 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['log'] = self.chooseMenuList
 		self['log'].show()
 
-		self['title'].setText("Suche nach neuen Timern läuft.")
+		self['title'].setText("Suche nach neuen Timern läuft...")
 		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_red'].show()
 			self['bt_exit'].show()

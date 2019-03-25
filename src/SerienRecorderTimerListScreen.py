@@ -35,7 +35,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok": (self.keyOK, "Liste der aufgenommenen Folgen bearbeiten"),
+			"ok": (self.keyOK, "Liste der erstellten Timer bearbeiten"),
 			"cancel": (self.keyCancel, "zurück zur Serienplaner-Ansicht"),
 			"left": (self.keyLeft, "zur vorherigen Seite blättern"),
 			"right": (self.keyRight, "zur nächsten Seite blättern"),
@@ -535,7 +535,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 			self.addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), Serie, Staffel, Episode, title, start_time, webChannel))
 
 		self['title'].instance.setForegroundColor(parseColor("red"))
-		self['title'].setText("Diese Episoden werden nicht mehr aufgenommen !")
+		self['title'].setText("Für diese Episoden werden keine Timer mehr erstellt !")
 		self.addedlist_tmp = self.addedlist[:]
 		if config.plugins.serienRec.addedListSorted.value:
 			self.addedlist_tmp.sort()

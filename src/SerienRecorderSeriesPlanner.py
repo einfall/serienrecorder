@@ -57,7 +57,7 @@ class serienRecSeriesPlanner:
 			self.postProcessPlanerData()
 		except:
 			SRLogger.writeLog("Fehler beim Abrufen oder Verarbeiten der SerienPlaner-Daten")
-			SRLogger.writeLog("... Laden der SerienPlaner-Daten beendet\n", True)
+		SRLogger.writeLog("... Laden der SerienPlaner-Daten beendet\n", True)
 
 	def processPlanerData(self, data, markers, daypage):
 		if not data or len(data) == 0:

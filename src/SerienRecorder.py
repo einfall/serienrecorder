@@ -83,6 +83,11 @@ def getCover(self, serien_name, serien_id, auto_check = False):
 		if fileExists(png_serien_nameCover):
 			os.rename(png_serien_nameCover, serien_nameCover)
 
+		if config.plugins.serienRec.refreshPlaceholderCover.value and fileExists(serien_nameCover) and os.path.getsize(serien_nameCover) == 0:
+			statinfo = os.stat(serien_nameCover)
+			if statinfo.st_ctime <= (time.time() + 5184000): # Older than 60 days
+				os.remove(serien_nameCover)
+
 		if fileExists(serien_nameCover):
 			if self and config.plugins.serienRec.showCover.value:
 				showCover(serien_nameCover, self, serien_nameCover)
