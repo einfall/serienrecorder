@@ -181,13 +181,23 @@ def getEmailData():
 					# [1]: URL, Title, Season, Episode, Info
 					transmissionColumn = transmissionColumns[1]
 					# Season, Episode, Title, Episode info, End time
-					episodeInfo = ['0', '00', '', '', '']
+					episodeInfo = ['0', '00', '', '', '0.00']
+
+					if transmissionColumn.firstChild:
+						# First child is always URL + Title
+						url_title = url_title_regexp.findall(transmissionColumn.firstChild.toHTML().encode('utf-8'))[0]
+						transmission.extend(url_title)
+					if transmissionColumn.lastChild:
+						# Last element => End time (it has to be filled with a time because later on the time will be splitted)
+						endtime = endtime_regexp.findall(transmissionColumn.lastChild.toHTML().encode('utf-8'))
+						if endtime:
+							episodeInfo[4] = endtime[0]
+
 					divPartIndex = 0
 					for transmissionPart in transmissionColumn.childNodes:
-						if transmissionPart.tagName == 'a':
-							# URL
-							url_title = url_title_regexp.findall(transmissionPart.toHTML().encode('utf-8'))[0]
-							transmission.extend(url_title)
+						if transmissionPart is transmissionColumn.lastChild:
+							# Skip part if it the "last" part
+							continue
 						if transmissionPart.tagName == 'div' and divPartIndex == 0:
 							# First div element => Season / Episode / Title / e.g. NEU
 							episodeInfo[0] = getTextContentByTitle(transmissionPart, 'Staffel', '0')
@@ -197,13 +207,6 @@ def getEmailData():
 						elif transmissionPart.tagName == 'div' and divPartIndex == 1:
 							# Second div element => Episode info
 							episodeInfo[3] = transmissionPart.textContent.encode('utf-8')
-							divPartIndex += 1
-						elif transmissionPart.tagName == 'div' and divPartIndex == 2:
-							# Third div element => End time
-							endtime = endtime_regexp.findall(transmissionPart.toHTML().encode('utf-8'))
-							if endtime:
-								episodeInfo[4] = endtime[0]
-							divPartIndex += 1
 
 					transmission.extend(episodeInfo)
 					# [2] Channel
@@ -240,61 +243,65 @@ def getEmailData():
 		SRLogger.writeLog("In der Kopfzeile der TV-Planer E-Mail konnte keine Uhrzeit gefunden werden, bitte kontrollieren Sie die angelegten Timer!\n")
 	transmissiondict = dict()
 	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in transmissions:
-		if url.startswith('https://www.wunschliste.de/spielfilm'):
-			if not config.plugins.serienRec.tvplaner_movies.value:
-				SRLogger.writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % seriesname, True)
-				print "' %s - Filmaufzeichnung ist deaktiviert '" % seriesname
-				continue
-			transmissiontype = '[ Film ]'
-		elif url.startswith('https://www.wunschliste.de/serie'):
-			if not config.plugins.serienRec.tvplaner_series.value:
-				SRLogger.writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % seriesname, True)
+		try:
+
+			if url.startswith('https://www.wunschliste.de/spielfilm'):
+				if not config.plugins.serienRec.tvplaner_movies.value:
+					SRLogger.writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % seriesname, True)
+					print "' %s - Filmaufzeichnung ist deaktiviert '" % seriesname
+					continue
+				transmissiontype = '[ Film ]'
+			elif url.startswith('https://www.wunschliste.de/serie'):
+				if not config.plugins.serienRec.tvplaner_series.value:
+					SRLogger.writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % seriesname, True)
+					print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
+					continue
+				transmissiontype = '[ Serie ]'
+			else:
+				SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
 				print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
 				continue
-			transmissiontype = '[ Serie ]'
-		else:
-			SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
-			print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
-			continue
 
-		# series
-		transmission = [ seriesname ]
-		# channel
-		channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
-		transmission += [ channel ]
-		# start time
-		(hour, minute) = starttime.split(':')
-		transmissionstart_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
-		if transmissionstart_unix < liststarttime_unix:
-			transmissionstart_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
-		transmission += [ transmissionstart_unix ]
-		# end time
-		(hour, minute) = endtime.split('.')
-		transmissionend_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
-		if transmissionend_unix < transmissionstart_unix:
-			transmissionend_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
-		transmission += [ transmissionend_unix ]
-		# season
-		if season == '':
-			season = '0'
-		transmission += [ season ]
-		# episode
-		if episode == '':
-			episode = '00'
-		transmission += [ episode ]
-		# title
-		transmission += [ quopri.decodestring(titel) ]
-		# last
-		transmission += [ '0' ]
-		# url
-		transmission += [ url ]
-		# store in dictionary transmissiondict[seriesname] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
-		if seriesname in transmissiondict:
-			transmissiondict[seriesname] += [ transmission ]
-		else:
-			transmissiondict[seriesname] = [ transmission ]
-			SRLogger.writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype), True)
-		print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype)
+			# series
+			transmission = [ seriesname ]
+			# channel
+			channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
+			transmission += [ channel ]
+			# start time
+			(hour, minute) = starttime.split(':')
+			transmissionstart_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
+			if transmissionstart_unix < liststarttime_unix:
+				transmissionstart_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
+			transmission += [ transmissionstart_unix ]
+			# end time
+			(hour, minute) = endtime.split('.')
+			transmissionend_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
+			if transmissionend_unix < transmissionstart_unix:
+				transmissionend_unix = TimeHelpers.getRealUnixTimeWithDayOffset(minute, hour, day, month, year, 1)
+			transmission += [ transmissionend_unix ]
+			# season
+			if season == '':
+				season = '0'
+			transmission += [ season ]
+			# episode
+			if episode == '':
+				episode = '00'
+			transmission += [ episode ]
+			# title
+			transmission += [ quopri.decodestring(titel) ]
+			# last
+			transmission += [ '0' ]
+			# url
+			transmission += [ url ]
+			# store in dictionary transmissiondict[seriesname] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
+			if seriesname in transmissiondict:
+				transmissiondict[seriesname] += [ transmission ]
+			else:
+				transmissiondict[seriesname] = [ transmission ]
+				SRLogger.writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype), True)
+			print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype)
+		except Exception as e:
+			SRLogger.writeLog("TV-Planer Verarbeitung fehlgeschlagen! [%s]" % str(e), True)
 
 	if config.plugins.serienRec.tvplaner_create_marker.value:
 		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
@@ -302,9 +309,9 @@ def getEmailData():
 			# marker isn't in database, create new marker
 			# url stored in marker isn't the final one, it is corrected later
 			url = transmissiondict[seriesname][0][-1]
+			marker_type = "Serien Marker"
 			try:
 				boxID = None
-				marker_type = "Serien Marker"
 				if url.startswith('https://www.wunschliste.de/serie'):
 					seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
 					if seriesID > 0:

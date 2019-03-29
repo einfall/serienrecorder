@@ -239,7 +239,7 @@ class serienRecTimer:
 		# Timer not found - maybe removed from image timer list
 		if not timerFound:
 			SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
-			SRLogger.writeLog("   Timer konnte nicht gefunden werden!", True)
+			SRLogger.writeLog("   Timer konnte nicht aktualisiert werden, weil er nicht gefunden werden konnte!", True)
 
 		return timerUpdated
 
@@ -827,7 +827,7 @@ class serienRecTimer:
 					break
 			else:
 				SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
-				SRLogger.writeLog("   Sendung konnte nicht im EPG gefunden werden @ %s" % webChannel)
+				SRLogger.writeLog("   Timer konnte nicht aus dem EPG aktualisiert werden, da der Abgleich fehlgeschlagen ist @ %s" % webChannel)
 
 
 	@staticmethod
