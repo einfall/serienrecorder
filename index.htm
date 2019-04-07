@@ -45,7 +45,7 @@
 		
         <div class="row">
 			<div class="col-xs-10">Wer Fehler oder vergessene Funktionen entdeckt, Bitte eine PN (Konversation) an <a href="https://www.vuplus-support.org/wbb4/index.php?user/79460-marti-win7/" target="_blank"><strong>@Marti_win7</strong></a> im VTI-Forum.</div>
-			<div class="col-xs-2">Letztes Update 17.10.2018</div>
+			<div class="col-xs-2">Letztes Update 07.04.2019</div>
 		</div>
 		<br>
 		<h1 class="page-header">Einleitung</h1>
@@ -65,7 +65,7 @@
             also nicht ausgeschlossen, dass Wunschliste.de den Betrieb des SerienRecorders irgendwann unterbindet.
             <br> Im Moment darf der SerienRecorder mit freundlicher Genehmigung von Wunschliste.de die Daten über einen von uns betriebenen Proxy Server (<a href="http://www.serienserver.de" target="_blank"><strong>Serien-Server</strong></a>) abrufen um die Wunschliste Server so wenig wie möglich zu belasten. 
           Da die Wunschliste-Seite von angemeldeten Usern lebt, ist es nur fair, dass sich JEDER Nutzer des SerienRecorder einen Account bei Wunschliste anlegt, egal ob er später die <a href="tv-planer-mail.htm"><strong><u>TV-Planer E-Mail</u></strong></a> Funktion nutzt oder nicht.</p>
-		  <p>Der SerienRecorder ruft die Cover und Serien-Informationen von der freien Platform <a href="https://www.thetvdb.com/" target="_blank"><strong>TheTVDB</strong></a> ab. Hier kann jeder Cover bereitstellen oder Informationen eintragen.</p>
+		  <p>Der SerienRecorder ruft die Cover und Serien-Informationen von der freien Plattform <a href="https://www.thetvdb.com/" target="_blank"><strong>TheTVDB</strong></a> ab. Hier kann jeder Cover bereitstellen oder Informationen eintragen.</p>
 		  </div>
 		  
 		  
@@ -81,7 +81,9 @@
 		<div class="row">
 			<p>Es werden genaue Folgen-Informationen abgerufen, so können diese in den Timer und damit in die Aufnahmeinformationen mit aufgenommen werden, also z.B. "S01E10 – Der Baum". Als Ausnahme können mittlerweile aber auch Sonderfolgen/Specials mit z.B. S01 oder Serien ohne Staffelbezeichnung (Folge 345, wie z.B. Tatort) vom SerienRecorder verarbeitet werden, die Staffelbezeichnung ist dann S00.</p>
 			<p>Serien, die eigentlich keine sind, weil sie tägl. oder wöchentl. ausgestrahlt werden und weder eine Staffel- noch Folgen-Bezeichnung haben, sind nur "schwer" mit dem SerienRecorder (SR) zu timern. Aber auch dies geht mittlerweile mit einigen von diesen "Serien". Da diese Folgen nicht eindeutig zu identifizieren sind, würden diese einmal in die DB eingetragen und danach nicht mehr getimert. Daher sollte man die Option aktivieren, das diese spezielle Serie <strong>nicht</strong> in die DB eingetragen wird </p>
-			<div class="alert alert-info" role="alert"> Es gibt natürlich auch "Spezialfälle" von Serien, bei denen das hinzufügen zum SerienRecorder (SR) schon mal Probleme bereitet. Manchmal liegt es an Sonderzeichen im Namen oder aber man muss den meist engl. Original-Titel der Serie in die Suche des SR eingeben. Bei Problemen dann bitte im Forum melden. </div>
+			<div class="alert alert-info" role="alert"> Es gibt natürlich auch "Spezialfälle" von Serien, bei denen das Hinzufügen zum SerienRecorder (SR) schon mal Probleme bereitet. Manchmal liegt es an Sonderzeichen im Namen oder aber man muss den meist engl. Original-Titel der Serie in die Suche des SR eingeben.
+			<br>Ein weiteres kleines Manko ist die Tatsache, das der SR nicht 2 Serien mit demselben Namen verwalten kann, was aber in absehbarer Zeit vermutlich funktionieren kann. Als Beispiel sein die Serie " Bull " genannt, von der es (mind) 3 Varianten gibt.
+			<br>Bei Problemen dann bitte im Forum melden. </div>
 			<p>Die Sendetermine werden nicht mehr direkt von <a href="http://www.wunschliste.de" target="_blank">www.wunschliste.de</a> (Wunschliste, WL) geladen, sondern von einem eigens dafür privat "gemieteten" Server (<a href="http://www.serienserver.de" target="_blank">Serien-Server</a>), da die Datenmengen die jeder User bei einem Suchlauf (Auto-Check, AC) benötigte, für die WL-Seite zu viel waren. Daher wäre es "schön", wenn sich die User für den Unterhalt des Servers und natürlich hauptsächlich für den unermüdlichen Einsatz des jetzigen Programmierers <a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765&postID=1144875#post1144875" target="_blank"><strong>@MacDisein</strong></a> mit einer kleinen Spende (evtl. sogar jedes Jahr einmal) an ihn, daran beteiligen.
 			<br>Selbst das <a href="https://www.vuplus-support.org/wbb4/" target="_blank">VU+ Support Forum</a> ist ein Hobby Projekt. Da sollte man dran denken, falls einem mal nicht sofort geholfen wird bzw. werden kann.</p>
 			<p>Zusätzlich kann man in den Einstellungen aktivieren, das auch Cover der Serien angezeigt werden sollen. Die Cover und auch die Serien-Infos werden von
@@ -99,35 +101,29 @@
 		<div class="row">
 			<div class="alert alert-info" role="alert"> Diese Anleitung bezieht sich idR immer auf die aktuelle Beta-Version des SerienRecorders. Sollte also jemand in dieser Anleitung Optionen, Einstellungen und/oder dgl. sehen oder vermissen, was in seiner installierten Version anders ist, könnte es daran liegen. Sollte jemand die aktuelle Beta-Version installiert haben und es stimmt trotzdem was nicht, dann Bitte im VTI-Forum melden.  
 			</div>
-			<div class="bs-callout bs-callout-danger"><strong>WICHTIG:</strong> In Version 3.6 hat sich das "Format" der Datenbank geändert, weshalb es wichtig ist, <strong>"richtig"</strong> von einer Version <u>älter</u> als 3.6 ein Update durchzuführen.
-			<br>Dafür gibt es 2 Möglichkeiten: 
-			<ul>
-			<li>Man macht erst ein Update auf die Version 3.6 und startet danach erstmal den SerienRecorder, damit dieser dann das Update der Datenbank vollziehen kann. Jetzt erst ein Update auf die Version 3.7 oder höher.
-			</li>
-			<li>Man macht direkt ein Update auf die <strong>Version 3.7.1</strong> oder höher, indem man die Dateien manuell kopiert oder den GithubPluginUpdater auf der Box nutzt. Weiteres hierzu weiter unten bei "<strong>Installation von Beta-Versionen </strong>".
-			</li>
-			</ul>
-		<p>Bei einer Neuinstallation (vorausgesetzt man spielt keine DB von einer Version älter als 3.6 ein) des SR, nimmt man die Version vom FEED und macht ein Update oder aber man nutzt sofort die aktuelle Version als IPK-Release.
+			<div class="bs-callout bs-callout-danger"><strong>WICHTIG:</strong> 
+		<p>Bei einer Neuinstallation des SR, nimmt man die Version vom FEED und macht ein Update auf die aktuelle Beta-Version oder aber man nutzt  das letzte IPK-Release und macht dann ein Update auf die aktuelle Beta-Version.
 		</p>		
 			
             </div>
 			
-          <p>Download und Installation geschieht i.d.R. über den <strong>Feed</strong>. Diesen erreicht man im VTI über <kbd class="blue">Blau</kbd> ==> <kbd class="red">Rot</kbd> und dann <kbd>OK</kbd> um die Erweiterungen zu öffnen. Danach ist der SR im VTI unter MENÜ ==> ERWEITERUNGEN zu finden. Natürlich lässt sich der SR auch mit Hilfe des Plugins "MultiQuickButton" auf eine Taste der Fernbedienung legen oder mit Hilfe von Navigations-Plugins starten.</p>
+          <p>Download und Installation geschieht i.d.R. über den <strong>Feed</strong>. Diesen erreicht man im VTI über <kbd class="blue">Blau</kbd> ==> <kbd class="red">Rot</kbd> und dann <kbd>OK</kbd> um die Erweiterungen zu öffnen. Danach ist der SR im VTI unter MENÜ ==> ERWEITERUNGEN zu finden. Natürlich lässt sich der SR auch mit Hilfe des Plugins "MultiQuickButton" auf eine Taste der Fernbedienung legen oder mit Hilfe von Navigations-Plugins starten.
+		  <br>Da die Feed-Version meist nicht sehr aktuell ist, wird empfohlen, direkt nach der Installation (vor dem ersten Start) ein Update auf die aktuelle Beta zu machen.</p>
 		  <ul>
 		  <li>
 		  Der SerienRecorder wird auf der Box in das Verzeichnis <strong>/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/</strong> installiert.
 		  </li>
-		  <li>Die Datenbank <strong>SerienRecorder.db</strong> wird allerdings in dem Verzeichnis <strong>/etc/enigma2/</strong> gespeichert, weil dieses Verzeichnis auch von den System-Backup-Funktionen mitgesichert wird.
+		  <li>Die Datenbank <strong>SerienRecorder.db</strong> wird allerdings in dem Verzeichnis <strong>/etc/enigma2/</strong> gespeichert, weil dieses Verzeichnis auch von den System-Backup-Funktionen mit gesichert wird.
 		  </li>
 		  </ul>
-		  <p>Es gibt auch die Möglichkeit sich eine <strong>Release</strong>- oder auch <strong>Beta-Version</strong> aus dem gitHub <a href="https://github.com/einfall/serienrecorder" target="_blank"><strong>https://github.com/einfall/serienrecorder</strong></a> zu laden. 
+		  <p>Es gibt auch die Möglichkeit sich eine <strong>Release</strong>- oder auch <strong>Beta-Version</strong> aus dem GitHub <a href="https://github.com/einfall/serienrecorder" target="_blank"><strong>https://github.com/einfall/serienrecorder</strong></a> zu laden. 
 			Zu den Beta-Versionen sei gesagt, dass diese auch immer Fehler beinhalten können. In den Beta-Versionen werden Bugs gefixt und/oder Features dem SR hinzugefügt. Diese neuen Features müssen natürlich erst getestet werden, wofür sich "löblicherweise" immer User finden, bevor diese Features in eine Release-Version kommen.
 			<div class="alert alert-danger" role="alert">
-			Es muss an dieser Stelle allerdings darauf hingewiesen werden, dass eine Beta-Version eine Testversion ist und u.U. in manchen Situationen zu Abstürzen oder ungewünschtem Verhalten führen kann, sie wird also auf eigene Gefahr benutzt. Daher ist es Ratsam sich vorher ein Image-Backup anzulegen.
+			Es muss an dieser Stelle nochmals darauf hingewiesen werden, dass eine Beta-Version noch Fehler enthalten kann und u.U. in manchen Situationen zu Abstürzen oder ungewünschtem Verhalten führen kann. Daher ist es ratsam sich vorher ein Image-Backup anzulegen, was man eigentlich vor jeder Installation oder Update machen sollte.
 			</div>
 			Selten kommt es vor, dass durch "äußere" Einflüsse der SerienRecorder nicht mehr funktionsfähig ist, dann ist es meist zwingend notwendig, sich eine Beta-Version zu "installieren", womit der SR dann wieder lauffähig wird. Näheres findet man dann aber sicherlich im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765" target="_blank"><strong>VTI-Forum</strong></a>.
 		  </p>
-          <div class="alert alert-info" role="alert"> Die aktuelle Release Version kann man jederzeit bei github herunterladen:
+          <div class="alert alert-info" role="alert"> Die aktuelle Release Version kann man jederzeit bei Github herunterladen:
             <a href="https://github.com/einfall/serienrecorder/releases/latest" target="_blank" class="alert-link">Aktuelle SerienRecorder Release Version</a>
           </div>
 			<p>Für eine manuelle Installation liegen die Release-Versionen idR in den Formaten <strong>IPKG</strong> und <strong>DEB</strong> vor.
@@ -171,10 +167,10 @@
 		  <p><h4><strong>Zusatz Plug-Ins </strong></h4></p>
           Außerdem können folgende Plug-Ins die Funktionalität des SR erweitern:
           <ul>
-            <li>EPG-Translator von @Kashmir: zum Ansehen von YouTube-Trailern</li>
-            <li>Wikipedia von @Kashmir: sucht auf Wikipedia nach Informationen zur Serie</li>
             <li>VPS: zur Berücksichtigung der VPS-Zeiten bei der Erstellung der Timer</li>
-            <li>Opera Webbrowser/DMM Webbrowser: zum Ansehen dieser Anleitung im SR</li>
+            <li>WebkitHbbTV Webbrowser/DMM Webbrowser: zum Ansehen dieser Anleitung und der Wunschliste-Seite im SR
+			<br>Für VU+ Receiver muss das WebkitHbbTV installiert sein, welches für ältere Image-Versionen wahrscheinlich nicht vorhanden ist.
+			<br>Gestartet wird dies mit der TEXT (TeleText) Taste.</li>
 			<li>TAG Plug-In : Wenn ein solches Plug-In installiert ist, dann lassen sich am Serien-Marker in den Einstellungen die Tags für diese Serie setzen, dann wird auch automatisch immer der Name der Serie als Tag eingefügt. Diese können dann z.B. in der Movieliste zum Filtern genutzt werden.</li>
 			<li>EPGRefresh Plug-In (v2.1.1 oder höher) : Eine solche Version gibt es derzeit nicht für VU+ Boxen, daher ist eine eventuelle "Fehlermeldung" im Log zu ignorieren. Bei den Dream-Boxen gibt es eine solche Version und dort kann man einstellen, das der Serienrecorder nach dem Durchlauf des EPGRefresh automatisch gestartet werden soll. Für alle anderen gilt, dies dann selbst zu prüfen 
 			<br>Wie aktuell die EPG Daten sind, ist für die Timererstellung des SR nicht wichtig, sondern für die evtl. aktivierte Aktualisierung der schon vom SR erstellten Timer auf der Box, welche beim Suchlauf auch mit ausgeführt wird.
@@ -195,14 +191,14 @@
             <img src="images/sender-zuordnen.jpg" alt="Senderzuordnung nach dem ersten Start" align="center">
             <p><small>Senderzuordnung nach dem ersten Start</small></p>
           </div>
-		  <p>Der SR ist mittlerweile in vielen Skin integriert bzw. es gibt zu vielen Skins eigene Skinparts. womit dass Aussehen des SR dem verwendeten Skin auf der Box angeglichen wird. Dabei haben die "Skin Erbauer" alle Freiheiten, wie sie die einzelnen "Objekte" im SR anordnen. Eine Möglichkeit sieht dann so aus.</p>
+		  <p>Der SR ist mittlerweile in vielen Skin integriert bzw. es gibt zu vielen Skins eigene Skinparts, womit dass Aussehen des SR dem verwendeten Skin auf der Box angeglichen wird. Dabei haben die "Skin Erbauer" alle Freiheiten, wie sie die einzelnen "Objekte" im SR anordnen. Eine Möglichkeit sieht dann so aus.</p>
 		  <br>
 		  <br>		  
 		  <div class="thumbnail with-caption">
             <img src="images/senderzuordnung.png" alt="Senderzuordnung nach dem Start" align="center">
             <p><small>Senderzuordnung nach dem Start</small></p>
           </div>
-		  <p>Dabei fällt auf, das die Farbtasten zwar auch unten angesiedelt sind, aber die anderen Tastenbelegungen auf die rechte Seite gesetzt wurden und zusätzlich das TV-Bild oben rechts eingeblendet wird. Dabei kann es dann aber geschehen, das die 3 Spalten der Sender nicht mehr ganz untereinander stehen. So wie die 2. Spalte (die Sender der Box) nicht ganz unter "STB-Sender" stehen. Aber ich denke es gibt "schlimmeres", denn die Senderzuordnung ruft man ja eigentlich nur selten auf.</p>
+		  <p>Dabei fällt auf, das die Farbtasten zwar auch unten angesiedelt sind, aber die anderen Tastenbelegungen auf die rechte Seite gesetzt wurden und zusätzlich das TV-Bild oben rechts eingeblendet wird. Dabei kann es dann aber geschehen, das die 3 Spalten der Sender nicht mehr ganz untereinander stehen. So wie die 2. Spalte (die Sender der Box) nicht ganz unter "STB-Sender" stehen. Aber ich denke, es gibt "schlimmeres", denn die Senderzuordnung ruft man ja eigentlich nur selten auf.</p>
 		  <br>
           <p>Wie die Senderzuordnung genau funktioniert lesen Sie bitte im Kapitel <a href="serienplaner.htm#sender-zuordnen"><strong><u>"Sender zuordnen"</u></strong></a> nach.
             <br> Beim nächsten Start bzw. nach dem Verlassen der Sender-Zuordnung wird der Serien-Planer angezeigt. </p>
@@ -242,10 +238,11 @@
 		<span id="autocheck"/>
         <h2 class="sub-header">Auto-Check (AC, Suchlauf) <kbd>EPG/Info</kbd></h2>
         <div class="row">
-          <p>Der Auto-Check wird idR automatisch, einmal am Tag, zu einer eingestellten Uhrzeit durchgeführt. Diese Uhrzeit sollte nicht zwischen 0:00 -6:00 Uhr liegen, da es dann wegen Aktualisierung der Server zu Fehlern beim abrufen der Daten kommen kann.
+          <p>Der Auto-Check wird idR automatisch, einmal am Tag, zu einer eingestellten Uhrzeit durchgeführt. Diese Uhrzeit sollte <strong>nicht</strong> zwischen 0:00 -6:00 Uhr liegen, da es dann wegen Aktualisierung der Server zu Fehlern beim Abrufen der Daten kommen kann.
+		  <br>Man muss (zwingend) eine "eigene" Uhrzeit dafür eingeben. Wenn man keine Uhrzeit für den Auto-Check auswählt, dann nimmt der SerienRecorder bei jedem Start eine zufällige Uhrzeit. Das soll verhindern, dass alle User einen Auto-Check zur selben Zeit machen.
 		  <br>Über die <kbd>EPG</kbd> Taste (auf manchen Fernbedienungen auch <kbd>EPG/Info</kbd>) kann ein manueller Suchlauf (Auto-Check) über alle aktiven Serien sowohl aus der PlanerAnsicht als auch aus der MarkerAnsicht heraus gestartet werden.
-		  <br>Ist die <a href="tv-planer-mail.htm"><strong><u>TV-Planer-Mail-Funktion</u></strong></a> aktiviert, dann wird mit <kbd>EPG</kbd> im AC nur die WL-Mail verarbeitet und mit <kbd>lang EPG</kbd> wird ein voller AC über alle aktiven Serien im SR gemacht.
-		  <br>Dabei werden für alle aktivierten Serien-Marker die Ausstrahlungstermine von Wunschliste.de (bzw. dem SerienServer) abgerufen und ggf. für den eingestellten Zeitraum Timer angelegt.
+		  <br>Ist die <a href="tv-planer-mail.htm"><strong><u>TV-Planer-Mail-Funktion</u></strong></a> aktiviert, dann wird mit <kbd>EPG</kbd> ein Hinweisfenster (Messagebox) geöffnet, wo man auswählen muss ob der Auto-Check nur die Mail verarbeiten soll oder aber ein Voller Auto-Check über alle aktiven Serien gemacht werden soll. Es gibt bei den Messageboxen leider nur Ja/Nein - dann ist <kbd>Exit</kbd> automatisch immer „Nein“, das lässt sich nicht ändern.
+		  <br>Bei einem vollen Auto-Check werden für alle aktivierten Serien-Marker die Ausstrahlungstermine von Wunschliste.de (bzw. dem SerienServer) abgerufen und ggf. für den eingestellten Zeitraum Timer angelegt.
           </p>
           <p> Das Protokoll eines automatischen bzw. manuellen Suchlauf wird in einer Log-Datei abgespeichert und kann, aus so gut wie jeder Ansicht heraus, über die Taste <kbd>0</kbd> aufgerufen werden. </p>
 		  <a href="einstellungen.htm#autocheck"><strong><u>Einstellungen zum Auto-Check</u></strong></a>

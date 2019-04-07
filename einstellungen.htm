@@ -53,17 +53,17 @@
                     Der SerienRecorder lässt sich weitreichend konfigurieren und dementsprechend an die eigenen "Bedürfnisse" anpassen. Man kann z.B. Serien-Verzeichnisse anlegen lassen oder die Serien extern auf ein NAS speichern lassen. Manche Optionen werden erst sichtbar, wenn die dazugehörige "Ober-Option" aktiviert wird.
                 </p>
                 <p>
-                    Der Umfang der Einstellungen lässt sich über die Option <strong>Umfang der Einstellungen</strong> einschränken. Standardmäßig steht dies auf Experte, um am Anfang ALLE Einstellmöglichkeiten sichtbar zu machen. Wenn man möchte kann man später dann den Umfang der Einstellungen einschränken, falls man "Angst" hat beim öffnen der Einstellungen ausversehen "sensible" Optionen zu verstellen.
+                    Der Umfang der Einstellungen lässt sich über die Option <strong>Umfang der Einstellungen</strong> einschränken. Standardmäßig steht dies auf Experte, um am Anfang ALLE Einstellmöglichkeiten sichtbar zu machen. Wenn man möchte, kann man später dann den Umfang der Einstellungen einschränken, falls man "Angst" hat beim Öffnen der Einstellungen ausversehen "sensible" Optionen zu verstellen.
 					<br>
                     Zu jeder Option in den Einstellungen wird ein Hilfetext angezeigt, der die jeweilige Option erklärt.
                     Die Einstellungen werden erst dann dauerhaft gespeichert, wenn die Ansicht mit der Taste <kbd class="green">Speichern</kbd> verlassen wird.
                 </p>
                 <div class="alert alert-info">
                 	Grundsätzlich muss an den Standard-Einstellungen kaum etwas geändert werden, um den SerienRecorder verwenden zu können.<br/>
-                    Damit der SerienRecorder automatisch (einmal täglich) Timer anlegt muss der <strong>automatische Suchlauf</strong> aktiviert und eine Suchzeit eingestellt werden.
+                    Damit der SerienRecorder automatisch (einmal täglich) Timer anlegt, muss der <strong>automatische Suchlauf</strong> aktiviert und eine Suchzeit eingestellt werden.
                 </div>
 				<br>
-                <p><strong>Hier ein Beispiel-Screenshot der Globalen Einstellungen. Im folgenden wird jede Option in den einzelnen Bereichen erklärt:</strong></p>
+                <p><strong>Hier ein Beispiel-Screenshot der Globalen Einstellungen. Im Folgenden wird jede Option in den einzelnen Bereichen erklärt:</strong></p>
                 <div class="thumbnail with-caption">
                     <img src="images/globale-einstellungen.png" alt="Die globalen Einstellungen im Überblick" align="center">
                     <p><small>Die globalen Einstellungen </small></p>
@@ -87,7 +87,7 @@
 			<span id="config-backup" class="anchor"></span>
 			<h4 class="sub-header"><kbd class="yellow">in Datei speichern</kbd></h4>
             <div class="row">
-                <p>Mit der gelben Farbtaste werden die Einstellungen in eine Datei Exportiert, um sie z.B. für ein Wiederherstellen der Einstellungen auf einem neuen System bzw. auf einer anderen Box zu nutzen. Diese Datei heißt <strong>Config.backup</strong> und wird idR im Plugin Verzeichnis gespeichert.
+                <p>Mit der gelben Farbtaste werden die Einstellungen in eine Datei exportiert, um sie z.B. für ein Wiederherstellen der Einstellungen auf einem neuen System bzw. auf einer anderen Box zu nutzen. Diese Datei heißt <strong>Config.backup</strong> und wird idR im Plugin Verzeichnis gespeichert.
  				</p>
 			</div>
 			<h4 class="sub-header"><kbd class="blue">aus Datei laden</kbd></h4>
@@ -149,20 +149,25 @@
                         <strong>Speicherort der Aufnahmen:</strong>
                         <p>Setzt den Speicherort für Aufnahmen. Alle Aufnahmen die durch den SerienRecorder programmiert werden, landen in dem eingestellten Verzeichnis.</p>
                         <div class="bs-callout bs-callout-info">Diese Option kann für jeden Serien-Marker aber auch individuell geändert werden.
-						<br/>Allerdings greifen in diesem Fall die globalen Einstellungen für Serien-/Staffelverzeichis nicht mehr.</div>
+						<br/>Allerdings greifen in diesem Fall die globalen Einstellungen für Serien-/Staffelverzeichis nicht mehr.
+						</div>
+						<div class="bs-callout bs-callout-info">Wenn man den globalen Speicherort im SerienRecorder ändert, dann werden beim nächsten Auto-Check alle neuen Timer mit dem neuen Verzeichnis erstellt und alle bestehenden, aber nicht abgearbeitete Timer geändert.
+						Die neuen Verzeichnisse werden aber erst mit Anlegen eines Timers erstellt.
+						Ein Verzeichniswechsel ist also kein Problem. 
+						</div>
                     </li>
 					<span id="s+s-verzeichnis-anlegen" class="anchor"></span>
                     <li>
                         <strong>Serien-Verzeichnis anlegen:</strong>
                         <p>
-                            Ist diese Option gesetzt wird für jede Serie ein Unterverzeichnis mit dem Namen der Serie im Verzeichnis, das unter "Speicherort für Aufnahmen" eingestellt ist, angelegt. Das Verzeichnis wird erst dann angelegt, wenn für die betreffende Serie ein Timer erstellt wird.
+                            Ist diese Option gesetzt, wird für jede Serie ein Unterverzeichnis mit dem Namen der Serie im Verzeichnis, das unter "Speicherort für Aufnahmen" eingestellt ist, angelegt. Das Verzeichnis wird erst dann angelegt, wenn für die betreffende Serie ein Timer erstellt wird.
 							<br>Sollte der Speicherort nicht erreichbar sein (z.B. NAS), wird die Aufnahmen auf das Hauptaufnahme-Verzeichnis umgelegt.
                         </p>
                     </li>
                     <li>
                         <strong>Staffelverzeichnis anlegen:</strong>
                         <p>
-                            Ist diese Option gesetzt, wird für jede Staffel einer Serie ein separates Unterverzeichnis angelegt, mit dem Namen <strong>"Season x"</strong>. Diese Option ist nur dann sichtbar wenn die Option "Serien-Verzeichnis anlegen" gesetzt ist.
+                            Ist diese Option gesetzt, wird für jede Staffel einer Serie ein separates Unterverzeichnis angelegt, mit dem Namen <strong>"Season x"</strong>. Diese Option ist nur dann sichtbar, wenn die Option "Serien-Verzeichnis anlegen" gesetzt ist.
                         </p>
                         <ul>
                             <li>
@@ -185,7 +190,7 @@
                         <strong>Automatisches Plugin-Update:</strong>
                         <p>
                             Ist diese Option gesetzt, versucht der SerienRecorder beim Öffnen nach neuen Versionen zu suchen.
-                            Wurde eine neue Version gefunden kann der Benutzer entscheiden ob er sie herunterladen und installieren möchte. Ein vorheriges Backup des SerienRecorder (SR) bzw. Systems ist eigentlich immer anzuraten.
+                            Wurde eine neue Version gefunden, kann der Benutzer entscheiden, ob er sie herunterladen und installieren möchte. Ein vorheriges Backup des SerienRecorder (SR) bzw. Systems ist eigentlich immer anzuraten.
                         </p>
                         
                     </li>
@@ -211,7 +216,10 @@
 						</ul>
 						<br>
 						</p>
-						<div class="bs-callout bs-callout-info">So oder so, es immer von Vorteil das Backup im SR einzuschalten, damit auch im Falle eines Falles bei Fragen zur Timererstellung von Serien-Folgen immer das dazugehörige Log vorhanden ist. Vorausgesetzt, man hat die "Vorhaltezeit" hoch genug angesetzt.</div>
+						<div class="bs-callout bs-callout-info">So oder so, es immer von Vorteil das Backup im SR einzuschalten, damit auch im Falle eines Falles bei Fragen zur Timererstellung von Serien-Folgen immer das dazugehörige Log vorhanden ist. Vorausgesetzt, man hat die "Vorhaltezeit" hoch genug angesetzt.
+						</div>
+						<div class="bs-callout bs-callout-info">Falls kein Backup erstellt werden kann, weil z.B. der Backup Pfad nicht beschreibbar oder erreichbar ist, wird eine Meldung ins Log geschrieben.
+						</div>
                         <ul>
                             <li>
                                 <strong>Speicherort für Backup:</strong>
@@ -222,7 +230,7 @@
                             <li>
                                 <strong>Backup-Dateien löschen die älter als x Tage sind:</strong>
                                 <p>Gibt an wie lange die Backup-Dateien aufbewart werden sollen.
-                                    <br/>Ist hier ein Wert größer 0 Tage eingestellt werden alle Dateien die älter als der eingestellte Wert sind aus dem Speicherort für Backup gelöscht. Der höchste Wert ist 099 Tage, was ausreichen sollte, um auch Probleme bei der Timererstellung zu finden, die schon etwas her sind.</p>
+                                    <br/>Der Mindest-Wert hier, ist auf "5" voreingestellt, d.h. alle Backup-Dateien die älter als der eingestellte Wert sind, werden aus dem Speicherort für Backups gelöscht. Der höchste Wert ist 099 Tage, was ausreichen sollte, um auch Probleme bei der Timererstellung zu finden, die schon etwas her sind.</p>
                                 
                             </li>
                         </ul>
@@ -248,7 +256,7 @@
                             <li>
                                 <i><u>Manuell:</u></i>
                                 <p>Es wird kein automatischer Suchlauf durchgeführt, der Benutzer muss den Suchlauf manuell über die <kbd>EPG</kbd> Taste starten.
-								<br>Ist die <a href="tv-planer-mail.htm"><strong><u>"Wunschliste TV-Planer E-Mail"</u></strong></a> Funktion aktiviert, werden mit <kbd>EPG</kbd> nur die Serien aus der Wunschliste-Mail verarbeitet und mit <kbd>lang EPG</kbd> wird ein voller Suchlauf über alle aktiven Serien gemacht.
+								<br>Ist die <a href="tv-planer-mail.htm"><strong><u>"Wunschliste TV-Planer E-Mail"</u></strong></a> Funktion aktiviert, dann wird mit <kbd>EPG</kbd> ein Hinweisfenster (Messagebox) geöffnet, wo man auswählen muss ob der Auto-Check nur die Mail verarbeiten soll oder aber ein Voller Auto-Check über alle aktiven Serien gemacht werden soll. Es gibt bei den Messageboxen leider nur Ja/Nein - dann ist <kbd>Exit</kbd> automatisch immer „Nein“, das lässt sich nicht ändern.
 								</p>
                             </li>
                             <li>
@@ -257,15 +265,15 @@
                                 <ul>
                                     <li>
                                         <strong>Uhrzeit für automatischen Suchlauf:</strong>
-                                        <p>Uhrzeit angeben zu der der Auto-Check durchgeführt werden soll.</p>
+                                        <p>Uhrzeit angeben, zu der, der Auto-Check durchgeführt werden soll.</p>
                                         <div class="bs-callout bs-callout-danger">Es hat sich gezeigt, das diese nicht zwischen 0:00-6:00 Uhr liegen sollte, da es in dieser Zeit durch Datenaktualisierungen der Server zu Problemen beim abrufen der Daten für die Timererstellung kommen kann.
-                                        <br/>Man sollte also möglichst eine andere Uhrzeit einstellen um Verbindungsfehler zu vermeiden.
+                                        <br/>Man sollte also möglichst eine andere Uhrzeit einstellen, um Verbindungsfehler zu vermeiden.
                                         </div>
                                     </li>
                                 </ul>
                                 <ul>
                                     <li>
-                                        <strong>maximale Verzögerung für den automatischen Suchlauf (Min.):</strong>
+                                        <strong>Maximale Verzögerung für den automatischen Suchlauf (Min.):</strong>
                                         <p>Um die Belastung des SerienServers zu verringern, kann hier ein Zeitraum in Minuten angegeben werden,
                                             in dem der SerienRecorder, ausgehend von der unter "Uhrzeit für automatischen Suchlauf" eingestellten Zeit, den Suchlauf durchführt.
                                             <br/>D.h. der Suchlauf findet irgendwann zwischen der unter "Uhrzeit für automatischen Suchlauf" eingestellten Zeit + Verzögerung statt, damit nicht alle, die 6:00 Uhr eingestellt haben, auch punkt 6:00 Uhr den Auto-Check starten.
@@ -276,7 +284,7 @@
                             <li><i><u>nach EPGRefresh:</u></i>
 								<div class="bs-callout bs-callout-info">Die Auswahl "nach EPGRefresh" ist nicht bei allen Boxen verfügbar/sichtbar. </div>
                                 <div class="bs-callout bs-callout-danger">Damit diese Funktion genutzt werden kann, muss zwingend das EPGRefresh Plugin ab Version 2.1.1 installiert sein. Z.B. für VU+ Receiver gibt es eine solche Version nicht, daher ist diese Option auf VU's nicht sichtbar.</div>
-								<p>Einige Benutzer verwenden das EPGRefresh Plugin um das EPG der Box aktuell zu halten.
+								<p>Einige Benutzer verwenden das EPGRefresh Plugin, um das EPG der Box aktuell zu halten.
                                     Mit dieser Option hat man die Möglichkeit, im Anschluss an den EPGRefresh, den automatischen Suchlauf starten zu lassen.
                                 </p>
                                 
@@ -335,15 +343,15 @@
 					<li>
                         <strong>Timer für X Tage erstellen:</strong>
                         <p>
-                            Legt fest wie viele Tage im voraus Timer erstellt werden sollen, in der Regel hat sich hier ein Wert von 3-8 Tagen als gut herausgestellt.
+                            Legt fest, wie viele Tage im voraus Timer erstellt werden sollen, in der Regel hat sich hier ein Wert von 3-8 Tagen als gut herausgestellt.
 						<ol type="a">
 							<li><strong><u>3-4 Tage : </u></strong>Dies ist ein "guter" Wert, wenn man Serien dabei hat, die "häufiger" schon mal verschoben werden, sei es nur am gleichen Tag für eine größere Zeitspanne oder aber auch erst an anderen Tagen gesendet werden. Wenn man hier schon Timer für die nächste Woche erstellt, kann es passieren, das diese Timer bis zum Sendetermin nicht vom SR während der Aktualisierung beim AC korrekt geändert werden können, da die Verschiebung des Sendetermins zu groß war.
 							</li>
 							<li><strong><u>8-10 Tage : </u></strong>Hiermit gibt es "eigentlich" auch keine Probleme, denn die meisten Serien haben ja ihren festen Sendeplatz. Die meisten Serien werden ja, wenn überhaupt, nur um wenige Minuten verschoben, was der SR korrigiert, sofern man das Aktualisieren in den Einstellungen aktiviert hat. Wenn man bei WL einen Vorlauf von 1 Tag eingestellt hat, werden im SR bei "Timer für 8 Tage erstellen", bei wöchtl. Serien, sowohl der Timer für diese als auch der Timer für die nächste Woche erstellt. 
-							<br>Dies hat den Vorteil, das man einerseits eine Art "Ausfallsicherung" hat, falls der SR mal einen "Total-Ausfall" hat (was sehr selten vorkommt), dann hat man wenigstens noch genug Zeit um abzuwarten ob der Fehler behoben werden kann bzw genug Zeit sich um die manuelle Erstellung der Timer zu kümmern. Andererseits bietet das Timern über einen größeren Zeitraum den Vorteil, das man schon Timer für nächste Woche erstellt hat und es keine konflickte mit evt. manuell erstellten Timern von anderen Aufnahmen (Filme, Dokus etc) hat. Wenn die Frau oder Kinder gerne das EPG auf Tage im voraus durchforsten und "unzählige" Timer für alles mögliche erstellen, dann kann es schon mal eng werden, für den SR seine Timer zu erstellen.
+							<br>Dies hat den Vorteil, das man einerseits eine Art "Ausfallsicherung" hat, falls der SR mal einen "Total-Ausfall" hat (was sehr selten vorkommt), dann hat man wenigstens noch genug Zeit, um abzuwarten, ob der Fehler behoben werden kann bzw genug Zeit sich um die manuelle Erstellung der Timer zu kümmern. Andererseits bietet das Timern über einen größeren Zeitraum den Vorteil, das man schon Timer für nächste Woche erstellt hat und es keine konflickte mit evt. manuell erstellten Timern von anderen Aufnahmen (Filme, Dokus etc) hat. Wenn die Frau oder Kinder gerne das EPG auf Tage im Voraus durchforsten und "unzählige" Timer für alles mögliche erstellen, dann kann es schon mal eng werden, für den SR seine Timer zu erstellen.
 							</li>
 						</ol>	
-							<br>Es gibt sicherlich auch diejenigen, wo es evtl. „besser“ ist, den SR in einem anderen Bereich an Tagen im voraus Timern zu lassen, das muß man dann selbst "herausfinden", welche Anzahl an Tagen da individuell für jemanden gut ist. Das kommt auf die Serien drauf an, der eine nimmt hauptsächlich nur wöchentliche Serien auf, ein anderer viele tägl. Serien. Wenn man manuell häufig Serien "nacharbeiten" muß, dann ist wahrscheinlich die Einstellung nicht ganz optimal. Sollte es häufig die selbe Serie sein, die Probleme macht, dann kann auch eine der anderen individuellen Einstellungen die Lösung sein, z.B. das Einschränken auf ein bestimmtes Zeitfenster.
+							<br>Es gibt sicherlich auch diejenigen, wo es evtl. „besser“ ist, den SR in einem anderen Bereich an Tagen im Voraus Timern zu lassen, das muß man dann selbst "herausfinden", welche Anzahl an Tagen da individuell für jemanden gut ist. Das kommt auf die Serien drauf an, der eine nimmt hauptsächlich nur wöchentliche Serien auf, ein anderer viele tägl. Serien. Wenn man manuell häufig Serien "nacharbeiten" muß, dann ist wahrscheinlich die Einstellung nicht ganz optimal. Sollte es häufig dieselbe Serie sein, die Probleme macht, dann kann auch eine der anderen individuellen Einstellungen die Lösung sein, z.B. das Einschränken auf ein bestimmtes Zeitfenster.
 							<br>
 							
 							<div class="bs-callout bs-callout-info">Im Gegensatz zur "Wunschliste TV-Planer E-Mail", wo nur die Serien für den einen Tag berücksichtigt werden, erstellt der SR seine Timer für den Bereich von x Tagen. Was aber nicht bedeutet, das über die Mail nur die Serienfolgen für einen Tag erstellt werden, denn der SR nutzt im normalfall nur die Info, welche Serien in der Mail stehen. Dann geht der SR "ganz normal" hin und erstellt Timer für diese Serien für die eingestellten x Tage. Nur wenn der SerienServer nicht erreichbar ist, um die Sendetermine abzurufen, werden für den AC auch die Ausstrahlungstermine für die Serien aus der Mail benutzt. </div>
@@ -392,7 +400,7 @@
                             <li>
                                 <strong>maximal X Tage auf Wiederholung warten:</strong>
                                 <p>
-                                    Legt fest wie viele Tage auf eine Wiederholung gewartet werden soll, bevor die Sendung zur regulären Zeit aufgenommen wird,
+                                    Legt fest, wie viele Tage auf eine Wiederholung gewartet werden soll, bevor die Sendung zur regulären Zeit aufgenommen wird,
                                     auch wenn dies durch andere Einstellung nicht erlaubt ist. In der Regel sind hier ca.8-15 Tage ein optimaler Wert, abhängig davon, wieviel Tage man im voraus timern läßt.
                                 </p>
                             </li>
@@ -414,24 +422,19 @@
                             <li>
                                 <strong>maximale Anzahl der zu benutzenden Tuner:</strong>
                                 <p>
-                                    Legt fest wie viele Tuner für Aufnahmen genutzt werden dürfen, darüber lässt sich erreichen, dass z.B. immer ein Tuner zum Fernsehen frei bleibt.
+                                    Legt fest, wie viele Tuner für Aufnahmen genutzt werden dürfen, darüber lässt sich erreichen, dass z.B. immer ein Tuner zum Fernsehen frei bleibt.
                                 </p>
                             </li>
                         </ul>
                     </li>
                     
-                    <li>
-                        <strong>nach Änderungen Suchlauf beim Beenden starten:</strong>
-                        <p>
-                            Ist die Option gesetzt, wird beim Verlassen des SerienRecorders ein Suchlauf gestartet, falls Änderungen vorgenommen wurden.<br/>
-                            Änderungen sind z.B. neue Serien-Marker oder geänderte Optionen die sich auf die Timererstellung auswirken.
-                        </p>
-                        <div class="bs-callout bs-callout-info">Diese Option ist derzeit nicht für Dreamboxen mit DreamOS verfügbar.</div>
-                    </li>
+                    
                     <li>
                         <strong>Aus Deep-StandBy aufwecken:</strong>
                         <p>
-                            Legt fest, ob die Box für einen automatischen Suchlauf aus dem Deep-StandBy aufwachen darf.
+                            Legt fest, ob die Box für einen automatischen Suchlauf aus dem Deep-StandBy (DSB) aufwachen darf.
+							<div class="bs-callout bs-callout-info">Eine Box wird meist, wenn sie durch Plugins aus dem DSB aufgeweckt wird, im Standby ihren Dienst verrichten, was für den SerienRecoder kein Problem darstellt.
+							</div>
                         </p>
                     </li>
                     <li>
@@ -456,7 +459,7 @@
                             <li>
                                 <strong>Time-out für (Deep-)StandBy-Abfrage (in Sek.):</strong>
                                 <p>
-                                    Falls die Box in den Standby oder Deep-Standby versetzt werden soll, legt diese Option fest wie lange ein Hinweisfenster eingeblendet wird,
+                                    Falls die Box in den Standby oder Deep-Standby versetzt werden soll, legt diese Option fest, wie lange ein Hinweisfenster eingeblendet wird,
                                     um den Vorgang noch zu stoppen.
                                 </p>
                             </li>
@@ -562,9 +565,13 @@
                                 </p>
                             </li>
                             <li><i><u>Einzelepisoden bevorzugen:</u></i>
-                                <p>Es wird versucht die einzelnen Episoden einer Event-Programmierung zu erkennen und versucht Timer für die Einzelepisoden anzulegen,
-                                    falls diese innerhalb der Wartezeit für Wiederholungen ausgestrahlt werden. Ist das nicht möglich, wird das Event aufgenommen.
+                                <p>Es wird versucht die einzelnen Episoden einer Event-Programmierung zu erkennen und diese innerhalb der Wartezeit für Wiederholungen zu timern. Ist das nicht möglich, wird das Event aufgenommen.
+								<br>Hierfür gibt es dann wiederum eine Zusatz-Option, wo man festlegen kann, ob die einzelnen Episoden, die im Event aneinander getimert wurden, als einzel Episoden in die Datenbank eingetragen werden, wodurch diese dann später nicht mehr getimert würden.
+								<ul><li><strong>Einzelepisoden als 'bereits getimert' markieren:</strong>
+								
+								</li></ul>
                                 </p>
+								
                             </li>
                         </ol>
                     </li>
@@ -666,7 +673,7 @@
                     <li>
                         <strong>Starte Plugin mit:</strong>
                         <p>
-                            Gibt an welche Ansicht beim Start des SerienRecorder sichtbar ist.
+                            Gibt an, welche Ansicht beim Start des SerienRecorder sichtbar ist.
                         </p>
                         <ol type="a">
                             <li>
@@ -686,8 +693,27 @@
                     <li>
                         <strong>Zeige Picons:</strong>
                         <p>
-                            Ist die Option gesetzt werden in der Serien-Planer Ansicht Sender Logos angezeigt. Hierzu muß dann das Verzeichnis angegeben werden.
-                        </p>
+                            Ist die Option gesetzt werden in der Serien-Planer und der Serien-/Staffelstart Ansicht Sender Logos angezeigt. 
+							
+							<br>Mögliche Optionen sind:
+														
+							<ol type="a">
+                            
+							<li>
+                                <i><u>nein</u></i>
+								
+							</li>
+							<li>
+                                <i><u>ja, über ServiceRef</u></i>
+								
+							</li>
+							<li>
+                                <i><u>ja, über Name</u></i>
+								
+							</li>
+							</ol>
+						</p>
+						<br>
                         <ul>
                             <li>
                                 <strong>Verzeichnis mit Picons:</strong>
@@ -698,7 +724,8 @@
                         </ul>
                     </li>
 					<span id="cover-herunterladen" class="anchor"></span>
-                    <li>
+                    <br>
+					<li>
                         <strong>Cover herunterladen:</strong>
                         <p>
                             Ist die Option gesetzt werden die Cover der Serien bei <a href="https://www.thetvdb.com/" target="_blank">TheTVDB.com</a> heruntergeladen.
@@ -725,7 +752,14 @@
                                     Diese Option dient dazu, Platzhalter Dateien für nicht gefundene Cover anzulegen, damit beim Scrollen nicht ständig versucht wird, ein Cover zu laden.
 									<br>Diese Platzhalter Cover muss man aber manuell löschen, wenn der SR wieder versuchen soll, dafür ein Cover zu laden.
                                 </p>
-                            </li>
+								</li>
+								<ul>
+								<li><strong>Platzhalter regelmäßig aktualisieren</strong>
+									<p>Wird dieses aktiviert, werden die Platzhalter jedesmal beim anzeigen auf ihr Datum überprüft. Liegt die Erstellung schon mehr als 60 Tage zurück, wird der Platzhalter gelöscht und es wird versucht, erneut das Cover zu laden. Wenn dies nicht der Fall ist, wird wieder der Platzhalter erstellt.
+									</p>
+								</li>
+								</ul>
+								
                         </ul>
                     </li>
                     <li>
@@ -733,6 +767,12 @@
                         <p>
                             Bei einigen Skins ist es nötig die Schriftgröße in Listen anpassen zu können, dies ist über diese Option möglich.
                             Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.
+                        </p>
+				    </li>
+					<li>
+                        <strong>Korrektur der Spaltenbreite in der Serien-Marker Ansicht:</strong>
+                        <p>
+                            Hiermit kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden, breiter oder schmaler.
                         </p>
 				    </li>
 

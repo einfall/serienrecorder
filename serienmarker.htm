@@ -64,6 +64,12 @@
                     Neben dem Namen des Serien-Markers lassen sich an jedem Eintrag in der Liste auch noch (Skinabhängig) wichtige Einstellungen ablesen. Im unteren Bild kann man sehen, das für die angezeigten Serien alle zugeordneten Sender und auch alle Staffeln erlaubt sind. Zudem sieht man das jede Episode nur einmal aufgenommen werden soll (Wdh=0) und sowohl die Vorlaufzeit als auch die Nachlaufzeit auf 5 min stehen. Das Aufnahmeverzeichnis ist auch zu sehen.
 					<br>Auch werden in vielen Skins die Cover zu den gerade selektierten Serien und auch die (manchmal komplette) Tastaturbelegung angezeigt.
                 </p>
+				<p>Zusätzlich werden zu den Serien jetzt auch Produktionsort und -Jahr der Serie angezeigt (Nicht auf dem Screenshot unten enthalten). Diese Zusatzinformationen werden auch in der Datenbank gespeichert.
+				</p>
+				<div class="bs-callout bs-callout-info">Mit Taste <kbd>8</kbd> "Marker aktualisieren" werden die vorhandenen Serien-Marker gegen den Serien-Server abgeglichen und geänderte Namen übernommen - dabei werden auch alle vorhandenen Einträge in der Timer-Liste aktualisiert. Bereits vorhandene Timer der Box werden aber nicht geändert.
+				<br>Als Beispiel sei genannt, "Hubert <u>und</u> Staller" heißt jetzt "Hubert <u>ohne</u> Staller".
+				<br>Hiermit werden dann auch die Zusatzinformationen (Ort und Jahr) der Serien hinzugefügt, was Anfangs nicht der Fall war. Diese Zusatzinformationen sind noch nicht für Alle Serien vom Server abrufbar, daher kann man hin und wieder mal die Marker aktualisieren, falls noch bei Serien diese Zusatzinformationen fehlen, aber BITTE NICHT jeden Tag, denn damit ist der SerienServer stark belastet.
+                        </div>
                 <br>
 				<br>
                 <div class="thumbnail with-caption">
@@ -208,13 +214,17 @@
 				<br>
                 <ul>
                     <li>
-                        <strong>vom globalen Setup abweichender Speicherort der Aufnahmen:</strong>
+                        <strong>Abweichender Speicherort der Aufnahmen:</strong>
 					
                         <p>Durch drücken von <span class="label label-default">OK</span> wird ein neues Fenster geöffnet, wo man dann das gewünschte Verzeichnis auswählen bzw. auch anlegen kann. Dadurch greifen in diesem Fall die globalen Einstellungen für Serien-/Staffelverzeichis nicht mehr.
+						<br>Über die GELBE Taste kann man das Aufnahmeverzeichnis wieder auf "Standard" zurücksetzen.
 						</p>
+						<div class="bs-callout bs-callout-info">Das Anlegen eines Ordners ist manchmal etwas "schwierig". Sollte also jemand Probleme dabei haben, dann mal folgendes ausprobieren.
+						<br>Im Marker-Menü bei Speicherort OK-Taste, dann das Verzeichnis wählen (aber NICHT reingehen, nur den Curser drauf), dort dann GRÜN drücken. Jetzt öffnet sich idR die virtuelle Tastatur, wo noch der alte Pfad drin steht. Dort NICHTS machen, außer die Taste EXIT drücken. Jetzt sollte im Menü der angewählte Speicherort eingetragen sein.</p>
+                        </div>
 					</li>
 					<li>
-                        <strong>vom globalen Setup abweichenden Timervorlauf aktivieren:</strong>
+                        <strong>Aktiviere abweichenden Timervorlauf:</strong>
 					
                         <p>Durch drücken von <span class="label label-default">Steuerkreuz <span class="glyphicon glyphicon-arrow-left">&nbsp;<span class="glyphicon glyphicon-arrow-right"></span></span></span> wird auf "Ja" gewechselt und man kann darunter dann die Zeit in Minuten angeben.
 						</p>
@@ -226,7 +236,7 @@
 					</li>
 					<br>
 					<li>
-                        <strong>vom globalen Setup abweichenden Timernachlauf aktivieren:</strong>
+                        <strong>Aktiviere abweichenden Timernachlauf:</strong>
 					
                         <p>Durch drücken von <span class="label label-default">Steuerkreuz <span class="glyphicon glyphicon-arrow-left">&nbsp;<span class="glyphicon glyphicon-arrow-right"></span></span></span> wird auf "Ja" gewechselt und man kann darunter dann die Zeit in Minuten angeben.
 						</p>
@@ -238,7 +248,7 @@
 					</li>
 					<br>
 					<li>
-                        <strong>vom globalen Setup abweichende Anzahl der Aufnahmen:</strong>
+                        <strong>Aktiviere abweichende Anzahl der Aufnahmen:</strong>
 					
                         <p>Der SR nimmt Standardmäßig jede Episode nur einmal auf. Falls jemand von einer Serie jede Episode mehrmals aufnehmen möchte, um z.B. die Abend- und die Nacht-Folge aufzunehmen, kann man das hier einstellen.
 						</p>
@@ -251,7 +261,7 @@
 					<br>
 					<span id="früheste-zeit" class="anchor"></span>
 					<li>
-                        <strong>vom globalen Setup abweichende Früheste Zeit für Timer aktivieren:</strong>
+                        <strong>Aktiviere abweichende Früheste Zeit für Timer:</strong>
 					
                         <p>Hier kann, abweichend von den globalen Einstellungen, eine andere Zeit für diese Serie eingegeben werden.
 						</p>
@@ -263,7 +273,7 @@
 					</li>
 					<br>
 					<li>
-                        <strong>vom globalen Setup abweichende Späteste Zeit für Timer aktivieren:</strong>
+                        <strong>Aktiviere abweichende Späteste Zeit für Timer:</strong>
 					
                         <p>Hier kann, abweichend von den globalen Einstellungen, eine andere Zeit für diese Serie eingegeben werden.
 						</p>
@@ -277,6 +287,33 @@
 					<div class="alert alert-info" role="alert">Schränkt man einen Marker mit <strong>"Früheste und Späteste Zeit"</strong> ein, so das für diesen Marker z.B. nur Timer erstellt werden sollen, die zwischen 22:00 und 05:00 Uhr liegen, bekäme man evtl. das Problem, das zu dieser Zeit entweder kein Sendetermin ist oder aber in dieser Zeit ein Konflikt besteht. Das Resultat wäre, der SerienRecorder erstellt keinen Timer. Aber auch dafür gibt es (natürlich) eine Lösung.
 					<br>Die option heißt <a href="einstellungen.htm#immer-aufnehmen"><strong><u>Immer aufnehmen wenn keine Wiederholung gefunden wird</u></strong></a>. Wenn dies aktiviert ist, werden auch Timer erstellt, die außerhalb der Zeitspanne <strong>"Früheste und Späteste Zeit"</strong> liegen, sofern innerhalb der Zeitspanne eine Timererstellung nicht möglich ist.
 					</div>
+					<br>
+					<br>
+					<li>
+                        <strong>Aktiviere abweichende Timeraktualisierung aus dem EPG:</strong>
+					
+                        <p>Hiermit lässt sich die Timeraktualisierung gezielt für bestimmte Marker deaktivieren. Ist im globalen Setup die Option der Timeraktualisierung aus dem EPG aktiv, ist die Option im Marker Setup verfügbar.
+						Diese Option ist z.B. für Serien interessant die sehr kurz sind und bei der Wunschliste mehrere Folgen zu einem Event zusammenfasst, im EPG aber die einzelnen Folgen vorhanden sind. Dann kann es passieren, dass der SerienRecorder die Endzeit falsch korrigiert (Als Beispiel sei die Serie Yakari genannt). 
+						</p>
+						<ul>
+                            <li>
+                                <strong>Versuche Timer aus dem EPG zu aktualisieren:</strong>
+                            </li>
+						</ul>
+					</li>
+					<br>
+					<li>
+                        <strong>Aktiviere abweichende Timererstellung nur aus der TV Planer e-Mail:</strong>
+					
+                        <p>Wird dies aktiviert, werden nur die Episoden getimert, die auch in der e-Mail enthalten sind. Allerdings nur, wenn diese nicht schon in der SR Datenbank enthalten sind.
+						</p>
+						<ul>
+                            <li>
+                                <strong>Timer nur aus der TV Planer e-Mail anlegen:</strong>
+                            </li>
+						</ul>
+					</li>
+					<br>
 					<br>
 					<li>
                         <strong>Timer in Timer-Liste speichern</strong>
@@ -361,13 +398,13 @@
 				</tr>
 				<tr class="success"> 
 					<td><kbd>EPG/INFO</kbd></td> 
-					<td>Auto-Check starten / wenn WL-Mail aktiviert, dann AC nur mit Mail</td> 
+					<td>Auto-Check starten / wenn WL-Mail aktiviert, dann Auswahl Mit Mail oder voller Auto-Check</td> 
 					<td><a href="index.htm#autocheck"><strong><u>Auto-Check</u></strong></a></td> 
 				</tr>
 				<tr> 
 					<td><kbd>lang EPG/INFO</kbd></td> 
-					<td>Auto-Check starten / wenn WL-Mail aktiviert, dann AC aktive Serien</td> 
-					<td><a href="index.htm#autocheck"><strong><u>Auto-Check</u></strong></a></td> 
+					<td>---</td> 
+					<td>---</td> 
 				</tr>
 				<tr class="active"> 
 					<td><kbd>Menü</kbd>+<kbd>lang Menü</kbd></td> 
@@ -421,7 +458,7 @@
 				</tr>
 				<tr class="success"> 
 					<td><kbd>8</kbd></td> 
-					<td>---</td> 
+					<td>Marker aktualisieren</td> 
 					<td></td> 
 				</tr>
 				<tr> 
@@ -431,12 +468,12 @@
 				</tr>
 				<tr class="active"> 
 					<td><kbd>TEXT</kbd></td> 
-					<td>Youtube Trailer</td> 
+					<td>Wunschliste Webseite</td> 
 					<td></td> 
 				</tr>
 				<tr class="success"> 
 					<td><kbd>lang Text</kbd></td> 
-					<td>Wikipedia Infos</td> 
+					<td>Wunschliste Webseite</td> 
 					<td></td> 
 				</tr>
 				<tr> 
