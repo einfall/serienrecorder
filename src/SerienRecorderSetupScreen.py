@@ -28,7 +28,7 @@ def ReadConfigFile():
 	config.plugins.serienRec = ConfigSubsection()
 	config.plugins.serienRec.savetopath = ConfigText(default="/media/hdd/movie/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.databasePath = ConfigText(default="/etc/enigma2/", fixed_size=False, visible_width=80)
-	config.plugins.serienRec.coverPath = ConfigText(default=SerienRecorder.serienRecCoverPath, fixed_size=False, visible_width=80)
+	config.plugins.serienRec.coverPath = ConfigText(default="/media/hdd/SR_Cover/", fixed_size=False, visible_width=80)
 
 	choices = [("Skinpart", "Skinpart"), ("", "SerienRecorder 1"), ("Skin2", "SerienRecorder 2"),
 	           ("AtileHD", "AtileHD"), ("StyleFHD", "StyleFHD"), ("Black Box", "Black Box")]

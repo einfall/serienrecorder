@@ -37,8 +37,6 @@ except ImportError as ie:
 else:
 	VPSPluginAvailable = True
 
-serienRecCoverPath = "/tmp/serienrecorder/"
-
 from SerienRecorderSetupScreen import ReadConfigFile
 ReadConfigFile()
 
@@ -416,6 +414,13 @@ class serienRecCheckForRecording:
 			except:
 				SRLogger.writeLog("Um die EPGRefresh Optionen nutzen zu können, muss mindestens die EPGRefresh Version 2.1.1 installiert sein. " + str(e), True)
 
+	def getMarkerCover(self):
+		self.database = SRDatabase(serienRecDataBaseFilePath)
+		markers = self.database.getAllMarkers(False)
+		for marker in markers:
+			(ID, Serie, Info, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount) = marker
+			getCover(None, Serie, ID, True)
+
 	def startCheck(self):
 		self.database = SRDatabase(serienRecDataBaseFilePath)
 		global autoCheckFinished
@@ -560,9 +565,13 @@ class serienRecCheckForRecording:
 			SRLogger.writeLog("Es konnten nicht alle Aufnahmeverzeichnisse gefunden werden", True)
 
 		# suche nach neuen Serien, Covern und Planer-Cache
+		from twisted.internet import reactor
 		from SerienRecorderSeriesPlanner import serienRecSeriesPlanner
 		seriesPlanner = serienRecSeriesPlanner(self.manuell)
-		seriesPlanner.updatePlanerData()
+		reactor.callFromThread(seriesPlanner.updatePlanerData())
+
+		#if config.plugins.serienRec.downloadCover.value:
+		#	reactor.callFromThread(self.getMarkerCover())
 
 		self.startCheckTransmissions()
 
@@ -1136,9 +1145,9 @@ def autostart(reason, **kwargs):
 		else:
 			print "[SerienRecorder] Auto-Check: AUS"
 
-# API
-# from SerienRecorderResource import addWebInterfaceForDreamMultimedia
-# addWebInterfaceForDreamMultimedia(session)
+		# API
+		from SerienRecorderResource import addWebInterfaceForDreamMultimedia
+		addWebInterfaceForDreamMultimedia(session)
 
 
 

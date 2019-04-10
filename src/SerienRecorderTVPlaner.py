@@ -251,16 +251,17 @@ def getEmailData():
 					print "' %s - Filmaufzeichnung ist deaktiviert '" % seriesname
 					continue
 				transmissiontype = '[ Film ]'
-			elif url.startswith('https://www.wunschliste.de/serie'):
+			#elif url.startswith('https://www.wunschliste.de/serie'):
+			else:
 				if not config.plugins.serienRec.tvplaner_series.value:
 					SRLogger.writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % seriesname, True)
 					print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
 					continue
 				transmissiontype = '[ Serie ]'
-			else:
-				SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
-				print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
-				continue
+			# else:
+			# 	SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
+			# 	print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
+			# 	continue
 
 			# series
 			transmission = [ seriesname ]
@@ -312,7 +313,11 @@ def getEmailData():
 			marker_type = "Serien Marker"
 			try:
 				boxID = None
-				if url.startswith('https://www.wunschliste.de/serie'):
+				if url.startswith('https://www.wunschliste.de/spielfilm'):
+					marker_type = "Temporärer Serien Marker"
+					if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+						boxID = config.plugins.serienRec.BoxID.value
+				else:
 					seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
 					if seriesID > 0:
 						url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
@@ -320,12 +325,21 @@ def getEmailData():
 						url = None
 					if config.plugins.serienRec.tvplaner_series_activeSTB.value:
 						boxID = config.plugins.serienRec.BoxID.value
-				elif url.startswith('https://www.wunschliste.de/spielfilm'):
-					marker_type = "Temporärer Serien Marker"
-					if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
-						boxID = config.plugins.serienRec.BoxID.value
-				else:
-					url = None
+
+				# if url.startswith('https://www.wunschliste.de/serie'):
+				# 	seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
+				# 	if seriesID > 0:
+				# 		url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
+				# 	else:
+				# 		url = None
+				# 	if config.plugins.serienRec.tvplaner_series_activeSTB.value:
+				# 		boxID = config.plugins.serienRec.BoxID.value
+				# elif url.startswith('https://www.wunschliste.de/spielfilm'):
+				# 	marker_type = "Temporärer Serien Marker"
+				# 	if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+				# 		boxID = config.plugins.serienRec.BoxID.value
+				# else:
+				# 	url = None
 
 				if url and not database.markerExists(url):
 					if database.addMarker(url, seriesname, "", boxID):

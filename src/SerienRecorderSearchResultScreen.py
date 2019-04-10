@@ -175,8 +175,8 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		# name_Serie = doReplaces(name_Serie)
 
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name_Serie),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 450 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, year_Serie)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 500 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name_Serie),
+		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, year_Serie)
 		        ]
 
 	def keyOK(self):
