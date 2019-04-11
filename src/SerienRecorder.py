@@ -1146,8 +1146,8 @@ def autostart(reason, **kwargs):
 			print "[SerienRecorder] Auto-Check: AUS"
 
 		# API
-		from SerienRecorderResource import addWebInterfaceForDreamMultimedia
-		addWebInterfaceForDreamMultimedia(session)
+		#from SerienRecorderResource import addWebInterfaceForDreamMultimedia
+		#addWebInterfaceForDreamMultimedia(session)
 
 
 
