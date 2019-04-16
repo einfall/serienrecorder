@@ -318,7 +318,7 @@ def getEmailData():
 					if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
 						boxID = config.plugins.serienRec.BoxID.value
 				else:
-					seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
+					seriesID = url[str.rindex(url, '/') + 1:]
 					if seriesID > 0:
 						url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
 					else:
@@ -352,6 +352,9 @@ def getEmailData():
 			except Exception as e:
 				SRLogger.writeLog("\n%s für ' %s ' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (marker_type, seriesname, str(e)), True)
 				print "[SerienRecorder] ' %s - %s konnte wegen eines Fehlers nicht angelegt werden [%s]'" % (seriesname, marker_type, str(e))
+	else:
+		SRLogger.writeLog("Es werden keine Serien-Marker aus der TV-Planer E-Mail erstellt.", True)
+
 
 	return transmissiondict
 
