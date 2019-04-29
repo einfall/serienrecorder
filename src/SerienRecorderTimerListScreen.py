@@ -134,8 +134,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		url = self.database.getMarkerURL(serien_name)
 		if url:
-			from SerienRecorderHelpers import getSeriesIDByURL
-			serien_id = getSeriesIDByURL(url)
+			serien_id = url
 			if serien_id:
 				from SerienRecorderSeriesInfoScreen import serienRecShowInfo
 				self.session.open(serienRecShowInfo, serien_name, serien_id)
@@ -143,8 +142,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def wunschliste(self):
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		url = self.database.getMarkerURL(serien_name)
-		from SerienRecorderHelpers import getSeriesIDByURL
-		serien_id = getSeriesIDByURL(url)
+		serien_id = url
 		super(self.__class__, self).wunschliste(serien_id)
 
 	def setupClose(self, result):
@@ -345,8 +343,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_id = None
 		url = self.database.getMarkerURL(serien_name)
 		if url:
-			from SerienRecorderHelpers import getSeriesIDByURL
-			serien_id = getSeriesIDByURL(url)
+			serien_id = url
 		SerienRecorder.getCover(self, serien_name, serien_id)
 
 	def keyLeft(self):
@@ -515,8 +512,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_id = None
 		url = self.database.getMarkerURL(serien_name)
 		if url:
-			from SerienRecorderHelpers import getSeriesIDByURL
-			serien_id = getSeriesIDByURL(url)
+			serien_id = url
 
 		from SerienRecorderSeriesInfoScreen import serienRecShowInfo
 		self.session.open(serienRecShowInfo, serien_name, serien_id)
@@ -665,8 +661,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_id = None
 		url = self.database.getMarkerURL(serien_name)
 		if url:
-			from SerienRecorderHelpers import getSeriesIDByURL
-			serien_id = getSeriesIDByURL(url)
+			serien_id = url
 
 		SerienRecorder.getCover(self, serien_name, serien_id)
 

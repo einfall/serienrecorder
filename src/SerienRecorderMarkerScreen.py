@@ -26,7 +26,7 @@ from SerienRecorderScreenHelpers import serienRecBaseScreen, longButtonText, Ini
 from SerienRecorder import serienRecDataBaseFilePath, getCover, \
 	serienRecMainPath, VPSPluginAvailable, serienRecCheckForRecording
 import SerienRecorder
-from SerienRecorderHelpers import getSeriesIDByURL, STBHelpers, TimeHelpers, getDirname
+from SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname
 from SerienRecorderDatabase import SRDatabase
 from SerienRecorderEpisodesScreen import serienRecEpisodes
 from SerienRecorderSeriesServer import SeriesServer
@@ -222,8 +222,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][1]
-		serien_url = self['menu_list'].getCurrent()[0][2]
-		serien_id = getSeriesIDByURL(serien_url)
+		serien_id = self['menu_list'].getCurrent()[0][2]
 		if serien_id:
 			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
 			self.session.open(serienRecShowInfo, serien_name, serien_id)
@@ -237,8 +236,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 
 			serien_name = self['menu_list'].getCurrent()[0][1]
-			serien_url = self['menu_list'].getCurrent()[0][2]
-			serien_id = getSeriesIDByURL(serien_url)
+			serien_id = self['menu_list'].getCurrent()[0][2]
 			if serien_id:
 				self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s" % serien_id, self.serien_nameCover)
 				#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
@@ -246,7 +244,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def wunschliste(self):
 		#serien_name = self['menu_list'].getCurrent()[0][1]
-		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][2])
+		serien_id = self['menu_list'].getCurrent()[0][2]
 		super(self.__class__, self).wunschliste(serien_id)
 
 	def setupClose(self, result):
@@ -265,7 +263,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 		serien_name = self['menu_list'].getCurrent()[0][1]
 		self.serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
-		serien_id = getSeriesIDByURL(self['menu_list'].getCurrent()[0][2])
+		serien_id = self['menu_list'].getCurrent()[0][2]
 		self.ErrorMsg = "'getCover()'"
 		getCover(self, serien_name, serien_id)
 
@@ -1480,7 +1478,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.loading:
 			return
 
-		serien_id = getSeriesIDByURL(self.serie_url)
+		serien_id = self.serie_url
 		if serien_id:
 			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
 			self.session.open(serienRecShowInfo, self.serien_name, serien_id)
@@ -1489,7 +1487,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def wunschliste(self):
-		serien_id = getSeriesIDByURL(self.serie_url)
+		serien_id = self.serie_url
 		super(self.__class__, self).wunschliste(serien_id)
 
 	def setupClose(self, result):
@@ -1510,17 +1508,10 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 		transmissions = None
 		if self.serie_url:
-			self.serien_wl_id = getSeriesIDByURL(self.serie_url)
-			if self.serien_wl_id is None or self.serien_wl_id == 0:
-				# This is a marker created by TV Planer function - get id from server
-				try:
-					self.serien_wl_id = SeriesServer().getIDByFSID(self.serie_url[str.rindex(self.serie_url, '/' ) +1:])
-				except:
-					self.serien_wl_id = 0
+			self.serien_wl_id = self.serie_url
 
 			if self.serien_wl_id != 0:
 				print self.serien_wl_id
-
 				getCover(self, self.serien_name, self.serien_wl_id)
 
 				if self.FilterMode is 0:
@@ -1558,7 +1549,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		SerieStaffel = None
 		AbEpisode = None
 		try:
-			(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays, skipSeriesServer) = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, [self.serien_name])[0]
+			(serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays, skipSeriesServer, markerType) = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, [self.serien_name])[0]
 		except:
 			SRLogger.writeLog("Fehler beim Filtern nach Staffel", True)
 

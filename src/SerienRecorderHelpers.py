@@ -20,8 +20,8 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.8.17-beta'
-SRDBVERSION = '3.9.1'
+SRVERSION = '3.8.18-beta'
+SRDBVERSION = '3.9.2'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 def decodeISO8859_1(txt, replace=False):
@@ -43,14 +43,6 @@ def doReplaces(txt):
 	cleanedString = cleanedString.replace('&amp;','&').replace('&apos;',"'").replace('&gt;','>').replace('&lt;','<').replace('&quot;','"')
 	cleanedString = re.sub(r"\[.*\]", "", cleanedString).strip()
 	return cleanedString
-
-def getSeriesIDByURL(url):
-	result = None
-	if url:
-		seriesID = re.findall('epg_print.pl\?s=([0-9]+)', url)
-		if seriesID:
-			result = seriesID[0]
-	return result
 
 def isDreamOS():
 	try:
@@ -206,8 +198,8 @@ def getDirname(database, serien_name, staffel):
 		# It is a movie (because there is no marker)
 		isMovie = True
 	else:
-		(dirname, seasonsubdir, url) = row
-		if url.startswith('https://www.wunschliste.de/spielfilm'):
+		(dirname, seasonsubdir, type) = row
+		if type == 1:
 			isMovie = True
 
 	if isMovie:

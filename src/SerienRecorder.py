@@ -24,7 +24,7 @@ except ImportError:
 
 serienRecMainPath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"
 
-from SerienRecorderHelpers import STBHelpers, TimeHelpers, doReplaces, isDreamOS, getSeriesIDByURL, createBackup, getDirname
+from SerienRecorderHelpers import STBHelpers, TimeHelpers, doReplaces, isDreamOS, createBackup, getDirname
 from SerienRecorderSeriesServer import SeriesServer
 from SerienRecorderDatabase import SRDatabase, SRTempDatabase
 from SerienRecorderLogWriter import SRLogger
@@ -191,7 +191,6 @@ def initDB():
 
 		# Database incompatible - do cleanup
 		if dbIncompatible:
-			SRLogger.writeLog("Database is incompatible", True)
 			database.close()
 			return False
 
@@ -664,12 +663,12 @@ class serienRecCheckForRecording:
 					worker.setDaemon(True)
 					worker.start()
 
-				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer in self.markers:
+				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer,markerType in self.markers:
 					if config.plugins.serienRec.tvplaner.value and (config.plugins.serienRec.tvplaner_skipSerienServer.value or (skipSeriesServer is not None and skipSeriesServer)):
 						# Skip serien server processing
 						continue
 
-					if SerieUrl.startswith('https://www.wunschliste.de/spielfilm'):
+					if markerType == 1:
 						# temporary marker for movie recording
 						print "[SerienRecorder] ' %s - TV-Planer Film wird ignoriert '" % serienTitle
 						continue
@@ -682,38 +681,7 @@ class serienRecCheckForRecording:
 							markerChannels = SerieSender
 
 						self.countActivatedSeries += 1
-						seriesID = getSeriesIDByURL(SerieUrl)
-						if seriesID is None or seriesID == 0:
-							# This is a marker created by TV Planer function - fix url
-							print "[SerienRecorder] fix seriesID for %r" % serienTitle
-							try:
-								seriesID = SeriesServer().getIDByFSID(SerieUrl[str.rindex(SerieUrl, '/')+1:])
-							except:
-								SRLogger.writeLog("' %s - Abfrage der Serien ID beim Serien-Server fehlgeschlagen - ignoriert '" % serienTitle, True)
-								print "[SerienRecorder] ' %s - Abfrage der Serien ID beim Serien-Server fehlgeschlagen - ignoriert '" % serienTitle
-								continue
-
-							if seriesID is not None and seriesID != 0:
-								try:
-									getCover(None, serienTitle, seriesID, True)
-								except:
-									SRLogger.writeLog("' %s - Abruf des Covers fehlgeschlagen - ignoriert '" % serienTitle, True)
-									print "[SerienRecorder] ' %s - Abruf des Covers fehlgeschlagen - ignoriert '" % serienTitle
-								Url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
-								# look if Series with this ID already exists
-								if not self.database.markerExists(Url):
-									print "[SerienRecorder] %r %r %r" % (serienTitle, str(seriesID), Url)
-									try:
-										self.database.updateMarkerURL(serienTitle, Url)
-										SRLogger.writeLog("' %s - TV-Planer Marker -> URL %s - Korrektur erfolgreich '" % (serienTitle, Url), True)
-										print "[SerienRecorder] ' %s - TV-Planer Marker -> URL %s - Korrektur erfolgreich '" % (serienTitle, Url)
-									except:
-										SRLogger.writeLog("' %s - TV-Planer Marker -> URL %s - Korrektur fehlgeschlagen ' " % (serienTitle, Url), True)
-										print "[SerienRecorder] ' %s - TV-Planer Marker -> URL %s - Korrektur fehlgeschlagen '" % (serienTitle, Url)
-							else:
-								SRLogger.writeLog("' %s - TV-Planer Marker ohne Serien ID -> ignoriert '" % (serienTitle,), True)
-								print "[SerienRecorder] ' %s - TV-Planer Marker ohne Serien ID -> ignoriert '" % (serienTitle,)
-								continue
+						seriesID = SerieUrl
 
 						jobQueue.put((seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
 
@@ -768,7 +736,7 @@ class serienRecCheckForRecording:
 				worker.setDaemon(True)
 				worker.start()
 
-			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer in self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, self.emailData.keys()):
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer,markerType in self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, self.emailData.keys()):
 				print serienTitle
 				if SerieEnabled:
 					# Process only if series is enabled
@@ -888,7 +856,6 @@ class serienRecCheckForRecording:
 		self.askForDSB()
 
 	def processTransmission(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
-
 		print "[SerienRecorder] processTransmissions: %r" % serien_name
 		self.count_url += 1
 
@@ -1146,8 +1113,8 @@ def autostart(reason, **kwargs):
 			print "[SerienRecorder] Auto-Check: AUS"
 
 		# API
-		#from SerienRecorderResource import addWebInterfaceForDreamMultimedia
-		#addWebInterfaceForDreamMultimedia(session)
+		#from SerienRecorderResource import addWebInterface
+		#addWebInterface()
 
 
 

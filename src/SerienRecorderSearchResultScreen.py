@@ -207,8 +207,8 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			boxID = None
 		else:
 			boxID = config.plugins.serienRec.BoxID.value
-		url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(Id)
-		if database.addMarker(url, Serie, Year, boxID):
+
+		if database.addMarker(str(Id), Serie, Year, boxID, 0):
 			from SerienRecorderLogWriter import SRLogger
 			SRLogger.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % Serie, True)
 			self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % Serie)

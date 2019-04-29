@@ -102,9 +102,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_yellow'].setText("Auf den Merkzettel")
 		self['text_blue'].setText("Manuell hinzufügen")
 
-		self['headline'].instance.setHAlign(2)
-		self['headline'].instance.setForegroundColor(parseColor('foreground'))
-		self['headline'].instance.setFont(parseFont("Regular;20", ((1,1),(1,1))))
+		#self['headline'].instance.setHAlign(2)
+		self['headline'].instance.setForegroundColor(parseColor('red'))
+		self['headline'].instance.setFont(parseFont("Regular;16", ((1,1),(1,1))))
 
 		self.chooseMenuList.l.setItemHeight(int(28 * skinFactor))
 
@@ -212,8 +212,10 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			]
 
 	def showPages(self):
+		headline = "Diese Liste stammt von TheTVDB, daher kann die Nummerierung/Episodenbeschreibung abweichen."
 		if self.maxPages > 1:
-			self['headline'].setText("Seite %s/%s" % (str(self.page), str(self.maxPages)))
+			headline += "          Seite %s/%s" % (str(self.page), str(self.maxPages))
+		self['headline'].setText(headline)
 
 	def isAlreadyAdded(self, season, episode, title=None):
 		result = False

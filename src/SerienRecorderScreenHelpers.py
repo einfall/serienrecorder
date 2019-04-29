@@ -14,7 +14,7 @@ from Screens.MessageBox import MessageBox
 
 from SerienRecorder import serienRecMainPath
 from SerienRecorderDatabase import SRDatabase
-from SerienRecorderHelpers import isDreamOS, getSeriesIDByURL, SRMANUALURL
+from SerienRecorderHelpers import isDreamOS, SRMANUALURL
 
 # check VPS availability
 try:
@@ -492,5 +492,5 @@ class serienRecBaseScreen:
 		database = SRDatabase(serienRecDataBaseFilePath)
 		url = database.getMarkerURL(serienName)
 		if url:
-			serien_id = getSeriesIDByURL(url)
+			serien_id = url
 		getCover(self, serienName, serien_id)

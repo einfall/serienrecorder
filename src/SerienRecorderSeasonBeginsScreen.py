@@ -273,8 +273,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 					boxID = config.plugins.serienRec.BoxID.value
 				else:
 					boxID = None
-				url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(ID)
-				self.database.addMarker(url, Serie, "", boxID)
+				self.database.addMarker(str(ID), Serie, "", boxID, 0)
 
 			if config.plugins.serienRec.openMarkerScreen.value:
 				from SerienRecorderMarkerScreen import serienRecMarker

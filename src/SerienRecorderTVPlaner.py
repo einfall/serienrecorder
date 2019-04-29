@@ -244,24 +244,22 @@ def getEmailData():
 	transmissiondict = dict()
 	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in transmissions:
 		try:
-
 			if url.startswith('https://www.wunschliste.de/spielfilm'):
 				if not config.plugins.serienRec.tvplaner_movies.value:
 					SRLogger.writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % seriesname, True)
 					print "' %s - Filmaufzeichnung ist deaktiviert '" % seriesname
 					continue
 				transmissiontype = '[ Film ]'
-			#elif url.startswith('https://www.wunschliste.de/serie'):
-			else:
+			elif url.startswith('https://www.wunschliste.de/serie'):
 				if not config.plugins.serienRec.tvplaner_series.value:
 					SRLogger.writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % seriesname, True)
 					print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
 					continue
 				transmissiontype = '[ Serie ]'
-			# else:
-			# 	SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
-			# 	print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
-			# 	continue
+			else:
+				SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
+				print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
+				continue
 
 			# series
 			transmission = [ seriesname ]
@@ -299,7 +297,7 @@ def getEmailData():
 				transmissiondict[seriesname] += [ transmission ]
 			else:
 				transmissiondict[seriesname] = [ transmission ]
-				SRLogger.writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype), True)
+			SRLogger.writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype), True)
 			print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype)
 		except Exception as e:
 			SRLogger.writeLog("TV-Planer Verarbeitung fehlgeschlagen! [%s]" % str(e), True)
@@ -313,42 +311,25 @@ def getEmailData():
 			marker_type = "Serien Marker"
 			try:
 				boxID = None
-				if url.startswith('https://www.wunschliste.de/spielfilm'):
-					marker_type = "Temporärer Serien Marker"
-					if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
-						boxID = config.plugins.serienRec.BoxID.value
-				else:
-					seriesID = url[str.rindex(url, '/') + 1:]
+				if url.startswith('https://www.wunschliste.de/serie'):
+					seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
 					if seriesID > 0:
-						url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
+						url = str(seriesID)
 					else:
 						url = None
 					if config.plugins.serienRec.tvplaner_series_activeSTB.value:
 						boxID = config.plugins.serienRec.BoxID.value
-
-				# if url.startswith('https://www.wunschliste.de/serie'):
-				# 	seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
-				# 	if seriesID > 0:
-				# 		url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(seriesID)
-				# 	else:
-				# 		url = None
-				# 	if config.plugins.serienRec.tvplaner_series_activeSTB.value:
-				# 		boxID = config.plugins.serienRec.BoxID.value
-				# elif url.startswith('https://www.wunschliste.de/spielfilm'):
-				# 	marker_type = "Temporärer Serien Marker"
-				# 	if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
-				# 		boxID = config.plugins.serienRec.BoxID.value
-				# else:
-				# 	url = None
+				elif url.startswith('https://www.wunschliste.de/spielfilm'):
+					marker_type = "Temporärer Serien Marker"
+					if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+						boxID = config.plugins.serienRec.BoxID.value
+				else:
+					url = None
 
 				if url and not database.markerExists(url):
-					if database.addMarker(url, seriesname, "", boxID):
-
+					if database.addMarker(url, seriesname, "", boxID, 1 if url.startswith('https://www.wunschliste.de/spielfilm') else 0):
 						SRLogger.writeLog("\n%s für ' %s ' wurde angelegt" % (marker_type, seriesname), True)
 						print "[SerienRecorder] ' %s - %s erzeugt '" % (seriesname, marker_type)
-					else:
-						SRLogger.writeLog("\n%s für ' %s ' konnte nicht angelegt werden" % (marker_type, seriesname), True)
-						print "[SerienRecorder] ' %s - %s konnte nicht angelegt werden '" % (seriesname, marker_type)
 			except Exception as e:
 				SRLogger.writeLog("\n%s für ' %s ' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (marker_type, seriesname, str(e)), True)
 				print "[SerienRecorder] ' %s - %s konnte wegen eines Fehlers nicht angelegt werden [%s]'" % (seriesname, marker_type, str(e))

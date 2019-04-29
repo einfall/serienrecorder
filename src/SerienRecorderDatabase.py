@@ -65,7 +65,8 @@ class SRDatabase:
 																			addToDatabase INTEGER DEFAULT 1,
 																			updateFromEPG INTEGER DEFAULT NULL,
 																			skipSeriesServer INTEGER DEFAULT NULL,
-																			info TEXT NOT NULL DEFAULT "")''')
+																			info TEXT NOT NULL DEFAULT "",
+																			type INTEGER DEFAULT 0)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -216,6 +217,14 @@ class SRDatabase:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'info' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
 
+		if not self.hasColumn(markerRows, 'type'):
+			try:
+				cur.execute("ALTER TABLE SerienMarker ADD type INTEGER DEFAULT 0")
+				self.updateToWLID()
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'type' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
 		# Channels table updates
 		if not self.hasColumn(channelRows, 'vps'):
 			try:
@@ -274,13 +283,27 @@ class SRDatabase:
 			SRLogger.writeLog("Die Tabelle 'STBAuswahl' konnte nicht angelegt werden [%s]." % str(e), True)
 
 		if updateSuccessful:
-			SRLogger.writeLog("Datenbank wurde erfolgreich aktualisiert - aktualisiere Versiosnummer.", True)
+			SRLogger.writeLog("Datenbank wurde erfolgreich aktualisiert - aktualisiere Versionsnummer.", True)
 			cur.execute("UPDATE OR IGNORE dbInfo SET Value=? WHERE Key='Version'", [version])
 		else:
 			SRLogger.writeLog("Fehler beim Aktualisieren der Datenbank - bitte wenden Sie sich mit diesem Log an die Entwickler.", True)
 		cur.close()
 
 		return updateSuccessful
+
+	def updateToWLID(self):
+		cur = self._srDBConn.cursor()
+		try:
+			cur.execute("BEGIN TRANSACTION")
+			cur.execute("SELECT ID, Url FROM SerienMarker")
+			rows = cur.fetchall()
+			for row in rows:
+				(ID,url) = row
+				cur.execute("UPDATE SerienMarker SET Url=? WHERE ID=?", (url[str.rindex(url, '=') + 1:], ID))
+			cur.execute("COMMIT")
+		except:
+			cur.execute("ROLLBACK")
+		cur.close()
 
 	def updateSeriesMarker(self):
 		result = []
@@ -292,7 +315,7 @@ class SRDatabase:
 
 			cur = self._srDBConn.cursor()
 			for key, val in changedMarkers.items():
-				cur.execute("UPDATE SerienMarker SET Serie = ?, info = ? WHERE Url = ?", (val['new_name'], val['new_info'], 'http://www.wunschliste.de/epg_print.pl?s=' + key))
+				cur.execute("UPDATE SerienMarker SET Serie = ?, info = ? WHERE Url = ?", (val['new_name'], val['new_info'], key))
 				SRLogger.writeLog("SerienMarker Tabelle aktualisiert [%s] => [%s] / [%s]: %d" % (val['old_name'], val['new_name'], val['new_info'], cur.rowcount), True)
 				if val['new_name'] != val['old_name']:
 					cur.execute("UPDATE AngelegteTimer SET Serie = ? WHERE TRIM(Serie) = ?", (val['new_name'], val['old_name']))
@@ -422,7 +445,7 @@ class SRDatabase:
 
 	def removeMovieMarkers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM SerienMarker WHERE Url LIKE 'https://www.wunschliste.de/spielfilm%'")
+		cur.execute("DELETE FROM SerienMarker WHERE type = 1")
 		cur.close()
 
 
@@ -443,7 +466,7 @@ class SRDatabase:
 	def getDirNames(self, series):
 		result = None
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Url FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, type FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
 		row = cur.fetchone()
 		if row:
 			result = row
@@ -546,7 +569,7 @@ class SRDatabase:
 	def getAllMarkerStatusForBoxID(self, boxID):
 		markers = {}
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT SUBSTR(Url, INSTR(Url, '=') + 1)  AS wl_id, ErlaubteSTB FROM SerienMarker LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID")
+		cur.execute("SELECT Url AS wl_id, ErlaubteSTB FROM SerienMarker LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID")
 		rows = cur.fetchall()
 		for row in rows:
 			try:
@@ -562,7 +585,7 @@ class SRDatabase:
 
 	def getMarkerNamesAndWLID(self):
 		cur = self._srDBConn.cursor()
-		sql = "SELECT Serie, info, SUBSTR(Url, INSTR(Url, '=') + 1)  AS wl_id FROM SerienMarker"
+		sql = "SELECT Serie, info, Url AS wl_id FROM SerienMarker"
 		cur.execute(sql)
 		markers = cur.fetchall()
 		cur.close()
@@ -609,13 +632,13 @@ class SRDatabase:
 		cur.close()
 		return timer
 
-	def addMarker(self, url, name, info, boxID):
+	def addMarker(self, url, name, info, boxID, type):
 		result = False
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", [name.lower()])
+		cur.execute("SELECT * FROM SerienMarker WHERE Url=?", [url])
 		row = cur.fetchone()
 		if not row:
-			cur.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, info, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials) VALUES (?, ?, ?, 0, 1, 1, -1, 0, -1, 0)", (name, url, info))
+			cur.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, info, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials, type) VALUES (?, ?, ?, 0, 1, 1, -1, 0, -1, 0, ?)", (name, url, info, type))
 			if boxID:
 				erlaubteSTB = 0xFFFF
 				erlaubteSTB |= (1 << (int(boxID) - 1))
@@ -927,7 +950,7 @@ class SRDatabase:
 
 	def getChannelInfo(self, channel, seriesID, filterMode):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url LIKE ?", ['%' + str(seriesID)])
+		cur.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url = ?", [str(seriesID)])
 		row = cur.fetchone()
 		allChannels = True
 		markerID = 0
@@ -1024,10 +1047,10 @@ class SRDatabase:
 				where += '"' + seriesFilter[i] + '",'
 			where += '"' + seriesFilter[-1] + '")'
 
-		cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer FROM SerienMarker" + where + " ORDER BY Serie")
+		cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type FROM SerienMarker" + where + " ORDER BY Serie")
 		rows = cur.fetchall()
 		for row in rows:
-			(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer) = row
+			(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, markerType) = row
 			enabled = True
 			cur.execute("SELECT ErlaubteSTB FROM STBAuswahl WHERE ID=?", [ID])
 			rowSTB = cur.fetchone()
@@ -1060,7 +1083,7 @@ class SRDatabase:
 			else:
 				skipSeriesServer = None
 
-			result.append((serie, url, seasons, channels, AbEpisode, AnzahlAufnahmen, enabled, excludedWeekdays, skipSeriesServer))
+			result.append((serie, url, seasons, channels, AbEpisode, AnzahlAufnahmen, enabled, excludedWeekdays, skipSeriesServer, markerType))
 		cur.close()
 		return result
 

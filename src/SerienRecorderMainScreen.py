@@ -612,8 +612,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				boxID = config.plugins.serienRec.BoxID.value
 
-			url = 'http://www.wunschliste.de/epg_print.pl?s=%s' % str(serien_id)
-			if self.database.addMarker(url, serien_name, '', boxID):
+			if self.database.addMarker(str(serien_id), serien_name, '', boxID, 0):
 				SRLogger.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % serien_name, True)
 				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
 				self['title'].instance.setForegroundColor(parseColor("green"))

@@ -152,8 +152,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_id = None
 		url = self.database.getMarkerURL(serien_name)
 		if url:
-			from SerienRecorderHelpers import getSeriesIDByURL
-			serien_id = getSeriesIDByURL(url)
+			serien_id = url
 		if serien_id:
 			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
 			self.session.open(serienRecShowInfo, serien_name, serien_id)
@@ -308,8 +307,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_id = None
 		url = self.database.getMarkerURL(serien_name)
 		if url:
-			from SerienRecorderHelpers import getSeriesIDByURL
-			serien_id = getSeriesIDByURL(url)
+			serien_id = url
 
 		SerienRecorder.getCover(self, serien_name, serien_id)
 
