@@ -62,6 +62,7 @@
 					<a href="faq.htm#lade"><h4><strong>Nach dem Start des SR sieht man nur "Lade Infos vom Web..."</strong></h4></a>
 					<a href="faq.htm#senderzuordnung"><h4><strong>Nach dem Aufruf der Senderzuordnung crasht die Box.</strong></h4></a>
 					<a href="faq.htm#settings-datei"><h4><strong><u>settings-Datei</u> bearbeiten, wie geht das?</strong></h4></a>
+					<a href="faq.htm#alte-betas"><h4><strong>Wie lade ich eine ältere Beta Version von Github herunter?</strong></h4></a>
 					
 				</ul>	
 				
@@ -416,6 +417,161 @@
 				
 			<br>
 			
+			<div class="center"><a href="faq.htm"><strong>[Seitenanfang]</strong></a>&nbsp; &nbsp; &nbsp; &nbsp;<a href="index.htm"><strong>[Startseite]</strong></a></div>	
+            <br><br><br>
+			
+<!-- Ältere Betas herunter laden -->
+
+				<span id="alte-betas" class="anchor"></span>
+				
+				<p><h4><strong>"Wie lade ich eine ältere Beta Version von Github herunter?"</strong></h4></p>
+				<p>Es ist manchmal nötig, eine ältere Beta-Version herunter zu laden, weil die aktuelle Beta-Version evtl. doch noch "gravierende" Fehler enthält und die letzte Release-Version zu "alt" wäre.
+				<br>Dazu sind Folgende Schritte nötig.
+				</p>				
+				<p><strong>Hier die Kurzfassung:</strong>
+				<ul>
+				<li>Auf Github den passenden "Commit" aussuchen
+				</li>
+				<li>Die Zip-Datei herunterladen
+				</li>
+				<li>Den Inhalt des "src-Ordners" mit den Dateien im Serienrecorder Verzeichnis überschreiben und ggf die gesicherte Datenbank zurück kopieren/überschreiben.
+				</li>
+				<li>Neustart der Box
+				</li>
+				</ul>
+				Fertig
+				</p>
+				<br>
+				<p><strong>Und nun mit Bildern ausführlich:</strong>
+				</p>
+				
+				<p>Die benötigten Dateien sind unter <strong><u><a href="https://github.com/einfall/serienrecorder" target="_blank">GitHub</a></u></strong> herunterzuladen.
+				<br>Das sollte dann so aussehen und dort klicken wir dann auf "commits" (roter Pfeil).				
+				</p>
+				<ul>
+				<p><h5><strong>Bild 01</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-01a.png" alt="Github" align="center">
+					<p><small>Github</small>
+                    </p>
+                </div>
+				</ul>
+				<br><br>
+				<p>Danach sollte es dann in etwa so aussehen, natürlich OHNE die roten und grünen Pfeile.
+				</p>
+				<br><br>
+				<ul>
+				<p><h5><strong>Bild 02</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-02a.png" alt="Github commits" align="center">
+					<p><small>Github commits</small>
+                    </p>
+                </div>
+				</ul>
+				<br><br>
+				<p>Die roten Pfeile zeigen auf "einzelne Commits" hinter denen sich einzelne, herunterladbare Versionen des SerienRecorders verbergen.
+				<br>Um eine (ältere) Version herunterzuladen, muss man dazu auf den Button klicken, wo die grünen Pfeile drauf zeigen.
+				</p>
+				<ul>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-13.png" alt="Button" align="center">
+					<p><small>Button</small>
+                    </p>
+                </div>
+				</ul>
+				<br><br>
+				<p>Da im Titel eines Commits NICHT die Versionsnummer drin steht und nicht jeder Commit eine Versionsänderung mitsichbringt, muss man entweder das Datum wissen, an dem eine bestimmte Version "Veröffentlicht" wurde oder aber man muss im Commit nach der Versionsnummer "suchen".
+				<br>Nehmen wir an, wir möchten auf die 3.8.17 zurückgehen. Im Forum wäre zu finden, das diese am 16. April 2019 (<strong>Bild 03</strong>) eingestellt wurde. Folglich müssten wir den Commit aus <strong>Bild 02</strong> (oben) mit dem grünen Pfeil <strong>Nummer 2 </strong> wählen.
+				</p>
+				<br><br>
+				<ul>
+				<p><h5><strong>Bild 03</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-12a.png" alt="Github commits" align="center">
+					<p><small>Github commits</small>
+                    </p>
+                </div>
+				</ul>
+				<br><br>
+				<p>Kennt man das Datum nicht, kann man auch direkt im Commit danach "suchen". Man klickt direkt auf den Titel eines Commits (sollte dann in etwa wie in <strong>Bild 04</strong> aussehen) und schaut dort direkt nach der Versionsnummer. 
+				<br>Die Versionsnummer muss man dort nicht unbedingt durch "langes" scrollen suchen, sondern man drückt am (Windows) PC einfach <kbd>Strg + F</kbd> (sollte bei den meisten Browsern funktionieren) und dort dann "SRVERSION" ein. Dann sollte man die Versionsnummer finden, wie in <strong>Bild 05</strong> dargestellt (grün unterlegt) und weiß, welchen Commit man herunterladen muss.
+				</p>
+				<br><br>
+				<ul>
+				<p><h5><strong>Bild 04</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-11.png" alt="Github commits" align="center">
+					<p><small>Github commits</small>
+                    </p>
+                </div>
+				</ul>
+				<ul>
+				<p><h5><strong>Bild 05</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-07a.png" alt="Github commits" align="center">
+					<p><small>Github commits</small>
+                    </p>
+                </div>
+				</ul>
+				<br><br>
+				<p>Wenn man dann auf den Button (<strong>Bild 02</strong>) geklickt hat, sollte man Folgendes (<strong>Bild 06</strong>) sehen können. Dort klickt man dann auf <strong>"Clone or Download"</strong> und klickt im anschließenden Dialogfeld (<strong>Bild 07</strong>) auf <strong>"Download Zip"</strong> und speichert diese Datei auf den PC.
+				<br><br>
+				<ul>
+				<p><h5><strong>Bild 06</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-03a.png" alt="Clone or Download" align="center">
+					<p><small>Clone or Download</small>
+                    </p>
+                </div>
+				</ul>
+				
+				</p>
+				
+				<br><br>
+				<p>
+				<ul>
+				<p><h5><strong>Bild 07</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-04a.png" alt="Download ZIP" align="center">
+					<p><small>Download ZIP</small>
+                    </p>
+                </div>
+				</ul>
+				</p>
+				
+				<br><br>
+				<p>In der Zip-Datei befindet sich u.a. der Ordner <strong>"src"</strong> (<strong>Bild 08</strong>), dessen Inhalt man in das SerienRecorder-Verzeichnis (<strong>/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/</strong>) auf der Box kopieren/überschreiben muss.
+				</p>
+				<br><br>
+				<ul>
+				<p><h5><strong>Bild 08</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-10a.png" alt="src Ordner" align="center">
+					<p><small>src Ordner</small>
+                    </p>
+                </div>
+				</ul>
+				<br><br>
+				<p>Jetzt muss man NUR noch drauf achten, ob die Datenbank-Version auch geändert wurde, wie in <strong>Bild 09</strong> zu sehen, von SRDBVERSION 3.9.1 auf 3.9.2.
+				<br>Sollte man dies nicht beachten und man startet den SerienRecorder mit einer NICHT kompatiblen DB Version, wird einem das vom SR angezeigt und der SR startet nicht. Wenn der SR ein Update der Datenbank macht, wird automatisch ein Backup der alten Datenbank (im gleichen Verzeichnis) angelegt, welche man dann nur umbenennen muss.
+				</p>
+				
+				<br>
+				<ul>
+				<p><h5><strong>Bild 09</strong></h5></p>
+				<div class="thumbnail with-caption">
+                    <img src="images/SR-alte-Betas-08a.png" alt="src Ordner" align="center">
+					<p><small>src Ordner</small>
+                    </p>
+                </div>
+				</ul>
+				<br><br>
+				<p>Das hört sich alles "kompliziert" an, aber falls man sich nicht sicher ist, wird es in einem solchen Fall genügend Infos dazu auch im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-3-8-0-25-11-2018/&postID=1144875#post1144875" target="_blank"><strong><u>SR Thread</u></strong></a> geben.
+				</p>
+				<br><br>
+				<p>
+				</p>
+			<br>
 			<div class="center"><a href="faq.htm"><strong>[Seitenanfang]</strong></a>&nbsp; &nbsp; &nbsp; &nbsp;<a href="index.htm"><strong>[Startseite]</strong></a></div>	
             <br>
 			<br><br><br><br><br><br>
