@@ -238,7 +238,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			serien_name = self['menu_list'].getCurrent()[0][1]
 			serien_id = self['menu_list'].getCurrent()[0][2]
 			if serien_id:
-				self.session.open(serienRecEpisodes, serien_name, "http://www.wunschliste.de/%s" % serien_id, self.serien_nameCover)
+				self.session.open(serienRecEpisodes, serien_name, serien_id, self.serien_nameCover)
 				#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!",
 				#				  MessageBox.TYPE_INFO, timeout=10)
 
