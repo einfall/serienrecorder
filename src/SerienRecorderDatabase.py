@@ -144,6 +144,20 @@ class SRDatabase:
 		cur.execute("PRAGMA table_info(Channels)")
 		channelRows = cur.fetchall()
 
+		# Foreign key check
+		try:
+			cur.execute("PRAGMA foreign_key_check")
+			foreignKeyChecks = cur.fetchall()
+			if len(foreignKeyChecks) > 0:
+				SRLogger.writeLog("Es muss eine Fremdschlüssel Korrektur durchgeführt werden.", True)
+				cur.execute("BEGIN TRANSACTION")
+				for foreignKeyCheck in foreignKeyChecks:
+					cur.execute("DELETE FROM %s WHERE ROWID=?" % foreignKeyCheck[0], [foreignKeyCheck[1]])
+				cur.execute("COMMIT")
+		except Exception as e:
+			cur.execute("ROLLBACK")
+			SRLogger.writeLog("Fremdschlüssel Korrektur konnte nicht durchgeführt werden [%s]." % str(e), True)
+
 		updateSuccessful = True
 
 		# SerienMarker table updates
@@ -220,10 +234,12 @@ class SRDatabase:
 		if not self.hasColumn(markerRows, 'type'):
 			try:
 				cur.execute("ALTER TABLE SerienMarker ADD type INTEGER DEFAULT 0")
-				self.updateToWLID()
 			except Exception as e:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'type' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.updateToWLID():
+			updateSuccessful = False
 
 		# Channels table updates
 		if not self.hasColumn(channelRows, 'vps'):
@@ -292,18 +308,39 @@ class SRDatabase:
 		return updateSuccessful
 
 	def updateToWLID(self):
+		result = True
 		cur = self._srDBConn.cursor()
 		try:
 			cur.execute("BEGIN TRANSACTION")
-			cur.execute("SELECT ID, Url FROM SerienMarker")
+			cur.execute("SELECT ID, Serie, Url FROM SerienMarker")
 			rows = cur.fetchall()
 			for row in rows:
-				(ID,url) = row
-				cur.execute("UPDATE SerienMarker SET Url=? WHERE ID=?", (url[str.rindex(url, '=') + 1:], ID))
+				(ID,name,url) = row
+				# If URL starts with 'http' remove incorrect markers and convert URL to WL ID
+				if str.startswith(url, 'http'):
+					if str.rfind(url, '=') is -1:
+						cur.execute("DELETE FROM STBAuswahl WHERE ID=?", [ID])
+						cur.execute("DELETE FROM StaffelAuswahl WHERE ID=?", [ID])
+						cur.execute("DELETE FROM SenderAuswahl WHERE ID=?", [ID])
+						cur.execute("DELETE FROM SerienMarker WHERE ID=?", [ID])
+						SRLogger.writeLog("Fehlerhafter SerienMarker musste gelöscht werden [%s => %s]" % (name, url), True)
+					else:
+						url = url[str.rindex(url, '=') + 1:]
+						if not url.isdigit():
+							from SerienRecorderSeriesServer import SeriesServer
+							url = SeriesServer().getIDByFSID(url)
+						cur.execute("UPDATE SerienMarker SET Url=? WHERE ID=?", (url, ID))
+				# Replace series name by ID
+				# cur.execute("UPDATE AngelegteTimer SET Serie=? WHERE Serie=?", (url, name))
+			#cur.execute("DELETE FROM AngelegteTimer WHERE Serie GLOB '*[^0-9]*'")
+			#cur.execute("SELECT Serie FROM AngelegteTimer WHERE Serie NOT IN (SELECT Url FROM SerienMarker) OR Serie GLOB '*[^0-9]*'")
 			cur.execute("COMMIT")
-		except:
+		except Exception as e:
+			result = False
+			SRLogger.writeLog("Fehler beim Konvertieren der URLs [%s]." % str(e), True)
 			cur.execute("ROLLBACK")
 		cur.close()
+		return result
 
 	def updateSeriesMarker(self):
 		result = []
@@ -635,7 +672,8 @@ class SRDatabase:
 	def addMarker(self, url, name, info, boxID, type):
 		result = False
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT * FROM SerienMarker WHERE Url=?", [url])
+		#cur.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", [name.lower()])
+		cur.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", [name.lower()])
 		row = cur.fetchone()
 		if not row:
 			cur.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, info, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials, type) VALUES (?, ?, ?, 0, 1, 1, -1, 0, -1, 0, ?)", (name, url, info, type))
@@ -1155,6 +1193,18 @@ class SRDatabase:
 	def activateTimer(self, series, season, episode, title, startUnixtime, stbRef, channel, eit):
 		cur = self._srDBConn.cursor()
 		cur.execute("UPDATE OR IGNORE AngelegteTimer SET TimerAktiviert=1 WHERE LOWER(Serie)=? AND Staffel=? AND Episode=? AND Titel=? AND StartZeitstempel=? AND ServiceRef=? AND webChannel=? AND EventID=?", (series.lower(), season, episode, title, startUnixtime, stbRef, channel, eit))
+		cur.close()
+
+	def countOrphanTimers(self):
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT Serie FROM AngelegteTimer WHERE Serie NOT IN (SELECT Url FROM SerienMarker) OR Serie GLOB '*[^0-9]*'")
+		rows = cur.fetchall()
+		cur.close()
+		return len(rows)
+
+	def removeOrphanTimers(self):
+		cur = self._srDBConn.cursor()
+		cur.execute("DELETE FROM AngelegteTimer WHERE Serie NOT IN (SELECT Url FROM SerienMarker) OR Serie GLOB '*[^0-9]*'")
 		cur.close()
 
 # ----------------------------------------------------------------------------------------------------------------------

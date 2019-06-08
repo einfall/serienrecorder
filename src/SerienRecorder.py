@@ -273,7 +273,7 @@ class downloadTransmissionsThread(threading.Thread):
 		except:
 			isTransmissionFailed = True
 			transmissions = None
-		self.resultQueue.put((isTransmissionFailed, transmissions, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
+		self.resultQueue.put((isTransmissionFailed, transmissions, seriesID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
 
 class processEMailDataThread(threading.Thread):
 	def __init__(self, emailData, jobs, results):
@@ -289,7 +289,7 @@ class processEMailDataThread(threading.Thread):
 			self.jobQueue.task_done()
 
 	def process(self, data):
-		(markerChannels, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays) = data
+		(markerChannels, seriesID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays) = data
 		transmissions = []
 		for key in self.emailData.keys():
 			if self.emailData[key][0][0] == seriesTitle:
@@ -299,7 +299,7 @@ class processEMailDataThread(threading.Thread):
 			if transmission[1] in markerChannels:
 				transmissions.append(transmission[0:-1])
 
-		self.resultQueue.put((transmissions, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
+		self.resultQueue.put((transmissions, seriesID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
 
 class backgroundThread(threading.Thread):
 	def __init__(self, fnc):
@@ -648,8 +648,9 @@ class serienRecCheckForRecording:
 				global transmissionFailed
 				transmissionFailed = False
 				self.tempDB.cleanUp()
-				SRLogger.writeLog("\n---------' Verarbeite Daten vom Server %s ---------\n" % fullCheck, True)
-				print "[SerienRecorder] Verarbeite Daten vom Server"
+				if not (config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_skipSerienServer.value):
+					SRLogger.writeLog("\n---------' Verarbeite Daten vom Server %s ---------\n" % fullCheck, True)
+					print "[SerienRecorder] Verarbeite Daten vom Server"
 
 				# Create a job queue to keep the jobs processed by the threads
 				# Create a result queue to keep the results of the job threads
@@ -666,6 +667,7 @@ class serienRecCheckForRecording:
 				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer,markerType in self.markers:
 					if config.plugins.serienRec.tvplaner.value and (config.plugins.serienRec.tvplaner_skipSerienServer.value or (skipSeriesServer is not None and skipSeriesServer)):
 						# Skip serien server processing
+						SRLogger.writeLog("' %s ' - Dieser Serien-Marker soll nicht vom SerienServer abgerufen werden" % serienTitle, True)
 						continue
 
 					if markerType == 1:
@@ -687,8 +689,8 @@ class serienRecCheckForRecording:
 
 				jobQueue.join()
 				while not resultQueue.empty():
-					(transmissionFailed, transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
-					self.processTransmission(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					(transmissionFailed, transmissions, seriesID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
+					self.processTransmission(transmissions, seriesID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
 					resultQueue.task_done()
 
 				break
@@ -745,12 +747,12 @@ class serienRecCheckForRecording:
 					else:
 						markerChannels = { x : x for x in SerieSender }
 
-					jobQueue.put((markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
+					jobQueue.put((markerChannels, SerieUrl, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
 
 			jobQueue.join()
 			while not resultQueue.empty():
-				(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
-				self.processTransmission(transmissions, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+				(transmissions, seriesID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
+				self.processTransmission(transmissions, seriesID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
 				resultQueue.task_done()
 
 		self.createTimer()
@@ -855,7 +857,7 @@ class serienRecCheckForRecording:
 		# in den deep-standby fahren.
 		self.askForDSB()
 
-	def processTransmission(self, data, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
+	def processTransmission(self, data, serien_id, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
 		print "[SerienRecorder] processTransmissions: %r" % serien_name
 		self.count_url += 1
 

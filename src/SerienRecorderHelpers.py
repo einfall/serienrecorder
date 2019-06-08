@@ -20,8 +20,8 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.8.18-beta'
-SRDBVERSION = '3.9.2'
+SRVERSION = '3.8.19-beta'
+SRDBVERSION = '3.9.3'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 def decodeISO8859_1(txt, replace=False):

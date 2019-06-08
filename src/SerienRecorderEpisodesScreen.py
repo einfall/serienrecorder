@@ -77,8 +77,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.setupSkin()
 
-		raw = re.findall(".*?(\d+)", serie_url)
-		self.serien_id = raw[0]
+		self.serien_id = serie_url
 
 		self.timer_default = eTimer()
 		if isDreamOS():

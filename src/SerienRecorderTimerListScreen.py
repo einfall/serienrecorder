@@ -52,6 +52,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
+			"8"		: (self.cleanUp, "Timerliste bereinigen"),
 			"9"		: (self.dropAllTimer, "Alle Timer aus der Datenbank löschen"),
 		}, -1)
 		self.helpList[0][2].sort()
@@ -85,6 +86,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_ok'].setText("Liste bearbeiten")
 		self['text_yellow'].setText("Zeige auch alte Timer")
 		self['text_blue'].setText("Entferne neue Timer")
+		self.num_bt_text[3][1] = "Bereinigen"
 		self.num_bt_text[4][1] = "Datenbank leeren"
 
 		super(self.__class__, self).startDisplayTimer()
@@ -333,6 +335,20 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			                              default=False)
 		else:
 			self.removeOldTimerFromDB(True)
+
+	def cleanUp(self):
+		numberOfOrphanTimers = self.database.countOrphanTimers()
+		self.session.openWithCallback(self.removeOrphanTimerFromDB, MessageBox,
+		                              "Es wurden %d Einträge in der Timer-Liste gefunden, für die kein Serien-Marker vorhanden ist, sollen diese Einträge gelöscht werden?" % numberOfOrphanTimers,
+		                              MessageBox.TYPE_YESNO,
+		                              default=False)
+
+	def removeOrphanTimerFromDB(self, answer):
+		if answer:
+			self.database.removeOrphanTimers()
+			self.database.rebuild()
+		else:
+			return
 
 	def getCover(self):
 		check = self['menu_list'].getCurrent()
