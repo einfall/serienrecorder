@@ -87,8 +87,32 @@ def eventinfo(session, servicelist, **kwargs):
 	ref = session.nav.getCurrentlyPlayingServiceReference()
 	session.open(SerienRecorder.serienRecEPGSelection, ref)
 
+# EventView or EPGSelection
+def eventview(session, event, ref):
+
+	def handleSeriesSearchEnd(seriesName=None):
+		if seriesName:
+			session.open(SerienRecorderMarkerScreen.serienRecMarker, seriesName)
+
+	if ref.getPath() and ref.getPath()[0] == "/":
+		from enigma import eServiceReference
+		movielist(session, eServiceReference(str(ref)))
+	else:
+		seriesName = event and event.getEventName() or ""
+		if seriesName:
+			from SerienRecorderSearchResultScreen import serienRecSearchResultScreen
+			session.openWithCallback(handleSeriesSearchEnd, serienRecSearchResultScreen, seriesName)
+
+
 def Plugins(**kwargs):
-	return [
+	try:
+		from enigma import eMediaDatabase
+	except ImportError:
+		isDreamboxOS = False
+	else:
+		isDreamboxOS = True
+
+	pluginDescriptors = [
 		PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART],
 						 fnc=SerienRecorder.autostart, wakeupfnc=SerienRecorder.getNextWakeup),
 		PluginDescriptor(name="SerienRecorder", description="Nie wieder eine Folge deiner Lieblingsserie verpassen",
@@ -99,5 +123,9 @@ def Plugins(**kwargs):
 						 where=[PluginDescriptor.WHERE_MOVIELIST], fnc=movielist, needsRestart=False),
 		PluginDescriptor(name="Serien-Marker hinzufügen...", where=[PluginDescriptor.WHERE_EVENTINFO], fnc=eventinfo,
 						 needsRestart=False),
-
 	]
+
+	if isDreamboxOS:
+		pluginDescriptors.append(PluginDescriptor(name="Serien-Marker hinzufügen...", where=[PluginDescriptor.WHERE_EVENTVIEW, PluginDescriptor.WHERE_EPG_SELECTION_SINGLE_BLUE], fnc=eventview, needsRestart=False, weight=100))
+
+	return pluginDescriptors

@@ -105,6 +105,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.tvplaner_full_check = ConfigYesNo(default=False)
 	config.plugins.serienRec.tvplaner_last_full_check = ConfigInteger(0)
 	config.plugins.serienRec.tvplaner_skipSerienServer = ConfigYesNo(default=False)
+	config.plugins.serienRec.tvplaner_backupHTML = ConfigYesNo(default=True)
 	config.plugins.serienRec.checkfordays = ConfigInteger(1, (1, 14))
 	config.plugins.serienRec.globalFromTime = ConfigClock(default=0 + time.timezone)
 	config.plugins.serienRec.globalToTime = ConfigClock(default=(((23 * 60) + 59) * 60) + time.timezone)
@@ -887,6 +888,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				getConfigListEntry("DEBUG LOG - Zeitbegrenzung:", config.plugins.serienRec.writeLogTimeLimit))
 			self.list.append(
 				getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
+			if config.plugins.serienRec.tvplaner.value:
+				self.list.append(getConfigListEntry("Backup von TV-Planer E-Mail erstellen:", config.plugins.serienRec.tvplaner_backupHTML))
 			self.list.append(getConfigListEntry("DEBUG LOG - Scroll zum Ende:", config.plugins.serienRec.logScrollLast))
 			self.list.append(
 				getConfigListEntry("DEBUG LOG - Anzeige mit Zeilenumbruch:", config.plugins.serienRec.logWrapAround))
@@ -1280,6 +1283,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.writeLogTimerDebug: (
 				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der zu erstellende Timer bereits vorhanden ist, oder der Timer erfolgreich angelegt wurde.",
 				"Das_Log"),
+			config.plugins.serienRec.tvplaner_backupHTML: (
+				"Bei 'ja' wird die TV-Planer E-Mail als HTML im Logverzeichnis abgespeichert und ins Backup Verzeichnis kopiert, falls das SerienRecorder Backup aktiviert ist.",
+				"Das_Log"),
 			config.plugins.serienRec.logScrollLast: (
 				"Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang.", "Das_Log"),
 			config.plugins.serienRec.logWrapAround: (
@@ -1381,6 +1387,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 			config.plugins.serienRec.tvplaner_last_full_check.save()
 		config.plugins.serienRec.tvplaner_skipSerienServer.save()
+		config.plugins.serienRec.tvplaner_backupHTML.save()
 		config.plugins.serienRec.checkfordays.save()
 		config.plugins.serienRec.AutoBackup.save()
 		config.plugins.serienRec.deleteBackupFilesOlderThan.save()
@@ -1431,6 +1438,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.downloadCover.save()
 		config.plugins.serienRec.showCover.save()
 		config.plugins.serienRec.createPlaceholderCover.save()
+		config.plugins.serienRec.refreshPlaceholderCover.save()
 		config.plugins.serienRec.copyCoverToFolder.save()
 		config.plugins.serienRec.listFontsize.save()
 		config.plugins.serienRec.markerColumnWidth.save()

@@ -18,7 +18,7 @@ class TimeoutTransport (xmlrpclib.Transport):
 	Custom XML-RPC transport class for HTTP connections, allowing a timeout in
 	the base connection.
 	"""
-	def __init__(self, timeout=10, use_datetime=0):
+	def __init__(self, timeout=3, use_datetime=0):
 		xmlrpclib.Transport.__init__(self, use_datetime)
 		self._timeout = timeout
 
@@ -49,6 +49,19 @@ class SeriesServer:
 			return self.server.sp.cache.getIDByFSID(fsID)
 		except:
 			return 0
+
+	def getTVDBID(self, seriesID):
+		try:
+			return self.server.sp.cache.getTVDBID(seriesID)
+		except:
+			return False
+
+	def setTVDBID(self, seriesID, tvdbID):
+		try:
+			self.server.sp.cache.setTVDBID(seriesID, tvdbID)
+			return True
+		except:
+			return False
 
 	def getSeriesNamesAndInfoByWLID(self, wlIDs):
 		try:

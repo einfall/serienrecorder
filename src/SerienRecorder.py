@@ -57,7 +57,7 @@ transmissionFailed = False
 
 #---------------------------------- Common Functions ------------------------------------------
 
-def getCover(self, serien_name, serien_id, auto_check = False):
+def getCover(self, serien_name, serien_id, auto_check = False, forceReload = False):
 	if not config.plugins.serienRec.downloadCover.value:
 		return
 
@@ -80,6 +80,9 @@ def getCover(self, serien_name, serien_id, auto_check = False):
 		# Change PNG cover file extension to correct file extension JPG
 		if fileExists(png_serien_nameCover):
 			os.rename(png_serien_nameCover, serien_nameCover)
+
+		if forceReload:
+			os.remove(serien_nameCover)
 
 		if config.plugins.serienRec.refreshPlaceholderCover.value and fileExists(serien_nameCover) and os.path.getsize(serien_nameCover) == 0:
 			statinfo = os.stat(serien_nameCover)
@@ -488,6 +491,8 @@ class serienRecCheckForRecording:
 			createBackup()
 
 		SRLogger.reset()
+		from SerienRecorderTVPlaner import resetTVPlanerHTMLBackup
+		resetTVPlanerHTMLBackup()
 		self.database.removeExpiredTimerConflicts()
 
 		if self.tvplaner_manuell and config.plugins.serienRec.tvplaner.value:
@@ -542,6 +547,8 @@ class serienRecCheckForRecording:
 			print "[SerienRecorder] ---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime
 
 			SRLogger.backup()
+			from SerienRecorderTVPlaner import backupTVPlanerHTML
+			backupTVPlanerHTML()
 
 			global autoCheckFinished
 			autoCheckFinished = True
@@ -667,7 +674,7 @@ class serienRecCheckForRecording:
 				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer,markerType in self.markers:
 					if config.plugins.serienRec.tvplaner.value and (config.plugins.serienRec.tvplaner_skipSerienServer.value or (skipSeriesServer is not None and skipSeriesServer)):
 						# Skip serien server processing
-						SRLogger.writeLog("' %s ' - Dieser Serien-Marker soll nicht vom SerienServer abgerufen werden" % serienTitle, True)
+						SRLogger.writeLog("' %s ' - Für diesen Serien-Marker sollen nur Timer aus der E-Mail angelegt werden." % serienTitle, True)
 						continue
 
 					if markerType == 1:
@@ -836,6 +843,8 @@ class serienRecCheckForRecording:
 			createBackup()
 
 		SRLogger.backup()
+		from SerienRecorderTVPlaner import backupTVPlanerHTML
+		backupTVPlanerHTML()
 
 		# trigger read of log file
 		global autoCheckFinished

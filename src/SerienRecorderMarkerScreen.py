@@ -80,6 +80,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			"startTeletext" : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"		        : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"1"		        : (self.searchSeries, "Serie manuell suchen"),
+			"2"		        : (self.changeTVDBID, "TVDB-ID ändern"),
 			"3"		        : (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"4"		        : (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"5"		        : (self.episodeList, "Episoden der ausgewählten Serie anzeigen"),
@@ -122,6 +123,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_ok'].setText("Staffel(n) auswählen")
 		self['text_yellow'].setText("Sendetermine")
 		self.num_bt_text[1][0] = "Serie suchen"
+		self.num_bt_text[2][0] = "TVDB-ID ändern"
 		self.num_bt_text[0][1] = "Episoden-Liste"
 		self.num_bt_text[2][2] = "Timer suchen"
 		self.num_bt_text[3][1] = "Marker aktualisieren"
@@ -212,6 +214,43 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				message = "Es wurden %d Serien-Marker aktualisiert.\n\nEine Liste der geänderten Marker wurde ins Log geschrieben." % len(updatedMarkers)
 
 			self.session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=10)
+
+	def changeTVDBID(self):
+		if self.loading:
+			return
+
+		if fileExists("/etc/enigma2/SerienRecorder.tvdb.id"):
+			serien_name = self['menu_list'].getCurrent()[0][1]
+			serien_id = self['menu_list'].getCurrent()[0][2]
+			tvdb_id = SeriesServer().getTVDBID(serien_id)
+			if tvdb_id is False:
+				self.session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!", MessageBox.TYPE_ERROR, timeout=5)
+			else:
+				tvdb_id_text = str(tvdb_id) if tvdb_id > 0 else 'Keine'
+				message = "Für '%s' ist folgende TVBD-ID zugewiesen: '%s'\n\nMöchten Sie die TVDB-ID ändern?" % (serien_name, tvdb_id_text)
+				self.session.openWithCallback(self.enterTVDBID, MessageBox, message, MessageBox.TYPE_YESNO, default = False)
+		else:
+			message = "Cover und Serien-/Episodeninformationen stammen von 'TheTVDB' - dafür muss jeder Serie eine TVDB-ID zugewiesen werden. " \
+			          "Für viele Serien stellt Wunschliste diese ID zur Verfügung, manchmal ist sie aber falsch oder fehlt ganz.\n\n" \
+			          "In diesem Fall kann die TVDB-ID über diese Funktion direkt im SerienRecorder geändert und auf dem SerienServer " \
+			          "gespeichert werden, sodass alle SerienRecorder Nutzer von der Änderung profitieren.\n\n" \
+			          "Um Missbrauch zu verhindern, muss diese Funktion aber erst freigeschaltet werden, wer sich beteiligen möchte, kann " \
+			          "sich an den SerienRecorder Entwickler wenden."
+
+			self.session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=0)
+
+	def enterTVDBID(self, answer):
+		if answer and self.modus == "menu_list":
+			self.session.openWithCallback(self.setTVDBID, NTIVirtualKeyBoard, title = "TVDB-ID eingeben:")
+
+	def setTVDBID(self, tvdb_id):
+		if tvdb_id:
+			serien_name = self['menu_list'].getCurrent()[0][1]
+			serien_id = self['menu_list'].getCurrent()[0][2]
+			if not SeriesServer().setTVDBID(serien_id, tvdb_id):
+				self.session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
+			getCover(self, serien_name, serien_id, False, True)
+			self.readSerienMarker(serien_name)
 
 	def serieInfo(self):
 		if self.loading:

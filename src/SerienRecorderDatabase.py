@@ -1197,14 +1197,14 @@ class SRDatabase:
 
 	def countOrphanTimers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT Serie FROM AngelegteTimer WHERE Serie NOT IN (SELECT Url FROM SerienMarker) OR Serie GLOB '*[^0-9]*'")
+		cur.execute("SELECT DISTINCT(Serie) FROM AngelegteTimer WHERE Serie NOT IN (SELECT Serie FROM SerienMarker)")
 		rows = cur.fetchall()
 		cur.close()
 		return len(rows)
 
 	def removeOrphanTimers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM AngelegteTimer WHERE Serie NOT IN (SELECT Url FROM SerienMarker) OR Serie GLOB '*[^0-9]*'")
+		cur.execute("DELETE FROM AngelegteTimer WHERE Serie NOT IN (SELECT Serie FROM SerienMarker)")
 		cur.close()
 
 # ----------------------------------------------------------------------------------------------------------------------

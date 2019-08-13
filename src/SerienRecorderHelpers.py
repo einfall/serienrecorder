@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.8.19-beta'
+SRVERSION = '3.8.20-beta'
 SRDBVERSION = '3.9.3'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
@@ -138,6 +138,7 @@ def getChangedSeriesNames(markers):
 def createBackup():
 	import SerienRecorder
 	from SerienRecorderLogWriter import SRLogger
+	from SerienRecorderTVPlaner import SERIENRECORDER_TVPLANER_HTML_FILENAME
 	lt = time.localtime()
 
 	# Remove old backups
@@ -174,6 +175,8 @@ def createBackup():
 			STBHelpers.saveEnigmaSettingsToFile(BackupPath)
 			for filename in os.listdir(BackupPath):
 				os.chmod(os.path.join(BackupPath, filename), 0o777)
+			if fileExists(SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value):
+				shutil.copy(SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value, BackupPath)
 		except Exception, e:
 			SRLogger.writeLog("Backup konnte nicht erstellt werden: " + str(e), True)
 
