@@ -86,7 +86,7 @@ def getCover(self, serien_name, serien_id, auto_check = False, forceReload = Fal
 
 		if config.plugins.serienRec.refreshPlaceholderCover.value and fileExists(serien_nameCover) and os.path.getsize(serien_nameCover) == 0:
 			statinfo = os.stat(serien_nameCover)
-			if statinfo.st_ctime <= (time.time() + 5184000): # Older than 60 days
+			if (statinfo.st_ctime + 5184000) <= time.time(): # Older than 60 days
 				os.remove(serien_nameCover)
 
 		if fileExists(serien_nameCover):
