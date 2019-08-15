@@ -74,6 +74,10 @@
 				<br>Hat man durch den SR auch automatisch Serien- oder Serien+Staffel-Verzeichnisse anlegen lassen, wo der SR kopien der Cover anlegt, müssen diese auch manuell gelöscht werden.
 				
 				</div>
+				<div class="alert alert-danger">
+                    <strong>Kein Cover vorhanden? </strong> 
+					<br>In dem Fall BITTE im SR Thread melden, damit die TVDB-ID hinzugefügt werden kann.
+            </div>
 				<br>
 				<p><h4><strong>Beispiel Screenshot für eine Anzeige mit Cover im SR</strong></h4></p>
                 <div class="thumbnail with-caption">
@@ -250,6 +254,37 @@
                         <small>Serien-Beschreibung Screenshot</small>
                     </p>
                 </div>
+				</ul>
+				
+<!-- TVDB-ID ändern/hinzufügen -->	
+			
+				<span id="tvdb-id" class="anchor"></span>
+				<h3 class="sub-header"><strong>TVDB-ID ändern/hinzufügen&nbsp; &nbsp;<kbd>2</kbd></strong>&nbsp; &nbsp;(in der Serien-Marker Ansicht)</h3>
+				<br>	
+                <ul>
+				<p>Da der SerienRecorder nicht alle Daten von der Wunschliste.de Webseite nutzen darf, wird für manche angezeigten Daten auf andere Quellen zurückgegriffen.
+				<br>Im Falle von
+				<ul>
+				<li>Covern
+				</li>
+				<li>Serienbeschreibungen (Taste <kbd>4</kbd>)
+				</li>
+				<li>Episoden-Liste (Taste <kbd>5</kbd>)
+				</li>
+				<li>Episoden-Infos (Taste <kbd>OK</kbd> in der Episoden-Liste)
+				</li>
+				</ul>
+				<br>
+				werden die Daten von <a href="https://www.thetvdb.com/" target="_blank">TheTVDB.com</a> genutzt.
+				<br><br>
+				<div class="alert alert-info" role="alert"><strong>Hinweis :</strong> Da Wunschliste.de und TheTVDB.com nicht immer die selben Daten nutzen/haben, kann es bei den Daten von TheTVDB zu Abweichungen gegenüber Wunschliste.de kommen. Maßgebend für die Funktion des SerienRecorders sind die Daten von Wunschliste.de </div>
+				
+				<br>Damit das Zusammenspiel beider Datenquellen überhaupt funktioniert, ist es allerdings nötig, das für jeden Serien-Marker die TVDB-ID hinzugefügt wird, was manuell erfolgen muss. Bisher hat der Admin/Programmierer des SerienRecorder diese Arbeit allein erledigt. Da es sich aber um mehrere Tausend Serien handelt, wurde eine Funktion eingebaut, die es jedem <strong>freigeschalteten User</strong> ermöglicht, diese TVDB-ID auch zu ändern/hinzufügen.
+				<br>Um Missbrauch zu verhindern, muss diese Funktion erst freigeschaltet werden. Dafür bekommt der jenige eine Datei zugeschickt, die dann im Ordner <strong>"/etc/enigma2/"</strong> abgelegt werden muss.
+				<br>Ist die Option nicht freigeschaltet, wird nur ein Hinweistext angezeigt und man gelangt mit <kbd>EXIT</kbd> wieder zurück. 
+				<br>Hat man sich freischalten lassen, wird die evtl. schon vorhandene TVDB-ID vom SerienServer abgerufen und angezeigt. Man hat dann die Möglichkeit die ID einzugeben bzw. zu ändern. Diese ID wird dann auf dem SerienServer gespeichert und das Cover wird neu geladen. Diese ID steht dann sofort auch allen anderen Nutzern des SerienRecorders zur Verfügung.
+				<br>Sollte auf TheTVDB noch kein Poster (Cover) vorhanden sein, sollte man die ID trotzdem eingeben, wovon ja auch die anderen Daten abhängig sind.
+				</p>
 				</ul>
 				
 				<br><br><br><br>
