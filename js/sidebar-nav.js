@@ -55,6 +55,7 @@ var data =
         { href: "sonstige.htm#merkzettel", title: "Merkzettel"},
 		{ href: "sonstige.htm#serienstarts", title: "Neue Serienstarts"},
 		{ href: "sonstige.htm#serienbeschreibung", title: "Serienbeschreibung"},
+		{ href: "sonstige.htm#tvdb-id", title: "TVDB-ID ändern/hinzufügen"},
     ]},
 	{href: "faq.htm", title: "FAQ / HGF / WTW",},
 	{href: "begriffe.htm", title: "Index",},
