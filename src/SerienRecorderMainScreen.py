@@ -66,12 +66,13 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			"startTeletext"  : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"1"		: (self.searchSeries, "Serie manuell suchen"),
-			"2"		: (self.reloadSerienplaner, "Serienplaner neu laden"),
+			"2"	    : (self.changeTVDBID, "TVDB-ID ändern"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
+			"5"		: (self.imapTest, "IMAP Test"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-			"5"		: (self.imapTest, "IMAP Test"),
+			"8"		: (self.reloadSerienplaner, "Serienplaner neu laden"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -156,8 +157,9 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_blue'].setText("Timer-Liste")
 		self.num_bt_text[0][1] = "IMAP-Test"
 		self.num_bt_text[1][0] = "Serie suchen"
-		self.num_bt_text[2][0] = "Neu laden"
+		self.num_bt_text[2][0] = "TVDB-ID ändern"
 		self.num_bt_text[2][2] = "Timer suchen"
+		self.num_bt_text[3][1] = "Neu laden"
 
 		super(self.__class__, self).startDisplayTimer()
 
@@ -211,6 +213,12 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def test(self):
 		i = 0
+
+	def changeTVDBID(self):
+		from SerienRecorderScreenHelpers import EditTVDBID
+		(serien_name, serien_id) = self.getSeriesNameID()
+		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_id)
+		editTVDBID.changeTVDBID()
 
 	def reloadSerienplaner(self):
 		# lt = datetime.datetime.now()

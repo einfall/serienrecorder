@@ -190,7 +190,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if self['menu_list'].getCurrent() is None:
 			return
 		self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
-		self.session.openWithCallback(self.setupFinished, serienRecMarkerSetup, self.selected_serien_name)
+		serien_id = self['menu_list'].getCurrent()[0][2]
+		self.session.openWithCallback(self.setupFinished, serienRecMarkerSetup, self.selected_serien_name, serien_id)
 
 	def setupFinished(self, result):
 		if result:
@@ -219,38 +220,11 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.loading:
 			return
 
-		if fileExists("/etc/enigma2/SerienRecorder.tvdb.id"):
-			serien_name = self['menu_list'].getCurrent()[0][1]
-			serien_id = self['menu_list'].getCurrent()[0][2]
-			tvdb_id = SeriesServer().getTVDBID(serien_id)
-			if tvdb_id is False:
-				self.session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!", MessageBox.TYPE_ERROR, timeout=5)
-			else:
-				tvdb_id_text = str(tvdb_id) if tvdb_id > 0 else 'Keine'
-				message = "Für '%s' ist folgende TVBD-ID zugewiesen: '%s'\n\nMöchten Sie die TVDB-ID ändern?" % (serien_name, tvdb_id_text)
-				self.session.openWithCallback(self.enterTVDBID, MessageBox, message, MessageBox.TYPE_YESNO, default = False)
-		else:
-			message = "Cover und Serien-/Episodeninformationen stammen von 'TheTVDB' - dafür muss jeder Serie eine TVDB-ID zugewiesen werden. " \
-			          "Für viele Serien stellt Wunschliste diese ID zur Verfügung, manchmal ist sie aber falsch oder fehlt ganz.\n\n" \
-			          "In diesem Fall kann die TVDB-ID über diese Funktion direkt im SerienRecorder geändert und auf dem SerienServer " \
-			          "gespeichert werden, sodass alle SerienRecorder Nutzer von der Änderung profitieren.\n\n" \
-			          "Um Missbrauch zu verhindern, muss diese Funktion aber erst freigeschaltet werden, wer sich beteiligen möchte, kann " \
-			          "sich an den SerienRecorder Entwickler wenden."
-
-			self.session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=0)
-
-	def enterTVDBID(self, answer):
-		if answer and self.modus == "menu_list":
-			self.session.openWithCallback(self.setTVDBID, NTIVirtualKeyBoard, title = "TVDB-ID eingeben:")
-
-	def setTVDBID(self, tvdb_id):
-		if tvdb_id:
-			serien_name = self['menu_list'].getCurrent()[0][1]
-			serien_id = self['menu_list'].getCurrent()[0][2]
-			if not SeriesServer().setTVDBID(serien_id, tvdb_id):
-				self.session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
-			getCover(self, serien_name, serien_id, False, True)
-			self.readSerienMarker(serien_name)
+		from SerienRecorderScreenHelpers import EditTVDBID
+		serien_name = self['menu_list'].getCurrent()[0][1]
+		serien_id = self['menu_list'].getCurrent()[0][2]
+		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_id)
+		editTVDBID.changeTVDBID()
 
 	def serieInfo(self):
 		if self.loading:
@@ -845,13 +819,14 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 
 class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScreen):
-	def __init__(self, session, Serie):
+	def __init__(self, session, Serie, ID):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.list = []
 		self.session = session
 		self.Serie = Serie
+		self.ID = ID
 		self.database = SRDatabase(serienRecDataBaseFilePath)
 		self.HilfeTexte = {}
 		self.fromTime_index = 1
@@ -868,6 +843,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			"up": (self.keyUp, "eine Zeile nach oben"),
 			"down": (self.keyDown, "eine Zeile nach unten"),
 			"startTeletext": (self.showAbout, "Über dieses Plugin"),
+			"2": (self.resetCover, "Cover zurücksetzen"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -1006,6 +982,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self['text_red'].setText("Abbrechen")
 		self['text_green'].setText("Speichern")
 		self['text_ok'].setText("Ordner auswählen")
+		self.num_bt_text[2][0] = "Cover zurücksetzen"
 
 		super(self.__class__, self).startDisplayTimer()
 
@@ -1225,15 +1202,17 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.tags.setChoices([len(res) == 0 and "Keine" or ' '.join(res)])
 
 	def chooseTags(self):
-		SRLogger.writeLog("Choose tags was called.", True)
 		preferredTagEditor = getPreferredTagEditor()
 		if preferredTagEditor:
-			SRLogger.writeLog("Has preferred tageditor.", True)
 			self.session.openWithCallback(
 				self.tagEditFinished,
 				preferredTagEditor,
 				self.serienmarker_tags
 			)
+
+	def resetCover(self):
+		getCover(None, self.Serie, self.ID, False, True)
+		self.session.open(MessageBox, "Das Cover für ' %s ' wurde zurückgesetzt." % self.Serie, MessageBox.TYPE_INFO, timeout=5)
 
 	def setInfoText(self):
 		self.HilfeTexte = {

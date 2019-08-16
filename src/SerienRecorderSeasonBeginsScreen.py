@@ -3,11 +3,13 @@
 # This file contains the SerienRecoder Season Begin Screen
 from Screens.Screen import Screen
 from Screens.HelpMenu import HelpableScreen
+from Screens.MessageBox import MessageBox
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config
 
 from enigma import ePicLoad, eTimer, loadPNG, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_VALIGN_CENTER
 from skin import parseColor
+
 
 import SerienRecorder
 from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, skinFactor
@@ -55,7 +57,8 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"yellow": (self.keyYellow, "Zeige nur Serien-Starts"),
 			"startTeletext": (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
-			"0"	: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
+			"0"	    : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
+			"2"		: (self.changeTVDBID, "TVDB-ID ändern"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
@@ -91,6 +94,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_ok'].setText("Marker hinzufügen")
 		self['text_yellow'].setText("Zeige Serienstarts")
 
+		self.num_bt_text[2][0] = "TVDB-ID ändern"
 		self.num_bt_text[3][0] = buttonText_na
 		super(self.__class__, self).startDisplayTimer()
 
@@ -127,6 +131,13 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 	def __onLayoutFinish(self):
 		self['title'].setText("Lade neue Serien/Staffeln...")
 		self.timer_default.start(0)
+
+	def changeTVDBID(self):
+		from SerienRecorderScreenHelpers import EditTVDBID
+		serien_name = self[self.modus].getCurrent()[0][0]
+		serien_id = self[self.modus].getCurrent()[0][4]
+		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_id)
+		editTVDBID.changeTVDBID()
 
 	def readProposal(self):
 		self.timer_default.stop()

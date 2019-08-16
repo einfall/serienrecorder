@@ -1,8 +1,6 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Screen Helpers
-
-from Tools.Directories import fileExists
 from enigma import eListboxPythonMultiContent, gFont, getDesktop, eTimer
 from Components.config import config
 from Components.Label import Label
@@ -11,10 +9,18 @@ from Components.Pixmap import Pixmap
 from Components.VideoWindow import VideoWindow
 from Components.ScrollLabel import ScrollLabel
 from Screens.MessageBox import MessageBox
+from Tools.Directories import fileExists
+
+if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
+	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
+else:
+	from Screens.VirtualKeyBoard import VirtualKeyBoard as NTIVirtualKeyBoard
+
 
 from SerienRecorder import serienRecMainPath
 from SerienRecorderDatabase import SRDatabase
 from SerienRecorderHelpers import isDreamOS, SRMANUALURL
+from SerienRecorderSeriesServer import SeriesServer
 
 # check VPS availability
 try:
@@ -494,3 +500,45 @@ class serienRecBaseScreen:
 		if url:
 			serien_id = url
 		getCover(self, serienName, serien_id)
+
+class EditTVDBID:
+	def __init__(self, parent, session, serien_name, serien_id):
+		self.parent = parent
+		self.session = session
+		self.serien_name = serien_name
+		self.serien_id = serien_id
+		self.tvdb_id = 0
+
+	def changeTVDBID(self):
+		if fileExists("/etc/enigma2/SerienRecorder.tvdb.id"):
+			self.tvdb_id = SeriesServer().getTVDBID(self.serien_id)
+			if self.tvdb_id is False:
+				self.session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!", MessageBox.TYPE_ERROR, timeout=5)
+			else:
+				tvdb_id_text = str(self.tvdb_id) if self.tvdb_id > 0 else 'Keine'
+				message = "Für ' %s ' ist folgende TVBD-ID zugewiesen: %s\n\nMöchten Sie die TVDB-ID ändern?" % (self.serien_name, tvdb_id_text)
+				self.session.openWithCallback(self.enterTVDBID, MessageBox, message, MessageBox.TYPE_YESNO, default = False)
+		else:
+			message = "Cover und Serien-/Episodeninformationen stammen von 'TheTVDB' - dafür muss jeder Serie eine TVDB-ID zugewiesen werden. " \
+			          "Für viele Serien stellt Wunschliste diese ID zur Verfügung, manchmal ist sie aber falsch oder fehlt ganz.\n\n" \
+			          "In diesem Fall kann die TVDB-ID über diese Funktion direkt im SerienRecorder geändert und auf dem SerienServer " \
+			          "gespeichert werden, sodass alle SerienRecorder Nutzer von der Änderung profitieren.\n\n" \
+			          "Um Missbrauch zu verhindern, muss diese Funktion aber erst freigeschaltet werden, wer sich beteiligen möchte, kann " \
+			          "sich an den SerienRecorder Entwickler wenden."
+
+			self.session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=0)
+
+	def enterTVDBID(self, answer):
+		if answer:
+			tvdb_id_text = str(self.tvdb_id) if self.tvdb_id > 0 else ''
+			from Screens.InputBox import InputBox
+			from Components.Input import Input
+			self.session.openWithCallback(self.setTVDBID, InputBox, title="TVDB-ID:",
+		                              windowTitle="TVDB-ID hinzufügen/ändern", text=tvdb_id_text, type=Input.NUMBER)
+
+	def setTVDBID(self, tvdb_id):
+		if tvdb_id:
+			from SerienRecorder import getCover
+			if not SeriesServer().setTVDBID(self.serien_id, tvdb_id):
+				self.session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
+			getCover(self.parent, self.serien_name, self.serien_id, False, True)

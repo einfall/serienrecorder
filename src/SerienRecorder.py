@@ -1105,6 +1105,7 @@ def autostart(reason, **kwargs):
 
 		global startTimer
 		global startTimerConnection
+		global autoCheckFinished
 		lt = time.localtime()
 		uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 		SRLogger.writeLog("\nSerienRecorder Start: %s" % uhrzeit, True)
