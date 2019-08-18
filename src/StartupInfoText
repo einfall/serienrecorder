@@ -1,8 +1,6 @@
 ﻿Hilfreiche Tipps zur Bedienung des SerienRecorders:
 
 Einige Tasten sind doppelt belegt, das heisst je nachdem ob kurz oder lang gedrückt, werden unterschiedliche Funktionen ausgeführt.
-Einige Beispiele dafür:  
-7: YouTube/Wikipedia
 
 Ansicht Serienmarker:
 rot: (De)aktivieren/Löschen
@@ -19,7 +17,6 @@ Bei der Tastenbeschreibung gilt dabei generell: <kurzer Druck>/<langer Druck>
 
 ****************************************************************************
 Bei manchen Skins ist mehr Platz für die Texte, dann sieht die Beschreibung eindeutiger aus:
-7: YouTube (lang: Wikipedia)
 
 Ansicht Serienmarker:
 rot: An/Aus (lang: Löschen)
@@ -42,43 +39,67 @@ langer Tastendruck:
 Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
+CHANGELOG 3.9.0
 
-
-CHANGE-LOG v3.8.0:
-
-Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste
+Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste.
+Cover, Episodenliste, Serien-/Episodeninformationen stammen von TheTVDB.
 
 Neue Funktionen:
-	- Das Aufnahmeverzeichnis am Serien-Marker kann jetzt auf den globalen Standard zurückgesetzt werden (gelbe Taste)
+
+- Die TVDB-ID kann jetzt direkt im SerienRecorder für eine Serie geändert werden - die Änderungen werden direkt auf den SerienServer übertragen. Über Taste 2 kann die TVDB-ID in folgenden Ansichten geändert werden: Serien-Marer, Planer, Top30 und Serien-/Staffelstart.
+Um Missbrauch zu verhindern, muss die Funktion erst freigeschaltet werden, dafür stelle ich eine Datei zur Verfügung, die im Ordner /etc/enigma2 abgelegt werden muss (siehe auch Anmerkungen)
+- In den Einstellungen am Serien-Marker (MENÜ-Taste) kann jetzt das Cover für eine Serie zurückgesetzt werden (Taste 2) - das ist zum Beispiel dann sinnvoll, wenn es inzwischen ein neueres Cover bei TheTVDB gibt. Beim Zurücksetzen des Covers wird die lokale Coverdatei gelöscht und es wird das aktuelle Cover von TheTVDB abgerufen und gespeichert.
+- Neue Funktion "Serien-Marker aktualisieren" (siehe Anmerkungen)
+- Neue Funktion: "Timer-Aktualisierung aus dem EPG für einen Marker abschalten" (siehe Anmerkungen)
+- Neue Funktion: "Alle Senderzuordnungen löschen (Taste 9 in der Senderzuordnung) (siehe Anmerkungen)
+- Neue Funktion "Sender prüfen" in der "Senderzuordnung" (siehe Anmerkungen)
+- Wunschliste Serien Infos können jetzt in allen Ansicht, in denen es Sinn macht, über (TEXT) abgerufen werden (siehe Anmerkungen)
+- In der Serien-Marker Ansicht werden jetzt Produktionsort und Jahr der Serie angezeigt (siehe Anmerkungen)
+- Man kann jetzt pro Serien-Marker festlegen ob für diesen beim Auto-Check Termine vom SerienServer abgerufen werden oder nur Termine aus der TV-Planer E-Mail.
+- TV-Planer E-Mail Verarbeitung komplett überarbeitet (siehe Anmerkungen)
+- Neue Einstellung zum Ändern der Position der zweiten Spalte in der Serien-Marker Ansicht
+- Picons in der Serien-Planer und der Serien-/Staffelstart Ansicht können jetzt auch per Name und nicht nur wie bisher per ServiceRef geladen werden (siehe Anmerkungen)
+- Neue Zusatzoption "Platzhalter regelmäßig aktualisieren". Diese Option ist nur dann sichtbar, wenn man die Option "Platzhalter anlegen wenn Cover nicht vorhanden" aktiviert ist und sorgt dafür, dass in regelmäßigen Abständen (alle 60 Tage) versucht wird das Cover für die Platzhalter Datei herunterzuladen. So muss man nicht händisch die Platzhalter Dateien löschen um Cover zu bekommen (siehe Anmerkungen).
+- Neue Zusatzoption für die Eventprogrammierung: "Einzelepisoden als 'bereits getimert' markieren" - ist bei "Eventprogrammierung behandeln" die Einstellung "Einzelepisoden bevorzugen" gewählt, kann jetzt über eine Zusatzoption entschieden werden, ob für die Einzelepisoden des Events auch Einträge in die Datenbank gemacht werden sollen, wenn ein Timer für das Event angelegt werden musste. Es werden dann keine Timer mehr für die Einzelepisoden erstellt - bislang war es so, dass trotz der Timererstellung für das Event die Timer für die Einzelepisoden angelegt wurden.
+- Speichern der TV-Planer E-Mail (genauer des HTML Teils der E-Mail) beim Auto-Check (dient zur Fehlersuche) - es gelten die Einstellungen für das Logging - dorthin wird dann auch die TV-Planer E-Mail gespeichert (als TV-Planer.html)
+- Wenn die TV-Planer Option in den Einstellungen aktiv ist, kann unten im "Debug" Bereich das Abspeichern der TV-Planer E-Mail aktiviert werden.
+- Die Suche kann jetzt auch aus dem EPG (Sendungsinformationen) aufgerufen werden - das funktioniert aber im Moment nur bei DreamOS, weil dort die passenden Events verfügbar sind.
+
 
 Änderungen:
-	- Logausgabe verbessert.
-	- Sonderzeichen bleiben jetzt in den Seriennamen erhalten und werden nur noch bei der Verzeichniserstellung konvertiert
-	- Änderungen in der Kanalzuordnung werden jetzt besser übernommen
-	- Bei der manuellen Timererstellung wird jetzt auch die Anzahl der in Konflikt stehenden Timer angezeigt 
-	- Neues Logo für das Erweiterungen Menü
-	- TV-Planer Funktionen in ein eigenes Modul ausgelagert
+
+- Änderung am Verhalten der Info/EPG Taste (siehe Anmerkungen)
+- Es kann jetzt in den Einstellungen festgelegt werden, ob das Cover auch in den Serien-/Staffelordner kopiert werden soll und welchen Dateinamen es im Staffelordner bekommen soll. (siehe Anmerkungen)
+- Die temporäre Datenbank für den Auto-Check arbeitet jetzt mit Transaktionen
+- Support für YouTube entfernt
+- Support für Wikipedia entfernt
+- Es wird jetzt das WebkitHbbTV Plugin als Browser verwendet (siehe Anmerkungen)
+- Umstellung der Einstellungen auf echte Sections (siehe Anmerkungen)
+- Parsen der TV-Planer Mail jetzt in einem eigenen Thread
+- Optimierungen beim Auto-Check mit TV-Planer E-Mail (siehe Anmerkungen)
+- Die Option "bei Änderungen Suchlauf beim Beenden starten" wurde entfernt.
+- Standardwert für das Löschen alter SerienRecorder Backups auf 5 Tage gesetzt
+- Falls im Kopf der TV-Planer E-Mail keine Uhrzeit bei 'Dein TV-Planer für Donnerstag, den 14.03.2019' enthalten ist, wird jetzt 0:00 Uhr angenommen.
+- Logausgabe für das Anlegen von Serien-Marker für Filme wurde angepasst. Es heißt jetzt "Temporärer Serien-Marker ..."
+- Es gibt jetzt einen Hinweis, dass automatisch keine Timer für diesen Serien-Marker mehr angelegt werden, wenn man bei der Staffelauswahl am Serien-Marker die Einstellung "Manuell" auswählt.
+- Änderung des Standard Pfades für Cover auf "/media/hdd/SR_Cover", damit die Cover nicht wie bisher im /tmp Ordner abgelegt werden (siehe Anmerkungen)
+
 
 Bugfixes:
-	- Auto-Update überarbeitet - es sollte jetzt zuverlässig funktionieren (Änderungen werden natürlich erst mit dem nächsten Auto-Update wirksam).
-	- Probleme mit dem Update von älteren SerienRecorder Versionen als 3.6.0 behoben
-	- Fehler bei der Verarbeitung von S00E00 Serien bzw. Filmen
-	- Falsche Farben im Serien-Planer, Top 30, Serien-/Staffelbeginn
-	- Falsche Tastenanzeige im Marker Screen
-	- Kein Absturz in der Serien-/Staffelstart Ansicht wenn keine Wunschliste ID vorhanden ist.
-	- Werbung in der TV-Planer E-Mail wird ignoriert
-	- Fehler beim Abrufen von Serien-Informationen in manchen Screens behoben
 
-Anmerkungen:
-	In früheren Versionen des SerienRecorders wurden Sonderzeichen an jeder Stelle durch Leerzeichen ersetzt - das war nicht immer schön und hat manchmal zu komischen Serien-Marker Namen geführt.
-	Da es eigentlich keinen Grund gibt die Sonderzeichen zu ersetzen, außer bei Datei- bzw. Ordnernamen (weil dort einige Zeichen vom Betriebssystem nicht erlaubt sind)
-	habe ich die Ersetzung der Sonderzeichen mit dieser Version (bis auf die erwähnten Stellen) ausgebaut.
-	Serien wie "Die Heiland: Wir sind Anwalt" oder auch "Grey's Anatomy" werden jetzt wieder durchgehend korrekt angezeigt.
-	Damit bestehende Marker wieder den korrekten Namen bekommen wird beim ersten Start ein Update der SerienRecorder Datenbank durchgeführt.
-	Es wird ein automatisches Backup im gleichen Verzeichnis wie die Datenbank angelegt.
-	Beim Datenbank Update werden die bestehenden Serien-Marker korrigiert, d.h. es werden für alle vorhandenen Serien-Marker die Serien-Namen erneut vom SerienServer abgerufen und ggf. korrigiert.
-	Zusätzlich müssen auch noch alle Tabellen korrigiert werden in der diese Namen verwendet wurden.
-	Wenn man direkt nach dem ersten Start das Log öffnet sieht man Hinweise welche Serien-Marker korrigiert wurden.
+- Tippfehler korrigiert
+- Meldung beim manuellen Auto-Check umformuliert
+- Falls kein Backup erstellt werden kann, weil der Backup Pfad nicht beschreibbar ist, wird jetzt eine Meldung ins Log geschrieben und es gibt keinen Absturz mehr
+- Änderung im Hilfetext im Einstellungen-Screen
+- Tastenanzeige sollte jetzt in allen Screens einheitlich und je nach eingestelltem Skin korrekt sein.
+- Diverse interne Umstrukturierungen (Python imports, Refaktorierungen)
+- Beim Wechsel des Datenbank-Speicherortes wurde die Datenbank nicht kopiert und der neue Pfad wurde u.U. nicht gespeichert.
+- Texte in den Serien-Marker Einstellungen angepasst
+- Logausgabe verbessert
+- Bei einigen Serien und den Spielfilmen wurde "gesehen" bzw. "als gesehen markieren" mit in den Timer geschrieben.
+- Datenbank Update verbessert
+- Fehler in der Verarbeitung von Eventprogrammierungen korrigiert
+- Spaltenbreite der ersten Spalte in der Suchergebnis Ansicht vergrößert, sodass jetzt auch längere Serientitel nicht mehr abgeschnitten werden.
 
 Viel Spaß mit dem SerienRecorder!
 

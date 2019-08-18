@@ -32,7 +32,6 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 					"\n"
 					"If you like this plugin and want to support us, please donate to:\n"
 					"@einfall: send PN for Amazon-Wishlist,\n"
-					"@w22754: PayPal to w22754@yahoo.de,\n"
 		            "@MacDisein: PayPal to macdisein@gmx.de\n\n"
 		            "Mit Unterstützung und Genehmigung zur Verwendung der Daten von\n"
 		            "Wunschliste.de - http://www.wunschliste.de") % config.plugins.serienRec.showversion.value
