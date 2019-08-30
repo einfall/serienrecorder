@@ -146,6 +146,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.showPicons = ConfigSelection(choices=[("0", "nein"), ("1", "ja, über ServiceRef"), ("2", "ja, über Name")], default="1")
 	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 35, 1, default=0)
 	config.plugins.serienRec.markerColumnWidth = ConfigSelectionNumber(-200, 200, 10, default=0)
+	config.plugins.serienRec.markerNameInset = ConfigSelectionNumber(0, 80, 1, default=40)
 	config.plugins.serienRec.markerSort = ConfigSelection(choices=[("0", "Alphabetisch"), ("1", "Wunschliste")],
 	                                                      default="0")
 	config.plugins.serienRec.intensiveTimersuche = ConfigYesNo(default=True)
@@ -664,9 +665,16 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 	def createConfigList(self):
 		self.list = []
-		self.list.append(getConfigListEntry("SYSTEM", ))
+
 		if not isDreamOS():
-			self.list.append(getConfigListEntry(400 * "¯", ))
+			try:
+				from Components.config import ConfigDescription
+				self.list.append(getConfigListEntry("SYSTEM", ConfigDescription()))
+			except:
+				self.list.append(getConfigListEntry("SYSTEM", ))
+				self.list.append(getConfigListEntry(400 * "¯", ))
+		else:
+			self.list.append(getConfigListEntry("SYSTEM", ))
 
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("ID der Box:", config.plugins.serienRec.BoxID))
@@ -692,9 +700,15 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				                                    config.plugins.serienRec.deleteBackupFilesOlderThan))
 
 		self.list.append(getConfigListEntry("", ConfigNothing()))
-		self.list.append(getConfigListEntry("AUTO-CHECK", ))
 		if not isDreamOS():
-			self.list.append(getConfigListEntry(400 * "¯", ))
+			try:
+				from Components.config import ConfigDescription
+				self.list.append(getConfigListEntry("AUTO-CHECK", ConfigDescription()))
+			except:
+				self.list.append(getConfigListEntry("AUTO-CHECK", ))
+				self.list.append(getConfigListEntry(400 * "¯", ))
+		else:
+			self.list.append(getConfigListEntry("AUTO-CHECK", ))
 
 		# self.list.append(getConfigListEntry("Intervall für autom. Suchlauf (in Std.) (00 = kein autom. Suchlauf, 24 = nach Uhrzeit):", config.plugins.serienRec.updateInterval)) #3600000
 		# self.list.append(getConfigListEntry("Intervall für autom. Suchlauf (Std.) (00 = keiner, 24 = nach Uhrzeit):", config.plugins.serienRec.updateInterval)) #3600000
@@ -770,9 +784,16 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 					                                    config.plugins.serienRec.DSBTimeout))
 
 		self.list.append(getConfigListEntry("", ConfigNothing()))
-		self.list.append(getConfigListEntry("TIMER", ))
+
 		if not isDreamOS():
-			self.list.append(getConfigListEntry(400 * "¯", ))
+			try:
+				from Components.config import ConfigDescription
+				self.list.append(getConfigListEntry("TIMER", ConfigDescription()))
+			except:
+				self.list.append(getConfigListEntry("TIMER", ))
+				self.list.append(getConfigListEntry(400 * "¯", ))
+		else:
+			self.list.append(getConfigListEntry("TIMER", ))
 
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Timer-Art:", self.kindOfTimer))
@@ -801,9 +822,15 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("", ConfigNothing()))
-			self.list.append(getConfigListEntry("OPTIMIERUNGEN", ))
 			if not isDreamOS():
-				self.list.append(getConfigListEntry(400 * "¯", ))
+				try:
+					from Components.config import ConfigDescription
+					self.list.append(getConfigListEntry("OPTIMIERUNGEN", ConfigDescription()))
+				except:
+					self.list.append(getConfigListEntry("OPTIMIERUNGEN", ))
+					self.list.append(getConfigListEntry(400 * "¯", ))
+			else:
+				self.list.append(getConfigListEntry("OPTIMIERUNGEN", ))
 
 			self.list.append(getConfigListEntry("Intensive Suche nach angelegten Timern:",
 			                                    config.plugins.serienRec.intensiveTimersuche))
@@ -811,9 +838,16 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                    config.plugins.serienRec.sucheAufnahme))
 
 			self.list.append(getConfigListEntry("", ConfigNothing()))
-			self.list.append(getConfigListEntry("GUI", ))
+
 			if not isDreamOS():
-				self.list.append(getConfigListEntry(400 * "¯", ))
+				try:
+					from Components.config import ConfigDescription
+					self.list.append(getConfigListEntry("GUI", ConfigDescription()))
+				except:
+					self.list.append(getConfigListEntry("GUI", ))
+					self.list.append(getConfigListEntry(400 * "¯", ))
+			else:
+				self.list.append(getConfigListEntry("GUI", ))
 
 			self.list.append(getConfigListEntry("Skin:", config.plugins.serienRec.SkinType))
 
@@ -845,6 +879,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(
 				getConfigListEntry("Korrektur der Spaltenbreite der Serien-Marker Ansicht:", config.plugins.serienRec.markerColumnWidth))
 			self.list.append(
+				getConfigListEntry("Einzug der Serien-Namen in der Serien-Marker Ansicht:", config.plugins.serienRec.markerNameInset))
+			self.list.append(
 				getConfigListEntry("Staffel-Filter in Sendetermine Ansicht:", config.plugins.serienRec.seasonFilter))
 			self.list.append(
 				getConfigListEntry("Timer-Filter in Sendetermine Ansicht:", config.plugins.serienRec.timerFilter))
@@ -863,9 +899,16 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                    config.plugins.serienRec.refreshViews))
 
 		self.list.append(getConfigListEntry("", ConfigNothing()))
-		self.list.append(getConfigListEntry("LOG", ))
+
 		if not isDreamOS():
-			self.list.append(getConfigListEntry(400 * "¯", ))
+			try:
+				from Components.config import ConfigDescription
+				self.list.append(getConfigListEntry("LOG", ConfigDescription()))
+			except:
+				self.list.append(getConfigListEntry("LOG", ))
+				self.list.append(getConfigListEntry(400 * "¯", ))
+		else:
+			self.list.append(getConfigListEntry("LOG", ))
 
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Speicherort für Log-Datei:", config.plugins.serienRec.LogFilePath))
@@ -1197,6 +1240,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.markerColumnWidth: (
 				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von Standardbreite kann die Spalte schmaler bzw. breiter machen.",
 				"1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.markerNameInset: (
+				"Mit dieser Einstellung kann der Einzug der Serien-Namen in der Serien-Marker Ansicht angepasst werden. Damit lässt sich eine deutlichere optische Abgrenzung der einzelnen Serien-Marker erreichen.",
+				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.intensiveTimersuche: (
 				"Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.",
 				"intensive_Suche"),
@@ -1442,6 +1488,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.copyCoverToFolder.save()
 		config.plugins.serienRec.listFontsize.save()
 		config.plugins.serienRec.markerColumnWidth.save()
+		config.plugins.serienRec.markerNameInset.save()
 		config.plugins.serienRec.intensiveTimersuche.save()
 		config.plugins.serienRec.sucheAufnahme.save()
 		config.plugins.serienRec.selectNoOfTuners.save()

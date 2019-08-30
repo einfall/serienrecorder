@@ -22,7 +22,7 @@ if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualK
 else:
 	from Screens.VirtualKeyBoard import VirtualKeyBoard as NTIVirtualKeyBoard
 
-from SerienRecorderScreenHelpers import serienRecBaseScreen, longButtonText, InitSkin, skinFactor, setMenuTexts
+from SerienRecorderScreenHelpers import serienRecBaseScreen, longButtonText, InitSkin, skinFactor, setMenuTexts, buttonText_na
 from SerienRecorder import serienRecDataBaseFilePath, getCover, \
 	serienRecMainPath, VPSPluginAvailable, serienRecCheckForRecording
 import SerienRecorder
@@ -378,7 +378,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		folderText = "Dir: %s" % AufnahmeVerzeichnis
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 40, 3, (410 + self.columnWidth) * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
+			(eListboxPythonMultiContent.TYPE_TEXT, int(config.plugins.serienRec.markerNameInset.value), 3, (410 + self.columnWidth) * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, (470 + self.columnWidth) * skinFactor, 3, (380 + self.columnWidth) * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, info, serieColor, serieColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, (410 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffelText, foregroundColor, foregroundColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, (470 + self.columnWidth) * skinFactor, 29 * skinFactor, (380 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, senderText, foregroundColor, foregroundColor),
@@ -838,12 +838,12 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"red": (self.cancel, "Änderungen verwerfen und zurück zur Serien-Marker-Ansicht"),
 			"green": (self.save, "Einstellungen speichern und zurück zur Serien-Marker-Ansicht"),
+			"blue": (self.resetCover, "Cover zurücksetzen"),
 			"cancel": (self.cancel, "Änderungen verwerfen und zurück zur Serien-Marker-Ansicht"),
 			"ok": (self.ok, "Fenster für Verzeichnisauswahl öffnen"),
 			"up": (self.keyUp, "eine Zeile nach oben"),
 			"down": (self.keyDown, "eine Zeile nach unten"),
 			"startTeletext": (self.showAbout, "Über dieses Plugin"),
-			"2": (self.resetCover, "Cover zurücksetzen"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -979,10 +979,16 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
 
+		self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
+		                    [buttonText_na, buttonText_na, buttonText_na],
+		                    [buttonText_na, buttonText_na, buttonText_na],
+		                    [buttonText_na, buttonText_na, "Hilfe"],
+		                    [buttonText_na, buttonText_na, buttonText_na])
+
 		self['text_red'].setText("Abbrechen")
 		self['text_green'].setText("Speichern")
+		self['text_blue'].setText("Cover zurücksetzen")
 		self['text_ok'].setText("Ordner auswählen")
-		self.num_bt_text[2][0] = "Cover zurücksetzen"
 
 		super(self.__class__, self).startDisplayTimer()
 
@@ -1003,18 +1009,42 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 			self['bt_red'].show()
 			self['bt_green'].show()
+			self['bt_blue'].show()
 			self['bt_ok'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
 
 			self['text_red'].show()
 			self['text_green'].show()
+			self['text_blue'].show()
 			self['text_ok'].show()
 			self['text_0'].show()
 			self['text_1'].show()
 			self['text_2'].show()
 			self['text_3'].show()
 			self['text_4'].show()
+		else:
+			self['text_0'].hide()
+			self['text_1'].hide()
+			self['text_2'].hide()
+			self['text_3'].hide()
+			self['text_4'].hide()
+			self['text_5'].hide()
+			self['text_6'].hide()
+			self['text_7'].hide()
+			self['text_8'].hide()
+			self['text_9'].hide()
+
+			self['bt_0'].hide()
+			self['bt_1'].hide()
+			self['bt_2'].hide()
+			self['bt_3'].hide()
+			self['bt_4'].hide()
+			self['bt_5'].hide()
+			self['bt_6'].hide()
+			self['bt_7'].hide()
+			self['bt_8'].hide()
+			self['bt_9'].hide()
 
 	def createConfigList(self):
 		self.list = []
