@@ -1078,16 +1078,11 @@ class SRDatabase:
 	def getMarkers(self, boxID, numberOfRecordings, seriesFilter = None):
 		result = []
 		cur = self._srDBConn.cursor()
-		where = ''
-		if seriesFilter is not None and len(seriesFilter) > 0:
-			for i in range(len(seriesFilter) - 1):
-				where += '"' + seriesFilter[i] + '",'
-			where += '"' + seriesFilter[-1] + '"'
 
-		if where is '':
-			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type FROM SerienMarker ORDER BY Serie")
+		if seriesFilter:
+			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type FROM SerienMarker WHERE Serie IN(%s) ORDER BY Serie" % ','.join('?' * len(seriesFilter)), seriesFilter)
 		else:
-			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type FROM SerienMarker WHERE Serie IN(?) ORDER BY Serie", [where])
+			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type FROM SerienMarker ORDER BY Serie")
 		rows = cur.fetchall()
 		for row in rows:
 			(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, markerType) = row
