@@ -120,6 +120,8 @@ class checkGitHubUpdateScreen(Screen):
 		self.progressTimer = eTimer()
 		if isDreamOS():
 			self.progressTimerConnection = self.progressTimer.timeout.connect(self.updateProgressBar)
+			self.appClosed_conn = None
+			self.dataAvail_conn = None
 		else:
 			self.progressTimer.callback.append(self.updateProgressBar)
 
@@ -219,8 +221,8 @@ class checkGitHubUpdateScreen(Screen):
 			self['status'].setText("Installation wurde gestartet, bitte warten...")
 
 			if isDreamOS():
-				self.console.appClosed.connect(self.finishedPluginUpdate)
-				self.console.dataAvail.connect(self.cmdData)
+				self.appClosed_conn = self.console.appClosed.connect(self.finishedPluginUpdate)
+				self.dataAvail_conn = self.console.dataAvail.connect(self.cmdData)
 				command = "apt-get update && dpkg -i %s && apt-get -f install" % str(self.filePath)
 			else:
 				self.console.appClosed.append(self.finishedPluginUpdate)

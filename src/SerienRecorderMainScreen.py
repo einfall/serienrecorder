@@ -113,6 +113,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.serviceRefs = None
 
 		self.onLayoutFinish.append(self.setSkinProperties)
+		self.onClose.append(self.__onClose)
 
 		self.onFirstExecBegin.append(self.showSplashScreen)
 		self.onFirstExecBegin.append(self.checkForUpdate)
@@ -124,7 +125,6 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				self.onFirstExecBegin.append(self.startScreen)
 		else:
 			self.onFirstExecBegin.append(self.startScreen)
-		self.onClose.append(self.__onClose)
 
 	def imapTest(self):
 		from SerienRecorderTVPlaner import imaptest
@@ -296,9 +296,8 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				SerienRecorder.serienRecCheckForRecording(self.session, False, False)
 
 		if not SerienRecorder.initDB():
-			self.keyCancel()
-			self.close()
-			return
+			print "[SerienRecorder] initDB failed"
+			super(self.__class__, self).close()
 
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 		if not self.database.hasChannels():

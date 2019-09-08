@@ -192,6 +192,12 @@ def initDB():
 		else:
 			dbIncompatible = True
 
+		mode = os.R_OK | os.W_OK
+		if not os.access(serienRecDataBaseFilePath, mode):
+			SRLogger.writeLog("Datenbankdatei hat nicht die richtigen Berechtigungen - es müssen Lese- und Schreibrechte gesetzt sein.")
+			Notifications.AddPopup("Datenbankdatei hat nicht die richtigen Berechtigungen - es müssen Lese- und Schreibrechte gesetzt sein.", MessageBox.TYPE_INFO, timeout=10)
+			dbIncompatible = True
+
 		# Database incompatible - do cleanup
 		if dbIncompatible:
 			database.close()
@@ -211,7 +217,14 @@ def initDB():
 				return False
 
 	# Analyze database for query optimizer
-	database.optimize()
+	try:
+		database.optimize()
+	except Exception as e:
+		database.close()
+		SRLogger.writeLog("Fehler beim Zugriff auf die Datenbank [%s]" % str(e))
+		Notifications.AddPopup("Fehler beim Zugriff auf die Datenbank!\n%s" % str(e), MessageBox.TYPE_INFO, timeout=10)
+		return False
+
 	database.close()
 	return True
 

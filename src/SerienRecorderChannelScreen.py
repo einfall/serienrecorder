@@ -68,11 +68,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			"displayHelp_long" : self.showManual,
 		}, 0)
 
-		if config.plugins.serienRec.SkinType.value in ("", "AtileHD"):
-			config.plugins.serienRec.showAllButtons.value = False
-		else:
-			config.plugins.serienRec.showAllButtons.value = True
-
 		self.setupSkin()
 
 		self.modus = "list"
@@ -84,9 +79,10 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self.timer_default.callback.append(self.showChannels)
 
-		self.onLayoutFinish.append(self.setSkinProperties)
 		self.onLayoutFinish.append(self.__onLayoutFinished)
 		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
+
 
 	def callHelpAction(self, *args):
 		HelpableScreen.callHelpAction(self, *args)
@@ -306,12 +302,12 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 		# append missing (new) channels
 		for webChannel in webChannels:
-			if webChannel.lower() not in [dbWebChannel.lower() for dbWebChannel in dbWebChannels]:
+			if webChannel not in [dbWebChannel for dbWebChannel in dbWebChannels]:
 				added.append(webChannel)
 
 		# append removed channels
 		for dbWebChannel in dbWebChannels:
-			if dbWebChannel.lower() not in [webChannel.lower() for webChannel in webChannels]:
+			if dbWebChannel not in [webChannel for webChannel in webChannels]:
 				removed.append(dbWebChannel)
 
 		return added, removed
@@ -329,6 +325,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def findWebChannelInSTBChannels(self, webChannel):
 		result = (None, None)
+		channelFound = False
 
 		# First try to find the HD version
 		webChannelHD = webChannel + " HD"
@@ -337,9 +334,10 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			ratio = self.sequenceMatcher.ratio()
 			if ratio >= 0.98:
 				result = (servicename, serviceref)
+				channelFound = True
 				break
 
-		if not result:
+		if not channelFound:
 			for servicename,serviceref in self.stbChannelList:
 				self.sequenceMatcher.set_seqs(webChannel.lower(), servicename.lower())
 				ratio = self.sequenceMatcher.ratio()

@@ -572,6 +572,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self['bt_ok'].hide()
 			self['text_ok'].hide()
 
+
 	def keyLeft(self):
 		ConfigListScreen.keyLeft(self)
 		if self['config'].getCurrent()[1] == config.plugins.serienRec.autochecktype:
@@ -665,11 +666,13 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 	def createConfigList(self):
 		self.list = []
+		hasConfigDescription = False
 
 		if not isDreamOS():
 			try:
 				from Components.config import ConfigDescription
 				self.list.append(getConfigListEntry("SYSTEM", ConfigDescription()))
+				hasConfigDescription = True
 			except:
 				self.list.append(getConfigListEntry("SYSTEM", ))
 				self.list.append(getConfigListEntry(400 * "¯", ))
@@ -699,7 +702,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				self.list.append(getConfigListEntry("    Backup-Dateien löschen die älter als x Tage sind:",
 				                                    config.plugins.serienRec.deleteBackupFilesOlderThan))
 
-		self.list.append(getConfigListEntry("", ConfigNothing()))
+		if not hasConfigDescription:
+			self.list.append(getConfigListEntry("", ConfigNothing()))
 		if not isDreamOS():
 			try:
 				from Components.config import ConfigDescription
@@ -783,7 +787,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 					self.list.append(getConfigListEntry("    Timeout für (Deep-)Standby-Abfrage (in Sek.):",
 					                                    config.plugins.serienRec.DSBTimeout))
 
-		self.list.append(getConfigListEntry("", ConfigNothing()))
+		if not hasConfigDescription:
+			self.list.append(getConfigListEntry("", ConfigNothing()))
 
 		if not isDreamOS():
 			try:
@@ -821,7 +826,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 					self.list.append(getConfigListEntry("    Verwende alternative Sender bei Konflikten:", config.plugins.serienRec.useAlternativeChannel))
 
 		if config.plugins.serienRec.setupType.value == "1":
-			self.list.append(getConfigListEntry("", ConfigNothing()))
+			if not hasConfigDescription:
+				self.list.append(getConfigListEntry("", ConfigNothing()))
 			if not isDreamOS():
 				try:
 					from Components.config import ConfigDescription
@@ -837,7 +843,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("Zeige ob die Episode als Aufnahme auf der HDD ist:",
 			                                    config.plugins.serienRec.sucheAufnahme))
 
-			self.list.append(getConfigListEntry("", ConfigNothing()))
+			if not hasConfigDescription:
+				self.list.append(getConfigListEntry("", ConfigNothing()))
 
 			if not isDreamOS():
 				try:
@@ -898,7 +905,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("Screens bei Änderungen sofort aktualisieren:",
 			                                    config.plugins.serienRec.refreshViews))
 
-		self.list.append(getConfigListEntry("", ConfigNothing()))
+		if not hasConfigDescription:
+			self.list.append(getConfigListEntry("", ConfigNothing()))
 
 		if not isDreamOS():
 			try:
