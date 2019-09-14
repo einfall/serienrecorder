@@ -911,14 +911,6 @@ class serienRecCheckForRecording:
 			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
 			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
-			if not config.plugins.serienRec.forceRecording.value:
-				if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
-					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
-					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
-					if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
-						print "[SerienRecorder] processTransmissions time range ignore: %r" % serien_name
-						continue
-
 			# if there is no season or episode number it can be a special
 			# but if we have more than one special and wunschliste.de does not
 			# give us an episode number we are unable to differentiate between these specials
@@ -929,6 +921,17 @@ class serienRecCheckForRecording:
 			# initialize strings
 			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
+
+			if not config.plugins.serienRec.forceRecording.value:
+				if (int(fromTime) > 0) or (int(toTime) < (23*60)+59):
+					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
+					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
+					if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
+						print "[SerienRecorder] processTransmissions time range ignore: %r" % serien_name
+						timeRangeConfigured = "%s:%s - %s:%s" % (str(int(fromTime) / 60).zfill(2), str(int(fromTime) % 60).zfill(2), str(int(toTime) / 60).zfill(2), str(int(toTime) % 60).zfill(2))
+						timeRangeTransmission = "%s:%s - %s:%s" % (str(int(start_time) / 60).zfill(2), str(int(start_time) % 60).zfill(2), str(int(end_time) / 60).zfill(2), str(int(end_time) % 60).zfill(2))
+						SRLogger.writeLogFilter("timeRange", "' %s ' - Sendung (%s) nicht in Zeitspanne [%s]" % (label_serie, timeRangeTransmission, timeRangeConfigured))
+						continue
 
 			# Process channel relevant data
 

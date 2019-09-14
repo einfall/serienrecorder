@@ -476,9 +476,9 @@ class serienRecTimer:
 				end_time = (time.localtime(int(timer_end_unixtime)).tm_hour * 60) + time.localtime(int(timer_end_unixtime)).tm_min
 
 				if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
-					timeRangeString = "%s:%s-%s:%s" % (str(int(fromTime) / 60).zfill(2), str(int(fromTime) % 60).zfill(2), str(int(toTime) / 60).zfill(2), str(int(toTime) % 60).zfill(2))
-					timeRangeList = "[%s]" % timeRangeString
-					SRLogger.writeLogFilter("timeRange", "' %s ' - Timer (%s) nicht in Zeitspanne %s" % (label_serie, timeRangeString, timeRangeList))
+					timeRangeConfigured = "%s:%s - %s:%s" % (str(int(fromTime) / 60).zfill(2), str(int(fromTime) % 60).zfill(2), str(int(toTime) / 60).zfill(2), str(int(toTime) % 60).zfill(2))
+					timeRangeTransmission = "%s:%s - %s:%s" % (str(int(start_time) / 60).zfill(2), str(int(start_time) % 60).zfill(2), str(int(end_time) / 60).zfill(2), str(int(end_time) % 60).zfill(2))
+					SRLogger.writeLogFilter("timeRange", "' %s ' - Sendung (%s) nicht in Zeitspanne [%s]" % (label_serie, timeRangeTransmission, timeRangeConfigured))
 
 					# forced recording activated?
 					if not config.plugins.serienRec.forceRecording.value:

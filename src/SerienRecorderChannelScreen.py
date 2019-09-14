@@ -504,6 +504,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self['title'].setText("Lade Wunschliste-Sender...")
 			try:
 				self.createWebChannels(SeriesServer().doGetWebChannels(), False)
+				self.database.setChannelListLastUpdate()
 			except:
 				self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
 		else:

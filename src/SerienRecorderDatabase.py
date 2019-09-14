@@ -100,6 +100,7 @@ class SRDatabase:
 																		  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
 
 		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('Version', ?)", [version])
+		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('ChannelsLastUpdate', ?)", [int(time.time())])
 		cur.close()
 
 	def getVersion(self):
@@ -297,6 +298,12 @@ class SRDatabase:
 		except Exception as e:
 			updateSuccessful = False
 			SRLogger.writeLog("Die Tabelle 'STBAuswahl' konnte nicht angelegt werden [%s]." % str(e), True)
+
+		try:
+			cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('ChannelsLastUpdate', ?)", [int(time.time())])
+		except Exception as e:
+			updateSuccessful = False
+			SRLogger.writeLog("Der Zeitstempel für die letzte Aktualisierung der Kanalliste konnte nicht gesetzt werden [%s]." % str(e), True)
 
 		if updateSuccessful:
 			SRLogger.writeLog("Datenbank wurde erfolgreich aktualisiert - aktualisiere Versionsnummer.", True)
@@ -985,6 +992,21 @@ class SRDatabase:
 		cur = self._srDBConn.cursor()
 		cur.executemany("INSERT OR IGNORE INTO Channels (WebChannel, STBChannel, ServiceRef, Erlaubt) VALUES (?, ?, ?, ?)", data)
 		cur.close()
+
+	def setChannelListLastUpdate(self):
+		cur = self._srDBConn.cursor()
+		cur.execute("UPDATE OR IGNORE dbInfo SET Value=? WHERE Key='ChannelsLastUpdate'", [int(time.time())])
+		cur.close()
+
+	def getChannelListLastUpdate(self):
+		localChannelListLastUpdated = 0
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT Value FROM dbInfo WHERE Key='ChannelsLastUpdate'")
+		row = cur.fetchone()
+		if row:
+			(localChannelListLastUpdated,) = row
+		cur.close()
+		return localChannelListLastUpdated
 
 	def getChannelInfo(self, channel, seriesID, filterMode):
 		cur = self._srDBConn.cursor()

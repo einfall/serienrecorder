@@ -142,6 +142,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if config.plugins.serienRec.Autoupdate.value:
 			from SerienRecorderUpdateScreen import checkGitHubUpdate
 			checkGitHubUpdate(self.session).checkForUpdate()
+
 		self.startScreen()
 
 	def callHelpAction(self, *args):
@@ -306,11 +307,32 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self.session.openWithCallback(self.readPlanerData, serienRecMainChannelEdit)
 		else:
 			self.serviceRefs = self.database.getActiveServiceRefs()
-			if not showMainScreen:
-				from SerienRecorderMarkerScreen import serienRecMarker
-				self.session.openWithCallback(self.readPlanerData, serienRecMarker)
+			remoteChannelListLastUpdated = SeriesServer.getChannelListLastUpdate()
+			channelListUpToDate = True
+			if remoteChannelListLastUpdated:
+				localChannelListLastUpdated = self.database.getChannelListLastUpdate()
+				if 0 < localChannelListLastUpdated < remoteChannelListLastUpdated:
+					SRLogger.writeLog("Auf dem Serien-Server wurde die Senderliste aktualisiert - bitte führen Sie auch eine Aktualisierung in der Senderzuordnung aus.", True)
+					channelListUpToDate = False
+
+			if channelListUpToDate:
+				self.switchStartScreen()
 			else:
-				self.readPlanerData(False)
+				self.session.openWithCallback(self.handleChannelListUpdate, MessageBox, "Die Senderliste wurde auf dem Server aktualisiert.\nSie muss auch im SerienRecorder aktualisiert werden.\n\nZur Senderzuordnung wechseln?", MessageBox.TYPE_YESNO)
+
+	def handleChannelListUpdate(self, showChannelEdit=False):
+		if showChannelEdit:
+			from SerienRecorderChannelScreen import serienRecMainChannelEdit
+			self.session.openWithCallback(self.switchStartScreen, serienRecMainChannelEdit)
+		else:
+			self.switchStartScreen()
+
+	def switchStartScreen(self, unused=None):
+		if not showMainScreen:
+			from SerienRecorderMarkerScreen import serienRecMarker
+			self.session.openWithCallback(self.readPlanerData, serienRecMarker)
+		else:
+			self.readPlanerData(False)
 
 	def readPlanerData(self, answer=True):
 		print "[SerienRecorder] readPlanerData"

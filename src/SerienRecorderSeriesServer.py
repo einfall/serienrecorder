@@ -6,7 +6,8 @@ from SerienRecorderHelpers import STBHelpers, SRVERSION
 
 
 # Constants
-SERIES_SERVER_URL = 'http://www.serienserver.de/cache/cache.php'
+SERIES_SERVER_IP = 'www.serienserver.de'
+SERIES_SERVER_BASE_URL = 'http://www.serienserver.de/cache/'
 
 try:
 	import xmlrpclib
@@ -36,7 +37,20 @@ class SeriesServer:
 		# Check dependencies
 		if xmlrpclib is not None:
 			t = TimeoutTransport(7)
-			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_URL, transport=t)
+			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_BASE_URL + "/cache.php", transport=t)
+
+	@staticmethod
+	def getChannelListLastUpdate():
+		remoteChannelListLastUpdated = None
+		try:
+			import httplib
+			conn = httplib.HTTPConnection(SERIES_SERVER_IP, timeout=5, port=80)
+			conn.request(url="/cache/cllu.php", method="HEAD")
+			rawData = conn.getresponse()
+			remoteChannelListLastUpdated = rawData.msg.dict['x-last-updated']
+		except Exception as e:
+			print "[SerienRecorder] Fehler beim Abrufen der Channel-List last update time [%s]" % str(e)
+		return remoteChannelListLastUpdated
 
 	def getSeriesID(self, seriesName):
 		try:
