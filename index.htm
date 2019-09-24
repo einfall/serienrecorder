@@ -46,11 +46,11 @@
         <div class="row">
 			<div class="col-xs-10">Wer Fehler oder vergessene Funktionen entdeckt, Bitte eine PN (Konversation) an <a href="https://www.vuplus-support.org/wbb4/index.php?user/79460-marti-win7/" target="_blank"><strong>@Marti_win7</strong></a> im VTI-Forum.
 			<br>
-			<span class="greenfont">Wer mir eine kleine <strong>Anerkennung</strong> für diese Anleitung zukommen lassen möchte, kann dies gerne über <a href="https://www.paypal.com/de/home" target="_blank"><strong>PayPal</strong></a>  &nbsp; &nbsp; <strong>marti_win7@gmx.de</strong>&nbsp; &nbsp; machen.</span>
+			<span class="greenfont">Wer mir eine kleine <strong>Anerkennung</strong> für diese Anleitung zukommen lassen möchte, kann dies gerne über <a href="https://www.paypal.com/de/home" target="_blank"><strong>PayPal</strong></a> an  &nbsp; &nbsp; <strong>marti_win7@gmx.de</strong>&nbsp; &nbsp; machen.</span>
 			
 			
 			</div>
-			<div class="col-xs-2">Letztes Update 06.09.2019 <br>Stand der Anleitung:<br><a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-3-9-0-18-08-2019/&postID=1923031#post1923031" target="_blank"><u>Version 3.9.2 Beta</u></a></div>
+			<div class="col-xs-2">Letztes Update 24.09.2019 <br>Stand der Anleitung:<br><a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-3-9-0-18-08-2019/&postID=1923031#post1923031" target="_blank"><u>Version 3.9.4 Beta</u></a></div>
 		</div>
 		<br>
 		<h1 class="page-header">Einleitung</h1>
@@ -104,10 +104,10 @@
 		<span id="installation" class="anchor"/>
 		<h2 class="sub-header">Installation</h2>
 		<div class="row">
-			<div class="alert alert-info" role="alert"> Diese Anleitung bezieht sich idR immer auf die aktuelle Beta-Version des SerienRecorders. Sollte also jemand in dieser Anleitung Optionen, Einstellungen und/oder dgl. sehen oder vermissen, was in seiner installierten Version anders ist, könnte es daran liegen. Sollte jemand die aktuelle Beta-Version installiert haben und es stimmt trotzdem was nicht, dann Bitte im VTI-Forum melden.  
+			<div class="alert alert-info" role="alert"> Diese Anleitung bezieht sich idR immer auf die aktuelle Beta-Version des SerienRecorders (siehe auch ganz oben rechts auf dieser Seite). Sollte also jemand in dieser Anleitung Optionen, Einstellungen und/oder dgl. sehen oder vermissen, was in seiner installierten Version anders ist, könnte es daran liegen. Sollte jemand die aktuelle Beta-Version installiert haben und es stimmt trotzdem was nicht, dann Bitte im VTI-Forum melden.  
 			</div>
 			<div class="bs-callout bs-callout-danger"><strong>WICHTIG:</strong> 
-		<p>Bei einer Neuinstallation des SR, nimmt man die Version vom FEED und macht ein Update auf die aktuelle Beta-Version oder aber man nutzt  das letzte IPK-Release und macht dann ein Update auf die aktuelle Beta-Version. Mehr Infos dazu bekommt man direkt im SR Thread im VTI Forum, falls man Fragen dazu hat.
+		<p>Bei einer Neuinstallation des SR, nimmt man die Version vom FEED und macht ein Update auf die aktuelle Beta-Version oder aber man nutzt das letzte IPK-Release von der GitHub-Seite und macht dann ein Update auf die aktuelle Beta-Version. Nach einer Erst- bzw. Neuinstallation direkt auch ein Update auf die aktuelle Beta-Version zu machen ist Sinnvoll, da dort schon Bugfixes und neue Features eingebaut sind. Die Beta-Versionen sind idR, wenn sie erstmal ein paar Tage veröffentlicht sind, sehr stabil.  Mehr Infos dazu bekommt man direkt im SR Thread im VTI Forum, falls man Fragen dazu hat.
 		</p>		
 			
             </div>
@@ -150,6 +150,12 @@
             <img src="images/github-beta-download.png" alt="Bild für den Beta-Version Download" align="center">
             <p><small>Download der Beta-Version</small></p>
           </div>
+		  
+		  <div class="alert alert-danger" role="alert">
+			Nach einem Update des SR sollte idR immer mind. ein GUI-Neustart erfolgen, damit die Update-Änderungen übernommen werden. Es  ist ratsam, sich vorher ein Image-Backup anzulegen, was man eigentlich vor jeder Installation oder jedem Update machen sollte.
+			<br>Bei einem Update kommt es auch manchmal zu einem Update der Datenbank Version, was man nach dem ersten Start des SR nach einem Update im Log prüfen sollte, ob das Datenbank Update erfolgreich war.
+			</div>
+		  
 		  <br>Über FTP (z.B. mit <a href="https://www.vuplus-support.org/wbb4/filebase/index.php?entry/202-dcc-dreambox-control-center-e2-v1-50/" target="_blank">DCC</a>, Filezilla, Totalcommander etc.) können dann die entsprechenden Dateien aus dem "src"-Verzeichnis der Zip-Datei mit den Dateien im SerienRecorder Verzeichnis auf der Box ausgetauscht bzw. überschrieben werden.
 			Die Dateien des SR sind dann auf der Box in folgendem Verzeichnis zu finden:
 			<div class="well well-sm">/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/</div>
@@ -189,27 +195,29 @@
         <h2 class="sub-header">Erste Schritte</h2>
 		<div class="alert alert-info" role="alert"> Für die ganz Eiligen bzw. die, die schnell ein Ergebnis sehen wollen, wurde eine eigene Seite angelegt, wo kurz und knapp erklärt werden soll, wie man eine Serie anlegt und die dazu nötigsten Einstellungen macht. Diese Seite findet man <a href="eiligen.htm"><strong><u>HIER</u></strong></a>.</div>
         <div class="row"> Beim ersten Start wird zunächst die Datenbank des SerienRecorders angelegt, standardmäßig im Verzeichnis <strong>"/etc/enigma2/"</strong>, der Pfad kann aber jederzeit in den globalen Einstellungen geändert werden:
-          <div class="well well-sm"><strong>/etc/enigma2/SerienRecorder.db</strong></div> Danach werden die Daten von Wunschliste eingelesen, genauer gesagt die Sender-Liste (Web-Channels), was je nach Internetverbindung etwas dauern kann. Dies ist aber nur beim ersten Start und leerer Datenbank nötig. Ist das Einlesen abgeschlossen, sollte folgende Ansicht sichtbar sein, der SerienRecorder hat bereits automatisch einige Sender zugeordnet. Im folgenden Bild ist das SerienRecorder eigene Aussehen abgebildet.
+          <div class="well well-sm"><strong>/etc/enigma2/SerienRecorder.db</strong></div> Danach werden die Daten von Wunschliste eingelesen, genauer gesagt die Sender-Liste (Web-Channels), was je nach Internetverbindung etwas dauern kann. Dies ist aber nur beim ersten Start und leerer Datenbank nötig. Ist das Einlesen abgeschlossen, sollte folgende Ansicht sichtbar sein, der SerienRecorder hat bereits automatisch einige Sender zugeordnet (siehe auch Kapitel <a href="serienplaner.htm#sender-zuordnen"><strong><u>"Sender zuordnen"</u></strong></a> dazu). 
+		  <br><br>Im folgenden Bild ist das SerienRecorder eigene Aussehen der Senderzuordnung abgebildet.
 		  <br>
 		  <br>
           <div class="thumbnail with-caption">
             <img src="images/sender-zuordnen.jpg" alt="Senderzuordnung nach dem ersten Start" align="center">
             <p><small>Senderzuordnung nach dem ersten Start</small></p>
           </div>
-		  <p>Der SR ist mittlerweile in vielen Skin integriert bzw. es gibt zu vielen Skins eigene Skinparts, womit dass Aussehen des SR dem verwendeten Skin auf der Box angeglichen wird. Dabei haben die "Skin Erbauer" alle Freiheiten, wie sie die einzelnen "Objekte" im SR anordnen. Eine Möglichkeit sieht dann so aus.</p>
+		  <p>Der SR ist mittlerweile in vielen Skins integriert bzw. es gibt zu vielen Skins eigene Skinparts, womit dass Aussehen des SR dem verwendeten Skin auf der Box angeglichen wird. Dabei haben die "Skin Erbauer" alle Freiheiten, wie sie die einzelnen "Objekte" im SR anordnen. Eine Möglichkeit sieht dann so aus.</p>
 		  <br>
 		  <br>		  
 		  <div class="thumbnail with-caption">
             <img src="images/senderzuordnung.png" alt="Senderzuordnung nach dem Start" align="center">
             <p><small>Senderzuordnung nach dem Start</small></p>
           </div>
+		  <div class="well well-sm"> Für den SerienRecorder sind inzwischen verschiedene Skins bzw. Skinparts verfügbar, über die sich das Aussehen ändern läßt.
+            <br>Sollte der SR bei jemandem nicht (annähernd) bildschirmfüllend sein, sollte man sich informieren, ob dazu ein Skinpart erforderlich bzw. überhaupt verfügbar ist. <br>Auch die Einstellungen im SR bezüglich "Skin"-Optionen (z.B. Serienrecorder1, Serienrecorder2, Skinpart etc.) sollten durchgetestet werden. </div>
 		  <p>Dabei fällt auf, das die Farbtasten zwar auch unten angesiedelt sind, aber die anderen Tastenbelegungen auf die rechte Seite gesetzt wurden und zusätzlich das TV-Bild oben rechts eingeblendet wird. Dabei kann es dann aber geschehen, das die 3 Spalten der Sender nicht mehr ganz untereinander stehen. So wie die 2. Spalte (die Sender der Box) nicht ganz unter "STB-Sender" stehen. Aber ich denke, es gibt "schlimmeres", denn die Senderzuordnung ruft man ja eigentlich nur selten auf.</p>
 		  <br>
           <p>Wie die Senderzuordnung genau funktioniert lesen Sie bitte im Kapitel <a href="serienplaner.htm#sender-zuordnen"><strong><u>"Sender zuordnen"</u></strong></a> nach.
             <br> Beim nächsten Start bzw. nach dem Verlassen der Sender-Zuordnung wird der Serien-Planer angezeigt. </p>
-          <div class="well well-sm"> Für den SerienRecorder sind inzwischen verschiedene Skins bzw. Skinparts verfügbar, über die sich das Aussehen ändern läßt.
-            <br>Sollte der SR bei jemandem nicht (annähernd) bildschirmfüllend sein, sollte man sich informieren, ob dazu ein Skinpart erforderlich bzw. überhaupt verfügbar ist. <br>Auch die Einstellungen im SR bezüglich "Skin"-Optionen (z.B. Serienrecorder1, Serienrecorder2, Skinpart etc.) sollten durchgetestet werden. </div>
-          <p>Der SerienRecorder ist recht komplex und besteht aus zwei Ansichten, die Serien-Planer-Ansicht und die Serien-Marker-Ansicht. Diese werden im einzelnen in den nachfolgenden Kapiteln erklärt.
+          <div class="alert alert-info" role="alert"> <strong>Hinweis:</strong> Beim Start des SerienRecorders wird die Senderliste der Web-Sender in der Datenbank auf der Box mit den vorhandenen Web-Sendern auf dem Serien-Server abgeglichen. Sollte es eine Änderung bzw. ein Update der Senderliste der Web-Sender geben, wird man durch ein Hinweisfenster dazu aufgefordert, eine Aktualisierung in der SR Senderzuordnung vorzunehemn. Man dies dies dann direkt aus dem Hinweisfenster heraus machen oder aber auch später. Man sollte dies aber nicht lange aufschieben, denn ein falsch zugeordneter Sender KANN zu "defekten" Timern führen.</div>
+          <p>Der SerienRecorder ist recht komplex und besteht aus zwei Ansichten, die <strong>Serien-Planer-Ansicht</strong> und die <strong>Serien-Marker-Ansicht</strong>. Diese werden im einzelnen in den nachfolgenden Kapiteln erklärt.
             <br>Jede Ansicht hat einen festen Bereich, in der die für diese Ansicht aktiven Tasten aufgelistet werden. Da es inzwischen sehr viele Funktionen pro Ansicht gibt, wechselt dieser Bereich (einstellbar) alle paar Sekunden. Bei manchen Skins werden auch ALLE Tasten angezeigt. Manchmal haben Tasten auch eine doppelte
             Funktion, kurz gedrückt oder lang gedrückt. Dies wird durch einen Schrägstrich dargestellt (kurz/lang): </p>
           <div class="thumbnail with-caption">
@@ -274,6 +282,9 @@
             <li>
               <a href="http://www.i-have-a-dreambox.com/wbb2/thread.php?threadid=194080" target="_blank">IHAD - I have a dreambox - Forum</a>
             </li>
+			<li>
+				Und auch sicherlich noch andere.
+			</li>
           </ul>
 		  <br>
 		  <br>
