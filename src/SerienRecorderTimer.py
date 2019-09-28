@@ -113,6 +113,9 @@ class serienRecTimer:
 						# get addToDatabase for marker
 						addToDatabase = self.database.getAddToDatabase(serien_name)
 
+						# get autoAdjust for marker
+						autoAdjust = self.database.getAutoAdjust(serien_name)
+
 						epgcache = eEPGCache.getInstance()
 						allevents = epgcache.lookupEvent(['IBD', (stbRef, 2, eit, -1)]) or []
 
@@ -135,7 +138,7 @@ class serienRecTimer:
 								                                    timer_name, "S%sE%s - %s" % (
 								                                    str(staffel).zfill(2), str(episode).zfill(2),
 								                                    serien_title), eit, False, dirname, vpsSettings,
-								                                    tags, None)
+								                                    tags, autoAdjust, None)
 								if result["result"]:
 									self.countTimer += 1
 									if addToDatabase:
@@ -614,6 +617,9 @@ class serienRecTimer:
 		# get addToDatabase for marker
 		addToDatabase = self.database.getAddToDatabase(serien_name)
 
+		# get autoAdjust for marker
+		autoAdjust = self.database.getAutoAdjust(serien_name)
+
 		# versuche timer anzulegen
 		# setze strings für addtimer
 		if STBHelpers.checkTuner(start_unixtime, end_unixtime, stbRef):
@@ -625,7 +631,7 @@ class serienRecTimer:
 				timer_name = serien_name
 			result = serienRecBoxTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name,
 			                                    "%s - %s" % (seasonEpisodeString, title),
-			                                    eit, False, dirname, vpsSettings, tags, None)
+			                                    eit, False, dirname, vpsSettings, tags, autoAdjust, None)
 			# SRLogger.writeLog("%s: %s => %s" % (timer_name, str(start_unixtime), str(end_unixtime)), True)
 			if result["result"]:
 				self.countTimer += 1
@@ -667,7 +673,7 @@ class serienRecTimer:
 
 				result = serienRecBoxTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name,
 				                                    "%s - %s" % (seasonEpisodeString, title), eit, True,
-				                                    dirname, vpsSettings, tags, None)
+				                                    dirname, vpsSettings, tags, autoAdjust, None)
 				if result["result"]:
 					self.countNotActiveTimer += 1
 					# Eintrag in die Datenbank
@@ -940,15 +946,9 @@ class serienRecBoxTimer:
 		return removed
 
 	@staticmethod
-	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, logentries=None):
-
+	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, autoAdjust, logentries=None):
+		from SerienRecorderHelpers import isVTI
 		recordHandler = NavigationInstance.instance.RecordTimer
-		# config.plugins.serienRec.seriensubdir
-		# if not dirname:
-		#	try:
-		#		dirname = config.plugins.serienRec.savetopath.value
-		#	except Exception:
-		#		dirname = preferredTimerPath()
 		try:
 			try:
 				timer = RecordTimerEntry(
@@ -981,6 +981,8 @@ class serienRecBoxTimer:
 					tags=None)
 
 			timer.repeated = 0
+			if isVTI():
+				timer.autoadjust = autoAdjust
 
 			# Add tags
 			timerTags = timer.tags[:]

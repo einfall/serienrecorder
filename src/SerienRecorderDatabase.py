@@ -66,7 +66,8 @@ class SRDatabase:
 																			updateFromEPG INTEGER DEFAULT NULL,
 																			skipSeriesServer INTEGER DEFAULT NULL,
 																			info TEXT NOT NULL DEFAULT "",
-																			type INTEGER DEFAULT 0)''')
+																			type INTEGER DEFAULT 0,
+																			autoAdjust INTEGER DEFAULT 0)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -238,6 +239,13 @@ class SRDatabase:
 			except Exception as e:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'type' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'autoAdjust'):
+			try:
+				cur.execute("ALTER TABLE SerienMarker ADD autoAdjust INTEGER DEFAULT 0")
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'autoAdjust' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
 
 		if not self.updateToWLID():
 			updateSuccessful = False
@@ -568,6 +576,16 @@ class SRDatabase:
 		cur.close()
 		return bool(result)
 
+	def getAutoAdjust(self, series):
+		result = True
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT autoAdjust FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		row = cur.fetchone()
+		if row:
+			(result,) = row
+		cur.close()
+		return bool(result)
+
 	def getUpdateFromEPG(self, series):
 		result = True
 		cur = self._srDBConn.cursor()
@@ -649,17 +667,17 @@ class SRDatabase:
 
 	def getMarkerSettings(self, series):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
 		row = cur.fetchone()
 		if not row:
-			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1)
+			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1, 1)
 		cur.close()
 		return row
 
 	def setMarkerSettings(self, series, settings):
 		data = settings + (series.lower(), )
 		cur = self._srDBConn.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=? WHERE LOWER(Serie)=?"
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=? WHERE LOWER(Serie)=?"
 		cur.execute(sql, data)
 		cur.close()
 
@@ -743,7 +761,7 @@ class SRDatabase:
 
 	def getMarkerNames(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT Serie FROM SerienMarker ORDER BY Serie")
+		cur.execute("SELECT Serie FROM SerienMarker ORDER BY Serie COLLATE NOCASE")
 		rows = cur.fetchall()
 		cur.close()
 		return rows

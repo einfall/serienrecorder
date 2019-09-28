@@ -26,7 +26,7 @@ from SerienRecorderScreenHelpers import serienRecBaseScreen, longButtonText, Ini
 from SerienRecorder import serienRecDataBaseFilePath, getCover, \
 	serienRecMainPath, VPSPluginAvailable, serienRecCheckForRecording
 import SerienRecorder
-from SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname
+from SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname, isVTI
 from SerienRecorderDatabase import SRDatabase
 from SerienRecorderEpisodesScreen import serienRecEpisodes
 from SerienRecorderSeriesServer import SeriesServer
@@ -857,7 +857,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			setMenuTexts(self)
 
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer) = self.database.getMarkerSettings(self.Serie)
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust) = self.database.getMarkerSettings(self.Serie)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -930,6 +930,13 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			self.skipSeriesServer = ConfigYesNo(default=config.plugins.serienRec.tvplaner_skipSerienServer.value)
 			self.enable_skipSeriesServer = ConfigYesNo(default=False)
+
+		if str(autoAdjust).isdigit():
+			self.autoAdjust = ConfigYesNo(default=bool(autoAdjust))
+			self.enable_autoAdjust = ConfigYesNo(default=True)
+		else:
+			self.autoAdjust = ConfigYesNo(default=config.plugins.serienRec.autoAdjust.value)
+			self.enable_autoAdjust = ConfigYesNo(default=False)
 
 		self.preferredChannel = ConfigSelection(choices=[("1", "Standard"), ("0", "Alternativ")], default=str(preferredChannel))
 		self.useAlternativeChannel = ConfigSelection(choices=[("-1", "gemäß Setup (dzt. %s)" % str(
@@ -1102,6 +1109,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 				if self.enable_vps.value:
 					self.list.append(
 						getConfigListEntry("            Sicherheitsmodus aktivieren:", self.enable_vps_savemode))
+
+		if isVTI():
+			self.list.append(getConfigListEntry("Aktiviere abweichende Aufnahmezeitenanpassung aus den EPG Daten:", self.enable_autoAdjust))
+			if self.enable_autoAdjust.value:
+				self.list.append(getConfigListEntry("      Aufnahmezeiten automatisch an EPG Daten anpassen:", self.autoAdjust))
 
 		self.list.append(getConfigListEntry("Timer in Timer-Liste speichern:", self.addToDatabase))
 		self.list.append(getConfigListEntry("Bevorzugte Sender-Liste:", self.preferredChannel))
@@ -1286,14 +1298,14 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 						  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die späteste Zeit für Timer.") % (
 						 self.Serie, str(self.toTime.value[0]).zfill(2), str(self.toTime.value[1]).zfill(2)),
 			self.enable_updateFromEPG: (
-								"Bei 'ja' kann für Timer von '%s' eingestellt werden ob versucht werden soll diesen aus dem EPG zu aktualisieren.\n"
+								"Bei 'ja' kann für Timer von '%s' eingestellt werden, ob versucht werden soll diesen aus dem EPG zu aktualisieren.\n"
 								"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timeraktualisierung aus dem EPG.\n"
 								"Bei 'nein' gilt die Einstellung vom globalen Setup.") % self.Serie,
 			self.updateFromEPG: ("Bei 'ja' wird für Timer von '%s' versucht diese aus dem EPG zu aktualisieren.\n"
 						  "Bei 'nein' werden die Timer dieser Serie nicht aus dem EPG aktualisiert.\n"
 						  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timeraktualisierung aus dem EPG.") % self.Serie,
 			self.enable_skipSeriesServer: (
-								"Bei 'ja' kann für Timer von '%s' eingestellt werden ob Timer nur aus der TV-Planer E-Mail angelegt werden sollen.\n"
+								"Bei 'ja' kann für Timer von '%s' eingestellt werden, ob Timer nur aus der TV-Planer E-Mail angelegt werden sollen.\n"
 								"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timererstellung nur aus der TV-Planer E-Mail.\n"
 								"Bei 'nein' gilt die Einstellung vom globalen Setup.") % self.Serie,
 			self.skipSeriesServer: ("Bei 'ja' werden Timer von '%s' nur aus der TV-Planer E-Mail erstellt.\n"
@@ -1310,6 +1322,8 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 									  "Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet. Die programmierten Start- und Endzeiten werden eingehalten.\n"
 									  "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.\n"
 									  "Diese Einstellung hat Vorrang gegenüber der Sender Einstellung für VPS.") % self.Serie,
+			self.autoAdjust: ("Bei 'ja' kann für Timer von '%s' eingestellt werden, ob die Aufnahmezeit automatisch an EPG Daten angepasst werden soll.\n"
+			                        "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten.") % self.Serie,
 			self.addToDatabase: "Bei 'nein' werden für die Timer von '%s' keine Einträge in die Timer-Liste gemacht, sodass die Episoden beliebig oft getimert werden können." % self.Serie,
 			self.preferredChannel: "Auswahl, ob die Standard-Sender oder die alternativen Sender für die Timer von '%s' verwendet werden sollen." % self.Serie,
 			self.useAlternativeChannel: (
@@ -1373,6 +1387,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			vpsSettings = (int(self.enable_vps_savemode.value) << 1) + int(self.enable_vps.value)
 
+		if not self.enable_autoAdjust.value:
+			autoAdjust = None
+		else:
+			autoAdjust = self.autoAdjust.value
+
 		if (not self.savetopath.value) or (self.savetopath.value == ""):
 			Staffelverzeichnis = -1
 		else:
@@ -1397,7 +1416,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self.database.setMarkerSettings(self.Serie, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),
-		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer))
+		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust))
 
 		self.close(True)
 
@@ -1789,6 +1808,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					# get addToDatabase for marker
 					addToDatabase = self.database.getAddToDatabase(serien_name)
 
+					# get autoAdjust for marker
+					autoAdjust = self.database.getAutoAdjust(serien_name)
+
 					(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
 
 					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
@@ -1815,7 +1837,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 					params = (serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime,
 							  label_serie, staffel, episode, title, dirname, preferredChannel,
-							  bool(useAlternativeChannel), vpsSettings, tags, addToDatabase)
+							  bool(useAlternativeChannel), vpsSettings, tags, addToDatabase, autoAdjust)
 					if (bereits_vorhanden < NoOfRecords) and (bereits_vorhanden_HDD < NoOfRecords):
 						TimerDone = self.doTimer(params)
 					else:
@@ -1851,7 +1873,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			(serien_name, sender, startzeit, start_unixtime, margin_before, margin_after, end_unixtime, label_serie,
 			 staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags,
-			 addToDatabase) = params
+			 addToDatabase, autoAdjust) = params
 			# check sender
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.database.getChannelInfo(sender, self.serien_wl_id, self.FilterMode)
 
@@ -1896,7 +1918,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				# versuche timer anzulegen
 				result = serienRecBoxTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
 													timer_name, "%s - %s" % (seasonEpisodeString, title), eit,
-													False, dirname, vpsSettings, tags, None)
+													False, dirname, vpsSettings, tags, autoAdjust, None)
 				if result["result"]:
 					timer.addTimerToDB(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase)
 					self.countTimer += 1
@@ -1918,7 +1940,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					result = serienRecBoxTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit),
 														str(alt_end_unixtime_eit), timer_name,
 														"%s - %s" % (seasonEpisodeString, title), alt_eit, False,
-														dirname, vpsSettings, tags, None)
+														dirname, vpsSettings, tags, autoAdjust, None)
 					if result["result"]:
 						konflikt = None
 						timer.addTimerToDB(serien_name, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit, addToDatabase)
@@ -1933,7 +1955,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 					result = serienRecBoxTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
 														timer_name, "%s - %s" % (seasonEpisodeString, title), eit, True,
-														dirname, vpsSettings, tags, None)
+														dirname, vpsSettings, tags, autoAdjust, None)
 					if result["result"]:
 						timer.addTimerToDB(serien_name, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase, False)
 						self.countNotActiveTimer += 1

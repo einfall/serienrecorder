@@ -14,7 +14,7 @@ import time, shutil, os, re, random
 
 import SerienRecorder
 from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, setSkinProperties, SelectSkin
-from SerienRecorderHelpers import encrypt, getmac, STBHelpers, isDreamOS, SRVERSION, SRDBVERSION
+from SerienRecorderHelpers import encrypt, getmac, STBHelpers, isDreamOS, isVTI, SRVERSION, SRDBVERSION
 import SerienRecorderLogWriter
 
 def ReadConfigFile():
@@ -169,6 +169,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.copyCoverToFolder = ConfigSelection(choices=[("0", "nein"), ("1", "folder.jpg"), ("2", "series.jpg")], default="1")
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default=True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default=True)
+	config.plugins.serienRec.autoAdjust = ConfigYesNo(default=False)
 
 	config.plugins.serienRec.selectBouquets = ConfigYesNo(default=False)
 	config.plugins.serienRec.bouquetList = ConfigText(default="")
@@ -803,6 +804,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Timer-Art:", self.kindOfTimer))
 			self.list.append(getConfigListEntry("Nach dem Event:", config.plugins.serienRec.afterEvent))
+			if isVTI():
+				self.list.append(getConfigListEntry("Aufnahmezeiten automatisch an EPG Daten anpassen:", config.plugins.serienRec.autoAdjust))
 		self.list.append(getConfigListEntry("Timervorlauf (in Min.):", config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
 		if config.plugins.serienRec.setupType.value == "1":
@@ -1181,6 +1184,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"  - 'in Standby gehen': Die STB geht in den Standby\n"
 				"  - 'in Deep-Standby gehen': Die STB geht in den Deep-Standby\n"
 				"  - 'automatisch': Die STB entscheidet automatisch (Standardwert)", "1.3_Die_globalen_Einstellungen"),
+			config.plugins.serienRec.autoAdjust: ("Soll die VTI Option 'Aufnahmezeiten automatisch an EPG Daten anpassen' am Timer gesetzt werden oder nicht?", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.margin_before: ("Die Vorlaufzeit für Aufnahmen in Minuten.\n"
 			                                         "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem tatsächlichen Beginn der Sendung",
 			                                         "1.3_Die_globalen_Einstellungen"),
@@ -1405,6 +1409,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.savetopath.save()
 		config.plugins.serienRec.justplay.save()
 		config.plugins.serienRec.afterEvent.save()
+		config.plugins.serienRec.autoAdjust.save()
 		config.plugins.serienRec.seriensubdir.save()
 		config.plugins.serienRec.seasonsubdir.save()
 		config.plugins.serienRec.seasonsubdirnumerlength.save()

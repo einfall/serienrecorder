@@ -20,8 +20,8 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.9.4-beta'
-SRDBVERSION = '3.9.4'
+SRVERSION = '3.9.5-beta'
+SRDBVERSION = '3.9.5'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 def decodeISO8859_1(txt, replace=False):
@@ -52,6 +52,15 @@ def isDreamOS():
 	else:
 		isDreamboxOS = True
 	return isDreamboxOS
+
+def isVTI():
+	try:
+		from enigma import getVTiVersionString
+	except ImportError:
+		isVTIImage = False
+	else:
+		isVTIImage = True
+	return isVTIImage
 
 def checkCI(servref = None, cinum = 0):
 	cifile = "/etc/enigma2/ci%d.xml" % cinum

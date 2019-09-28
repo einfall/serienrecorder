@@ -204,7 +204,7 @@ def initDB():
 			return False
 
 		if not dbVersionMatch:
-			SRLogger.writeLog("Database ist zu alt - sie muss aktualisiert werden...", True)
+			SRLogger.writeLog("Datenbank ist zu alt - sie muss aktualisiert werden...", True)
 			database.close()
 			backupSerienRecDataBaseFilePath = "%sSerienRecorder_old.db" % config.plugins.serienRec.databasePath.value
 			SRLogger.writeLog("Erstelle Datenbank Backup - es kann nach erfolgreichem Update gelöscht werden: %s" % backupSerienRecDataBaseFilePath, True)
