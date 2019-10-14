@@ -382,6 +382,7 @@
 							<div class="bs-callout bs-callout-info">Im Gegensatz zur "Wunschliste TV-Planer E-Mail", wo nur die Serien für den einen Tag berücksichtigt werden, erstellt der SR seine Timer für den Bereich von x Tagen. Was aber nicht bedeutet, das über die Mail nur die Serienfolgen für einen Tag erstellt werden, denn der SR nutzt im normalfall nur die Info, welche Serien in der Mail stehen. Dann geht der SR "ganz normal" hin und erstellt Timer für diese Serien für die eingestellten x Tage. Nur wenn der SerienServer nicht erreichbar ist, um die Sendetermine abzurufen, werden für den AC auch die Ausstrahlungstermine für die Serien aus der Mail benutzt. </div>
                         </p>
                     </li>
+					<br>
 					<span id="früheste-zeit" class="anchor"></span>
                     <li>
                         <strong>Früheste Zeit für Timer:</strong>
@@ -399,7 +400,12 @@
                             Nachtwiederholung der Serie aufgenommen wird.
                         </p>
                     </li>
-					<br>
+					
+					<div class="bs-callout bs-callout-danger">Die Standard-Einstellungen dafür sind
+					<br> <strong>Früheste Zeit für Timer:</strong> 00:00 
+					<br> <strong>Späteste Zeit für Timer:</strong> 23:59
+					<br> Damit werden dann Timer "rund um die Uhr" erstellt.
+					</div>
 					<div class="alert alert-info" role="alert">Schränkt man einen Marker mit <strong>"Früheste und Späteste Zeit"</strong> ein, so das für diesen Marker z.B. nur Timer erstellt werden sollen, die zwischen 22:00 und 05:00 Uhr liegen, bekäme man evtl. das Problem, das zu dieser Zeit entweder kein Sendetermin ist oder aber in dieser Zeit ein Konflikt besteht. Das Resultat wäre, der SerienRecorder erstellt keinen Timer. Aber auch dafür gibt es (natürlich) eine Lösung.
 					<br>Die option heißt <a href="einstellungen.htm#immer-aufnehmen"><strong><u>Immer aufnehmen wenn keine Wiederholung gefunden wird</u></strong></a>. Wenn dies aktiviert ist, werden auch Timer erstellt, die außerhalb der Zeitspanne <strong>"Früheste und Späteste Zeit"</strong> liegen, sofern innerhalb der Zeitspanne eine Timererstellung nicht möglich ist.
 					</div>
