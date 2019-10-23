@@ -198,6 +198,14 @@ class SeriesServer:
 			return self.server.sp.cache.getCoverURL(int(seriesID), seriesName)
 		except:
 			return ''
+
+	def getCoverURLs(self, seriesID):
+		try:
+			results = self.server.sp.cache.getCoverURLs(int(seriesID))
+			return results['covers']
+		except Exception as e:
+			print "[SerienRecorder] Fehler beim Abrufen der Cover [%s]" % str(e)
+			return None
 			
 	def doGetWebChannels(self):
 		return self.server.sp.cache.getWebChannels()

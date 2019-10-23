@@ -107,16 +107,23 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.chooseMenuList.l.setItemHeight(int(28 * skinFactor))
 
+		self.num_bt_text[2][2] = buttonText_na
+		self.num_bt_text[3][2] = buttonText_na
+
 		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
 		super(self.__class__, self).setupSkin()
 		self[self.modus].show()
 
+
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
 
 		if not config.plugins.serienRec.showAllButtons.value:
+			self['bt_epg'].hide()
+			self['bt_info'].hide()
+
 			self['bt_red'].show()
 			self['bt_green'].show()
 			self['bt_ok'].show()
@@ -124,7 +131,6 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
-			self['bt_info'].show()
 			self['bt_menu'].show()
 
 			self['text_red'].show()

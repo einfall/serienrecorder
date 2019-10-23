@@ -1,6 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
+
 import os
 import SerienRecorder
 #import SerienRecorderResource
@@ -25,6 +26,7 @@ import SerienRecorderWishlistScreen
 import SerienRecorderMainScreen
 import SerienRecorderTVPlaner
 import SerienRecorderLogWriter
+import SerienRecorderCoverSelectorScreen
 
 def SRstart(session, **kwargs):
 
@@ -50,7 +52,8 @@ def SRstart(session, **kwargs):
 					  ('SerienRecorderWishlistScreen', SerienRecorderWishlistScreen),
 					  ('SerienRecorderMainScreen', SerienRecorderMainScreen),
 					  ('SerienRecorderTVPlaner', SerienRecorderTVPlaner),
-					  ('SerienRecorderLogWriter', SerienRecorderLogWriter)):
+					  ('SerienRecorderLogWriter', SerienRecorderLogWriter),
+	                  ('SerienRecorderCoverSelectorScreen', SerienRecorderCoverSelectorScreen)):
 		if fileExists(os.path.join(SerienRecorder.serienRecMainPath, "%s.pyo" % file_name[0])):
 			if (int(os.path.getmtime(os.path.join(SerienRecorder.serienRecMainPath, "%s.pyo" % file_name[0]))) < int(
 					os.path.getmtime(os.path.join(SerienRecorder.serienRecMainPath, "%s.py" % file_name[0])))):
@@ -62,8 +65,14 @@ def SRstart(session, **kwargs):
 		session.open(SerienRecorderMainScreen.serienRecMainScreen)
 	except:
 		import traceback
+		from Screens.MessageBox import MessageBox
+		from Components.config import config, configfile
 		traceback.print_exc()
-
+		session.popCurrent()
+		config.plugins.serienRec.SkinType.value = ""
+		config.plugins.serienRec.SkinType.save()
+		configfile.save()
+		session.open(MessageBox, "Der SerienRecorder Skin kann nicht geladen werden!\n\nDer SerienRecorder Skin wird zurückgesetzt, versuchen Sie den SerienRecorder erneut zu starten.", MessageBox.TYPE_INFO, timeout=0)
 
 # Movielist
 def movielist(session, service, **kwargs):
@@ -125,7 +134,7 @@ def Plugins(**kwargs):
 						 needsRestart=False),
 	]
 
-	if isDreamboxOS:
+	if isDreamboxOS and hasattr(PluginDescriptor, "WHERE_EVENTVIEW"):
 		pluginDescriptors.append(PluginDescriptor(name="Serien-Marker hinzufügen...", where=[PluginDescriptor.WHERE_EVENTVIEW, PluginDescriptor.WHERE_EPG_SELECTION_SINGLE_BLUE], fnc=eventview, needsRestart=False, weight=100))
 
 	return pluginDescriptors

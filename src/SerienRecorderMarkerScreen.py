@@ -256,7 +256,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def wunschliste(self):
-		#serien_name = self['menu_list'].getCurrent()[0][1]
+		check = self['menu_list'].getCurrent()
+		if check is None:
+			return
 		serien_id = self['menu_list'].getCurrent()[0][2]
 		super(self.__class__, self).wunschliste(serien_id)
 
@@ -935,7 +937,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.autoAdjust = ConfigYesNo(default=bool(autoAdjust))
 			self.enable_autoAdjust = ConfigYesNo(default=True)
 		else:
-			self.autoAdjust = ConfigYesNo(default=config.plugins.serienRec.autoAdjust.value)
+			self.autoAdjust = ConfigYesNo(default=False)
 			self.enable_autoAdjust = ConfigYesNo(default=False)
 
 		self.preferredChannel = ConfigSelection(choices=[("1", "Standard"), ("0", "Alternativ")], default=str(preferredChannel))
@@ -994,7 +996,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self['text_red'].setText("Abbrechen")
 		self['text_green'].setText("Speichern")
-		self['text_blue'].setText("Cover zurücksetzen")
+		self['text_blue'].setText("Cover auswählen")
 		self['text_ok'].setText("Ordner auswählen")
 
 		super(self.__class__, self).startDisplayTimer()
@@ -1253,8 +1255,13 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			)
 
 	def resetCover(self):
-		getCover(None, self.Serie, self.ID, False, True)
-		self.session.open(MessageBox, "Das Cover für ' %s ' wurde zurückgesetzt." % self.Serie, MessageBox.TYPE_INFO, timeout=5)
+		if not config.plugins.serienRec.downloadCover.value:
+			return
+
+		# getCover(None, self.Serie, self.ID, False, True)
+		# self.session.open(MessageBox, "Das Cover für ' %s ' wurde zurückgesetzt." % self.Serie, MessageBox.TYPE_INFO, timeout=5)
+		from SerienRecorderCoverSelectorScreen import CoverSelectorScreen
+		self.session.open(CoverSelectorScreen, self.ID, self.Serie)
 
 	def setInfoText(self):
 		self.HilfeTexte = {
@@ -1322,8 +1329,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 									  "Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet. Die programmierten Start- und Endzeiten werden eingehalten.\n"
 									  "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.\n"
 									  "Diese Einstellung hat Vorrang gegenüber der Sender Einstellung für VPS.") % self.Serie,
-			self.autoAdjust: ("Bei 'ja' kann für Timer von '%s' eingestellt werden, ob die Aufnahmezeit automatisch an EPG Daten angepasst werden soll.\n"
-			                        "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten.") % self.Serie,
+			self.enable_autoAdjust: ("Bei 'ja' kann für Timer von '%s' eingestellt werden, ob die Aufnahmezeit automatisch an die EPG Daten angepasst werden soll.\n"
+			                        "Diese Einstellung hat Vorrang gegenüber der Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten am Sender.\n"
+			                         "Bei 'nein' gilt die Einstellung am Sender.") % self.Serie,
+			self.autoAdjust: ("Bei 'ja' wird 'Aufnahmezeit automatisch an EPG Daten anpassen' für Timer von '%s' aktiviert.\n"
+			                        "Diese Einstellung hat Vorrang gegenüber der Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten am Sender.") % self.Serie,
 			self.addToDatabase: "Bei 'nein' werden für die Timer von '%s' keine Einträge in die Timer-Liste gemacht, sodass die Episoden beliebig oft getimert werden können." % self.Serie,
 			self.preferredChannel: "Auswahl, ob die Standard-Sender oder die alternativen Sender für die Timer von '%s' verwendet werden sollen." % self.Serie,
 			self.useAlternativeChannel: (

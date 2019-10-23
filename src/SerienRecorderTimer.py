@@ -599,6 +599,8 @@ class serienRecTimer:
 		# ueberprueft ob tage x voraus passt und ob die startzeit nicht kleiner ist als die aktuelle uhrzeit
 		#
 		show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
+		show_end = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
+
 		if int(start_unixtime) > int(future_time):
 			show_future = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(future_time)))
 			SRLogger.writeLogFilter("timeLimit", "' %s ' - Timer wird evtl. später angelegt -> Sendetermin: %s - Erlaubte Zeitspanne bis %s" % (label_serie, show_start, show_future))
@@ -618,7 +620,7 @@ class serienRecTimer:
 		addToDatabase = self.database.getAddToDatabase(serien_name)
 
 		# get autoAdjust for marker
-		autoAdjust = self.database.getAutoAdjust(serien_name)
+		autoAdjust = self.database.getAutoAdjust(serien_name, webChannel)
 
 		# versuche timer anzulegen
 		# setze strings für addtimer
@@ -639,11 +641,11 @@ class serienRecTimer:
 				self.addTimerToDB(serien_name, staffel, episode, title, start_unixtime, stbRef, webChannel, eit, addToDatabase)
 				if vomMerkzettel:
 					self.countTimerFromWishlist += 1
-					SRLogger.writeLog("' %s ' - Timer (vom Merkzettel) wurde angelegt%s -> %s %s @ %s" % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+					SRLogger.writeLog("' %s ' - Timer (vom Merkzettel) wurde angelegt%s -> [%s] - [%s] %s @ %s" % (label_serie, optionalText, show_start, show_end, timer_name, stbChannel), True)
 					self.database.updateBookmark(serien_name, staffel, episode)
 					self.database.removeBookmark(serien_name, staffel, episode)
 				else:
-					SRLogger.writeLog("' %s ' - Timer wurde angelegt%s -> %s %s @ %s" % (label_serie, optionalText, show_start, timer_name, stbChannel), True)
+					SRLogger.writeLog("' %s ' - Timer wurde angelegt%s -> [%s] - [%s] %s @ %s" % (label_serie, optionalText, show_start, show_end, timer_name, stbChannel), True)
 					# Event-Programmierung verarbeiten
 					if (config.plugins.serienRec.splitEventTimer.value == "1" or (config.plugins.serienRec.splitEventTimer.value == "2" and config.plugins.serienRec.addSingleTimersForEvent.value == "1")) and '/' in str(episode):
 						splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, staffel, title)
@@ -662,8 +664,8 @@ class serienRecTimer:
 			elif not tryDisabled:
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
 				print "' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"])
-				SRLogger.writeLog("' %s ' - Timer konnte nicht angelegt werden%s -> %s %s @ %s" % (
-				label_serie, optionalText, show_start, timer_name, stbChannel), True)
+				SRLogger.writeLog("' %s ' - Timer konnte nicht angelegt werden%s -> [%s] - [%s] %s @ %s" % (
+				label_serie, optionalText, show_start, show_end, timer_name, stbChannel), True)
 				SRLogger.writeLog("' %s ' - ACHTUNG! -> %s" % (label_serie, result["message"]), True)
 			else:
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
@@ -682,11 +684,11 @@ class serienRecTimer:
 					if vomMerkzettel:
 						self.countTimerFromWishlist += 1
 						SRLogger.writeLog(
-							"' %s ' - Timer (vom Merkzettel) wurde deaktiviert angelegt%s -> %s %s @ %s" % (
-							label_serie, optionalText, show_start, timer_name, stbChannel), True)
+							"' %s ' - Timer (vom Merkzettel) wurde deaktiviert angelegt%s -> [%s] - [%s] %s @ %s" % (
+							label_serie, optionalText, show_start, show_end, timer_name, stbChannel), True)
 					else:
-						SRLogger.writeLog("' %s ' - Timer wurde deaktiviert angelegt%s -> %s %s @ %s" % (
-						label_serie, optionalText, show_start, timer_name, stbChannel), True)
+						SRLogger.writeLog("' %s ' - Timer wurde deaktiviert angelegt%s -> [%s] - [%s] %s @ %s" % (
+						label_serie, optionalText, show_start, show_end, timer_name, stbChannel), True)
 					self.enableDirectoryCreation = True
 					return True
 				else:
@@ -981,8 +983,11 @@ class serienRecBoxTimer:
 					tags=None)
 
 			timer.repeated = 0
-			if isVTI():
+			if isVTI() and autoAdjust:
+				print "[SerienRecorder] Current autoAdjust for timer [%s]: %s" % (name, str(timer.autoadjust))
+				print "[SerienRecorder] autoAdjust is: %s" % str(autoAdjust)
 				timer.autoadjust = autoAdjust
+				print "[SerienRecorder] Set autoAdjust for timer [%s] to: %s" % (name, str(timer.autoadjust))
 
 			# Add tags
 			timerTags = timer.tags[:]

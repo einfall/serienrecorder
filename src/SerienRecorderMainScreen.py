@@ -228,7 +228,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		# cache = serienRecMainScreen.loadPlanerData(config.plugins.serienRec.screenplaner.value)
 		# if key in cache:
 		# 	del cache[key]
-		self.readPlanerData(False)
+		self.readPlanerData(True)
 
 	def readLogFile(self):
 		from SerienRecorderLogScreen import serienRecReadLog
@@ -318,7 +318,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			if channelListUpToDate:
 				self.switchStartScreen()
 			else:
-				self.session.openWithCallback(self.handleChannelListUpdate, MessageBox, "Die Senderliste wurde auf dem Server aktualisiert.\nSie muss auch im SerienRecorder aktualisiert werden.\n\nZur Senderzuordnung wechseln?", MessageBox.TYPE_YESNO)
+				self.session.openWithCallback(self.handleChannelListUpdate, MessageBox, "Die Senderliste wurde auf dem Server aktualisiert.\nSie muss auch im SerienRecorder aktualisiert werden.\nWechseln Sie zur Senderzuordnung und aktualisieren Sie die Senderliste mit der grünen Taste.\n\nZur Senderzuordnung wechseln?", MessageBox.TYPE_YESNO)
 
 	def handleChannelListUpdate(self, showChannelEdit=False):
 		if showChannelEdit:

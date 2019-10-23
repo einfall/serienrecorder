@@ -30,16 +30,16 @@ def ReadConfigFile():
 	config.plugins.serienRec.databasePath = ConfigText(default="/etc/enigma2/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.coverPath = ConfigText(default="/media/hdd/SR_Cover/", fixed_size=False, visible_width=80)
 
-	choices = [("Skinpart", "Skinpart"), ("", "SerienRecorder 1"), ("Skin2", "SerienRecorder 2"),
+	skins = [("Skinpart", "Skinpart"), ("", "SerienRecorder 1"), ("Skin2", "SerienRecorder 2"),
 	           ("AtileHD", "AtileHD"), ("StyleFHD", "StyleFHD"), ("Black Box", "Black Box")]
 	try:
 		t = list(os.walk("%sskins" % SerienRecorder.serienRecMainPath))
 		for x in t[0][1]:
 			if x not in ("Skin2", "AtileHD", "StyleFHD", "Black Box"):
-				choices.append((x, x))
+				skins.append((x, x))
 	except:
 		pass
-	config.plugins.serienRec.SkinType = ConfigSelection(choices=choices, default="")
+	config.plugins.serienRec.SkinType = ConfigSelection(choices=skins, default="")
 	config.plugins.serienRec.showAllButtons = ConfigYesNo(default=False)
 	config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1, 60))
 
@@ -94,6 +94,7 @@ def ReadConfigFile():
 	                                                        visible_width=80)
 	config.plugins.serienRec.imap_mail_age = ConfigInteger(0, (0, 100))
 	config.plugins.serienRec.imap_check_interval = ConfigInteger(30, (0, 10000))
+	config.plugins.serienRec.imap_test = NoSave(ConfigSelection(choices=[("", "OK zum Testen")], default=""))
 	config.plugins.serienRec.tvplaner_create_marker = ConfigYesNo(default=True)
 	config.plugins.serienRec.tvplaner_series = ConfigYesNo(default=True)
 	config.plugins.serienRec.tvplaner_series_activeSTB = ConfigYesNo(default=False)
@@ -169,7 +170,6 @@ def ReadConfigFile():
 	config.plugins.serienRec.copyCoverToFolder = ConfigSelection(choices=[("0", "nein"), ("1", "folder.jpg"), ("2", "series.jpg")], default="1")
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default=True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default=True)
-	config.plugins.serienRec.autoAdjust = ConfigYesNo(default=False)
 
 	config.plugins.serienRec.selectBouquets = ConfigYesNo(default=False)
 	config.plugins.serienRec.bouquetList = ConfigText(default="")
@@ -734,6 +734,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("    IMAP Login:", config.plugins.serienRec.imap_login))
 			self.list.append(getConfigListEntry("    IMAP Passwort:", config.plugins.serienRec.imap_password))
 			self.list.append(getConfigListEntry("    IMAP Mailbox:", config.plugins.serienRec.imap_mailbox))
+			self.list.append(getConfigListEntry("    IMAP Einstellungen testen:", config.plugins.serienRec.imap_test))
 			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
 			self.list.append(
 				getConfigListEntry("    maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
@@ -804,8 +805,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Timer-Art:", self.kindOfTimer))
 			self.list.append(getConfigListEntry("Nach dem Event:", config.plugins.serienRec.afterEvent))
-			if isVTI():
-				self.list.append(getConfigListEntry("Aufnahmezeiten automatisch an EPG Daten anpassen:", config.plugins.serienRec.autoAdjust))
 		self.list.append(getConfigListEntry("Timervorlauf (in Min.):", config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
 		if config.plugins.serienRec.setupType.value == "1":
@@ -993,6 +992,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			start_dir = config.plugins.serienRec.piconPath.value
 			self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
 			                              "Picon-Verzeichnis auswählen")
+		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_test:
+			from SerienRecorderTVPlaner import imaptest
+			imaptest(self.session)
 
 	def selectedMediaFile(self, res):
 		if res is not None:
@@ -1076,6 +1078,10 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)", ""),
 			config.plugins.serienRec.imap_check_interval: (
 				"Die Mailbox wird alle <n> Minuten überprüft (default: 30)", ""),
+			config.plugins.serienRec.imap_test: (
+				"Mit der OK Taste können die IMAP Einstellungen getestet werden, dabei wird versucht eine Verbindung zum eingestellten E-Mail Server aufzubauen Außerdem werden noch die vorhandenen Postfächer abgerufen.\n\n"
+				"Die Ergebnisse werden im Log ausgegeben.",
+				"Speicherort_der_Aufnahme"),
 			config.plugins.serienRec.tvplaner_create_marker: (
 				"Bei 'ja' werden nicht vorhandene Serien Marker automatisch erzeugt", ""),
 			config.plugins.serienRec.tvplaner_series: ("Bei 'ja' werden Timer für Serien angelegt", ""),
@@ -1184,7 +1190,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"  - 'in Standby gehen': Die STB geht in den Standby\n"
 				"  - 'in Deep-Standby gehen': Die STB geht in den Deep-Standby\n"
 				"  - 'automatisch': Die STB entscheidet automatisch (Standardwert)", "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.autoAdjust: ("Soll die VTI Option 'Aufnahmezeiten automatisch an EPG Daten anpassen' am Timer gesetzt werden oder nicht?", "1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.margin_before: ("Die Vorlaufzeit für Aufnahmen in Minuten.\n"
 			                                         "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem tatsächlichen Beginn der Sendung",
 			                                         "1.3_Die_globalen_Einstellungen"),
@@ -1409,7 +1414,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.savetopath.save()
 		config.plugins.serienRec.justplay.save()
 		config.plugins.serienRec.afterEvent.save()
-		config.plugins.serienRec.autoAdjust.save()
 		config.plugins.serienRec.seriensubdir.save()
 		config.plugins.serienRec.seasonsubdir.save()
 		config.plugins.serienRec.seasonsubdirnumerlength.save()

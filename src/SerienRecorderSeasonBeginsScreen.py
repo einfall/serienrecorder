@@ -226,7 +226,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 5, 80 * skinFactor, 40 * skinFactor, picon),
 					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30
 					 * skinFactor, 30 * skinFactor, loadPNG(icon)),
-					(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0,
+					(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 3, 230 * skinFactor, 26 * skinFactor, 0,
 					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender, foregroundColor, foregroundColor),
 					(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18
 					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime),
@@ -239,7 +239,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			return [entry,
 					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30 * skinFactor, 30
 					 * skinFactor, loadPNG(icon)),
-					(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 3, 200 * skinFactor, 26 * skinFactor, 0,
+					(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 3, 230 * skinFactor, 26 * skinFactor, 0,
 					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, Sender, foregroundColor, foregroundColor),
 					(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18
 					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime),

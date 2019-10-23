@@ -41,7 +41,8 @@ class SRDatabase:
 																		Erlaubt INTEGER DEFAULT 0, 
 																		Vorlaufzeit INTEGER DEFAULT NULL, 
 																		Nachlaufzeit INTEGER DEFAULT NULL,
-																		vps INTEGER DEFAULT 0)''')
+																		vps INTEGER DEFAULT 0,
+																		autoAdjust INTEGER DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SerienMarker (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
 																			Serie TEXT NOT NULL, 
@@ -67,7 +68,7 @@ class SRDatabase:
 																			skipSeriesServer INTEGER DEFAULT NULL,
 																			info TEXT NOT NULL DEFAULT "",
 																			type INTEGER DEFAULT 0,
-																			autoAdjust INTEGER DEFAULT 0)''')
+																			autoAdjust INTEGER DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -242,10 +243,19 @@ class SRDatabase:
 
 		if not self.hasColumn(markerRows, 'autoAdjust'):
 			try:
-				cur.execute("ALTER TABLE SerienMarker ADD autoAdjust INTEGER DEFAULT 0")
+				cur.execute("ALTER TABLE SerienMarker ADD autoAdjust INTEGER DEFAULT NULL")
 			except Exception as e:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'autoAdjust' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+		else:
+			try:
+				cur.execute("SELECT COUNT(*) FROM SerienMarker WHERE autoAdjust IS NULL")
+				hasNullValues = (cur.fetchone()[0] > 0)
+				if not hasNullValues:
+					cur.execute("UPDATE SerienMarker SET autoAdjust = NULL WHERE autoAdjust = 0")
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'autoAdjust' konnte nicht korrigiert werden [%s]." % str(e), True)
 
 		if not self.updateToWLID():
 			updateSuccessful = False
@@ -257,6 +267,13 @@ class SRDatabase:
 			except Exception as e:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'vps' konnte nicht in der Tabelle 'Channels' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(channelRows, 'autoAdjust'):
+			try:
+				cur.execute('ALTER TABLE Channels ADD autoAdjust INTEGER DEFAULT NULL')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'autoAdjust' konnte nicht in der Tabelle 'Channels' angelegt werden [%s]." % str(e), True)
 
 		try:
 			cur.execute('DROP TABLE IF EXISTS NeuerStaffelbeginn')
@@ -576,15 +593,15 @@ class SRDatabase:
 		cur.close()
 		return bool(result)
 
-	def getAutoAdjust(self, series):
-		result = True
+	def getAutoAdjust(self, series, channel):
+		result = None
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT autoAdjust FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT CASE WHEN SerienMarker.autoAdjust IS NOT NULL THEN SerienMarker.autoAdjust ELSE Channels.autoAdjust END as autoAdjust FROM Channels,SerienMarker WHERE LOWER(Channels.WebChannel)=? AND LOWER(SerienMarker.Serie)=?", (channel.lower(), series.lower()))
 		row = cur.fetchone()
 		if row:
 			(result,) = row
 		cur.close()
-		return bool(result)
+		return result
 
 	def getUpdateFromEPG(self, series):
 		result = True
@@ -980,17 +997,17 @@ class SRDatabase:
 
 	def getChannelsSettings(self, channel):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT Vorlaufzeit, Nachlaufzeit, vps FROM Channels WHERE LOWER(WebChannel)=?", [channel.lower()])
+		cur.execute("SELECT Vorlaufzeit, Nachlaufzeit, vps, autoAdjust FROM Channels WHERE LOWER(WebChannel)=?", [channel.lower()])
 		row = cur.fetchone()
 		if not row:
-			row = (None, None, 0)
-		(Vorlaufzeit, Nachlaufzeit, vps) = row
+			row = (None, None, 0, None)
+		(Vorlaufzeit, Nachlaufzeit, vps, autoAdjust) = row
 		cur.close()
-		return Vorlaufzeit, Nachlaufzeit, vps
+		return Vorlaufzeit, Nachlaufzeit, vps, autoAdjust
 
-	def setChannelSettings(self, channel, leadTime, followUpTime, vps):
+	def setChannelSettings(self, channel, leadTime, followUpTime, vps, autoAdjust):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE Channels SET Vorlaufzeit=?, Nachlaufzeit=?, vps=? WHERE LOWER(WebChannel)=?", (leadTime, followUpTime, vps, channel.lower()))
+		cur.execute("UPDATE OR IGNORE Channels SET Vorlaufzeit=?, Nachlaufzeit=?, vps=?, autoAdjust=? WHERE LOWER(WebChannel)=?", (leadTime, followUpTime, vps, autoAdjust, channel.lower()))
 		cur.close()
 
 	def changeChannelStatus(self, channel):

@@ -15,7 +15,7 @@ from skin import parseColor
 
 import SerienRecorder
 from SerienRecorderSeriesServer import SeriesServer
-from SerienRecorderHelpers import isDreamOS, STBHelpers
+from SerienRecorderHelpers import isDreamOS, STBHelpers, isVTI
 from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, longButtonText, InitSkin, skinFactor, updateMenuKeys, setMenuTexts
 from SerienRecorderLogWriter import SRLogger
 
@@ -106,6 +106,9 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self['text_blue'].setText("Auto-Zuordnung")
 
+		self.num_bt_text[2][2] = buttonText_na
+		self.num_bt_text[3][2] = buttonText_na
+
 		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
@@ -151,6 +154,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self['bt_ok'].show()
 			self['bt_exit'].show()
 			#self['bt_text'].show()
+			self['bt_epg'].hide()
 			self['bt_info'].show()
 			self['bt_menu'].show()
 
@@ -265,15 +269,19 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 					# Delete remove channels
 					if removedWebChannels:
-						self.session.open(MessageBox, "Folgende Sender wurden bei Wunschliste nicht mehr gefunden,\ndie Zuordnung im SerienRecorder wird gelöscht:\n\n" + "\n".join(removedWebChannels), MessageBox.TYPE_INFO, timeout=10)
+						SRLogger.writeLog("Folgende Sender wurden bei Wunschliste nicht mehr gefunden, die Zuordnung im SerienRecorder wurde gelöscht:\n" + "\n".join(removedWebChannels), True)
+						self.session.open(MessageBox, "Folgende Sender wurden bei Wunschliste nicht mehr gefunden,\ndie Zuordnung im SerienRecorder wurde gelöscht:\n\n" + "\n".join(removedWebChannels), MessageBox.TYPE_INFO, timeout=10)
 						for webChannel in removedWebChannels:
 							self.selected_sender = webChannel
 							self.channelDelete(True)
 
 					if not newWebChannels:
+						SRLogger.writeLog("Die SerienRecorder Senderliste ist aktuell, es wurden keine neuen Sender bei Wunschliste gefunden.")
 						self.session.open(MessageBox, "Die SerienRecorder Senderliste ist aktuell,\nes wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
 						self.showChannels()
 					else:
+						newChannelsMessage = "Folgende Sender wurden neu bei Wunschliste gefunden:\n" + "\n".join(newWebChannels)
+						SRLogger.writeLog(newChannelsMessage, True)
 						channels = []
 						for webChannel in newWebChannels:
 							channels.append((webChannel, "", "", 0))
@@ -303,7 +311,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		# append missing (new) channels
 		for webChannel in webChannels:
 			if webChannel not in [dbWebChannel for dbWebChannel in dbWebChannels]:
-				added.append(webChannel)
+				added.append(webChannel.encode('utf-8'))
 
 		# append removed channels
 		for dbWebChannel in dbWebChannels:
@@ -496,6 +504,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 	def channelReset(self, execute):
 		if execute:
 			print "[SerienRecorder] channel-list reset..."
+			SRLogger.writeLog("Senderliste wird aktualisiert...")
 
 			if config.plugins.serienRec.selectBouquets.value:
 				self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
@@ -507,6 +516,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				self.database.setChannelListLastUpdate()
 			except:
 				self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
+				SRLogger.writeLog("Fehler beim Laden der Senderliste vom SerienServer.", True)
 		else:
 			print "[SerienRecorder] channel-list ok."
 
@@ -537,8 +547,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				self.channelDelete(True)
 
-			self.showChannels()
-
 	def channelDelete(self, answer):
 		if not answer:
 			return
@@ -546,6 +554,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self.changesMade = True
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Sender '- %s -' entfernt." % self.selected_sender)
+		self.showChannels()
 
 	def resetChannelList(self):
 		if config.plugins.serienRec.confirmOnDelete.value:
@@ -555,8 +564,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self.channelDeleteAll(True)
 
-		self.showChannels()
-
 	def channelDeleteAll(self, answer):
 		if not answer:
 			return
@@ -564,6 +571,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self.changesMade = True
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Alle Senderzuordnungen entfernt.")
+		self.showChannels()
 
 	def keyLeft(self):
 		self[self.modus].pageUp()
@@ -628,7 +636,7 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 		if config.plugins.serienRec.showAllButtons.value:
 			setMenuTexts(self)
 
-		(Vorlaufzeit, Nachlaufzeit, vps) = self.database.getChannelsSettings(self.webSender)
+		(Vorlaufzeit, Nachlaufzeit, vps, autoAdjust) = self.database.getChannelsSettings(self.webSender)
 
 		if str(Vorlaufzeit).isdigit():
 			self.margin_before = ConfigInteger(Vorlaufzeit, (0, 99))
@@ -651,6 +659,13 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 			self.enable_vps = ConfigYesNo(default=False)
 			self.enable_vps_savemode = ConfigYesNo(default=False)
 
+		if str(autoAdjust).isdigit():
+			self.autoAdjust = ConfigYesNo(default=bool(autoAdjust))
+			self.enable_autoAdjust = ConfigYesNo(default=True)
+		else:
+			self.autoAdjust = ConfigYesNo(default=False)
+			self.enable_autoAdjust = ConfigYesNo(default=False)
+
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
 		self.setInfoText()
@@ -663,6 +678,17 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
 
+		self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
+		                    [buttonText_na, buttonText_na, buttonText_na],
+		                    [buttonText_na, buttonText_na, buttonText_na],
+		                    [buttonText_na, buttonText_na, "Hilfe"],
+		                    [buttonText_na, buttonText_na, buttonText_na])
+
+		self['text_red'].setText("Abbrechen")
+		self['text_green'].setText("Speichern")
+
+		super(self.__class__, self).startDisplayTimer()
+
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)
@@ -674,27 +700,48 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 		self['config_information_text'].show()
 
 		self['title'].setText("SerienRecorder - Einstellungen für '%s':" % self.webSender)
-		self['text_red'].setText("Abbrechen")
-		self['text_green'].setText("Speichern")
+
 		if not config.plugins.serienRec.showAllButtons.value:
 			self['text_0'].setText("Abbrechen")
 			self['text_1'].setText("About")
 
 			self['bt_red'].show()
 			self['bt_green'].show()
+			self['bt_blue'].show()
+			self['bt_ok'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
-
 			self['text_red'].show()
 			self['text_green'].show()
+			self['text_blue'].show()
+			self['text_ok'].show()
 			self['text_0'].show()
 			self['text_1'].show()
+			self['text_2'].show()
+			self['text_3'].show()
+			self['text_4'].show()
 		else:
-			self.num_bt_text = ([buttonText_na, buttonText_na, "Abbrechen"],
-			                    [buttonText_na, buttonText_na, buttonText_na],
-			                    [buttonText_na, buttonText_na, buttonText_na],
-			                    [buttonText_na, buttonText_na, "Hilfe"],
-			                    [buttonText_na, buttonText_na, buttonText_na])
+			self['text_0'].hide()
+			self['text_1'].hide()
+			self['text_2'].hide()
+			self['text_3'].hide()
+			self['text_4'].hide()
+			self['text_5'].hide()
+			self['text_6'].hide()
+			self['text_7'].hide()
+			self['text_8'].hide()
+			self['text_9'].hide()
+
+			self['bt_0'].hide()
+			self['bt_1'].hide()
+			self['bt_2'].hide()
+			self['bt_3'].hide()
+			self['bt_4'].hide()
+			self['bt_5'].hide()
+			self['bt_6'].hide()
+			self['bt_7'].hide()
+			self['bt_8'].hide()
+			self['bt_9'].hide()
 
 	def createConfigList(self):
 		self.margin_after_index = 1
@@ -715,6 +762,11 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 			self.list.append(getConfigListEntry("VPS für diesen Sender aktivieren:", self.enable_vps))
 			if self.enable_vps.value:
 				self.list.append(getConfigListEntry("      Sicherheitsmodus aktivieren:", self.enable_vps_savemode))
+
+		if isVTI():
+			self.list.append(getConfigListEntry("Aufnahmezeitenanpassung aus den EPG Daten für diesen Sender aktivieren:", self.enable_autoAdjust))
+			if self.enable_autoAdjust.value:
+				self.list.append(getConfigListEntry("      Aufnahmezeiten automatisch an EPG Daten anpassen:", self.autoAdjust))
 
 	def UpdateMenuValues(self):
 		if self['config'].instance.getCurrentIndex() == 0:
@@ -784,12 +836,16 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 			self.margin_after: ("Die Nachlaufzeit für Aufnahmen von '%s' in Minuten.\n"
 			                    "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Nachlaufzeit.\n"
 			                    "Ist auch bei der aufzunehmenden Serie eine Nachlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.") % self.webSender,
-			self.enable_vps: (
-				                 "Bei 'ja' wird VPS für '%s' aktiviert. Die Aufnahme startet erst, wenn der Sender den Beginn der Ausstrahlung angibt, "
-				                 "und endet, wenn der Sender das Ende der Ausstrahlung angibt.") % self.webSender,
-			self.enable_vps_savemode: (
-				                          "Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet.Die programmierten Start- und Endzeiten werden eingehalten.\n"
-				                          "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.") % self.webSender
+			self.enable_vps: ("Bei 'ja' wird VPS für '%s' aktiviert. Die Aufnahme startet erst, wenn der Sender den Beginn der Ausstrahlung angibt, "
+				              "und endet, wenn der Sender das Ende der Ausstrahlung angibt.") % self.webSender,
+			self.enable_vps_savemode: ("Bei 'ja' wird der Sicherheitsmodus bei '%s' verwendet.Die programmierten Start- und Endzeiten werden eingehalten.\n"
+				                       "Die Aufnahme wird nur ggf. früher starten bzw. länger dauern, aber niemals kürzer.") % self.webSender,
+			self.enable_autoAdjust: ("Bei 'ja' kann für Timer auf '%s' eingestellt werden, ob die Aufnahmezeit automatisch an die EPG Daten angepasst werden soll.\n"
+			                        "Diese Einstellung hat Vorrang gegenüber der VTI Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten.\n"
+			                         "Bei 'nein' gilt die Einstellung im VTI.") % self.webSender,
+			self.autoAdjust: ("Bei 'ja' wird 'Aufnahmezeit automatisch an EPG Daten anpassen' für Timer auf '%s' aktiviert.\n"
+			                  "Diese Einstellung hat Vorrang gegenüber der Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten im VTI.") % self.webSender,
+
 		}
 
 		try:
@@ -812,7 +868,12 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 
 		vpsSettings = (int(self.enable_vps_savemode.value) << 1) + int(self.enable_vps.value)
 
-		self.database.setChannelSettings(self.webSender, Vorlaufzeit, Nachlaufzeit, vpsSettings)
+		if not self.enable_autoAdjust.value:
+			autoAdjust = None
+		else:
+			autoAdjust = self.autoAdjust.value
+
+		self.database.setChannelSettings(self.webSender, Vorlaufzeit, Nachlaufzeit, vpsSettings, autoAdjust)
 		self.close()
 
 	def cancel(self):

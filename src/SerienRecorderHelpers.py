@@ -20,8 +20,8 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.9.5-beta'
-SRDBVERSION = '3.9.5'
+SRVERSION = '3.9.6-beta'
+SRDBVERSION = '3.9.6'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 def decodeISO8859_1(txt, replace=False):
@@ -606,11 +606,10 @@ class STBHelpers:
 # ----------------------------------------------------------------------------------------------------------------------
 
 class PicLoader:
-	def __init__(self, width, height, sc=None):
+	def __init__(self, width, height):
 		self.picload = ePicLoad()
-		if not sc:
-			sc = AVSwitch().getFramebufferScale()
-		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
+		# max width, max height, aspect x, aspect y, cache, quality (0 = simple, 1 = better, 2 = fast), backgroundcolor
+		self.picload.setPara((width, height, 1, 1, False, 1, "#ff000000"))
 
 	def load(self, filename):
 		if isDreamOS():
