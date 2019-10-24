@@ -114,7 +114,7 @@ class serienRecTimer:
 						addToDatabase = self.database.getAddToDatabase(serien_name)
 
 						# get autoAdjust for marker
-						autoAdjust = self.database.getAutoAdjust(serien_name)
+						autoAdjust = self.database.getAutoAdjust(serien_name, webChannel)
 
 						epgcache = eEPGCache.getInstance()
 						allevents = epgcache.lookupEvent(['IBD', (stbRef, 2, eit, -1)]) or []

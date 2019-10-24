@@ -1819,7 +1819,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					addToDatabase = self.database.getAddToDatabase(serien_name)
 
 					# get autoAdjust for marker
-					autoAdjust = self.database.getAutoAdjust(serien_name)
+					autoAdjust = self.database.getAutoAdjust(serien_name, sender)
 
 					(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
 
