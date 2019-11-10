@@ -84,8 +84,10 @@
             <span id="deaktivieren" class="anchor"></span>
 			
 			<h2 class="header">Die Farbtasten</h2>
-			<br>
-            <h4 class="sub-header"><kbd class="red">(De)aktivieren/Löschen</kbd></h4>
+			<br><kbd class="red">(De)aktivieren/Löschen</kbd> <kbd class="green">Sender auswählen</kbd> <kbd class="yellow">Sendetermine</kbd> <kbd class="blue">Timer-Liste</kbd>
+			<br><br><p>Werden jetzt unten genauer beschrieben. Diese haben meist in jeder Ansicht teilweise andere Funktionen.</p>
+			<br><br><br>
+            <h3 class="sub-header"><kbd class="red">(De)aktivieren/Löschen</kbd></h3>
             <div class="row">
                 <ul>
                     <li><strong>Serien-Marker aktivieren/deaktivieren</strong> (Taste <kbd class="red">ROT</kbd> kurz drücken)
@@ -108,7 +110,7 @@
             </div>
             <span id="sender-auswaehlen" class="anchor"></span>
 			
-            <h4 class="sub-header"><kbd class="green">Sender auswählen</kbd></h4>
+            <h3 class="sub-header"><kbd class="green">Sender auswählen</kbd></h3>
             <div class="row">
                 <p>Wird ein Serien-Marker angelegt, hat er zunächst keine Sender-Einschränkung, alle im SerienRecorder zugeorneten Sender werden bei der Erstellung von Timern berücksichtigt.
                 Sollen für einen Serien-Marker nur Timer auf bestimmten Sendern angelegt werden, lassen sich über <kbd class="green">Sender auswählen</kbd> Einschränkungen vornehmen.<br/>
@@ -153,7 +155,7 @@
             </div>
             <span id="sendetermine" class="anchor"></span>
 			
-            <h4 class="sub-header"><kbd class="yellow">Sendetermine</kbd></h4>
+            <h3 class="sub-header"><kbd class="yellow">Sendetermine</kbd></h3>
             <div class="row">
                 <p>In dieser Ansicht sieht man, wie der Titel vermuten lässt, alle bei Wunschliste aufgeführten Sendetermine für die selektierte Serie.
 				</p>
@@ -193,8 +195,9 @@
 				<br>Mit der Taste <kbd class="blue">Timer-Liste</kbd> kann auch von hier die Timer-Liste geöffnet werden, um evtl. nachzuschauen, ob Episoden schon in der DB vorhanden sind oder auch um Einträge zu löschen.
 				</p>
             </div>
+			<br><br>
             <span id="timer-liste" class="anchor"></span>
-            <h4 class="sub-header"><kbd class="blue">Timer-Liste</kbd></h4>
+            <h3 class="sub-header"><kbd class="blue">Timer-Liste</kbd></h3>
             <div class="row">
                 <p>Die Timer-Liste ist quasi die SerienRecorder eigene Datenbank und enthält alle Episoden einer Serie, für die der SerienRecorder bereits einen Timer erstellt hat - und damit bei der Suche nicht mehr berücksichtigt wird.
                 In die Timer-Liste können auch manuell Einträge eingefügt werden, um bestimmte Episoden von der Timer-Erstellung auszuschließen.</p>
@@ -207,7 +210,7 @@
 <!-- Das Serien-Marker Menü -->			
 			
 			<span id="serien-menu" class="anchor"></span>
-			
+			<br>
 			<h2 class="header">Das Serien-Marker Menü</h2>
 			<br>
             <div class="row">
@@ -337,8 +340,8 @@
                                 
                             </li>
                             
-                        </ol>
-						<div class="bs-callout bs-callout-danger">Die Option <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"</strong> Ist nur auf VU+ Receivern mit einem VTI Image sichtbar und nutzbar. Wenn man ein älteres VTI Image nutzt, welches diese Funktion noch nicht unterstützt, sieht man diese Option zwar und kann dort auch Einstellungen tätigen, aber diese sind dann "nutzlos", führen aber auch nicht zu Fehlverhalten auf der Box.</div>
+								</ol>
+								<div class="bs-callout bs-callout-danger">Die Option <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"</strong> Ist nur auf VU+ Receivern mit einem VTI Image sichtbar und nutzbar. Wenn man ein älteres VTI Image nutzt, welches diese Funktion noch nicht unterstützt, sieht man diese Option zwar und kann dort auch Einstellungen tätigen, aber diese sind dann "nutzlos", führen aber auch nicht zu Fehlverhalten auf der Box.</div>
                             </li>
 						</ul>
 					</li>
@@ -390,11 +393,43 @@
 						</p>
 					</li>
 					<br>
+					<h4 class="header">Die Farbtasten im Serien-Marker-Menü</h4>
+					<kbd class="red">Abbrechen</kbd> <kbd class="green">Speichern</kbd> <kbd class="yellow">- - - - -</kbd> <kbd class="blue">Cover auswählen</kbd>
+					<br><br><br>
+					Mit der Taste <kbd class="red">ROT</kbd> für <strong>Abbrechen</strong> werden die hier im Serien-Marker-Menü gemachten Einstellungen verworfen und man kehrt zurück zur Serien-Marker-Ansicht.
+					<br><br>
+					Mit der Taste <kbd class="green">GRÜN</kbd> für <strong>Speichern</strong> werden die Änderungen dauerhaft gespeichert und man kehrt zurück zur Serien-Marker-Ansicht.
+					<br><br>
+					Mit der Taste <kbd class="blue">BLAU</kbd> für <strong>Cover auswählen</strong> wird ein neues Fenster geöffnet, wo Cover der gerade aktiven Serie von TheTVDB heruntergeladen werden. Dort kann dann aus der Liste ein Cover selektiert und mit <kbd>OK</kbd> bestätigt werden. Mit der Taste <kbd>EXIT</kbd> verlässt man die Cover-Auswahl, ohne Änderungen zu speichern.
+					<br>Die heruntergeladenen Cover werden auf der Box im Ordner <strong>"/tmp/serienrecorder"</strong> temporär gespeichert. Dies bedeutet, das diese nach einem Neustart der Box gelöscht sind. Aber solange man die Box nicht neu Startet, müssen die Cover, wenn man die Cover-Auswahl noch mal öffnet, nicht noch einmal heruntergeladen werden.
+					<br>Das Öffnen der Cover-Auswahl kann, je nach Leistung der Box und der Internet-Leitung, ein paar Sekunden in Anspruch nehmen.
+					<br>Mehr dazu findet man unter <a href="sonstige.htm#cover"><strong><u>Sonstige Funktionen => Cover</u></strong></a>
+					<p><small>(Klick zum vergrößern)</small></p>
+					<div class="row">
+						<div class="col-md-2">
+							<div class="thumbnail with-caption">
+							<a href="images/cover-auswahl-airwolf.jpg" target="_blank">
+								<img src="images/cover-auswahl-airwolf.jpg" alt="Cover-Auswahl" style="width:100%">
+								<p><small>Die Cover-Auswahl</small></p>
+							</a>
+							</div>
+						</div>
+						<div class="col-md-2">
+							<div class="thumbnail with-caption">
+								<a href="images/cover-auswahl-got.jpg" target="_blank">
+								<img src="images/cover-auswahl-got.jpg" alt="Cover-Auswahl" style="width:100%">
+								<p><small>Die Cover-Auswahl</small></p>
+								</a>
+							</div>
+						</div>
+					</div>
+					
 				</ul>
 			</div>
 <!-- Tastaturbelegung -->	
 		
 		<span id="tastatur-sm" class="anchor"></span>
+			<br><br>
             <h3 class="sub-header"><strong>Tastaturbelegung in der Serien-Marker Ansicht</strong></h3>
 			<ul>
 			<p>Nicht Serien-Marker-Menü, denn dort ist es abweichend (siehe weiter oben).
