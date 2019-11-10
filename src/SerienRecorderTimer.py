@@ -60,6 +60,9 @@ class serienRecTimer:
 								elif config.plugins.serienRec.TimerName.value == "2":
 									timer_name = "S%sE%s - %s" % (
 									str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+								elif config.plugins.serienRec.TimerName.value == "3":
+									timer_name = "%s - S%sE%s" % (
+									serien_name, str(staffel).zfill(2), str(episode).zfill(2))
 								else:
 									timer_name = serien_name
 									SRLogger.writeLog("Versuche deaktivierten Timer zu aktivieren: ' %s - %s '" % (
@@ -128,6 +131,9 @@ class serienRecTimer:
 								elif config.plugins.serienRec.TimerName.value == "2":
 									timer_name = "S%sE%s - %s" % (
 									str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+								elif config.plugins.serienRec.TimerName.value == "3":
+									timer_name = "%s - S%sE%s" % (
+									serien_name, str(staffel).zfill(2), str(episode).zfill(2))
 								else:
 									timer_name = serien_name
 									SRLogger.writeLog("Versuche deaktivierten Timer aktiv zu erstellen: ' %s - %s '" % (
@@ -185,6 +191,8 @@ class serienRecTimer:
 						timer_name = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
 					elif config.plugins.serienRec.TimerName.value == "2":
 						timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), new_serien_title)
+					elif config.plugins.serienRec.TimerName.value == "3":
+						timer_name = "%s - S%sE%s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2))
 					else:
 						timer_name = serien_name
 
@@ -629,6 +637,8 @@ class serienRecTimer:
 				timer_name = label_serie
 			elif config.plugins.serienRec.TimerName.value == "2":
 				timer_name = "%s - %s" % (seasonEpisodeString, title)
+			elif config.plugins.serienRec.TimerName.value == "3":
+				timer_name = "%s - %s" % (serien_name, seasonEpisodeString)
 			else:
 				timer_name = serien_name
 			result = serienRecBoxTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name,
