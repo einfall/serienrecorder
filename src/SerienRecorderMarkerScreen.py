@@ -1900,6 +1900,8 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					timer_name = label_serie
 				elif config.plugins.serienRec.TimerName.value == "2":
 					timer_name = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title)
+				elif config.plugins.serienRec.TimerName.value == "3":
+					timer_name = "%s - S%sE%s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2))
 				else:
 					timer_name = serien_name
 

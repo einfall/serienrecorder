@@ -244,6 +244,8 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			title = serien_name
 		elif config.plugins.serienRec.TimerName.value == "2":  # "SnnEmm - <Episodentitel>"
 			title = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+		elif config.plugins.serienRec.TimerName.value == "3":  # "<Serienname> - SnnEmm"
+			title = "%s - S%sE%s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2))
 		else:  # "<Serienname> - SnnEmm - <Episodentitel>"
 			title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 

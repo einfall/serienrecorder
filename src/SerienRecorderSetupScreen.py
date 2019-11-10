@@ -160,7 +160,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.logWrapAround = ConfigYesNo(default=False)
 	config.plugins.serienRec.TimerName = ConfigSelection(
 		choices=[("0", "<Serienname> - SnnEmm - <Episodentitel>"), ("1", "<Serienname>"),
-		         ("2", "SnnEmm - <Episodentitel>")], default="0")
+		         ("2", "SnnEmm - <Episodentitel>"), ("3", "<Serienname> - SnnEmm")], default="0")
 	config.plugins.serienRec.refreshViews = ConfigYesNo(default=True)
 	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default=True)
 	config.plugins.serienRec.downloadCover = ConfigYesNo(default=False)
