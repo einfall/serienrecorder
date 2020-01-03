@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.9.7-beta'
+SRVERSION = '3.9.8-beta'
 SRDBVERSION = '3.9.6'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
@@ -606,12 +606,15 @@ class STBHelpers:
 # ----------------------------------------------------------------------------------------------------------------------
 
 class PicLoader:
-	def __init__(self, width, height):
+	def __init__(self, width, height, sc=None):
 		self.picload = ePicLoad()
+		if not sc:
+			sc = AVSwitch().getFramebufferScale()
 		# max width, max height, aspect x, aspect y, cache, quality (0 = simple, 1 = better, 2 = fast), backgroundcolor
-		self.picload.setPara((width, height, 1, 1, False, 1, "#ff000000"))
+		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
 
 	def load(self, filename):
+		print "[SerienRecorder] PicLoader::load: <%s>" % filename
 		if isDreamOS():
 			self.picload.startDecode(filename, False)
 		else:
@@ -663,6 +666,7 @@ class PiconLoader:
 	@staticmethod
 	def findPicon(sRef):
 		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, sRef)
+		print "[SerienRecorder] PiconLoader::findPicon: <%s>" % pngname
 		if not fileExists(pngname):
 			pngname = ""
 		return pngname

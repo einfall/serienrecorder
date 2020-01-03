@@ -93,28 +93,11 @@ class SRLogger:
 	def reset(cls):
 		logFile = SERIENRECORDER_LOGFILENAME % config.plugins.serienRec.LogFilePath.value
 
-		if not config.plugins.serienRec.longLogFileName.value:
-			# logFile leeren (renamed to .old)
-			if fileExists(logFile):
-				shutil.move(logFile,"%s.old" % logFile)
-		else:
-			lt = datetime.datetime.now() - datetime.timedelta(days=config.plugins.serienRec.deleteLogFilesOlderThan.value)
-			for filename in os.listdir(config.plugins.serienRec.LogFilePath.value):
-				if (filename.find('SerienRecorder_') == 0) and (int(os.path.getmtime(os.path.join(config.plugins.serienRec.LogFilePath.value, filename))) < int(lt.strftime("%s"))):
-					try:
-						os.remove('%s%s' % (config.plugins.serienRec.LogFilePath.value, filename))
-					except:
-						SRLogger.writeLog("Logdatei konnte nicht gelöscht werden: %s" % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
+		# logFile leeren (renamed to .old)
+		if fileExists(logFile):
+			shutil.move(logFile,"%s.old" % logFile)
 
 		open(logFile, 'w').close()
-
-	@classmethod
-	def backup(cls):
-		if config.plugins.serienRec.longLogFileName.value:
-			lt = time.localtime()
-			logFile = SERIENRECORDER_LOGFILENAME % config.plugins.serienRec.LogFilePath.value
-			logFileSave = SERIENRECORDER_LONG_LOGFILENAME % (config.plugins.serienRec.LogFilePath.value, str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
-			shutil.copy(logFile, logFileSave)
 
 	@classmethod
 	def getLogFilePath(cls):

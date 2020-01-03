@@ -6,7 +6,7 @@ from Components.ActionMap import ActionMap
 from Components.Label import Label
 from Components.GUIComponent import GUIComponent
 
-from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_VALIGN_CENTER, RT_HALIGN_LEFT
+from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_VALIGN_CENTER, RT_HALIGN_LEFT, RT_HALIGN_CENTER
 from enigma import getDesktop
 
 from twisted.web.client import downloadPage
@@ -26,7 +26,7 @@ class CoverSelectorScreen(Screen):
 	DIALOG_HEIGHT = DESKTOP_HEIGHT - 180
 
 	skin = """
-			<screen name="SerienRecorderCoverSelector" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20">
+			<screen name="CoverSelectorScreen" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20">
 				<widget name="headline" position="10,6" size="500,26" foregroundColor="green" backgroundColor="#26181d20" transparent="1" font="Regular;19" valign="center" halign="left" />
 				<widget name="list" position="5,40" size="%d,%d" scrollbarMode="showOnDemand"/>
 				<widget name="footer" position="10,%d" size="500,26" foregroundColor="green" backgroundColor="#26181d20" transparent="1" font="Regular;19" valign="center" halign="left" />
@@ -71,7 +71,7 @@ class CoverSelectorScreen(Screen):
 			print "[SerienRecorder] Number of covers found = ", len(covers)
 			self._numberOfCovers = len(covers)
 			ds = defer.DeferredSemaphore(tokens=5)
-			downloads = [ds.run(self.download, cover).addCallback(self.buildList, cover).addErrback(self.dataError) for cover in covers]
+			downloads = [ds.run(self.download, cover).addCallback(self.buildList, cover).addErrback(self.buildList, cover) for cover in covers]
 			defer.DeferredList(downloads).addErrback(self.dataError).addCallback(self.dataFinish)
 		else:
 			self['footer'].setText("Keine Cover gefunden!")
@@ -88,7 +88,7 @@ class CoverSelectorScreen(Screen):
 		self['list'].setList(self._coverList)
 
 	def dataError(self, error):
-		self['footer'].setText("Fehler beim Laden der Cover [%s]" % str(error))
+		self['footer'].setText("Fehler beim Laden der Cover!")
 
 	def dataFinish(self, res):
 		self['footer'].setText("Es wurden %d Cover gefunden" % self._numberOfCovers)
@@ -125,10 +125,13 @@ class CoverSelectorList(GUIComponent, object):
 
 		# First column
 		x, y, w, h = (5, 5, 120, 176)
-		picloader = PicLoader(w, h)
-		image = picloader.load(path)
-		res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, x, y, w, h, image))
-		picloader.destroy()
+		if fileExists(path):
+			picloader = PicLoader(w, h)
+			image = picloader.load(path)
+			res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, x, y, w, h, image))
+			picloader.destroy()
+		else:
+			res.append((eListboxPythonMultiContent.TYPE_TEXT, x, y, w, h, 0, RT_HALIGN_CENTER | RT_VALIGN_CENTER, "Ladefehler"))
 
 		# Second column
 		x, y, w, h = (150, 5, 300, 25)

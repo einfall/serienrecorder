@@ -595,7 +595,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def callSaveMsg(self, answer):
 		if answer:
-			self.session.openWithCallback(self.callDelMsg, MessageBox, "Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
+			self.session.openWithCallback(self.callDelMsg, MessageBox, "Sollen die Einträge für '%s' auch aus der Datenbank gelöscht werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 		else:
 			return
 
@@ -631,9 +631,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				self.selected_serien_name = self['menu_list'].getCurrent()[0][1]
 				if config.plugins.serienRec.confirmOnDelete.value:
-					self.session.openWithCallback(self.callSaveMsg, MessageBox, "Soll '%s' wirklich entfernt werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
+					self.session.openWithCallback(self.callSaveMsg, MessageBox, "Soll '%s' wirklich gelöscht werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 				else:
-					self.session.openWithCallback(self.callDelMsg, MessageBox, "Sollen die Einträge für '%s' auch aus der Timer-Liste entfernt werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
+					self.session.openWithCallback(self.callDelMsg, MessageBox, "Sollen die Einträge für '%s' auch aus der Datenbank gelöscht werden?" % self.selected_serien_name, MessageBox.TYPE_YESNO, default = False)
 
 	def disableAll(self):
 		if self.modus == "menu_list":
@@ -1011,7 +1011,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self['config_information'].show()
 		self['config_information_text'].show()
 
-		self['title'].setText("SerienRecorder - Einstellungen für '%s':" % self.Serie)
+		self['title'].setText("Serien-Marker - Einstellungen für '%s':" % self.Serie)
 		if not config.plugins.serienRec.showAllButtons.value:
 			self['text_0'].setText("Abbrechen")
 			self['text_1'].setText("About")

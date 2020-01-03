@@ -25,7 +25,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 		self["actions"] = ActionMap(["SerienRecorderActions"], dict(cancel=self.exit, ok=self.exit), -1)
 
 		self.info =("SerienRecorder for Enigma2 (Version %s)\n"
-		            "(c) 2014-2019 by einfall, w22754, MacDisein and egn\n"
+		            "(c) 2014-2020 by einfall, w22754, MacDisein and egn\n"
 					"\n"
 					"For more info:\n"
 					"http://tinyurl.com/puafaaz\n"

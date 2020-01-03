@@ -14,6 +14,7 @@ from skin import parseColor
 import time, re
 
 import SerienRecorder
+from SerienRecorderHelpers import PiconLoader, PicLoader, STBHelpers
 from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
 from SerienRecorderDatabase import SRDatabase
 
@@ -31,8 +32,10 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.skin = None
 		self.session = session
 		self.picload = ePicLoad()
+		self.piconLoader = PiconLoader()
 		self.WochenTag = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		self.channelList = STBHelpers.buildSTBChannelList()
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok": (self.keyOK, "Liste der erstellten Timer bearbeiten"),
@@ -78,14 +81,14 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
 
-		self['text_red'].setText("Entferne Timer")
+		self['text_red'].setText("Timer löschen")
 		if config.plugins.serienRec.recordListView.value == 0:
-			self['text_green'].setText("Zeige neueste Timer zuerst")
+			self['text_green'].setText("Neueste zuerst")
 		elif config.plugins.serienRec.recordListView.value == 1:
-			self['text_green'].setText("Zeige früheste Timer zuerst")
+			self['text_green'].setText("Älteste zuerst")
 		self['text_ok'].setText("Liste bearbeiten")
 		self['text_yellow'].setText("Zeige auch alte Timer")
-		self['text_blue'].setText("Entferne neue Timer")
+		self['text_blue'].setText("Lösche neue Timer")
 		self.num_bt_text[3][1] = "Bereinigen"
 		self.num_bt_text[4][1] = "Datenbank leeren"
 
@@ -155,10 +158,10 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def viewChange(self):
 		if config.plugins.serienRec.recordListView.value == 1:
 			config.plugins.serienRec.recordListView.value = 0
-			self['text_green'].setText("Zeige neueste Timer zuerst")
+			self['text_green'].setText("Neueste zuerst")
 		else:
 			config.plugins.serienRec.recordListView.value = 1
-			self['text_green'].setText("Zeige früheste Timer zuerst")
+			self['text_green'].setText("Älteste zuerst")
 		config.plugins.serienRec.recordListView.save()
 		SerienRecorder.configfile.save()
 		self.readTimer()
@@ -173,9 +176,9 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			(serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer) = timer
 			if int(start_time) < int(current_time):
 				deltimer += 1
-				timerList.append((serie, staffel, episode, title, start_time, webChannel, "1", 0, bool(activeTimer)))
+				timerList.append((serie, staffel, episode, title, start_time, stbRef, webChannel, "1", 0, bool(activeTimer)))
 			else:
-				timerList.append((serie, staffel, episode, title, start_time, webChannel, "0", eit, bool(activeTimer)))
+				timerList.append((serie, staffel, episode, title, start_time, stbRef, webChannel, "0", eit, bool(activeTimer)))
 
 		if showTitle:
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
@@ -199,29 +202,44 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.getCover()
 
 	def buildList(self, entry):
-		(serie, staffel, episode, title, start_time, webChannel, foundIcon, eit, activeTimer) = entry
+		(serie, staffel, episode, title, start_time, stbRef, webChannel, foundIcon, eit, activeTimer) = entry
 		xtime = time.strftime(self.WochenTag[time.localtime(int(start_time)).tm_wday ] +", %d.%m.%Y - %H:%M", time.localtime(int(start_time)))
 		xtitle = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title)
-
-		if int(foundIcon) == 1:
-			imageFound = "%simages/found.png" % SerienRecorder.serienRecMainPath
-		else:
-			imageFound = "%simages/black.png" % SerienRecorder.serienRecMainPath
+		imageNone = "%simages/black.png" % SerienRecorder.serienRecMainPath
 
 		if activeTimer:
 			SerieColor = None
+			channelName = STBHelpers.getChannelByRef(self.channelList, stbRef)
 		else:
 			SerieColor = parseColor('red').argb()
+			channelName = webChannel
 
 		foregroundColor = parseColor('foreground').argb()
 
-		return [entry,
-		        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8 * skinFactor, 32 * skinFactor, 32 * skinFactor, loadPNG(imageFound)),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 40, 3, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, webChannel, SerieColor, SerieColor),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, 250 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), foregroundColor, foregroundColor)
-		        ]
+		if int(foundIcon) == 0 and config.plugins.serienRec.showPicons.value != "0":
+			picon = loadPNG(imageNone)
+			if stbRef:
+				# Get picon by reference or by name
+				piconPath = self.piconLoader.getPicon(stbRef)
+				if piconPath:
+					self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
+					picon = self.picloader.load(piconPath)
+					self.picloader.destroy()
+
+			return [entry,
+					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5, 80 * skinFactor, 40 * skinFactor, picon),
+					(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 3, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, channelName, SerieColor, SerieColor),
+					(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 29 * skinFactor, 250 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
+					(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
+					(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), foregroundColor, foregroundColor)
+			        ]
+		else:
+			return [entry,
+			        (eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 3, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, channelName, SerieColor, SerieColor),
+			        (eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 29 * skinFactor, 250 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
+			        (eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
+			        (eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, re.sub("(?<= - )dump\Z", "(Manuell hinzugefügt !!)", xtitle), foregroundColor, foregroundColor)
+			        ]
 
 	def keyOK(self):
 		self.session.open(serienRecModifyAdded, False)
@@ -233,8 +251,8 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			episode = self['menu_list'].getCurrent()[0][2]
 			serien_title = self['menu_list'].getCurrent()[0][3]
 			serien_time = self['menu_list'].getCurrent()[0][4]
-			serien_channel = self['menu_list'].getCurrent()[0][5]
-			serien_eit = self['menu_list'].getCurrent()[0][7]
+			serien_channel = self['menu_list'].getCurrent()[0][6]
+			serien_eit = self['menu_list'].getCurrent()[0][8]
 			self.removeTimer(serien_name, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
 		else:
 			return
@@ -261,7 +279,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.changesMade = True
 		self.readTimer(False)
 		self['title'].instance.setForegroundColor(parseColor("red"))
-		self['title'].setText("Timer '- %s -' entfernt." % serien_name)
+		self['title'].setText("Timer '- %s -' gelöscht." % serien_name)
 
 	def keyRed(self):
 		check = self['menu_list'].getCurrent()
@@ -274,13 +292,13 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			episode = self['menu_list'].getCurrent()[0][2]
 			serien_title = self['menu_list'].getCurrent()[0][3]
 			serien_time = self['menu_list'].getCurrent()[0][4]
-			serien_channel = self['menu_list'].getCurrent()[0][5]
-			serien_eit = self['menu_list'].getCurrent()[0][7]
+			serien_channel = self['menu_list'].getCurrent()[0][6]
+			serien_eit = self['menu_list'].getCurrent()[0][8]
 
 			print self['menu_list'].getCurrent()[0]
 
 			if config.plugins.serienRec.confirmOnDelete.value:
-				self.session.openWithCallback(self.callDeleteSelectedTimer, MessageBox, "Soll '%s - S%sE%s - %s' wirklich entfernt werden?" %
+				self.session.openWithCallback(self.callDeleteSelectedTimer, MessageBox, "Soll '%s - S%sE%s - %s' wirklich gelöscht werden?" %
 				                              (serien_name, str(staffel).zfill(2), str(episode).zfill(2),
 				                              re.sub("\Adump\Z", "(Manuell hinzugefügt !!)", serien_title)),
 				                              MessageBox.TYPE_YESNO, default=False)
@@ -299,7 +317,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyBlue(self):
 		if config.plugins.serienRec.confirmOnDelete.value:
 			self.session.openWithCallback(self.removeNewTimerFromDB, MessageBox,
-			                              "Sollen wirklich alle noch ausstehenden Timer von der Box und aus der Datenbank entfernt werden?",
+			                              "Sollen wirklich alle noch ausstehenden Timer von der Box und aus der Datenbank gelöscht werden?",
 			                              MessageBox.TYPE_YESNO, default=False)
 		else:
 			self.removeNewTimerFromDB(True)
@@ -314,7 +332,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 			self.readTimer(False)
 			self['title'].instance.setForegroundColor(parseColor("red"))
-			self['title'].setText("Alle noch ausstehenden Timer wurden entfernt.")
+			self['title'].setText("Alle noch ausstehenden Timer wurden gelöscht.")
 		else:
 			return
 
@@ -325,14 +343,14 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 			self.readTimer(False)
 			self['title'].instance.setForegroundColor(parseColor("red"))
-			self['title'].setText("Alle alten Timer wurden entfernt.")
+			self['title'].setText("Alle alten Timer wurden gelöscht.")
 		else:
 			return
 
 	def dropAllTimer(self):
 		if config.plugins.serienRec.confirmOnDelete.value:
 			self.session.openWithCallback(self.removeOldTimerFromDB, MessageBox,
-			                              "Sollen wirklich alle alten Timer aus der Datenbank entfernt werden?",
+			                              "Sollen wirklich alle alten Timer aus der Datenbank gelöscht werden?",
 			                              MessageBox.TYPE_YESNO,
 			                              default=False)
 		else:
@@ -395,7 +413,6 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.session = session
-		self.picload = ePicLoad()
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 
@@ -435,24 +452,9 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		self.aFromEpisode = 0
 		self.aToEpisode = 0
 
-		if skip:
-			self.onShown.append(self.functionWillBeDeleted)
-		else:
-			self.onLayoutFinish.append(self.readAdded)
+		self.onLayoutFinish.append(self.readAdded)
 		self.onClose.append(self.__onClose)
 		self.onLayoutFinish.append(self.setSkinProperties)
-
-	def functionWillBeDeleted(self):
-		from SerienRecorderMarkerScreen import serienRecMarker
-		self.session.open(serienRecMarker)
-		self.hide()
-		self.session.open(MessageBox, "WICHTIGER Hinweis:\n\n"
-		                              "Dieser Funktionsaufruf wird ab dem nächsten Update nicht mehr zur Verfügung stehen!!\n\n"
-		                              "Die manuelle Bearbeitung der Timer-Liste, d.h. Hinzufügen und Löschen einzelner Episoden "
-		                              "kann in der Episoden-Liste der jeweiligen Serie erfolgen. Dazu in der Serien-Marker Ansicht die gewünschte Serie auswählen, "
-		                              "und mit der Taste 5 die Episoden-Liste öffnen. Danach können mit der grünen Taste einzelne Episoden für die Timererstellung "
-		                              "gesperrt oder wieder freigegeben werden.", MessageBox.TYPE_INFO)
-		self.close()
 
 	def callHelpAction(self, *args):
 		HelpableScreen.callHelpAction(self, *args)
@@ -542,15 +544,19 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def readAdded(self):
 		self.addedlist = []
+		series = []
 		timers = self.database.getAllTimer(None)
 		for timer in timers:
 			(Serie, Staffel, Episode, title, start_time, stbRef, webChannel, eit, active) = timer
+			series.append(Serie)
 			zeile = "%s - S%sE%s - %s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2), title)
 			self.addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), Serie, Staffel, Episode, title, start_time, webChannel))
 
-		self['title'].instance.setForegroundColor(parseColor("red"))
-		self['title'].setText("Für diese Episoden werden keine Timer mehr erstellt !")
 		self.addedlist_tmp = self.addedlist[:]
+		number_of_series = len(set(series))
+		self['title'].instance.setForegroundColor(parseColor("red"))
+		self['title'].setText("Für %d Episoden aus %d Serien werden keine Timer mehr erstellt!" % (len(self.addedlist_tmp), number_of_series))
+
 		if config.plugins.serienRec.addedListSorted.value:
 			self.addedlist_tmp.sort()
 		self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))

@@ -134,13 +134,13 @@ def showCover(data, self, serien_nameCover, force_show=True):
 			scale = AVSwitch().getFramebufferScale()
 			size = self['cover'].instance.size()
 			self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#00000000"))
-			self.picLoaderResult = 1
+			picLoaderResult = 1
 			if isDreamOS():
-				self.picLoaderResult = self.picload.startDecode(serien_nameCover, False)
+				picLoaderResult = self.picload.startDecode(serien_nameCover, False)
 			else:
-				self.picLoaderResult = self.picload.startDecode(serien_nameCover, 0, 0, False)
+				picLoaderResult = self.picload.startDecode(serien_nameCover, 0, 0, False)
 
-			if self.picLoaderResult == 0:
+			if picLoaderResult == 0:
 				ptr = self.picload.getData()
 				if ptr is not None:
 					self['cover'].instance.setPixmap(ptr)
@@ -213,6 +213,7 @@ def initDB():
 			if database.update(config.plugins.serienRec.dbversion.value):
 				SRLogger.writeLog("Datenbank von Version %s auf Version %s aktualisiert" % (dbVersion, config.plugins.serienRec.dbversion.value), True)
 			else:
+				database.close()
 				Notifications.AddPopup("SerienRecorder Datenbank konnte nicht aktualisiert werden. Fehler wurden in die Logdatei geschrieben.\nSerienRecorder wurde beendet!", MessageBox.TYPE_INFO, timeout=10)
 				return False
 
@@ -542,7 +543,7 @@ class serienRecCheckForRecording:
 		if config.plugins.serienRec.writeLogTimeLimit.value:
 			sMsg += "Zeitlimit "
 		if config.plugins.serienRec.writeLogTimerDebug.value:
-			sMsg += "Timer Debug "
+			sMsg += "Timer "
 			SRLogger.writeLog(sMsg, True)
 
 		self.markers = []
@@ -559,7 +560,6 @@ class serienRecCheckForRecording:
 			SRLogger.writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime, True)
 			print "[SerienRecorder] ---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime
 
-			SRLogger.backup()
 			from SerienRecorderTVPlaner import backupTVPlanerHTML
 			backupTVPlanerHTML()
 
@@ -855,7 +855,6 @@ class serienRecCheckForRecording:
 		if config.plugins.serienRec.AutoBackup.value == "after":
 			createBackup()
 
-		SRLogger.backup()
 		from SerienRecorderTVPlaner import backupTVPlanerHTML
 		backupTVPlanerHTML()
 
@@ -932,6 +931,7 @@ class serienRecCheckForRecording:
 						timeRangeTransmission = "%s:%s - %s:%s" % (str(int(start_time) / 60).zfill(2), str(int(start_time) % 60).zfill(2), str(int(end_time) / 60).zfill(2), str(int(end_time) % 60).zfill(2))
 						SRLogger.writeLogFilter("timeRange", "' %s ' - Sendung (%s) nicht in Zeitspanne [%s]" % (label_serie, timeRangeTransmission, timeRangeConfigured))
 						continue
+
 
 			# Process channel relevant data
 

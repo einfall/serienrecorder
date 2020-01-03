@@ -993,7 +993,7 @@ class serienRecBoxTimer:
 					tags=None)
 
 			timer.repeated = 0
-			if isVTI() and autoAdjust:
+			if isVTI() and autoAdjust is not None:
 				print "[SerienRecorder] Current autoAdjust for timer [%s]: %s" % (name, str(timer.autoadjust))
 				print "[SerienRecorder] autoAdjust is: %s" % str(autoAdjust)
 				timer.autoadjust = autoAdjust

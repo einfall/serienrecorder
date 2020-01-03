@@ -30,18 +30,19 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		HelpableScreen.__init__(self)
 		self.ErrorMsg = ''
 		self.database = SRDatabase(serienRecDataBaseFilePath)
+		self.addedEpisodes = self.database.getTimerForSeries(serien_name)
 		self.modus = "menu_list"
 		self.session = session
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
 		self.serien_id = 0
 		self.serien_cover = serien_cover
-		self.addedEpisodes = self.database.getTimerForSeries(self.serien_name)
 		self.episodes_list_cache = {}
+		self.showEpisodes = True
 		self.aStaffel = None
 		self.aFromEpisode = None
 		self.aToEpisode = None
-		#self.pages = []
+		self.numberOfEpisodes = 0
 		self.page = 1
 		self.maxPages = 1
 		self.loading = False
@@ -54,8 +55,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			"right" : (self.keyRight, "Zur nächsten Seite blättern"),
 			"up"    : (self.keyUp, "Eine Zeile nach oben"),
 			"down"  : (self.keyDown, "Eine Zeile nach unten"),
-			"red"	: (self.keyRed, "Zurück zur Serien-Marker-Ansicht"),
-			"green"	: (self.keyGreen, "Diese Folge (nicht mehr) aufnehmen"),
+			"red"	: (self.keyRed, "Diese Folge (nicht mehr) timern"),
+			"green"	: (self.keyGreen, "Zeige nur Einträge aus der Timer-Liste"),
 			"yellow": (self.keyYellow, "Ausgewählte Folge auf den Merkzettel"),
 			"blue"  : (self.keyBlue, "Neue Einträge manuell hinzufügen"),
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
@@ -95,8 +96,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
 
-		self['text_red'].setText("Zurück")
-		self['text_green'].setText("(De)aktivieren")
+		self['text_red'].setText("(De)aktivieren")
+		self['text_green'].setText("Zeige Timer")
 		self['text_ok'].setText("Beschreibung")
 		self['text_yellow'].setText("Auf den Merkzettel")
 		self['text_blue'].setText("Manuell hinzufügen")
@@ -171,23 +172,26 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				[episode["season"], episode["episode"], episode["id"], title])
 
 		self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
-		numberOfEpisodes = data["numEpisodes"]
+		self.numberOfEpisodes = data["numEpisodes"]
 
 		self.loading = False
-		self['title'].setText("%s Episoden für ' %s ' gefunden." % (numberOfEpisodes, self.serien_name))
 		self.showPages()
 
 	def loadEpisodes(self):
 		self.timer_default.stop()
 		if self.page in self.episodes_list_cache:
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
+			self['title'].setText("%s Episoden für ' %s ' gefunden." % (self.numberOfEpisodes, self.serien_name))
 		else:
 			getCover(self, self.serien_name, self.serien_id)
 			try:
 				episodes = SeriesServer().doGetEpisodes(int(self.serien_id), int(self.page))
 				self.resultsEpisodes(episodes)
+				self['title'].setText("%s Episoden für ' %s ' gefunden." % (self.numberOfEpisodes, self.serien_name))
 			except:
 				self['title'].setText("Fehler beim Abrufen der Episodenliste")
+				self.loading = False
+		self['headline'].show()
 
 	def buildList_episodes(self, entry):
 		(season, episode, info_id, title) = entry
@@ -215,6 +219,23 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title),
 			#(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle, parseColor('yellow').argb()),
 			]
+
+	def loadTimer(self):
+		self.addedEpisodes = self.database.getTimerForSeries(self.serien_name)
+		addedlist = []
+		for timer in self.addedEpisodes:
+			(Staffel, Episode, title, webChannel, start_time) = timer
+			zeile = "%s - S%sE%s - %s" % (self.serien_name, str(Staffel).zfill(2), str(Episode).zfill(2), title)
+			addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), self.serien_name, Staffel, Episode, title, start_time, webChannel))
+
+		return addedlist[:]
+
+	def buildList_timer(self, entry):
+		(zeile, Serie, Staffel, Episode, title, start_time, webChannel) = entry
+		foregroundColor = parseColor('foreground').argb()
+		return [entry,
+				(eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile, foregroundColor)
+				]
 
 	def showPages(self):
 		headline = "Diese Liste stammt von TheTVDB, daher kann die Nummerierung/Episodenbeschreibung abweichen."
@@ -251,7 +272,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.database.removeTimer(self.serien_name, season, episode, title, None, None, None)
 
 	def keyOK(self):
-		if self.loading:
+		if self.loading and self.showEpisodes:
 			return
 
 		check = self['menu_list'].getCurrent()
@@ -266,31 +287,63 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 					self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.serien_id, self.episodes_list_cache[self.page][sindex][3], self.episodes_list_cache[self.page][sindex][2])
 					#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!", MessageBox.TYPE_INFO, timeout=10)
 
+	def keyRed(self):
+		if self.loading:
+			return
+
+		selectedRow = self['menu_list'].getCurrent()
+		if not selectedRow:
+			return
+
+		sindex = self['menu_list'].getSelectedIndex()
+		if self.showEpisodes:
+			if self.page in self.episodes_list_cache:
+				current_episodes_list = self.episodes_list_cache[self.page]
+				if len(current_episodes_list) != 0:
+					isAlreadyAdded = self.isAlreadyAdded(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][3])
+
+					if isAlreadyAdded:
+						self.removeFromDB(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][3])
+					else:
+						self.database.addToTimerList(self.serien_name, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][3], int(time.time()), "", "", 0, 1)
+
+					self.addedEpisodes = self.database.getTimerForSeries(self.serien_name)
+					self.chooseMenuList.setList(map(self.buildList_episodes, current_episodes_list))
+		else:
+			(txt, serie, staffel, episode, title, start_time, webChannel) = selectedRow[0]
+			self.removeFromDB(staffel, episode, title)
+			timerList = self.loadTimer()
+			self.chooseMenuList.setList(map(self.buildList_timer, timerList))
+			self['title'].setText("%s Timer für ' %s ' gefunden." % (len(timerList), self.serien_name))
+
 	def keyGreen(self):
 		if self.loading:
 			return
 
-		check = self['menu_list'].getCurrent()
-		if not check:
-			return
-
-		sindex = self['menu_list'].getSelectedIndex()
-		#if len(self.episodes_list_cache) >= self.page:
-		if self.page in self.episodes_list_cache:
-			current_episodes_list = self.episodes_list_cache[self.page]
-			if len(current_episodes_list) != 0:
-				isAlreadyAdded = self.isAlreadyAdded(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][3])
-
-				if isAlreadyAdded:
-					self.removeFromDB(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][3])
-				else:
-					self.database.addToTimerList(self.serien_name, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][3], int(time.time()), "", "", 0, 1)
-
-				self.addedEpisodes = self.database.getTimerForSeries(self.serien_name)
-				self.chooseMenuList.setList(map(self.buildList_episodes, current_episodes_list))
+		if self.showEpisodes:
+			# Show timer
+			self.showEpisodes = False
+			self['text_red'].setText("Eintrag löschen")
+			self['text_green'].setText("Zeige Episoden")
+			self['text_yellow'].hide()
+			self['text_blue'].hide()
+			self['text_ok'].hide()
+			timerList = self.loadTimer()
+			self.chooseMenuList.setList(map(self.buildList_timer, timerList))
+			self['title'].setText("%s Timer für ' %s ' gefunden." % (len(timerList), self.serien_name))
+			self['headline'].hide()
+		else:
+			# Show episodes
+			self.showEpisodes = True
+			self['text_red'].setText("(De)aktivieren")
+			self['text_green'].setText("Zeige Timer")
+			self['text_yellow'].show()
+			self['text_blue'].show()
+			self['text_ok'].show()
+			self.loadEpisodes()
 
 	def keyYellow(self):
-		if self.loading:
+		if self.loading and not self.showEpisodes:
 			return
 
 		check = self['menu_list'].getCurrent()
@@ -305,7 +358,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 					self.session.open(MessageBox, "Die Episode wurde zum Merkzettel hinzugefügt", MessageBox.TYPE_INFO, timeout = 10)
 
 	def nextPage(self):
-		if self.loading:
+		if self.loading and not self.showEpisodes:
 			return
 
 		if self.page <= self.maxPages:
@@ -319,7 +372,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self.searchEpisodes()
 
 	def backPage(self):
-		if self.loading:
+		if self.loading and not self.showEpisodes:
 			return
 
 		if self.page >= 1 and self.maxPages > 1:
@@ -359,6 +412,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 
 	def keyBlue(self):
+		if self.loading and not self.showEpisodes:
+			return
 		self.aStaffel = None
 		self.aFromEpisode = None
 		self.aToEpisode = None

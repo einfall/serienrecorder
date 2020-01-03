@@ -229,7 +229,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self.channelReset(True)
 
 	def readWebChannels(self):
-		print "[SerienRecorder] call webpage.."
+		print "[SerienRecorder] call webpage."
 		self['title'].setText("Lade Wunschliste-Sender...")
 		try:
 			self.createWebChannels(SeriesServer().doGetWebChannels(), False)
@@ -282,6 +282,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 					else:
 						newChannelsMessage = "Folgende Sender wurden neu bei Wunschliste gefunden:\n" + "\n".join(newWebChannels)
 						SRLogger.writeLog(newChannelsMessage, True)
+						self.session.open(MessageBox, "Folgende Sender wurden neu bei Wunschliste gefunden,\nsie wurden am Ende der Liste eingefügt:\n\n" + "\n".join(newWebChannels), MessageBox.TYPE_INFO, timeout=10)
 						channels = []
 						for webChannel in newWebChannels:
 							channels.append((webChannel, "", "", 0))
@@ -289,15 +290,15 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 						self.database.addChannels(channels)
 
 			else:
-				print "[SerienRecorder] webChannel list leer.."
+				print "[SerienRecorder] webChannel list leer."
 
 			if len(self.serienRecChannelList) != 0:
 				self.chooseMenuList.setList(map(self.buildList, self.serienRecChannelList))
 			else:
-				print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.."
+				print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist."
 
 		else:
-			print "[SerienRecorder] get webChannel error.."
+			print "[SerienRecorder] get webChannel error."
 
 		self['title'].setText("Wunschliste-Sender / STB-Sender")
 
@@ -699,7 +700,7 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 		self['config_information'].show()
 		self['config_information_text'].show()
 
-		self['title'].setText("SerienRecorder - Einstellungen für '%s':" % self.webSender)
+		self['title'].setText("Senderzuordnung - Einstellungen für '%s':" % self.webSender)
 
 		if not config.plugins.serienRec.showAllButtons.value:
 			self['text_0'].setText("Abbrechen")
@@ -844,7 +845,8 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 			                        "Diese Einstellung hat Vorrang gegenüber der VTI Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten.\n"
 			                         "Bei 'nein' gilt die Einstellung im VTI.") % self.webSender,
 			self.autoAdjust: ("Bei 'ja' wird 'Aufnahmezeit automatisch an EPG Daten anpassen' für Timer auf '%s' aktiviert.\n"
-			                  "Diese Einstellung hat Vorrang gegenüber der Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten im VTI.") % self.webSender,
+			                  "Diese Einstellung hat Vorrang gegenüber der Einstellung für die automatische Anpassung der Aufnahmezeit an EPG Daten im VTI.\n"
+			                  "Bei 'nein' gilt die Einstellung im VTI.") % self.webSender,
 
 		}
 

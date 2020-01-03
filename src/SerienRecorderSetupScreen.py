@@ -127,8 +127,6 @@ def ReadConfigFile():
 		choices=[("0", "keine"), ("1", "bei Suchlauf-Start"), ("2", "bei Suchlauf-Ende"),
 		         ("3", "bei Suchlauf-Start und Ende")], default="1")
 	config.plugins.serienRec.LogFilePath = ConfigText(default=SerienRecorder.serienRecMainPath, fixed_size=False, visible_width=80)
-	config.plugins.serienRec.longLogFileName = ConfigYesNo(default=False)
-	config.plugins.serienRec.deleteLogFilesOlderThan = ConfigInteger(14, (0, 999))
 	config.plugins.serienRec.writeLog = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogChannels = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogAllowedEpisodes = ConfigYesNo(default=True)
@@ -221,6 +219,26 @@ def ReadConfigFile():
 
 	SelectSkin()
 
+
+class ConfigListHC(ConfigList):
+	def __init__(self, list, session=None):
+		ConfigList.__init__(self, list, session=session)
+
+	def jumpToPreviousSection(self):
+		index = self.getCurrentIndex() - 1
+		maxlen = len(self._ConfigList__list)
+		while index >= 0 and maxlen > 0:
+			index -= 1
+			# fix jump to PreviousSection on empty lines in ConfigList
+			if index in self._headers and self.list[index] != ("",):
+				if index + 1 < maxlen:
+					self.setCurrentIndex(index + 1)
+					return
+				else:
+					self.setCurrentIndex(index - 1)
+					return
+		self.pageUp()
+
 class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScreen):
 	def __init__(self, session, readConfig=False):
 		serienRecBaseScreen.__init__(self, session)
@@ -286,6 +304,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
+		self['config'] = ConfigListHC(self.list, self.session)
 		self.setInfoText()
 		if config.plugins.serienRec.setupType.value == "1":
 			self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.BoxID][0])
@@ -338,7 +357,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 	def setupSkin(self):
 		InitSkin(self)
 
-		self['config'] = ConfigList([])
 		self['config'].show()
 
 		self['config_information'].show()
@@ -614,7 +632,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                          config.plugins.serienRec.max_season,
 			                                          config.plugins.serienRec.DSBTimeout,
 			                                          config.plugins.serienRec.LogFilePath,
-			                                          config.plugins.serienRec.deleteLogFilesOlderThan,
 			                                          config.plugins.serienRec.deleteOlderThan,
 			                                          config.plugins.serienRec.NoOfRecords,
 			                                          config.plugins.serienRec.tuner):
@@ -659,7 +676,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                          config.plugins.serienRec.max_season,
 			                                          config.plugins.serienRec.DSBTimeout,
 			                                          config.plugins.serienRec.LogFilePath,
-			                                          config.plugins.serienRec.deleteLogFilesOlderThan,
 			                                          config.plugins.serienRec.deleteOlderThan,
 			                                          config.plugins.serienRec.NoOfRecords,
 			                                          config.plugins.serienRec.tuner):
@@ -704,7 +720,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				                                    config.plugins.serienRec.deleteBackupFilesOlderThan))
 
 		if not hasConfigDescription:
-			self.list.append(getConfigListEntry("", ConfigNothing()))
+			self.list.append(getConfigListEntry("",))
 		if not isDreamOS():
 			try:
 				from Components.config import ConfigDescription
@@ -790,7 +806,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 					                                    config.plugins.serienRec.DSBTimeout))
 
 		if not hasConfigDescription:
-			self.list.append(getConfigListEntry("", ConfigNothing()))
+			self.list.append(getConfigListEntry("",))
 
 		if not isDreamOS():
 			try:
@@ -829,7 +845,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 		if config.plugins.serienRec.setupType.value == "1":
 			if not hasConfigDescription:
-				self.list.append(getConfigListEntry("", ConfigNothing()))
+				self.list.append(getConfigListEntry("",))
 			if not isDreamOS():
 				try:
 					from Components.config import ConfigDescription
@@ -846,7 +862,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                    config.plugins.serienRec.sucheAufnahme))
 
 			if not hasConfigDescription:
-				self.list.append(getConfigListEntry("", ConfigNothing()))
+				self.list.append(getConfigListEntry("",))
 
 			if not isDreamOS():
 				try:
@@ -908,7 +924,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                    config.plugins.serienRec.refreshViews))
 
 		if not hasConfigDescription:
-			self.list.append(getConfigListEntry("", ConfigNothing()))
+			self.list.append(getConfigListEntry("",))
 
 		if not isDreamOS():
 			try:
@@ -922,11 +938,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Speicherort für Log-Datei:", config.plugins.serienRec.LogFilePath))
-			self.list.append(
-				getConfigListEntry("Log-Dateiname mit Datum/Uhrzeit:", config.plugins.serienRec.longLogFileName))
-			if config.plugins.serienRec.longLogFileName.value:
-				self.list.append(getConfigListEntry("    Log-Dateien löschen die älter als x Tage sind:",
-				                                    config.plugins.serienRec.deleteLogFilesOlderThan))
 		self.list.append(getConfigListEntry("DEBUG LOG aktivieren:", config.plugins.serienRec.writeLog))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(
@@ -1302,15 +1313,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.LogFilePath: (
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Log-Dateien gespeichert werden.", "Das_Log"),
-			config.plugins.serienRec.longLogFileName: (
-				"Bei 'nein' wird bei jedem Timer-Suchlauf die Log-Datei neu erzeugt.\n"
-				"Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte Log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet "
-				"(z.B.\n" + SerienRecorderLogWriter.SERIENRECORDER_LONG_LOGFILENAME % (
-					config.plugins.serienRec.LogFilePath.value, str(lt.tm_year), str(lt.tm_mon).zfill(2),
-					str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "Das_Log"),
-			config.plugins.serienRec.deleteLogFilesOlderThan: (
-				"Log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht.",
-				"Das_Log"),
 			config.plugins.serienRec.writeLog: (
 				"Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des Timer-Suchlaufs.\n"
 				"Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern.", "Das_Log"),
@@ -1471,8 +1473,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.eventid.save()
 		config.plugins.serienRec.epgTimeSpan.save()
 		config.plugins.serienRec.LogFilePath.save()
-		config.plugins.serienRec.longLogFileName.save()
-		config.plugins.serienRec.deleteLogFilesOlderThan.save()
 		config.plugins.serienRec.writeLog.save()
 		config.plugins.serienRec.writeLogChannels.save()
 		config.plugins.serienRec.writeLogAllowedEpisodes.save()
