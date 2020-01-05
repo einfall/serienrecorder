@@ -60,10 +60,10 @@
                 <ul>
 				<p>Cover (auf TheTVDB heißen die Poster) von den jeweiligen Serien dienen der "Verschönerung" der Ansicht im SerienRecorder (SR), die dann mit einem entsprechenden Skin angezeigt werden können.
 				<br>Dafür ist es notwendig, das man vom SerienRecorder (SR) <a href="einstellungen.htm#cover-herunterladen"><strong><u>Cover herunterladen</u></strong></a> lässt. Diese werden dann beim Scrollen durch die verschiedenen Listen der Serien heruntergeladen und angezeigt, wenn so eingestellt. Am Anfang, nachdem man diese Option eingeschaletet hat, ist die Bedienung des SR teilweise zäh bzw. hakelig, da die Cover für die jeweils selektierte Serie noch heruntergeladen werden müssen. Sind für die Serien die Cover vorhanden, geht das Scrollen wieder flüssig, außer dort, wo keine Cover gefunden werden konnten, denn dort wird jedes mal beim Scrollen versucht, ein Cover nachzuladen, weshalb es sinnvoll ist, die Option, <a href="einstellungen.htm#cover-herunterladen"><strong><u>"Platzhalter anlegen"</u></strong></a>, zu aktivieren. Ist die Option aktiv, wird das Erstellungsdatum der Platzhalter Datei geprüft, wenn das Cover das nächste Mal angezeigt wird. Wurde die Platzhalter Datei vor mehr als 60 Tagen erstellt, wird sie gelöscht und es wird versucht ein Cover für diese Serie von TheTVDB herunter zu laden. Wenn das nicht klappt, wird wieder eine Platzhalter Datei erstellt und nach 60 Tagen erneut geprüft. Man kann natürlich auch die Platzhalter manuell löschen, damit versucht wird, ein neues Cover zu laden.
-				<br><br>Das kein Cover geladen wird, man aber auf der Webseite von TheTVDB eines sieht, liegt oft daran, das den Covern auf TheTVDB eine "Sprache" zugeteilt wurde. Anfangs hat der SR öfters keine Cover gefunden, da er nur nach "deutschen Covern" gesucht hat. Da die Cover aber meist gleich sind, egal ob deutsch oder englisch und auch vielen "egal" ist, ob es ein deutsches oder anders sprachiges Cover ist (hauptsache es wird überhaupt eines geladen der Optik wegen), durchsucht der SR jetzt auch eine kleine Auswahl an anderssprachigen Covern.
+				<br><br>Das kein Cover geladen wird, man aber auf der Webseite von TheTVDB eines sieht, liegt oft daran, das den Covern auf TheTVDB eine "Sprache" zugeteilt wurde. Anfangs hat der SR öfters keine Cover gefunden, da er nur nach "deutschen Covern" gesucht hat. Da die Cover aber meist gleich sind, egal ob Deutsch oder Englisch und auch vielen "egal" ist, ob es ein deutsches oder anders sprachiges Cover ist (Hauptsache es wird überhaupt eines geladen der Optik wegen), werden auch englische Cover heruntergeladen.
 				<br>Ein weiterer Grund dafür, das kein Cover geladen wird kann sein, das die <a href="sonstige.htm#tvdb-id"><strong><u>TVDB-ID</u></strong></a> auf dem SerienServer nicht vorhanden ist.
 				<br>
-				Falls einem das "automatisch" geladene Cover nicht zusagt, kann man im Serien-Marker-Menü mit der Taste <kbd class="blue">Cover auswählen</kbd> die <strong>Cover-Auswahl</strong> öffnen, um sich evtl. ein anderes Cover auszusuchen. In dieser <strong>Cover-Auswahl</strong> kann man mit <kbd>OK</kbd> das selektierte Cover übernehmen oder aber man verlässt die Cover-Auswahl mit <kbd>EXIT</kbd>, ohne eine Änderung.
+				Falls einem das "automatisch" geladene Cover (es wird immer das Cover mit der besten Bewertung und den meisten Stimmen geladen) nicht zusagt, kann man im Serien-Marker-Menü mit der Taste <kbd class="blue">Cover auswählen</kbd> die <strong>Cover-Auswahl</strong> öffnen, um sich evtl. ein anderes Cover auszusuchen. In dieser <strong>Cover-Auswahl</strong> kann man mit <kbd>OK</kbd> das selektierte Cover übernehmen oder aber man verlässt die Cover-Auswahl mit <kbd>EXIT</kbd>, ohne eine Änderung.
 				</p>
 				<p><h5><strong>Beispiel Screenshots für die Cover-Auswahl</strong></h5><small>(Klick zum vergrößern)</small></p>
 					<div class="row">
@@ -166,25 +166,43 @@
 				<ul>
                 <p>Die Daten für die <strong>Episoden-Liste</strong> werden von <a href="https://www.thetvdb.com/" target="_blank">TheTVDB.com</a> geholt, da der SerienRecorder diese nicht mehr von Wunschliste.de (WL) beziehen darf. Der Nachteil dabei ist, das nicht alles gleich bezeichnet ist, wie auf WL. Auf <strong>TheTVDB</strong> werden z.B. Specials anders bezeichnet als auf WL, was evtl. zu Problemen führen kann.
 				<br>Selbst die Anzahl der Staffeln kann unterschiedlich sein. So wird Beispielsweise auf WL Staffel 8 und Staffel 9 gelistet, mit jeweils 8 Folgen und auf TheTVDB hat die Staffel 8 plötzlich 16 Folgen. Wobei dann die Staffel 10 auf WL die Stafffel 9 auf TheTVDB ist, womit das Chaos dann fast perfekt ist.
+				<br>Auch bei Serien "ohne" Staffelbezeichnung, wie "Tatort" oder "Das Traumschiff" gibt es gravierende Unterschiede. Bei WL werden diese mit Staffel 00 und bei TheTVDB mit Staffel 01 bezeichnet.
 				<br>				
 				Sollte also jemandem auffallen, das es in dieser Hinsicht "Fehler" gibt, ist ein Feedback im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765" target="_blank">VU+ Support Forum</a> erwünscht.
 				</p>
-				<p>Die Episoden mit einem grünen Haken sind bereits in der Datenbank (DB) vorhanden und werden nicht mehr getimert, wogegen die mit dem roten x nicht in der DB stehen und bei Ausstrahlung getimert werden, sofern von den Einstellungen her nichts dagegen spricht.
+				<p>Die Episoden mit einem grünen Haken sind bereits in der Datenbank (DB) vorhanden und werden nicht mehr getimert, wogegen die mit dem roten x nicht in der DB stehen und bei Ausstrahlung getimert werden, sofern die Staffel- und Episoden-Bezeichnung übereinstimmen und von den Einstellungen im SR nichts dagegen spricht.
 				</p>
-				<p>In der Serien-Marker Ansicht wird die <strong>Episoden-Liste</strong> mit Taste <kbd>5</kbd> geöffnet. Hier kann dann auch der Status jeder einzelnen Episode mit <kbd class="green">GRÜN</kbd> geändert werden, also von "grünem Haken" nach "rotem x" und umgekehrt.
+				<p>In der Serien-Marker Ansicht wird die <strong>Episoden-Liste</strong> mit Taste <kbd>5</kbd> geöffnet. Hier kann dann auch der Status jeder einzelnen Episode mit <kbd class="red">ROT</kbd> (vor der Version 3.9.8 beta mit GRÜN) geändert werden, also von "grünem Haken" nach "rotem x" und umgekehrt.
 				<br>Möchte man hingegen eine ganze Reihe von Folgen der DB hinzufügen, kann man das auch mit <kbd class="blue">Manuell hinzufügen</kbd> machen. Dafür muss man dann nur noch die Staffel und den Bereich der Episoden "von ... bis" über die Eingabemaske eingeben.
 				</p>
 				<p>Mit <kbd class="yellow">Auf den Merkzettel</kbd> können Episoden dem <a href="sonstige.htm#merkzettel"><strong>Merkzettel</strong></a> hinzugefügt werden, welche dann, unabhängig davon, ob sie in der DB stehen oder nicht, getimert werden sollen.
 				</p>
 				<br>
-				<p><h4><strong>Beispiel Screenshot für die Episoden-Liste</strong></h4></p>
-                <div class="thumbnail with-caption">
-                    <img src="images/episodenliste.png" alt="Serien Episoden-Liste" align="center">
-
-                    <p>
-                        <small>Serien Ansicht : Episoden-Liste</small>
-                    </p>
-                </div>
+				<p>Ab der <strong>SR Version 3.9.8 beta</strong> kann man über die Taste <kbd class="green">Zeige Timer</kbd> eine Art "Timer-Liste" aufrufen. Hier werden nur die Datenbankeinträge angezeigt, welche diese Serie betreffen.
+				<br>In dieser "Timer-Liste" können NUR Einträge gelöscht werden, damit diese Episoden vom SR noch einmal getimert werden können. Hier kann man auch wieder über die Taste <kbd class="green">Zeige Episoden</kbd> zurück zur Episoden-Liste gehen. Mit <kbd>EXIT</kbd> kommt man direkt wieder zur Marker-Ansicht zurück.
+				</p>
+				<br>
+				<p><h4><strong>Beispiel Screenshots:  Links für die Episoden-Liste, rechts für die "Timer-Liste"</strong></h4>
+				<br><small>(Klick zum vergrößern)</small></p>
+				<div class="row">
+						<div class="col-md-6">
+							<div class="thumbnail with-caption">
+							<a href="images/sr-398-el-01a.png" target="_blank">
+								<img src="images/sr-398-el-01a.png" alt="Serien Ansicht : Episoden-Liste" style="width:100%">
+								<p><small>Serien Ansicht : Episoden-Liste</small></p>
+							</a>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="thumbnail with-caption">
+								<a href="images/sr-398-tl-01a.png" target="_blank">
+								<img src="images/sr-398-tl-01a.png" alt="Serien Ansicht : Timer-Liste" style="width:100%">
+								<p><small>Serien Ansicht : Timer-Liste</small></p>
+								</a>
+							</div>
+						</div>
+					</div>	
+                
 				</ul>
 				
 				<br>

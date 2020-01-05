@@ -60,16 +60,48 @@
 				<div class="alert alert-info" role="alert"><strong>Wichtig:</strong> Der SerienRecorder (SR) übergibt nur die Daten zur Timererstellung an das System (Image), für die Konflikterkennung und dgl. ist das System verantwortlich, für die Aufnahmen sowieso. Sollte es aus irgendeinem Grund nicht möglich sein, einen Timer zu erstellen, wird dies dem SR mitgeteilt und der SR versucht einen "Ausweichtermin" zu erstellen. Gelingt dies dem SR nicht, wird der Timer vom SR <strong>deaktiviert</strong> angelegt, was bedeutet, das sich der User selbst darum kümmern muss, den Konflikt oder was auch immer dazu geführt hat, zu beseitigen. Dieser deaktivierte Timer wird, wie alle anderen Timer auch, in die Datenbank (DB) eingetragen. Dies bedeutet, auch ein deaktivierter Timer für eine Episode, wird nicht nochmal getimert. Sollte der deaktivierte Timer vom User nicht aktiviert werden und folglich die Episode nicht aufgenommen, fehlt demjenigen eine Episode und wird auch nicht mehr vom SR getimert, denn sie steht ja bereits in der DB.
 				<br>Existiert also ein Eintrag in der DB, dann hat der SR den Timer auch ans Image übergeben. Was danach passiert, da hat der SR keinen Einfluss drauf.</div>
 				<br><br>
-				<p><h4><strong>Beispiel Screenshot der Timer-Liste beim Öffnen</strong></h4></p>
-                <div class="thumbnail with-caption">
+				<p><h4><strong>Beispiel Screenshot der Timer-Liste beim Öffnen</strong></h4><small>(Klick zum vergrößern)</small></p>
+                <!--
+				<div class="thumbnail with-caption">
                     <img src="images/timer-liste01.png" alt="Timer-Liste beim Öffnen" align="center">
 
                     <p>
                         <small>Timer-Liste beim Öffnen als Beispiel-Screenshot</small>
                     </p>
                 </div>
-                
-				<h4 class="sub-header">Wozu ist die Timer-Liste eigentlich da ?</h4>
+                -->	 
+				
+				<div class="row">
+					<div class="col-md-4">
+						<div class="thumbnail with-caption">
+						<a href="images/timer-liste01.png" target="_blank">
+							<img src="images/timer-liste01.png" alt="Timer-Liste " style="width:100%">
+						<p><small>Timer-Liste </small></p>
+						</a>
+					</div>
+					</div>
+				</div>
+				
+				<p><h5><strong>Ab der Version 3.9.8 Beta wird in der Timer-Liste der Sendername von der Box angezeigt</strong></h5></p>
+				<p>Vorher wurde immer der Web-Sender (Wunschliste.de-Sender) angezeigt. Da es bei Wunschliste (WL) keine Unterscheidung zwischen SD, HD oder sogar UHD gibt, wurde z.B. immer RTL angezeigt, egal ob der Sender auf der Box "RTL Television" oder "RTL UHD" heißt.
+				<br>Da man aber manche Serien z.B. auf "RTL HD" und andere auf "RTL UHD" timern lassen kann, ist es auch sinnvoll, dies in der Timer-Liste dementsprechend anzeigen zu lassen.(siehe Bild unten)
+				
+				</p>
+				<p><small>(Klick zum vergrößern)</small></p>
+				<div class="row">
+					<div class="col-md-4">
+						<div class="thumbnail with-caption">
+						<a href="images/timerliste-a.png" target="_blank">
+							<img src="images/timerliste-a.png" alt="Timer-Liste " style="width:100%">
+						<p><small>Timer-Liste </small></p>
+						</a>
+					</div>
+					</div>
+				</div>
+				
+				
+				<br><br>
+				<h4 class="sub-header"><strong>Wozu ist die Timer-Liste eigentlich da ?</strong></h4>
             <div class="row">
 				<p>In der <strong>Timer-Liste</strong> stehen alle jemals vom SerienRecorder (SR) getimerten Episoden, die dann auch vom SR nicht mehr getimert werden, sofern die Anzahl der gewünschten Timer pro Episode erreicht ist. In der Regel nimmt man jede Episode nur einmal auf, was bedeutet, das der SR nur einmal einen Timer erstellt und dazu den Eintrag in die Datenbank (DB) schreibt.</p>
 				<p>Wenn man die <kbd class="blue">Timer-Liste</kbd>  öffnet, sieht man als Erstes die Liste der noch ausstehenden bzw. nicht abgeschlossenen Timer. Diese noch ausstehenden Timer sind bereits Inhalt der Datenbank (DB). Ab hier gibt es mehrere Möglichkeiten, etwas an den Einträgen der Timer-Liste bzw. Datenbank zu ändern oder auch nur nachzuschauen, ob eine Serien-Episode schon getimert wurde.
@@ -98,6 +130,8 @@
 					<p>Hier werden die Timer dann, je nach Sortierung, in 2 verschiedenen Reihenfolgen angezeigt.
 					<br>Entweder so, wie die Timer auch zeitlich erstellt wurden (unsortiert), oder aber in alphabetischer Reihenfolge (sortiert). Dies kann man dann mit <kbd class="yellow">GELB</kbd> umschalten.
 					</p>
+					<!-- <p>Sollte man alle noch ausstehenden Timer löschen wollen/müssen, geht dies mit <kbd class="blue">Lösche neue Timer</kbd>. Hierbei werden alle noch ausstehenden Timer, die der SR erstellt hat, aus der DB <strong>und</strong> auch von der Box gelöscht.
+					</p> -->
 					<p>Sollte man alle noch ausstehenden Timer löschen wollen/müssen, geht dies mit <kbd class="blue">Entferne neue Timer</kbd>. Hierbei werden alle noch ausstehenden Timer, die der SR erstellt hat, aus der DB und auch von der Box entfernt.
 					</p>
 					<div class="alert alert-info" role="alert">Wenn man in der <strong>Timer-Liste</strong> noch ausstehende Timer löscht, werden diese auch, sofern noch vorhanden, im Timer-Editor der Box gelöscht. Andersherum natürlich nicht.</div>
