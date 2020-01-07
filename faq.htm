@@ -53,6 +53,7 @@
                 </p>
 				<br>
 				<ul>
+					<a href="faq.htm#updatefehler"><h4><strong>Nach einem Update auf eine aktuellere Version funktioniert der SR nicht mehr</strong></h4></a>
 					<a href="faq.htm#skinfehler-start"><h4><strong>Der Serienrecorder startet "plötzlich" mit dem Skin "Serienrecorder 1"</strong></h4></a>
 					<a href="faq.htm#einträge-hinzufügen"><h4><strong>Wie kann ich Episoden der Datenbank hinzufügen, damit diese nicht getimert werden?</strong></h4></a>
 					<a href="faq.htm#sidebar"><h4><strong>Die Anleitung sieht man, aber das Menü links nicht.</strong></h4></a>
@@ -69,6 +70,28 @@
 				</ul>	
 				
 				<br><br><br><br><br>
+				
+<!-- Nach Update Fehler -->		
+		
+				<span id="updatefehler" class="anchor"></span>
+               	<p><h4><strong>Nach einem Update auf eine aktuellere Version funktioniert der SR nicht mehr</strong></h4></p>
+				<ul>
+					<p>Nachdem man den SerienRecorder auf eine aktuelle Version (Release oder Beta) gebracht hat, startet er nicht mehr oder aber er Crasht bei Benutzung, z.B. Timer anlegen oder aufrufen des Menüs.
+					<br>Dies kann natürlich verschiedene Gründe haben, aber ein Grund kann sein, das beim Update der Datenbank etwas schief gelaufen ist.
+					<br>Der SerienRecorder macht beim ERSTEN Start nach einem Update das Datenbank-Update, wenn erforderlich. Deshalb sollte man nach dem ERSTEN Start nach einem Update immer erst ins Log schauen, ob ein DB Update gemacht werden musste und ob dies erfolgreich war.
+					<br> Nun zur möglichen Fehlerbehebung:
+					<ul> Der SR legt eine Sicherungskopie der Datenbank namens <strong>SerienRecorder.db.old</strong> an, welche die vorher funktionierende ist.
+					<br>Man muss nur die fehlerhaft aktualisierte <strong>SerienRecorder.db</strong> Datenbank im <strong>/etc/enigma2</strong> Verzeichnis umbenennen oder löschen und dann die <strong>SerienRecorder.db.old</strong> Datei in <strong>SerienRecorder.db</strong> umbenennen, dann den SerienRecorder starten und im Log nachschauen, ob das Update der Datenbank funktioniert hat.
+					</ul>
+					<br>Jetzt sollte der SR wieder funktionieren und man kann das Update erneut machen. Für den Fall, das dies immer noch nicht zum Erfolg führt, Bitte im Forum nachfragen.
+					
+					
+					</p>
+				</ul>	
+				<br>
+				<br>
+				<div class="center"><a href="faq.htm"><strong>[Seitenanfang]</strong></a>&nbsp; &nbsp; &nbsp; &nbsp;<a href="index.htm"><strong>[Startseite]</strong></a></div>
+				<br>				
 				
 <!-- Start nach einem Skinfehler -->		
 		
