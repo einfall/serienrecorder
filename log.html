@@ -66,12 +66,9 @@
 				<br>Der User hat vergessen, das er mal irgendwann die Serie im Marker Menü auf einen bestimmten Sender eingeschränkt hatte und die neuen Folgen dieser Serie auf einem anderen Sender Erstausgestrahlt werden.
 				<br>
 				</li>
-				<li><strong>xxx</strong>
-				<br>
-				<br>
-				</li>
-                </ul>
 				
+                </ul>
+				<br><br>
 				<p><h4><strong>Nun der Aufbau der Log-Datei im einzelnen</strong></h4>
 				<br>Mit jedem Auto-Check wird eine neue Logdatei angelegt, in diese wird solange geschrieben bis ein weiterer Auto-Check ein neue Datei anlegt.
 				<br>Deswegen startet jedes Log mit folgender (beispielhaften) Zeile:
@@ -123,15 +120,17 @@
 					</li>
 				</ol>
 				</ul>
+				<br><br>
 				<p>Die Logdatei ist in Abschnitte gegliedert, worin nicht immer alle Informationen angezeigt werden, da sich manche über Logfilter (DEBUG LOG), in den SerienRecorder Einstellungen, an- und abschalten lassen.
 				<br>Grundsätzlich gibt es zwei Arten von Logeinträgen, diejenigen die immer ausgegeben werden und diejenigen die nur bei aktiviertem Filter ausgegeben werden.
 				
 				<div class="alert alert-info" role="alert">Für eine eventuelle "Fehlersuche" ist es aber SEHR von Vorteil, alle DEBUG LOG-Optionen aktiviert zu haben. Auch das "Backup von TV Planer e-Mail erstellen:" kann dabei helfen.
+				<br>Das aktivieren des SR eigenen Backups bewirkt, das sowohl die Datenbank als auch die Timer der Box bei jedem Auto Check (idR tägl.) gesichert werden.
                         </div>
 				</p>
 				<br>
-				
-				<p><h5><strong>1. Abschnitt "Die Umgebung"</strong></h5></p>
+<!-- 1. Abschnitt -->				
+				<p><h4><strong>1. Abschnitt "Die Umgebung"</strong></h4></p>
 				<br>
 				<p>Hier wird angezeigt, in welcher "Umgebung", also Hard- und Software, der SerienRecorder seinen Dienst verrichtet.
 				</p>
@@ -162,7 +161,7 @@
 						   </p>
                         </li>
 						<li>
-                           <p><strong>Berücksichtige Zeitspannen beim Auto-Check</strong>
+                           <p><strong>Berücksichtigte Zeitspannen beim Auto-Check</strong>
 						   <br><i>Auch die Zeitspanne wird gerne außer Acht gelassen bei der Frage "Warum wird für nächsten Freitag die Serie XY nicht getimert".</i>
 						   </p>
                         </li>
@@ -177,7 +176,7 @@
 									<br>Datenbank Version: 3.9.6
 									<br>Skin Auflösung: 1280 x 720
 									<br>
-									<br>DEBUG Filter: Timer Debug 
+									<br>DEBUG Filter: Senderliste Episoden Added Disk Tageszeit Zeitlimit Timer  
 									<br>
 
 									<br>Prüfe konfigurierte Aufnahmeverzeichnisse:
@@ -199,7 +198,8 @@
 					</table>
 				</p>
 				<br>
-				<p><h5><strong>2. Abschnitt "Die TV-Planer-eMail Option"</strong></h5></p>
+<!-- 2. Abschnitt -->				
+				<p><h4><strong>2. Abschnitt "Die TV-Planer-eMail Option"</strong></h4></p>
 				<br>
 				<p>Dieser Abschnitt wird nur ausgegeben, wenn die TV-Planer Option im SerienRecorder aktiv ist und gibt Auskunft über das Verarbeiten der TV-Planer E-Mail.
 				<br>Im Normalfall wird aufgelistet welche Episoden in der TV-Planer E-Mail gefunden wurden.
@@ -248,7 +248,8 @@
 				</ul>
 				</p>
 				<br>
-				<p><h5><strong>3. Abschnitt "Daten vom SerienServer verarbeiten"</strong></h5></p>
+<!-- 3. Abschnitt -->				
+				<p><h4><strong>3. Abschnitt "Daten vom SerienServer verarbeiten"</strong></h4></p>
 				<br>
 				
 				<p>In diesem Abschnitt werden nur Hinweise und/oder Fehlermeldungen ausgegeben.
@@ -296,7 +297,206 @@
 					</li>
 					
 					
-				</ol>	
+				</ol>
+				<p><strong>Mögliche Hinweis- bzw. Fehlermeldungen in diesem Abschnitt:</strong>
+				<ul>
+				<ol type="a">
+                    <li>Es sollen für diesen Serien-Marker keine Ausstrahlungstermine vom SerienServer abgerufen werden, weil die Timer nur aus den Daten der TV-Planer E-Mail angelegt werden sollen.
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td> Für diesen Serien-Marker sollen nur Timer aus der E-Mail angelegt werden.
+								</td> 
+							</tr>
+						</table>
+					</li>
+					 <li>Die Meldung taucht dann auf, wenn es ein Problem beim Abrufen der Ausstrahlungstermine vom SerienServer gab. Das ist eine allgemeine Fehlermeldung, wenn etwas beim Abrufen schief gelaufen ist. Es kann sich also um einen Serverfehler, Server nicht erreichbar, Daten beschädigt etc. handeln.
+					<br>Solche Fehler sind meist innerhalb von ein paar Stunden (idR spätestens am nächsten Tag) wieder weg.
+				
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td>Fehler beim Abrufen und Verarbeiten der Ausstrahlungstermine
+								</td> 
+							</tr>
+						</table>
+					</li>
+					<li>Wenn die Option "Immer Timer anlegen, wenn keine Wiederholung gefunden wird" deaktiviert ist wird die Meldung ausgegeben, dass sich die Sendung nicht in der konfigurierten Zeitspanne befindet.
+					<br>(DEBUG LOG - Tageszeit)
+				
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td>  Sendung (AUSSTRAHLUNGSZEIT) nicht in Zeitspanne [KONFIGURIERTE AUSSTRAHLUNGSZEIT] 
+								</td> 
+							</tr>
+						</table>
+					</li>
+					<li>Wird ausgegeben, wenn ein Sender nicht gefunden wurde, falsche oder fehlende Senderzuordnung.
+					<br>(DEBUG LOG - Senderliste)
+				
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td> STB-Sender nicht gefunden ' -> ' SENDER ' 
+								</td> 
+							</tr>
+						</table>
+					</li>
+					<li>Wird ausgegeben, wenn ein Sender deaktiviert ist
+					<br>(DEBUG LOG - Senderliste)
+				
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td> STB-Sender deaktiviert -> ' SENDER '
+								</td> 
+							</tr>
+						</table>
+					</li>
+					<li>Wird ausgegeben, wenn die Episode nicht erlaubt ist - also am Serien-Marker Einschränkungen für Episoden vorgenommen wurden
+ 
+					<br>(DEBUG LOG - Episoden)
+				
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td>  Episode nicht erlaubt -> ' EPISODE ' -> ' ERLAUBTE EPISODEN '  
+								</td> 
+							</tr>
+						</table>
+					</li>
+					<li>Wird ausgegeben, wenn die Staffel nicht erlaubt ist - also am Serien-Marker Einschränkungen für Staffeln vorgenommen wurden
+ 
+					<br>(DEBUG LOG - Episoden)
+				
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td>  Staffel nicht erlaubt -> ' STAFFEL ' -> ' ERLAUBTE STAFFEL ' 
+								</td> 
+							</tr>
+						</table>
+					</li>
+					<li>Falls es für die Episode einen Eintrag auf dem Merkzettel gibt 
+				
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td> Timer vom Merkzettel wird angelegt @ SENDER 
+								</td> 
+							</tr>
+						</table>
+					</li>
+					
+					
+					
+				</ol>
+				
+				</ul>
+				</p>
+				<br>
+
+<!-- 4. Abschnitt -->				
+			<p><h4><strong>4. Abschnitt "Daten aus TV-Planer E-Mail verarbeiten"</strong></h4></p>
+				<br>
+				<p>In diesem Verarbeitungsschritt werden die Ausstrahlungstermine aus der TV-Planer E-Mail ausgelesen und grob eingeschränkt.
+				<br>Die Ausgabe der Hinweis- und Fehlermeldungen entspricht denen aus Abschnitt 3.
+				</p>
+				<ul>
+					Beispielhafter Log-Eintrag 
+					<br><br>
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td> ---------' Verarbeite Daten aus TV-Planer E-Mail '---------
+									<br>
+									<br>' American Chopper - S03E14 - Bike zu versteigern 2 ' - Staffel nicht erlaubt -> ' S03E14 ' -> ' [1] '
+								</td> 
+							</tr>
+						</table>
+					
+				</ul>
+				<br>
+<!-- 5. Abschnitt -->				
+			<p><h4><strong>5. Abschnitt "Erstelle Timer"</strong></h4></p>
+				<br>
+				<p>
+					Während dieses Verarbeitungsschrittes werden die Timer auf der Box angelegt und die entsprechenden Einträge in die SerienRecorder Datenbank vorgenommen.
+				</p>
+				<ul>
+					Beispielhafter Log-Eintrag 
+					<br><br>
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td> ---------' Erstelle Timer '-------------------------------------------------------------------------------
+								<br>
+								<br>Versuche Timer anzulegen: ' Exclusiv im Ersten - S00E00 - Fake Science - Die Lügenmacher - /media/hdd/movie/Serien Recorder/Exclusiv im Ersten/ '
+								<br>   Timer angelegt: Exclusiv im Ersten S00E00 - Fake Science - Die Lügenmacher
+								<br>' Exclusiv im Ersten - S00E00 - Fake Science - Die Lügenmacher ' - Timer wurde angelegt -> 27.07.2018 - 20:42 Exclusiv im Ersten - S00E00 - Fake Science - Die Lügenmacher @ tagesschau24 HD
+								<br>' Kalkofes Mattscheibe Rekalked - S0SE27 - Das Schlimmste bis jetzt ' - Timer für diese Episode wurde bereits erstellt -> ' S0SE27 '
+								<br>' Lindenstraße - S00E1218 - Herzschlag ' - Eingestellte Anzahl Timer für diese Episode wurden bereits erstellt -> ' S00E1218 '
+								<br>' Moonshiners - Die Schwarzbrenner von Virginia - S0SE31 - Zwei Männer, eine Leidenschaft ' - Timer für diese Episode wurde bereits erstellt -> ' S0SE31 '
+								<br>' Lindenstraße - S00E1219 - Ja oder Nein? ' - Timer für diese Episode wurde bereits erstellt -> ' S00E1219 '
+								<br>' Lindenstraße - S00E1219 - Ja oder Nein? ' - Eingestellte Anzahl Timer für diese Episode wurden bereits erstellt -> ' S00E1219 '
+								<br>' Longmire - S05E02 - Gute und böse Erinnerungen ' - Timer für diese Episode wurde bereits erstellt -> ' S05E02 '
+								<br>' Longmire - S05E02 - Gute und böse Erinnerungen ' - Eingestellte Anzahl Timer für diese Episode wurden bereits erstellt -> ' S05E02 '
+								</td> 
+							</tr>
+						</table>
+					
+				</ul>
+				<br>
+<!-- 6. Abschnitt -->				
+			<p><h4><strong>6. Abschnitt "Aktualisiere Timer"</strong></h4></p>
+				<br>
+				<p>Während dieses Verarbeitungsschrittes werden bereits erstellte Timer aufgrund von aktuellen Daten vom SerienServer oder des EPGs aktualisiert.
+				</p>				
+			<ul>
+					Beispielhafter Log-Eintrag 
+					<br><br>
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td> ---------' Aktualisiere Timer '---------
+								<br>
+								<br>' FBI: Special Crime Unit - S01E21 - Rote Seide - /media/hdd/movie/ '
+								<br>   Startzeit wurde aktualisiert von 13.12. - 02:35 auf 13.12. - 02:30
+								<br>' Helden der Baustelle - S01E10 - Anpfiff auf der Baustelle - /media/hdd/movie/ '
+								<br>   Event ID wurde aktualisiert von 0 auf 60583
+								<br>' Gute Zeiten, schlechte Zeiten - S00E6910 - Folge 6910 - /media/hdd/movie/ '
+								<br>   Beschreibung wurde aktualisiert von S00E6910 - Folge 6910 auf S00E6910 - Überraschende Unterstützung
+								<br>' Aktenzeichen XY...ungelöst - S00E549 - Folge 549 - /media/hdd/movie/ '
+								<br>   Timer konnte nicht aus dem EPG aktualisiert werden, da der Abgleich fehlgeschlagen ist @ ZDF
+								</td> 
+							</tr>
+						</table>
+					
+				</ul>
+				<br><br>
+				
+				<p><h4><strong>Die "DEBUG LOG" Ausgaben im einzelnen</strong></h4></p>
+				<br>
+				
+				<p>In den Einstellungen des SerienRecorder kann man festlegen welche Arten von Logzeilen beim Auto-Check ausgeben werden sollen.
+				<br>Um eine kompakte Übersicht über die erstellten und aktualisierten Timer, beim Auto-Check, zu bekommen reicht es den Filter "Timer Debugging" zu aktivieren.
+				<br>Alle anderen Logfilter geben noch zusätzliche Informationen aus und vereinfachen die Fehlersuche.
+				</p>
+				
+				
+				<p>Die folgende Liste zeigt welche Informationen mit welchem Filter ausgegeben werden:
+				</p>
+				<ul>
+				<ol type="1">
+                    <li> <strong>STB Informationen</strong>
+						<p>Gibt Informationen über die Box, das verwendete Image bzw. dessen Version, die SerienRecorder bzw. Datenbank Version und die Skinauflösung (der Box) aus.
+						<br>Die Ausgabe von "STB Type" ist nicht immer korrekt, weil besonders die open* Images die auf den unterschiedlichsten Boxen laufen, nicht immer den richtigen Typ ausgeben.
+						</p>
+						<table class="keys table table-bordered">
+							<tr class="active"> 
+								<td> STB Type: dm900
+									<br>Image: 4.3.2r7-17-g32f8eb-2019-08-30 / Experimental 2018-02-22
+									<br>SR Version: 3.9.7-beta
+									<br>Datenbank Version: 3.9.6
+									<br>Skin Auflösung: 1280 x 720
+								</td> 
+							</tr>
+						</table>
+					</li>
+					
+				</ol>
+				</ul>
+				
 				<p>
 				</p>
 				
