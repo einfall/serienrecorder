@@ -56,6 +56,7 @@ var data =
 		{ href: "sonstige.htm#serienstarts", title: "Neue Serienstarts"},
 		{ href: "sonstige.htm#serienbeschreibung", title: "Serienbeschreibung"},
 		{ href: "sonstige.htm#tvdb-id", title: "TVDB-ID ändern/hinzufügen"},
+		{ href: "sonstige.htm#vps-plugin", title: "Das VPS-Plugin"},
     ]},
 	{href: "faq.htm", title: "FAQ / HGF / WTW",},
 	{href: "begriffe.htm", title: "Index",},
