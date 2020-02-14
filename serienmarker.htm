@@ -321,6 +321,36 @@
 					</li>
 					<br>
 					<br>
+					<span id="vps-marker" class="anchor"></span>
+					<li>
+                        <strong>Aktiviere abweichende VPS Einstellungen:</strong>
+					
+                        <p>Um diese Option "sehen" zu können, muss das System-Plugin <strong>VPS</strong> installiert sein.
+						<br>Das VPS-Plugin kann man in den VPS-Einstellungen auch deaktivieren, natürlich sind dann sämtliche Einstellungen bzgl. VPS im SerienRecorder unwirksam.
+						<br>
+						<br>VPS dient dazu, um auf Verschiebungen, Überziehungen oder sogar Ausfälle von Sendungen zu reagieren. Dabei wird dann der Timer bei eventuellen Änderungen angepasst.
+						<br>Das VPS-Plugin beginnt innerhalb der Kontroll-Vorlaufzeit vor dem eigentlichen Beginn der Aufnahme mit der Überwachung der Startzeit der Sendung. Die Aufnahme wird erst gestartet, wenn das VPS-Signal zum Start der Sendung kommt. Eine Vorlaufzeit kann nicht eingetragen werden und eine im System angegebene Vorlaufzeit wird "ignoriert". Die Aufnahme wird beendet, wenn das VPS-Signal zum Sendungs-Ende kommt, eine eventuelle, im System eingegebene, Nachlaufzeit wird ignoriert.
+						<br>Mehr dazu findet man auch unter <a href="sonstige.htm#vps-plugin"><strong><u>Das VPS-Plugin</u></strong></a>
+						</p>
+						<ul>
+                            <li>
+                                <strong>VPS für diesen Serien-Marker aktivieren:</strong>
+								<br><br>
+								<ul>
+									<li>
+										<strong>Sicherheitsmodus aktivieren:</strong>
+										<p>Ist dieser aktiviert, dann startet die Aufnahme zum angegebenen Zeitpunkt im Timer, auch wenn das VPS-Signal zum Start der Sendung noch nicht da ist, die Aufnahme wird aber erst mit dem VPS-Signal zum Sendungs-Ende beendet bzw. wenn eine Nachlaufzeit eingetragen ist, wird diese dann noch "hinten dran gehängt".
+										</p>
+									</li>
+								</ul>
+                            </li>
+						</ul>
+					</li>
+					<br>
+					<div class="alert alert-info" role="alert"> Die gleichzeitige Aktivierung der beiden Optionen <strong>"VPS für diesen Serien-Marker aktivieren:"</strong> und <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"</strong> innerhalb EINES Timers kann zu Fehlverhalten bei der Aufnahme führen. Man sollte sich daher lieber für eines von beiden entscheiden.</div>
+					<br>
+					
+					<br>
 					<li>
                         <strong>Aktiviere abweichende Aufnahmezeitenanpassung aus den EPG Daten:</strong>(reine VTI Option)
 						
@@ -347,6 +377,9 @@
                             
 								</ol>
 								<div class="bs-callout bs-callout-danger">Die Option <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"</strong> Ist nur auf VU+ Receivern mit einem VTI Image sichtbar und nutzbar. Wenn man ein älteres VTI Image nutzt, welches diese Funktion noch nicht unterstützt, sieht man diese Option zwar und kann dort auch Einstellungen tätigen, aber diese sind dann "nutzlos", führen aber auch nicht zu Fehlverhalten auf der Box.</div>
+								<br>
+								<div class="alert alert-info" role="alert"> Die gleichzeitige Aktivierung der beiden Optionen <strong>"VPS für diesen Serien-Marker aktivieren:"</strong> und <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"</strong> innerhalb EINES Timers kann zu Fehlverhalten bei der Aufnahme führen. Man sollte sich daher lieber für eines von beiden entscheiden.</div>
+								<br>
                             </li>
 						</ul>
 					</li>

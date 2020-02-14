@@ -106,7 +106,7 @@
                 </div>
 				</ul>
 				
-				<br>
+				<br><br>
 				
 <!-- Picons -->				
 				<span id="picons" class="anchor"></span>
@@ -155,7 +155,8 @@
 					</div>
 				</div>				
 				</ul>
-				<br>
+				<br><br>
+				
 <!-- Episoden-Liste -->
 				<span id="episodenliste" class="anchor"></span>
 				<h3 class="sub-header"><strong>Episoden-Liste&nbsp; &nbsp;<kbd>5</kbd></strong></h3>
@@ -205,7 +206,7 @@
                 
 				</ul>
 				
-				<br>
+				<br><br>
 								
 <!-- Konflikt-Liste -->				
 				<span id="konfliktliste" class="anchor"></span>
@@ -225,7 +226,7 @@
                 </div>
 				</ul>
 				
-				<br>
+				<br><br>
 				
 <!-- Merkzettel -->				
 				<span id="merkzettel" class="anchor"></span>
@@ -251,7 +252,7 @@
                 </div>
 				</ul>
 				
-				<br>
+				<br><br>
 				
 <!-- Neue Serienstarts -->				
 				<span id="serienstarts" class="anchor"></span>
@@ -298,7 +299,7 @@
 				</p>
 				</ul>
 				
-				<br>
+				<br><br>
 				
 <!-- Serien Beschreibung -->				
 				<span id="serienbeschreibung" class="anchor"></span>
@@ -318,7 +319,7 @@
                     </p>
                 </div>
 				</ul>
-				
+				<br><br>
 <!-- TVDB-ID ändern/hinzufügen -->	
 			
 				<span id="tvdb-id" class="anchor"></span>
@@ -358,6 +359,70 @@
 				<br>Andernfalls bestätigt man mit "Ja". In der folgenden Maske kann dann die nummerische ID eingegeben werden und bestätigt mit <kbd>OK</kbd>. Es wird dann sofort das Cover geladen und angezeigt, welches dann auch sofort allen anderen Usern zur Verfügung steht.
 				</p>
 				</ul>
+				<br><br>
+<!-- VPS-Plugin -->				
+				<span id="vps-plugin" class="anchor"></span>
+				<h3 class="sub-header"><strong>Das VPS-Plugin</strong></h3>
+				<br>	
+                <ul>
+				<p>VPS dient dazu, um auf Verschiebungen, Überziehungen oder sogar Ausfälle von Sendungen zu reagieren. Dabei wird dann der Timer bei eventuellen Änderungen angepasst.
+				<br>
+				Um diese Option "sehen" zu können, muss das System-Plugin <strong>VPS</strong> installiert sein. 
+				<br>Das VPS-Plugin kann man in den VPS-Einstellungen auch deaktivieren, natürlich sind dann sämtliche Einstellungen bzgl. VPS im SerienRecorder unwirksam.
+				<br>Desweiteren werden ALLE Timer vom SR "ohne" VPS angelegt, sofern nicht im SR aktiviert, auch wenn im System in den VPS-Einstellungen die Option <strong>"VPS standardmäßig aktivieren"</strong> auf <strong>Ja</strong> steht. Deshalb muss die VPS Option am Marker oder am Sender explizit aktiviert werden, wenn man dort VPS nutzen möchte.
+				<br>
+				<br>Innerhalb der Kontroll-Vorlaufzeit vor dem eigentlichen Beginn der Aufnahme beginnt das VPS-Plugin mit der Überwachung der Startzeit der Sendung. Die Aufnahme wird erst gestartet, wenn das VPS-Signal zum Start der Sendung kommt. Eine Vorlaufzeit kann nicht eingetragen werden und eine im System angegebene Vorlaufzeit wird "ignoriert". Die Aufnahme wird beendet, wenn das VPS-Signal zum Sendungs-Ende kommt, eine eventuelle, im System eingegebene, Nachlaufzeit wird ignoriert.
+						</p>
+				<p>Das VPS-Plugin ist ein System-Plugin und muss separat auf der Box installiert werden. Auch die Einstellungen dazu müssen im VPS-Plugin direkt gemacht werden. Durch den SerienRecorder kann im Timer nur die Option für das VPS-Plugin zum aktivieren oder deaktivieren gesetzt werden.
+				<br>Abweichende Einstellungen im Serien-Marker-Menü "überschreiben" die Einstellungen am Sender in der Senderzuordnung.
+				<br>Die Einstellungen im SerienRecorder findet man unter <a href="serienplaner.htm#vps-sender"><strong><u>Senderzuordnung</u></strong></a> und unter <a href="serienmarker.htm#vps-marker"><strong><u>Serien-Marker-Menü</u></strong></a>.
+				</p>
+				<br>
+				<p><strong>Beispiel </strong>
+				<br><br>
+				Man möchte eine Sendung auf ARD von 20:15-21:45 Uhr aufnehmen und hat 5 Minuten Vor- und Nachlaufzeit eingestellt. Der Timer geht dann von 20:10-21:50 Uhr.
+				<br>Mit aktiviertem VPS würde die Aufnahme im Normalfall dann mit dem Start-VPS-Signal um 20:15 beginnen und um 21:45 mit dem Ende-VPS-Signal enden.
+				<br>Sollte es aber auf der ARD eine kurzfristige Programmänderung geben und um 20:15 wird die Sendung "Brennpunkt" mit 15 Minuten länge dazwischen geschoben, so wird die Aufnahme erst um 20:30 gestartet, da dann das Start-VPS-Signal erst kommt. Die Aufnahme endet dann auch erst um 22:00 Uhr, mit dem Ende-VPS-Signal.
+				<br><br>
+				Aber auch, wenn eine Sendung pünktlich beginnt, aber am Ende Überzogen wird, endet die Aufnahme erst am Ende der Sendung, mit dem Ende-VPS-Signal.
+				</p>
+				
+				<br>
+					<div class="alert alert-info" role="alert"> Die gleichzeitige Aktivierung der beiden Optionen <strong>"VPS für diesen Sender/Serien-Marker aktivieren:"</strong> und <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"(reine VTI Option)</strong> innerhalb EINES Timers kann zu Fehlverhalten bei der Aufnahme führen. Man sollte sich daher lieber für eines von beiden entscheiden.</div>
+					<br>
+					<p>Der Nachteil beim VPS ist, das es meist nur bei den öffentlich-rechtlichen Sendern funktioniert, aber da dann recht gut.
+					<br>Hier noch eine Liste mit Sendern, wo es funktionieren sollte, aber ohne Gewähr und ohne Anspruch auf Vollständigkeit:
+					<br>ARD (Das Erste), Arte, BR, ARD-alpha, 3sat, hr, KiKA, MDR, NDR, ORF eins, ORF 2, ORF III, ServusTV, Phoenix, Radio Bremen, RBB, SRF 1, SRF zwei, SR, SWR, Tele 5, WDR, ZDF .
+					</p>
+				<br>
+				<p><h4><strong>Beispiel Screenshot für die Einstellungen im VTI-Image</strong></h4></p>
+                <div class="thumbnail with-caption">
+                    <img src="images/vps-vti.png" alt="Screenshot für die Einstellungen im VTI-Image" width="720" align="center">
+
+                    <p>
+                        <small>Einstellungen im VTI-Image Screenshot</small>
+                    </p>
+                </div>
+				<br>
+				<p><h4><strong>Beispiel Screenshot für die Einstellungen im Serien-Marker-Menü des SerienRecorders</strong></h4></p>
+                <div class="thumbnail with-caption">
+                    <img src="images/vps-marker-menu.png" alt="Screenshot für die Einstellungen im VTI-Image" width="720" align="center">
+
+                    <p>
+                        <small>Einstellungen im VTI-Image Screenshot</small>
+                    </p>
+                </div>
+				<br>
+				<p><h4><strong>Beispiel Screenshot für die Einstellungen in der Senderzuordnung des SerienRecorders</strong></h4></p>
+                <div class="thumbnail with-caption">
+                    <img src="images/vps-senderzuordnung.png" alt="Screenshot für die Einstellungen im VTI-Image" width="720" align="center">
+
+                    <p>
+                        <small>Einstellungen im VTI-Image Screenshot</small>
+                    </p>
+                </div>
+					
+				</ul>				
 				
 				<br><br><br><br>
 				<div class="center"><a href="sonstige.htm"><strong>[Seitenanfang]</strong></a> &nbsp; &nbsp; &nbsp; &nbsp;<a href="index.htm"><strong>[Startseite]</strong></a></div>
