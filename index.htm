@@ -50,23 +50,92 @@
 			
 			
 			</div>
-			<div class="col-xs-2">Letztes Update <strong>14.02.2020</strong> <br>Stand der Anleitung:<br><a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-3-9-0-18-08-2019/&postID=1964578#post1964578" target="_blank"><u>Version 3.9.8 Beta</u></a></div>
+			<div class="col-xs-2">Letztes Update <strong>22.02.2020</strong> <br>Stand der Anleitung:<br><a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-3-9-0-18-08-2019/&postID=1964578#post1964578" target="_blank"><u>Version 3.9.8 Beta</u></a></div>
 		</div>
 		<br>
 		<h1 class="page-header">Einleitung</h1>
         <div class="row">
-          <p class="lead"> Der SerienRecorder erleichtert und automatisiert das Aufnehmen von Serien, indem für ausgewählte Serien automatisch Timer angelegt werden. Er überwacht,  ob eine Folge bereits aufgenommen wurde oder nicht, sodass es zu keinen Mehrfachaufnahmen kommt. </p>
+          <p class="lead"> Der SerienRecorder erleichtert und automatisiert das Aufnehmen von Serien, indem für angelegte Serien-Marker automatisch Timer erstellt werden. Er "überwacht", ob eine Folge bereits aufgenommen wurde oder nicht, sodass es zu keinen Mehrfachaufnahmen kommt. </p>
           <p>
 		  <p>Zuvor jedoch der Hinweis, das <span class="redfont"><strong>JavaScript</strong></span> nötig ist, um diese Anleitung vollständig sehen und nutzen zu können. Ohne <span class="redfont"><strong>JavaScript</strong></span> sieht man z.B. das Inhaltsverzeichnis/Menü auf der linken Seite nicht. <a href="images/anleitung-startseite.jpg" target="_blank"><strong>(Screenshot)</strong></a>
 		  </p>
-		  <p>Dafür bezieht der SerienRecorder Daten von der kommerziellen Webseite <a href="http://www.wunschliste.de" target="_blank">http://www.wunschliste.de</a>, sodass für die Benutzung zwingend eine Internetverbindung notwendig ist. Wunschliste bietet auf seiner Webseite für so gut wie alle Serien die Ausstrahlungstermine im deutschen Fernsehen an. Diese Informationen bereitet der SerienRecorder auf und stellt eine Oberfläche zur Verfügung um die Lieblingsserien zu verwalten.</p>
-		  <p>Der Benutzer kann sog. <a href="serienmarker.htm">Serien-Marker</a> für die Serien anlegen, die vom SerienRecorder überwacht werden sollen. Für jeden Serien-Marker kann konfiguriert werden, welche Staffeln und Sender in die Überwachung einbezogen werden.
-          Einmal am Tag, zu einer einstellbaren Uhrzeit, wird ein sog. <a href="index.htm#autocheck">Auto-Check</a> (Suchlauf) durchgeführt, der die Sendetermine bei Wunschliste abruft und anhand von bestimmten Vorgaben Timer für die Sendungen erstellt.
-		  Zusätzlich wird in der sog. <a href="timer-liste.htm">Timer-Liste</a> (der SerienRecorder Datenbank) ein entsprechender Datensatz eingefügt, der u.a. verhindert, dass für die Sendung ein weiterer Timer erstellt wird.
-		  Optional kann der SerienRecorder auch die sog. <a href="tv-planer-mail.htm"><strong>TV-Planer E-Mails</strong></a> abrufen und auswerten, die von Wunschliste einmal am Tag verschickt werden. Die dort enthalten Informationen sorgen dafür, dass Serien die auf "Meine Wunschliste" gepflegt werden, mehr oder weniger automatisch vom SerienRecorder berücksichtigt werden.</p>
-		  <p>Neben dem Anlegen von Timern bietet der SerienRecorder dem Serien-Fan noch weitere interessante Funktionen, wie z.B. den sog. <a href="serienplaner.htm">Serien-Planer</a> der eine Übersicht der Serien des heutigen bzw. der kommenden Tage bietet. Außerdem kann der SerienRecorder neben Beschreibungen zur Serie bzw. einzelner Folgen auch das Cover anzeigen bzw. abrufen.</p>
+		  <br><br>
+		  <p><h4>Der SerienRecorder besteht im wesentlichen aus 4 Ansichten:</h4>
 		  <br>
-          <div class="alert alert-info" role="alert"> Der SerienRecorder ist ein nicht-kommerzielles Hobby Projekt, dass in keiner Beziehung zu den Betreibern der kommerziellen Webseite
+		  <ul>
+			<li><kbd class="red">&nbsp; &nbsp; &nbsp; </kbd>&nbsp; &nbsp;<a href="serienplaner.htm"><strong><u>Planer-Ansicht</u></strong></a>
+			<p>In der Serien-Planer-Ansicht wird ein Auszug der Serien dargestellt, die an dem jeweiligen Tag laufen, aber nur auf den Sendern, die in der Senderzuordnung zugeordnet sind. Hierrüber lassen sich dann mit einem "Klick" direkt Serien-Marker anlegen.</p>
+			</li>
+			<br>
+			<li><kbd class="green">&nbsp; &nbsp; &nbsp; </kbd>&nbsp; &nbsp;<a href="serienplaner.htm#sender-zuordnen"><strong><u>Senderzuordnung</u></strong></a>
+			<p>Die Senderzuordnung dient dazu, die eigenen Sender <strong>(STB-Sender)</strong> den Sendernamen von Wunschliste <strong>(Wunschliste)</strong> zuzuordnen. Dies ist notwendig, da manche Sender auf Wunschliste.de (WL) einen, teilweise nur leicht, anderen Namen tragen, als der auf Eurer Box (z.B. ntv (WL) --- n-tv (STB)). </p>
+			</li>
+			<br>
+			<li><kbd class="yellow">&nbsp; &nbsp; &nbsp; </kbd>&nbsp; &nbsp;<a href="serienmarker.htm"><strong><u>Marker-Ansicht</u></strong></a>
+			<p>Die Serien-Marker Ansicht ist eigentlich die wichtigste Ansicht im SerienRecorder. Sie zeigt alle Serien, die der SerienRecorder für die Timer-Erstellung berücksichtigt. Hier können dann auch "individuelle" Einstellungen für jeden einzelnen Serien-Marker gemacht werden.</p>
+			</li><br>
+			<li><kbd class="blue">&nbsp; &nbsp; &nbsp; </kbd>&nbsp; &nbsp;<a href="timer-liste.htm"><strong><u>Timer-Liste</u></strong></a>
+			<p>Die Timer-Liste spiegelt den Inhalt der Datenbank (DB) wider und beinhaltet alle erstellten Timer aller Serien-Episoden, die der SerienRecorder (SR) je erstellt hat. In der Timer-Liste kann man sowohl nachsehen, welche Episoden von den einzelnen Serien schon mal getimert wurden, als auch Einträge löschen oder hinzufügen. </p>
+			</li>
+			<br>
+		</ul>
+		  </p>
+		  
+		<p><h5><strong>Beispiel Screenshots für die 4 Ansichten</strong></h5><small>(Klick zum vergrößern)</small></p>
+					<div class="row">
+						<div class="col-md-3">
+							<p>Planer-Ansicht
+							</p>
+							<div class="thumbnail with-caption">
+							<a href="images/Index_Planer.png" target="_blank">
+								<img src="images/Index_Planer.png" alt="Planer-Ansicht" style="width:100%">
+								<p><small>Planer-Ansicht</small></p>
+							</a>
+							</div>
+						</div>
+						<div class="col-md-3">
+						<p>Senderzuordnung
+							</p>
+							<div class="thumbnail with-caption">
+								<a href="images/Index_Senderzuordnung.png" target="_blank">
+								<img src="images/Index_Senderzuordnung.png" alt="Senderzuordnung" style="width:100%">
+								<p><small>Senderzuordnung</small></p>
+								</a>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<p>Marker-Ansicht
+							</p>
+							<div class="thumbnail with-caption">
+							<a href="images/Index_Marker.png" target="_blank">
+								<img src="images/Index_Marker.png" alt="Marker-Ansicht" style="width:100%">
+								<p><small>Marker-Ansicht</small></p>
+							</a>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<p>Timer-Liste
+							</p>
+							<div class="thumbnail with-caption">
+								<a href="images/Index_Timer-Liste.png" target="_blank">
+								<img src="images/Index_Timer-Liste.png" alt="Timer-Liste" style="width:100%">
+								<p><small>Timer-Liste</small></p>
+								</a>
+							</div>
+						</div>
+					</div>  
+					<p>In den Screenshots kann man sehen, daß das "Aussehen" des SerienRecorders nicht immer gleich ist, denn es ist abhängig vom verwendeten Box-Skin und/oder Einstellungen im SerienRecorder(SR) selbst. Der SR hat auch eigene Skins, aber meist ist der SR schon im Box-Skin integriert bzw. es gibt Skin-Parts dafür. Der SR kann auch auf 4K-TVs Bildschirmfüllend angezeigt werden. 
+					</p>
+					<br><br>
+			<p><h5><strong>Wie macht der SerienRecorder das </strong></h5></p>
+			<p>Dafür bezieht der SerienRecorder Daten von der kommerziellen Webseite <a href="http://www.wunschliste.de" target="_blank">http://www.wunschliste.de</a>, sodass für die Benutzung zwingend eine Internetverbindung notwendig ist. Wunschliste bietet auf seiner Webseite für so gut wie alle Serien die Ausstrahlungstermine im deutschen Fernsehen an. Diese Informationen bereitet der SerienRecorder auf und stellt eine Oberfläche zur Verfügung um die Lieblingsserien zu verwalten.</p>
+			<p>Der Benutzer kann sog. <a href="serienmarker.htm">Serien-Marker</a> für die Serien anlegen, die vom SerienRecorder überwacht werden sollen. Für jeden Serien-Marker kann konfiguriert werden, welche Staffeln und Sender in die Überwachung einbezogen werden.
+			Einmal am Tag, zu einer einstellbaren Uhrzeit, wird ein sog. <a href="index.htm#autocheck">Auto-Check</a> (Suchlauf) durchgeführt, der die Sendetermine bei Wunschliste abruft und anhand von bestimmten Vorgaben Timer für die Sendungen erstellt.
+			Zusätzlich wird in der sog. <a href="timer-liste.htm">Timer-Liste</a> (der SerienRecorder Datenbank) ein entsprechender Datensatz eingefügt, der u.a. verhindert, dass für die Sendung ein weiterer Timer erstellt wird.
+			Optional kann der SerienRecorder auch die sog. <a href="tv-planer-mail.htm"><strong>TV-Planer E-Mails</strong></a> abrufen und auswerten, die von Wunschliste einmal am Tag verschickt werden. Die dort enthalten Informationen sorgen dafür, dass Serien die auf "Meine Wunschliste" gepflegt werden, mehr oder weniger automatisch vom SerienRecorder berücksichtigt werden.</p>
+			<p>Neben dem Anlegen von Timern bietet der SerienRecorder dem Serien-Fan noch weitere interessante Funktionen, wie z.B. den sog. <a href="serienplaner.htm">Serien-Planer</a> der eine Übersicht der Serien des heutigen bzw. der kommenden Tage bietet. Außerdem kann der SerienRecorder neben Beschreibungen zur Serie bzw. einzelner Folgen auch das Cover anzeigen bzw. abrufen.</p>
+			<br>
+			<div class="alert alert-info" role="alert"> Der SerienRecorder ist ein nicht-kommerzielles Hobby Projekt, dass in keiner Beziehung zu den Betreibern der kommerziellen Webseite
             <a href="http://www.wunschliste.de" target="_blank"><strong>www.wunschliste.de</strong></a> steht.<br/>
 			Wir weisen ausdrücklich darauf hin, dass Wunschliste.de mit Absicht keine Schnittstelle zum Abrufen der benötigten Informationen bereit stellt, weil den Betreibern dadurch Werbeeinnahmen verloren gehen. Es ist
             also nicht ausgeschlossen, dass Wunschliste.de den Betrieb des SerienRecorders irgendwann unterbindet.
