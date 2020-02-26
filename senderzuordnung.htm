@@ -138,25 +138,147 @@
 			<br><br>
 <!-- Gelb -->
 			<h4 class="sub-header"><kbd class="yellow">nicht belegt</kbd></h4>
-
+				<p>Die Gelbe Farbtaste ist z.Z. nicht belegt. </p>
 			<br><br>
 <!-- Blau -->
 			<h4 class="sub-header"><kbd class="blue">Auto-Zuordnung</kbd></h4>
-
+				<p>Mit hilfe der <strong>Auto-Zuordnung</strong> kann man schon mal einen Teil der Sender einander zuordnen lassen. Es wird erst versucht, den Wunschliste-Sendern die passenden HD-Sender der Box zuzuordnen. Also "Das Erste" --- "Das Erste HD" oder "ZDF" --- "ZDF HD" . Sind keine "passenden" HD-Sender vorhanden, kommen die SD-Sender an die Reihe.
+				<br>Die <strong>Auto-Zuordnung</strong> kann allerdings nur einen Teil der Sender zuordnen, weshalb man danach immer noch die übrigen Sender zuordnen muss.
+				<br>Nach der Auto-Zuordnung muss man die Senderzuordnung einmal mit <kbd>EXIT</kbd> verlassen, um dann nach erneutem Öffnen die restlichen Sender zuzuordnen.
+				<br>Die „alternativen Sender“ <strong>(alt.STB-Sender)</strong> werden NICHT automatisch zugeordnet.
+				</p>
+			<br>		
+			<p><h5><strong>Beispiel Screenshots </strong></h5></p>
+					<div class="row">
+						<div class="col-md-6">
+							<div class="thumbnail with-caption">
+								<img src="images/Autozuordnung_01.png" alt="Beispiel Screenshots" style="width:100%">
+								<p><small>Beispiel Screenshots</small></p>
+							</a>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="thumbnail with-caption">
+								<img src="images/Autozuordnung_02.png" alt="Beispiel Screenshots" style="width:100%">
+								<p><small>Beispiel Screenshots</small></p>
+								</a>
+							</div>
+						</div>
+						
+					</div>	
+			<br><br>	
+				
+				
 			<br><br><br>
 <!-- Die anderen Tasten -->
 
-			<h2 class="header">Die anderen, für die Senderzuordnung bestimmten, Tasten</h2>
+			<h2 class="header">Die anderen, für die Senderzuordnung "wichtigen", Tasten</h2>
 			<br><br>
-			<kbd>OK</kbd>
+			<h3><kbd>OK</kbd></h3>
 			<br><br>
-			<kbd>MENÜ</kbd>
+			<p>Um einem <strong>(Wunschliste)</strong>-Sender einen Sender auf der Box zuzuordnen, muss man ihn selektieren und dann <kbd>OK</kbd> drücken. Daraufhin öffnet sich eine Senderliste mit den zur Verfügung stehenden Sender. Sind mehrere Bouquets auf der Box vorhanden, werden diese der Reihenfolge nach in dieser Senderliste angezeigt. Dies bedeutet, das man für einen Sender des zweiten oder dritten Bouquets "etwas" weiter runter scrollen muss. Ist der Sender gefunden, muss man erneut auf <kbd>OK</kbd> drücken, um diesen Sender dem zuvor ausgewählten Sender zuzuordnen.
+			<br>So fährt man weiter fort, bis alle Sender, auf denen man Timer erstellen lassen möchte, zugeordnet sind.
+			<br>Man muss also nicht allen <strong>(Wunschliste)</strong>-Sendern einen Sender auf der Box zuordnen.
+			</p>
+			<p>Für den Fall, das man auch die „alternativen Sender“ <strong>(alt.STB-Sender)</strong> aktiviert hat, öffnet sich nach der Senderliste, wo man den <strong>(STB-Sender)</strong> zugeordnet hat, eine zweite Senderliste, wo man dann den <strong>(alt.STB-Sender)</strong> zuordnet. Dabei muss beachtet werden, das dazu die Option <a href="einstellungen.htm#bouquets-auswählen"><strong>Bouquets auswählen:</strong></a> aktiviert wird und die beiden Bouquets gewählt werden. Denn wenn man die „alternativen Sender“ nutzen möchte, kann man für die Senderzuordnung nur noch diese beiden nutzen. Das Erste Bouquet für die <strong>(STB-Sender)</strong> und das Zweite Bouquet für die <strong>(alt.STB-Sender)</strong>.</p>
 			<br><br>
-			<kbd>EXIT</kbd>
+			<h3><kbd>EXIT</kbd></h3>
 			<br><br>
-			<kbd>8</kbd>
+			<p>Mit der Taste <kbd>EXIT</kbd> werden Eingaben beendet und abgebrochen, ohne zu speichern oder aber man verläßt damit ein Fenster und kehrt zum vorherigen zurück. </p>
 			<br><br>
-			<kbd>9</kbd>
+			<h3><kbd>8</kbd></h3>
+			<br><br>
+			<p>Mit der Funktion <strong>"Sender prüfen"</strong> <kbd>8</kbd> kann man testen, ob die ServiceRefs für die im SerienRecorder zugewiesenen Sender noch gültig sind. Der SerienRecorder speichert in seiner Datenbank die ServiceRef zum Sender und verknüpft sie mit dem Sender von Wunschliste. Neben der Ausgabe im Hinweisfenster werden die nicht mehr gültigen Sender auch mit ins SR-Log geschrieben. </p>
+			<br><br>
+			<h3><kbd>9</kbd></h3>
+			<br><br>
+			<p>Mit der Option "Alle löschen" <kbd>9</kbd> kann man die gesamte Senderzuordnungstabelle in der SerienRecorder Datenbank löschen und noch einmal bei Null anfangen. </p>
+			<br><br>
+			<h3><kbd>MENÜ</kbd></h3>
+			<br><br>
+			<p>In der Senderzuordnung lassen sich mit der Taste <kbd>MENÜ</kbd> individuelle Einstellungen für den jeweiligen Sender machen. Hier läßt sich u.a. auch für einzelne Sender ein individueller Vor- und Nachlauf einstellen. Dies kann von Vorteil sein, wenn ein Sender gerne mal Sendetermine um einige Minuten verschiebt, evtl. auch ohne es im EPG zu zeigen.
+				</p>
+				<ul>
+                    <li>
+                        <strong>vom globalen Setup abweichenden Timervorlauf aktivieren:</strong>
+						<ul><li>Timervorlauf (in Min.): </li></ul>						
+                        
+						<p>Legt für den Sender fest, wie viele Minuten die Aufnahme vor der regulären Startzeit gestartet werden soll.
+                        </p>
+					</li>
+					<br>
+					<li>
+                        <strong>vom globalen Setup abweichenden Timernachlauf aktivieren:</strong>
+						<ul><li>Timernachlauf (in Min.): </li></ul>						
+                        
+						<p>Legt für den Sender fest, wie viele Minuten die Aufnahme nach der regulären Endzeit weiter aufnehmen soll.
+                        </p>
+					</li>
+					<br>
+					<span id="vps-sender" class="anchor"></span>
+					<li>
+                        <strong>VPS für diesen Sender aktivieren:</strong>
+					
+                        <p>Um diese Option "sehen" zu können, muss das System-Plugin <strong>VPS</strong> installiert sein. 
+						<br>Das VPS-Plugin kann man in den VPS-Einstellungen auch deaktivieren, natürlich sind dann sämtliche Einstellungen bzgl. VPS im SerienRecorder unwirksam.
+						<br><br>VPS dient dazu, um auf Verschiebungen, Überziehungen oder sogar Ausfälle von Sendungen zu reagieren. Dabei wird dann der Timer bei eventuellen Änderungen angepasst.
+						<br>Das VPS-Plugin beginnt innerhalb der Kontroll-Vorlaufzeit vor dem eigentlichen Beginn der Aufnahme mit der Überwachung der Startzeit der Sendung. Die Aufnahme wird erst gestartet, wenn das VPS-Signal zum Start der Sendung kommt. Eine Vorlaufzeit kann nicht eingetragen werden und eine im System angegebene Vorlaufzeit wird "ignoriert". Die Aufnahme wird beendet, wenn das VPS-Signal zum Sendungs-Ende kommt, eine eventuelle, im System eingegebene, Nachlaufzeit wird ignoriert.
+						<br>Mehr dazu findet man auch unter <a href="sonstige.htm#vps-plugin"><strong><u>Das VPS-Plugin</u></strong></a>
+						</p>
+						<ul>
+                            <li>
+                                <strong>Sicherheitsmodus aktivieren:</strong>
+								<p>Ist dieser aktiviert, dann startet die Aufnahme zum angegebenen Zeitpunkt im Timer, auch wenn das VPS-Signal zum Start der Sendung noch nicht da ist, die Aufnahme wird aber erst mit dem VPS-Signal zum Sendungs-Ende beendet bzw. wenn eine Nachlaufzeit eingetragen ist, wird diese dann noch "hinten dran gehängt".
+								</p>
+                            </li>
+						</ul>
+					</li>
+					<br>
+					<div class="alert alert-info" role="alert"> Die gleichzeitige Aktivierung der beiden Optionen <strong>"VPS für diesen Sender aktivieren:"</strong> und <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"</strong> innerhalb EINES Timers kann zu Fehlverhalten bei der Aufnahme führen. Man sollte sich daher lieber für eines von beiden entscheiden.</div>
+					<br>
+					<li>
+                        <strong>Aufnahmezeitenanpassung aus den EPG Daten für diesem Sender aktivieren:</strong> (Dies ist eine reine VTI Image Option)
+						<p>Bei Einstellung auf "Nein" gilt weiterhin die VTI Einstellung.
+						<br>Bei Einstellung auf "Ja" wird die VTI Option "überschrieben" und folgende Einstellung wird in jedem Timer vom SR für den jeweiligen Sender gesetzt. Dies kann aber wiederum für einzelne Serien direkt im SerienMarker-Menü nochmal individuell eingestellt werden.
+                        </p>
+						<ul><li>Aufnahmezeiten automatisch an EPG Daten anpassen: 
+						<ol type="a">
+                            <li>
+                                <i><u>Ja:</u></i>
+                                
+                            </li>
+							<li>
+                                <i><u>Nein:</u></i>
+                                
+                            </li>
+						</ol>
+						</li></ul>	
+							<div class="bs-callout bs-callout-danger">Die Option <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"</strong> Ist nur auf VU+ Receivern mit einem VTI Image sichtbar und nutzbar. Wenn man ein älteres VTI Image nutzt, welches diese Funktion noch nicht unterstützt, sieht man diese Option zwar und kann dort auch Einstellungen tätigen, aber diese sind dann "nutzlos", führen aber auch nicht zu Fehlverhalten auf der Box.</div>
+							<br>
+							<div class="alert alert-info" role="alert"> Die gleichzeitige Aktivierung der beiden Optionen <strong>"VPS für diesen Sender aktivieren:"</strong> und <strong>"Aufnahmezeiten automatisch an EPG Daten anpassen:"</strong> innerhalb EINES Timers kann zu Fehlverhalten bei der Aufnahme führen. Man sollte sich daher lieber für eines von beiden entscheiden.</div>
+							<br>
+                        
+						
+					</li>
+					
+				</ul>			
+            </div>
+			<br><br>
+			<div class="alert alert-info" role="alert">
+                    Die Funktion <kbd class="green">Sender zuordnen</kbd> wird normalerweise aus der Serien-Planer Ansicht mit <kbd class="green">GRÜN</kbd> aufgerufen. Wer "Probleme" mit den Farbtasten hat, kann auch in der Planer-Ansicht <kbd>MENÜ</kbd> drücken, für die Globalen Einstellungen und dann nochmal <kbd>MENÜ</kbd> zur Senderzuordnung.
+					<br><br>Befindet man sich aber gerade <strong>nicht</strong> in der Planer-Ansicht, gibt es auch noch andere Wege um diese aufzurufen.
+					<br>Aus der Marker-Ansicht gibt es mehrere Wege zur Senderzuordnung:
+					<br>
+					<ul>
+					<li>Mit <kbd>lang EXIT</kbd> zur Planer-Ansicht und dann mit <kbd class="green">GRÜN</kbd> zur Senderzuordnung
+					</li>
+					<li>Mit <kbd>lang MENÜ</kbd> in die Globalen Einstellungen und dann nochmal <kbd>MENÜ</kbd> zur Senderzuordnung (hier bei umgeht man das Laden der Serien-Planer-Daten)
+					</li>
+					<li>Mit <kbd>3</kbd> zu den Serienstarts oder mit <kbd>0</kbd> ins Log, von dort mit <kbd>MENÜ</kbd> in die Globalen Einstellungen und dann nochmal <kbd>MENÜ</kbd> zur Senderzuordnung (für Leute, die Probleme mit dem "langen Tastendruck" haben).
+					</li>
+					</ul>
+					
+			</div>			
 			<br><br>	
 				<br><br><br><br>
 				<div class="center"><a href="timer-liste.htm"><strong>[Seitenanfang]</strong></a> &nbsp; &nbsp; &nbsp; &nbsp;<a href="index.htm"><strong>[Startseite]</strong></a></div>
