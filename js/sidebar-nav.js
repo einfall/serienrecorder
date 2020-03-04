@@ -31,6 +31,7 @@ var data =
         { href: "serienplaner.htm#timer-liste", title: "Timer-Liste"},
 		{ href: "serienplaner.htm#tastatur-sp", title: "Tastaturbelegung"},
     ]},
+	{href: "senderzuordnung.htm", title: "Senderzuordnung",},
 	{href: "serienmarker.htm", title: "Serien-Marker", submenus: [
         { href: "serienmarker.htm#deaktivieren", title: "(De) aktivieren/löschen"},
         { href: "serienmarker.htm#sender-auswaehlen", title: "Sender auswählen"},
