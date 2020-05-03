@@ -133,8 +133,7 @@ class serienRecShowConflicts(serienRecBaseScreen, Screen, HelpableScreen):
 		self['menu_list'].up()
 
 	def keyBlue(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
+		if self['menu_list'].getCurrent() is None:
 			print "[SerienRecorder] Conflict-List leer."
 			return
 		else:

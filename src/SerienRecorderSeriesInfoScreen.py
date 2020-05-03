@@ -14,14 +14,15 @@ from SerienRecorderSeriesServer import SeriesServer
 from SerienRecorderDatabase import SRDatabase
 
 class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
-	def __init__(self, session, serieName, serieID):
+	def __init__(self, session, serien_name, serien_wlid, serien_fsid):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.picload = ePicLoad()
-		self.serieName = serieName
-		self.serieID = serieID
+		self.serien_name = serien_name
+		self.serien_wlid = serien_wlid
+		self.serien_fsid = serien_fsid
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
@@ -66,7 +67,7 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		InitSkin(self)
 
 		self['info'].show()
-		self['title'].setText("Serien Beschreibung: %s" % self.serieName)
+		self['title'].setText("Serien Beschreibung: %s" % self.serien_name)
 
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
@@ -89,18 +90,18 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		updateMenuKeys(self)
 
 	def wunschliste(self):
-		super(self.__class__, self).wunschliste(self.serieID)
+		super(self.__class__, self).wunschliste(self.serien_wlid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
 
 	def getData(self):
 		try:
-			infoText = SeriesServer().getSeriesInfo(self.serieID)
+			infoText = SeriesServer().getSeriesInfo(self.serien_wlid)
 		except:
 			infoText = 'Es ist ein Fehler beim Abrufen der Serien-Informationen aufgetreten!'
 		self['info'].setText(infoText)
-		SerienRecorder.getCover(self, self.serieName, self.serieID)
+		SerienRecorder.getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
 
 	def pageUp(self):
 		self['info'].pageUp()

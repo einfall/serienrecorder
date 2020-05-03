@@ -57,19 +57,20 @@ transmissionFailed = False
 
 #---------------------------------- Common Functions ------------------------------------------
 
-def getCover(self, serien_name, serien_id, auto_check = False, forceReload = False):
+def getCover(self, serien_name, serien_id, serien_fsid, auto_check = False, forceReload = False):
 	if not config.plugins.serienRec.downloadCover.value:
 		return
 
 	serien_name = doReplaces(serien_name.encode('utf-8'))
-	serien_nameCover = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)
-	png_serien_nameCover = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
+	jpg_serien_cover_path = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)
+	png_serien_cover_path = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)
+	fsid_serien_cover_path = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid)
 
 	try:
 		if self and config.plugins.serienRec.showCover.value:
 			self['cover'].hide()
 			global coverToShow
-			coverToShow = serien_nameCover
+			coverToShow = fsid_serien_cover_path
 
 		if not fileExists(config.plugins.serienRec.coverPath.value):
 			try:
@@ -78,67 +79,63 @@ def getCover(self, serien_name, serien_id, auto_check = False, forceReload = Fal
 				Notifications.AddPopup("Cover Pfad (%s) kann nicht angelegt werden.\n\nÜberprüfen Sie den Pfad und die Rechte!" % config.plugins.serienRec.coverPath.value, MessageBox.TYPE_INFO, timeout=10, id="checkFileAccess")
 
 		# Change PNG cover file extension to correct file extension JPG
-		if fileExists(png_serien_nameCover):
-			os.rename(png_serien_nameCover, serien_nameCover)
+		if fileExists(png_serien_cover_path):
+			os.rename(png_serien_cover_path, jpg_serien_cover_path)
 
-		if forceReload:
-			os.remove(serien_nameCover)
+		# Change JPG serien name file name to correct Fernsehserie ID file name
+		if not fileExists(fsid_serien_cover_path) and fileExists(jpg_serien_cover_path) and jpg_serien_cover_path != fsid_serien_cover_path:
+			os.rename(jpg_serien_cover_path, fsid_serien_cover_path)
 
-		if config.plugins.serienRec.refreshPlaceholderCover.value and fileExists(serien_nameCover) and os.path.getsize(serien_nameCover) == 0:
-			statinfo = os.stat(serien_nameCover)
+		if forceReload and fileExists(fsid_serien_cover_path):
+			os.remove(fsid_serien_cover_path)
+
+		if config.plugins.serienRec.refreshPlaceholderCover.value and fileExists(fsid_serien_cover_path) and os.path.getsize(fsid_serien_cover_path) == 0:
+			statinfo = os.stat(fsid_serien_cover_path)
 			if (statinfo.st_ctime + 5184000) <= time.time(): # Older than 60 days
-				os.remove(serien_nameCover)
+				os.remove(fsid_serien_cover_path)
 
-		if fileExists(serien_nameCover):
+		if fileExists(fsid_serien_cover_path):
 			if self and config.plugins.serienRec.showCover.value:
-				showCover(serien_nameCover, self, serien_nameCover)
+				showCover(None, self, fsid_serien_cover_path)
 		elif serien_id and (config.plugins.serienRec.showCover.value or (config.plugins.serienRec.downloadCover.value and auto_check)):
 			try:
 				posterURL = SeriesServer().doGetCoverURL(int(serien_id), serien_name)
-				#writeLog("Cover URL [%s] => %s" % (serien_name, posterURL), True)
+				#SRLogger.writeLog("Cover URL [%s] (%s) => %s" % (serien_name, serien_fsid, posterURL), True)
 				if posterURL:
 					from twisted.web.client import downloadPage
-					downloadPage(posterURL, serien_nameCover).addCallback(showCover, self, serien_nameCover, False).addErrback(getCoverDataError, self, serien_nameCover)
+					downloadPage(posterURL, fsid_serien_cover_path).addCallback(showCover, self, fsid_serien_cover_path, False).addErrback(getCoverDataError, self, fsid_serien_cover_path)
 				else:
 					if config.plugins.serienRec.createPlaceholderCover.value:
-						open(serien_nameCover, "a").close()
+						open(fsid_serien_cover_path, "a").close()
 			except:
 				if config.plugins.serienRec.createPlaceholderCover.value:
-					open(serien_nameCover, "a").close()
-				getCoverDataError("failed", self, serien_nameCover)
-	except:
-		SRLogger.writeLog("Fehler bei Laden des Covers: %s " % serien_nameCover, True)
+					open(fsid_serien_cover_path, "a").close()
+				getCoverDataError("failed", self, fsid_serien_cover_path)
+	except Exception as e:
+		print "Exception loading cover: %s [%s]" % (fsid_serien_cover_path, str(e))
 
-def getCoverDataError(error, self, serien_nameCover):
-	if self is not None and self.ErrorMsg:
-		SRLogger.writeLog("Fehler bei: %s (%s)" % (self.ErrorMsg, serien_nameCover), True)
-		print "[SerienRecorder] Fehler bei: %s" % self.ErrorMsg
-	else:
-		ErrorMsg = "Cover-Suche (%s) auf 'Wunschliste.de' erfolglos" % serien_nameCover
-		SRLogger.writeLog("Fehler: %s" % ErrorMsg, True)
-		print "[SerienRecorder] Fehler: %s" % ErrorMsg
-		SRLogger.writeLog("      %s" % str(error), True)
+def getCoverDataError(error, self, serien_cover_path):
+	SRLogger.writeLog("Datenfehler beim Laden des Covers für ' %s ': %s" % (serien_cover_path, str(error)), True)
 	print error
 
-def showCover(data, self, serien_nameCover, force_show=True):
+def showCover(data, self, serien_cover_path, force_show=True):
 	if self is not None and config.plugins.serienRec.showCover.value:
 		if not force_show:
 			global coverToShow
-			if coverToShow == serien_nameCover:
+			if coverToShow == serien_cover_path:
 				coverToShow = None
 			else:
 				return
 			
-		if fileExists(serien_nameCover):
+		if fileExists(serien_cover_path):
 			self['cover'].instance.setPixmap(gPixmapPtr())
 			scale = AVSwitch().getFramebufferScale()
 			size = self['cover'].instance.size()
 			self.picload.setPara((size.width(), size.height(), scale[0], scale[1], False, 1, "#00000000"))
-			picLoaderResult = 1
 			if isDreamOS():
-				picLoaderResult = self.picload.startDecode(serien_nameCover, False)
+				picLoaderResult = self.picload.startDecode(serien_cover_path, False)
 			else:
-				picLoaderResult = self.picload.startDecode(serien_nameCover, 0, 0, False)
+				picLoaderResult = self.picload.startDecode(serien_cover_path, 0, 0, False)
 
 			if picLoaderResult == 0:
 				ptr = self.picload.getData()
@@ -146,7 +143,7 @@ def showCover(data, self, serien_nameCover, force_show=True):
 					self['cover'].instance.setPixmap(ptr)
 					self['cover'].show()
 		else:
-			print "[SerienRecorder] Coverfile not found: %s" % serien_nameCover
+			print "[SerienRecorder] Coverfile not found: %s" % serien_cover_path
 
 def initDB():
 	# type: () -> object
@@ -180,6 +177,12 @@ def initDB():
 	else:
 		dbVersionMatch = False
 		dbIncompatible = False
+
+		isMalformed = database.isMalformed()
+		if isMalformed:
+			SRLogger.writeLog("Die SerienRecorder Datenbank ist beschädigt - der SerienRecorder kann nicht gestartet werden.")
+			Notifications.AddPopup("Die SerienRecorder Datenbank ist beschädigt.\nDer SerienRecorder kann nicht gestartet werden!", MessageBox.TYPE_INFO, timeout=10)
+			dbIncompatible = True
 
 		dbVersion = database.getVersion()
 		if dbVersion:
@@ -264,10 +267,10 @@ class serienRecEPGSelection(EPGSelection):
 			from SerienRecorderSearchResultScreen import serienRecSearchResultScreen
 			self.session.openWithCallback(self.handleSeriesSearchEnd, serienRecSearchResultScreen, seriesName)
 
-	def handleSeriesSearchEnd(self, seriesName=None):
-		if seriesName:
+	def handleSeriesSearchEnd(self, series_wlid=None):
+		if series_wlid:
 			from SerienRecorderMarkerScreen import serienRecMarker
-			self.session.open(serienRecMarker, seriesName)
+			self.session.open(serienRecMarker, series_wlid)
 
 
 class downloadTransmissionsThread(threading.Thread):
@@ -283,14 +286,14 @@ class downloadTransmissionsThread(threading.Thread):
 			self.jobQueue.task_done()
 
 	def download(self, data):
-		(seriesID, timeSpan, markerChannels, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays) = data
+		(seriesID, fsID, timeSpan, markerChannels, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays) = data
 		try:
 			isTransmissionFailed = False
 			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
 		except:
 			isTransmissionFailed = True
 			transmissions = None
-		self.resultQueue.put((isTransmissionFailed, transmissions, seriesID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
+		self.resultQueue.put((isTransmissionFailed, transmissions, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
 
 class processEMailDataThread(threading.Thread):
 	def __init__(self, emailData, jobs, results):
@@ -306,17 +309,17 @@ class processEMailDataThread(threading.Thread):
 			self.jobQueue.task_done()
 
 	def process(self, data):
-		(markerChannels, seriesID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays) = data
+		(markerChannels, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, markerType) = data
 		transmissions = []
 		for key in self.emailData.keys():
 			if self.emailData[key][0][0] == seriesTitle:
-				seriesTitle = key
+				fsID = key
 				break
-		for transmission in self.emailData[seriesTitle]:
+		for transmission in self.emailData[fsID]:
 			if transmission[1] in markerChannels:
 				transmissions.append(transmission[0:-1])
 
-		self.resultQueue.put((transmissions, seriesID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
+		self.resultQueue.put((transmissions, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, markerType))
 
 class backgroundThread(threading.Thread):
 	def __init__(self, fnc):
@@ -434,8 +437,8 @@ class serienRecCheckForRecording:
 		self.database = SRDatabase(serienRecDataBaseFilePath)
 		markers = self.database.getAllMarkers(False)
 		for marker in markers:
-			(ID, Serie, Info, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount) = marker
-			getCover(None, Serie, ID, True)
+			(ID, Serie, Info, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount, fsID) = marker
+			getCover(None, Serie, ID, fsID, True)
 
 	def startCheck(self):
 		self.database = SRDatabase(serienRecDataBaseFilePath)
@@ -510,17 +513,17 @@ class serienRecCheckForRecording:
 		self.database.removeExpiredTimerConflicts()
 
 		if self.tvplaner_manuell and config.plugins.serienRec.tvplaner.value:
-			print "\n---------' Starte Check um %s (TV-Planer manuell) '---------" % self.uhrzeit
-			SRLogger.writeLog("\n---------' Starte Check um %s (TV-Planer manuell) '---------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check am %s (TV-Planer manuell) '---------" % self.uhrzeit
+			SRLogger.writeLog("\n---------' Starte Check am %s (TV-Planer manuell) '---------\n" % self.uhrzeit, True)
 		elif self.manuell:
-			print "\n---------' Starte Check um %s (manuell) '---------" % self.uhrzeit
-			SRLogger.writeLog("\n---------' Starte Check um %s (manuell) '---------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check am %s (manuell) '---------" % self.uhrzeit
+			SRLogger.writeLog("\n---------' Starte Check am %s (manuell) '---------\n" % self.uhrzeit, True)
 		elif config.plugins.serienRec.tvplaner.value:
-			print "\n---------' Starte Auto-Check um %s (TV-Planer auto) '---------" % self.uhrzeit
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s (TV-Planer auto) '---------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check am %s (TV-Planer auto) '---------" % self.uhrzeit
+			SRLogger.writeLog("\n---------' Starte Auto-Check am %s (TV-Planer auto) '---------\n" % self.uhrzeit, True)
 		else:
-			print "\n---------' Starte Auto-Check um %s (auto)'---------" % self.uhrzeit
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s (auto)'---------\n" % self.uhrzeit, True)
+			print "\n---------' Starte Auto-Check am %s (auto)'---------" % self.uhrzeit
+			SRLogger.writeLog("\n---------' Starte Auto-Check am %s (auto)'---------\n" % self.uhrzeit, True)
 			if config.plugins.serienRec.showNotification.value in ("1", "3"):
 				Notifications.AddPopup("SerienRecorder Suchlauf nach neuen Timern wurde gestartet.", MessageBox.TYPE_INFO, timeout=3, id="Suchlauf wurde gestartet")
 
@@ -560,6 +563,7 @@ class serienRecCheckForRecording:
 			SRLogger.writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime, True)
 			print "[SerienRecorder] ---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime
 
+			SRLogger.backup()
 			from SerienRecorderTVPlaner import backupTVPlanerHTML
 			backupTVPlanerHTML()
 
@@ -587,7 +591,7 @@ class serienRecCheckForRecording:
 		from twisted.internet import reactor
 		from SerienRecorderSeriesPlanner import serienRecSeriesPlanner
 		seriesPlanner = serienRecSeriesPlanner(self.manuell)
-		reactor.callFromThread(seriesPlanner.updatePlanerData())
+		reactor.callFromThread(seriesPlanner.updatePlanerData)
 
 		#if config.plugins.serienRec.downloadCover.value:
 		#	reactor.callFromThread(self.getMarkerCover())
@@ -684,7 +688,7 @@ class serienRecCheckForRecording:
 					worker.setDaemon(True)
 					worker.start()
 
-				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer,markerType in self.markers:
+				for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer,markerType,fsID in self.markers:
 					if config.plugins.serienRec.tvplaner.value and (config.plugins.serienRec.tvplaner_skipSerienServer.value or (skipSeriesServer is not None and skipSeriesServer)):
 						# Skip serien server processing
 						SRLogger.writeLog("' %s ' - Für diesen Serien-Marker sollen nur Timer aus der E-Mail angelegt werden." % serienTitle, True)
@@ -705,12 +709,12 @@ class serienRecCheckForRecording:
 						self.countActivatedSeries += 1
 						seriesID = SerieUrl
 
-						jobQueue.put((seriesID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
+						jobQueue.put((seriesID, fsID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
 
 				jobQueue.join()
 				while not resultQueue.empty():
-					(transmissionFailed, transmissions, seriesID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
-					self.processTransmission(transmissions, seriesID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+					(transmissionFailed, transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
+					self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, 0)
 					resultQueue.task_done()
 
 				break
@@ -758,7 +762,7 @@ class serienRecCheckForRecording:
 				worker.setDaemon(True)
 				worker.start()
 
-			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer,markerType in self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, self.emailData.keys()):
+			for serienTitle,SerieUrl,SerieStaffel,SerieSender,AbEpisode,AnzahlAufnahmen,SerieEnabled,excludedWeekdays,skipSeriesServer,markerType,fsID in self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, self.emailData.keys()):
 				print serienTitle
 				if SerieEnabled:
 					# Process only if series is enabled
@@ -767,12 +771,12 @@ class serienRecCheckForRecording:
 					else:
 						markerChannels = { x : x for x in SerieSender }
 
-					jobQueue.put((markerChannels, SerieUrl, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
+					jobQueue.put((markerChannels, SerieUrl, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType))
 
 			jobQueue.join()
 			while not resultQueue.empty():
-				(transmissions, seriesID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
-				self.processTransmission(transmissions, seriesID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays)
+				(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType) = resultQueue.get()
+				self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType)
 				resultQueue.task_done()
 
 		self.createTimer()
@@ -855,6 +859,7 @@ class serienRecCheckForRecording:
 		if config.plugins.serienRec.AutoBackup.value == "after":
 			createBackup()
 
+		SRLogger.backup()
 		from SerienRecorderTVPlaner import backupTVPlanerHTML
 		backupTVPlanerHTML()
 
@@ -866,7 +871,7 @@ class serienRecCheckForRecording:
 			lt = time.localtime()
 			deltatime = self.getNextAutoCheckTimer(lt)
 			SRLogger.writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden\n" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime+int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
-			if config.plugins.serienRec.tvplaner_full_check.value:
+			if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_full_check.value:
 				autoCheckDays = ((int(config.plugins.serienRec.tvplaner_last_full_check.value) + (int(config.plugins.serienRec.checkfordays.value) - 1) * 86400) - int(time.time())) / 86400
 				if autoCheckDays < 0:
 					autoCheckDays = 0
@@ -878,8 +883,7 @@ class serienRecCheckForRecording:
 		# in den deep-standby fahren.
 		self.askForDSB()
 
-	def processTransmission(self, data, serien_id, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None):
-		print "[SerienRecorder] processTransmissions: %r" % serien_name
+	def processTransmission(self, data, serien_wlid, serien_fsid, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None, markerType=0):
 		self.count_url += 1
 
 		if data is None:
@@ -887,7 +891,9 @@ class serienRecCheckForRecording:
 			#print "[SerienRecorder] processTransmissions: no Data"
 			return
 
-		(fromTime, toTime) = self.database.getTimeSpan(serien_name, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
+		print "[SerienRecorder] processTransmissions: %r [%d]" % (serien_name.encode('utf-8'), len(data))
+
+		(fromTime, toTime) = self.database.getTimeSpan(serien_wlid, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
 		if self.noOfRecords < AnzahlAufnahmen:
 			self.noOfRecords = AnzahlAufnahmen
 
@@ -900,15 +906,6 @@ class serienRecCheckForRecording:
 		for current_serien_name, sender, startzeit, endzeit, staffel, episode, title, status in data:
 			start_unixtime = startzeit
 			end_unixtime = endzeit
-
-			# install missing covers
-			(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
-			STBHelpers.createDirectory(current_serien_name, dirname, dirname_serie, True)
-
-			# setze die vorlauf/nachlauf-zeit
-			(margin_before, margin_after) = self.database.getMargins(serien_name, sender, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
-			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
-			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
 			# if there is no season or episode number it can be a special
 			# but if we have more than one special and wunschliste.de does not
@@ -983,12 +980,12 @@ class serienRecCheckForRecording:
 				elif -1 in staffeln:		# 'folgende'
 					if int(staffel) >= max(staffeln):
 						serieAllowed = True
-			elif self.database.getSpecialsAllowed(serien_name):
+			elif self.database.getSpecialsAllowed(serien_wlid):
 				serieAllowed = True
 
 			vomMerkzettel = False
 			if not serieAllowed:
-				if self.database.hasBookmark(serien_name, staffel, episode):
+				if self.database.hasBookmark(serien_fsid, staffel, episode):
 					SRLogger.writeLog("' %s ' - Timer vom Merkzettel wird angelegt @ %s" % (label_serie, stbChannel), True)
 					serieAllowed = True
 					vomMerkzettel = True
@@ -1011,27 +1008,16 @@ class serienRecCheckForRecording:
 						SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Staffel nicht erlaubt -> ' %s ' -> ' %s '" % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
 				continue
 
-
-			##############################
-			#
-			# try to get eventID (eit) from epgCache
-			#
-			eit, new_end_unixtime, new_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
 			alt_eit = 0
 			alt_end_unixtime = end_unixtime
 			alt_start_unixtime = start_unixtime
-			if altstbRef:
-				alt_eit, alt_end_unixtime, alt_start_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, altstbRef)
+			eit = 0
+			new_start_unixtime = start_unixtime
+			new_end_unixtime = end_unixtime
+			updateFromEPG = self.database.getUpdateFromEPG(serien_wlid)
 
-			updateFromEPG = self.database.getUpdateFromEPG(serien_name)
-			if updateFromEPG is False:
-				new_start_unixtime = start_unixtime
-				new_end_unixtime = end_unixtime
-				alt_end_unixtime = end_unixtime
-				alt_start_unixtime = start_unixtime
-
-			(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
-			self.tempDB.addTransmission([(current_time, future_time, serien_name, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays, updateFromEPG)])
+			(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
+			self.tempDB.addTransmission([(current_time, future_time, serien_name, serien_wlid, serien_fsid, markerType, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, new_start_unixtime, new_end_unixtime, eit, altstbChannel, altstbRef, alt_start_unixtime, alt_end_unixtime, alt_eit, dirname, AnzahlAufnahmen, fromTime, toTime, int(vomMerkzettel), excludedWeekdays, updateFromEPG)])
 		self.tempDB.commitTransaction()
 
 

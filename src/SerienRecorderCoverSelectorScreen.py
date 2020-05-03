@@ -35,12 +35,13 @@ class CoverSelectorScreen(Screen):
                             DIALOG_HEIGHT - 28
 	                        )
 
-	def __init__(self, session, wlID, seriesName):
+	def __init__(self, session, serien_wlid, serien_name, serien_fsid):
 		Screen.__init__(self, session)
 
 		self._session = session
-		self._wlID = wlID
-		self._seriesName = seriesName
+		self._serien_wlid = serien_wlid
+		self._serien_name = serien_name
+		self._serien_fsid = serien_fsid
 		self._tempDir = '/tmp/serienrecorder/'
 		self._coverList = []
 		self._numberOfCovers = 0
@@ -65,8 +66,8 @@ class CoverSelectorScreen(Screen):
 		self._numberOfCovers = 0
 
 		from SerienRecorderSeriesServer import SeriesServer
-		print "[SerienRecorder] Get covers for id = ", str(self._wlID)
-		covers = SeriesServer().getCoverURLs(self._wlID)
+		print "[SerienRecorder] Get covers for id = ", str(self._serien_wlid)
+		covers = SeriesServer().getCoverURLs(self._serien_wlid)
 		if covers is not None:
 			print "[SerienRecorder] Number of covers found = ", len(covers)
 			self._numberOfCovers = len(covers)
@@ -100,8 +101,7 @@ class CoverSelectorScreen(Screen):
 		selectedRow = self['list'].getCurrent()
 		if selectedRow:
 			sourcePath = selectedRow[4]
-			serien_name = doReplaces(self._seriesName.encode('utf-8'))
-			targetPath = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)
+			targetPath = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, self._serien_fsid)
 			shutil.copy(sourcePath, targetPath)
 		self.close()
 

@@ -38,7 +38,6 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.session = session
 		self.picload = ePicLoad()
 		self.picloader = None
-		self.ErrorMsg = "unbekannt"
 		self.skin = None
 		self.chooseMenuList = None
 		self.chooseMenuList_popup = None
@@ -69,7 +68,6 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			"2"	    : (self.changeTVDBID, "TVDB-ID ändern"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
-			"5"		: (self.imapTest, "IMAP Test"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
 			"8"		: (self.reloadSerienplaner, "Serienplaner neu laden"),
@@ -126,10 +124,6 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self.onFirstExecBegin.append(self.startScreen)
 
-	def imapTest(self):
-		from SerienRecorderTVPlaner import imaptest
-		imaptest(self.session)
-
 	def showInfoText(self):
 		from SerienRecorderStartupInfoScreen import ShowStartupInfo
 		self.session.openWithCallback(self.startScreen, ShowStartupInfo)
@@ -154,9 +148,8 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_red'].setText("Anzeige-Modus")
 		self['text_green'].setText("Sender zuordnen")
 		self['text_ok'].setText("Marker hinzufügen")
-		self['text_yellow'].setText("Serien Marker")
+		self['text_yellow'].setText("Serien-Marker")
 		self['text_blue'].setText("Timer-Liste")
-		self.num_bt_text[0][1] = "IMAP-Test"
 		self.num_bt_text[1][0] = "Serie suchen"
 		self.num_bt_text[2][0] = "TVDB-ID ändern"
 		self.num_bt_text[2][2] = "Timer suchen"
@@ -217,8 +210,8 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def changeTVDBID(self):
 		from SerienRecorderScreenHelpers import EditTVDBID
-		(serien_name, serien_id) = self.getSeriesNameID()
-		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_id)
+		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
+		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_wlid, serien_fsid)
 		editTVDBID.changeTVDBID()
 
 	def reloadSerienplaner(self):
@@ -247,28 +240,24 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			from SerienRecorderSearchResultScreen import serienRecSearchResultScreen
 			self.session.openWithCallback(self.handleSeriesSearchEnd, serienRecSearchResultScreen, serien_name)
 
-	def handleSeriesSearchEnd(self, serien_name=None):
-		if serien_name:
+	def handleSeriesSearchEnd(self, serien_wlid=None):
+		if serien_wlid:
 			from SerienRecorderMarkerScreen import serienRecMarker
-			self.session.openWithCallback(self.readPlanerData, serienRecMarker, serien_name)
+			self.session.openWithCallback(self.readPlanerData, serienRecMarker, serien_wlid)
 		else:
 			self.readPlanerData(False)
 
 	def serieInfo(self):
-		if self.loading:
+		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			return
-
-		(serien_name, serien_id) = self.getSeriesNameID()
+		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
 		from SerienRecorderSeriesInfoScreen import serienRecShowInfo
-		self.session.open(serienRecShowInfo, serien_name, serien_id)
+		self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
 	def wunschliste(self):
-		(serien_name, serien_id) = self.getSeriesNameID()
-		super(self.__class__, self).wunschliste(serien_id)
+		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
+		super(self.__class__, self).wunschliste(serien_wlid)
 
 	def setHeadline(self):
 		if int(config.plugins.serienRec.screenplaner.value) == 1:
@@ -289,6 +278,18 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if result[1]:
 			self.readPlanerData()
 
+	@staticmethod
+	def checkChannelListTimelineness(database):
+		remoteChannelListLastUpdated = SeriesServer.getChannelListLastUpdate()
+		channelListUpToDate = True
+		if remoteChannelListLastUpdated:
+			localChannelListLastUpdated = database.getChannelListLastUpdate()
+			if 0 < localChannelListLastUpdated < remoteChannelListLastUpdated:
+				SRLogger.writeLog("Auf dem Serien-Server wurde die Senderliste aktualisiert - es muss auch eine Aktualisierung in der Senderzuordnung des SerienRecorders durchgeführt werden.", True)
+				channelListUpToDate = False
+
+		return channelListUpToDate
+
 	def startScreen(self):
 		print "[SerienRecorder] version %s is running..." % config.plugins.serienRec.showversion.value
 
@@ -307,13 +308,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self.session.openWithCallback(self.readPlanerData, serienRecMainChannelEdit)
 		else:
 			self.serviceRefs = self.database.getActiveServiceRefs()
-			remoteChannelListLastUpdated = SeriesServer.getChannelListLastUpdate()
-			channelListUpToDate = True
-			if remoteChannelListLastUpdated:
-				localChannelListLastUpdated = self.database.getChannelListLastUpdate()
-				if 0 < localChannelListLastUpdated < remoteChannelListLastUpdated:
-					SRLogger.writeLog("Auf dem Serien-Server wurde die Senderliste aktualisiert - bitte führen Sie auch eine Aktualisierung in der Senderzuordnung aus.", True)
-					channelListUpToDate = False
+			channelListUpToDate = serienRecMainScreen.checkChannelListTimelineness(self.database)
 
 			if channelListUpToDate:
 				self.switchStartScreen()
@@ -356,13 +351,13 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		key = time.strftime('%d.%m.%Y', lt.timetuple())
 		if key in cache:
 			try:
-				self['title'].setText("Lade Infos vom Speicher...")
+				self['title'].setText("Lade Infos aus dem Speicher...")
 				if config.plugins.serienRec.screenplaner.value == 1:
 					self.processPlanerData(cache[key], True)
 				else:
 					self.processTopThirty(cache[key], True)
 			except:
-				SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der Daten\n", True)
+				SRLogger.writeLog("Fehler beim Lesen und Verarbeiten der SerienPlaner bzw. Top30 Daten aus dem Cache.\n", True)
 		else:
 			self['title'].setText("Lade Infos vom Web...")
 			webChannels = self.database.getActiveChannels()
@@ -374,7 +369,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 					topThirtyData = SeriesServer().doGetTopThirty()
 					self.processTopThirty(topThirtyData, False)
 			except:
-				SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der Daten\n", True)
+				SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner bzw. Top30 Daten vom SerienServer.\n", True)
 
 	def processPlanerData(self, data, useCache=False):
 		if not data or len(data) == 0:
@@ -385,7 +380,6 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self.daylist = [[]]
 			headDate = [data["date"]]
-
 
 			markers = self.database.getAllMarkerStatusForBoxID(config.plugins.serienRec.BoxID.value)
 			timers = self.database.getTimer(self.page)
@@ -398,16 +392,15 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				start_time = TimeHelpers.getUnixTimeWithDayOffset(start_h, start_m, self.page)
 
 				serien_name = event["name"].encode("utf-8")
-				serien_name_lower = serien_name.lower()
-				serien_id = int(event["id"])
+				serien_wlid = int(event["id"])
+				serien_fsid = event["fs_id"]
+				serien_info = event["info"]
 				sender = event["channel"]
 				title = event["title"].encode("utf-8")
 				staffel = event["season"]
 				episode = event["episode"]
-				self.ErrorMsg = "%s - S%sE%s - %s (%s)" % \
-				(serien_name, str(staffel).zfill(2), str(episode).zfill(2), title, sender)
-
-				serienTimers = [timer for timer in timers if timer[0] == serien_name_lower]
+				
+				serienTimers = [timer for timer in timers if timer[0] == serien_fsid]
 				serienTimersOnChannel = [serienTimer for serienTimer in serienTimers if
 				                         serienTimer[2] == sender.lower()]
 				for serienTimerOnChannel in serienTimersOnChannel:
@@ -416,8 +409,8 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 						aufnahme = True
 
 				# 0 = no marker, 1 = active marker, 2 = deactive marker
-				if serien_id in markers:
-					serieAdded = 1 if markers[serien_id] else 2
+				if serien_wlid in markers:
+					serieAdded = 1 if markers[serien_wlid] else 2
 
 				staffel = str(staffel).zfill(2)
 				episode = str(episode).zfill(2)
@@ -432,7 +425,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 				bereits_vorhanden = False
 				if config.plugins.serienRec.sucheAufnahme.value:
-					(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
+					(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
 					if str(episode).isdigit():
 						if int(episode) == 0:
 							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name,
@@ -450,12 +443,11 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				neu = event["new"]
 				prime = False
 				transmissionTime = event["time"]
-				url = ''
 				self.daylist[0].append((
-				                       regional, paytv, neu, prime, transmissionTime, url, serien_name, sender, staffel,
-				                       episode, title, aufnahme, serieAdded, bereits_vorhanden, serien_id))
+				                       regional, paytv, neu, prime, transmissionTime, serien_name, sender, staffel,
+				                       episode, title, aufnahme, serieAdded, bereits_vorhanden, serien_wlid, serien_fsid, serien_info))
 
-			print "[SerienRecorder] Es wurden %s Serie(n) gefunden" % len(self.daylist[0])
+			print "[SerienRecorder] Es wurden %s Episode(n) gefunden" % len(self.daylist[0])
 
 			if headDate:
 				d = headDate[0].split(',')
@@ -471,18 +463,17 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if len(self.daylist[0]) != 0:
 			if headDate:
 				self['title'].setText(
-					"Es wurden für - %s - %s Serie(n) gefunden." % (headDate[0], len(self.daylist[0])))
+					"Für %s werden %s Episode(n) vorgeschlagen." % (headDate[0], len(self.daylist[0])))
 				self['title'].instance.setForegroundColor(parseColor("foreground"))
 			else:
-				self['title'].setText("Es wurden für heute %s Serie(n) gefunden." % len(self.daylist[0]))
+				self['title'].setText("Für heute werden %s Episode(n) vorgeschlagen." % len(self.daylist[0]))
 				self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.chooseMenuList.setList(map(self.buildPlanerList, self.daylist[0]))
-			self.ErrorMsg = "'getCover()'"
 			self.getCover()
 		else:
 			if int(self.page) < 1 and not int(self.page) == 0:
 				self.page -= 1
-			self['title'].setText("Es wurden für heute %s Serie(n) gefunden." % len(self.daylist[0]))
+			self['title'].setText("Für heute werden %s Episode(n) vorgeschlagen." % len(self.daylist[0]))
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			print "[SerienRecorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!"
 			self.chooseMenuList.setList(map(self.buildPlanerList, self.daylist[0]))
@@ -502,16 +493,18 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			rank = 0
 			for serie in data["series"]:
 				serien_name = serie["name"].encode("utf-8")
-				serien_id = int(serie["id"])
+				serien_wlid = int(serie["id"])
+				serien_fsid = serie["fs_id"]
+				serien_info = serie["info"]
 				average = serie["average"]
 
 				# 0 = no marker, 1 = active marker, 2 = deactive marker
 				serieAdded = 0
-				if serien_id in markers:
-					serieAdded = 1 if markers[serien_id] else 2
+				if serien_wlid in markers:
+					serieAdded = 1 if markers[serien_wlid] else 2
 
 				rank += 1
-				self.daylist[0].append((serien_name, average, serien_id, serieAdded, rank))
+				self.daylist[0].append((serien_name, average, serien_wlid, serieAdded, rank, serien_fsid, serien_info))
 
 			if headDate:
 				d = headDate[0].split(',')
@@ -525,12 +518,11 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.loading = False
 		self['title'].setText("")
 		self.chooseMenuList.setList(map(self.buildTopThirtyList, self.daylist[0]))
-		self.ErrorMsg = "'getCover()'"
 		self.getCover()
 
 	def buildPlanerList(self, entry):
-		(regional, paytv, neu, prime, transmissionTime, url, serien_name, sender, staffel, episode, title, aufnahme,
-		 serieAdded, bereits_vorhanden, serien_id) = entry
+		(regional, paytv, neu, prime, transmissionTime, serien_name, sender, staffel, episode, title, aufnahme,
+		 serieAdded, bereits_vorhanden, serien_wlid, serien_fsid, serien_info) = entry
 
 		imageNone = "%simages/black.png" % SerienRecorder.serienRecMainPath
 		imageNeu = "%simages/neu.png" % SerienRecorder.serienRecMainPath
@@ -603,7 +595,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildTopThirtyList(entry):
-		(serien_name, average, serien_id, serieAdded, rank) = entry
+		(serien_name, average, serien_wlid, serieAdded, rank, serien_fsid, serien_info) = entry
 
 		if serieAdded == 1:
 			seriesColor = parseColor('green').argb()
@@ -612,38 +604,34 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			seriesColor = None
 
-		title = "%d Abrufe/Tag" % average
-		titleColor = parseColor('foreground').argb()
-
 		rank = "%d." % rank
+		title = "%s (%s)" % (serien_name, serien_info)
+		subTitle = "%d Abrufe/Tag" % average
+		subTitleColor = parseColor('foreground').argb()
 
 		return [entry,
 		        (eListboxPythonMultiContent.TYPE_TEXT, 5 * skinFactor, 3, 40 * skinFactor, 26 * skinFactor, 0,
-		         RT_HALIGN_RIGHT | RT_VALIGN_CENTER, rank, titleColor, titleColor),
+		         RT_HALIGN_RIGHT | RT_VALIGN_CENTER, rank, subTitleColor, subTitleColor),
 		        (eListboxPythonMultiContent.TYPE_TEXT, 70 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0,
-		         RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, seriesColor, seriesColor),
+		         RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, seriesColor, seriesColor),
 		        (eListboxPythonMultiContent.TYPE_TEXT, 70 * skinFactor, 29 * skinFactor, 520 * skinFactor,
-		         18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, titleColor, titleColor)
+		         18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, subTitle, subTitleColor, subTitleColor)
 		        ]
 
 	def keyOK(self):
 		if self.modus == "list":
-			if self.loading:
+			if self.loading or self['menu_list'].getCurrent() is None:
 				return
 
-			check = self['menu_list'].getCurrent()
-			if check is None:
-				return
-
-			(serien_name, serien_id) = self.getSeriesNameID()
+			(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
 			if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
 				boxID = None
 			else:
 				boxID = config.plugins.serienRec.BoxID.value
 
-			if self.database.addMarker(str(serien_id), serien_name, '', boxID, 0):
-				SRLogger.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % serien_name, True)
-				self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % serien_name)
+			if self.database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
+				SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
+				self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 				self['title'].instance.setForegroundColor(parseColor("green"))
 				if config.plugins.serienRec.tvplaner_full_check.value:
 					config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
@@ -651,22 +639,17 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 					SerienRecorder.configfile.save()
 				if config.plugins.serienRec.openMarkerScreen.value:
 					from SerienRecorderMarkerScreen import serienRecMarker
-					self.session.open(serienRecMarker, serien_name)
+					self.session.open(serienRecMarker, serien_wlid)
 			else:
-				self['title'].setText("Serie '- %s -' existiert bereits im Serien Marker." % serien_name)
+				self['title'].setText("Marker für '%s (%s)' ist bereits vorhanden." % (serien_name, serien_info))
 				self['title'].instance.setForegroundColor(parseColor("red"))
 
 	def getCover(self):
-		if self.loading:
+		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			return
-
-		(serien_name, serien_id) = self.getSeriesNameID()
-		self.ErrorMsg = "'getCover()'"
-		SerienRecorder.getCover(self, serien_name, serien_id)
+		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
+		SerienRecorder.getCover(self, serien_name, serien_wlid, serien_fsid)
 
 	def keyRed(self):
 		if self.modus == "list":
@@ -678,15 +661,19 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			SerienRecorder.configfile.save()
 			self.readPlanerData(False)
 
-	def getSeriesNameID(self):
+	def getCurrentSelection(self):
 		if config.plugins.serienRec.screenplaner.value == 1:
-			serien_name = self['menu_list'].getCurrent()[0][6]
-			serien_id = self['menu_list'].getCurrent()[0][14]
+			serien_name = self['menu_list'].getCurrent()[0][5]
+			serien_wlid = self['menu_list'].getCurrent()[0][13]
+			serien_fsid = self['menu_list'].getCurrent()[0][14]
+			serien_info = self['menu_list'].getCurrent()[0][15]
 		else:
 			serien_name = self['menu_list'].getCurrent()[0][0]
-			serien_id = self['menu_list'].getCurrent()[0][2]
+			serien_wlid = self['menu_list'].getCurrent()[0][2]
+			serien_fsid = self['menu_list'].getCurrent()[0][5]
+			serien_info = self['menu_list'].getCurrent()[0][6]
 
-		return serien_name, serien_id
+		return serien_name, serien_wlid, serien_fsid, serien_info
 
 	def keyGreen(self):
 		from SerienRecorderChannelScreen import serienRecMainChannelEdit

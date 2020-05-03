@@ -4,62 +4,11 @@ from Tools.Directories import fileExists
 
 import os
 import SerienRecorder
-#import SerienRecorderResource
-import SerienRecorderHelpers
-import SerienRecorderSeriesServer
-import SerienRecorderScreenHelpers
-import SerienRecorderUpdateScreen
-import SerienRecorderAboutScreen
-import SerienRecorderChannelScreen
-import SerienRecorderSplashScreen
-import SerienRecorderStartupInfoScreen
 import SerienRecorderMarkerScreen
-import SerienRecorderSeasonBeginsScreen
-import SerienRecorderSeriesInfoScreen
-import SerienRecorderConflictsScreen
-import SerienRecorderFileListScreen
-import SerienRecorderLogScreen
 import SerienRecorderSearchResultScreen
-import SerienRecorderSetupScreen
-import SerienRecorderTimerListScreen
-import SerienRecorderWishlistScreen
 import SerienRecorderMainScreen
-import SerienRecorderTVPlaner
-import SerienRecorderLogWriter
-import SerienRecorderCoverSelectorScreen
 
 def SRstart(session, **kwargs):
-
-	for file_name in (('SerienRecorder', SerienRecorder),
-					  #('SerienRecorderResource', SerienRecorderResource),
-					  ('SerienRecorderSeriesServer', SerienRecorderSeriesServer),
-					  ('SerienRecorderScreenHelpers', SerienRecorderScreenHelpers),
-					  ('SerienRecorderHelpers', SerienRecorderHelpers),
-					  ('SerienRecorderUpdateScreen', SerienRecorderUpdateScreen),
-					  ('SerienRecorderAboutScreen', SerienRecorderAboutScreen),
-					  ('SerienRecorderChannelScreen', SerienRecorderChannelScreen),
-					  ('SerienRecorderSplashScreen', SerienRecorderSplashScreen),
-					  ('SerienRecorderStartupInfoScreen', SerienRecorderStartupInfoScreen),
-					  ('SerienRecorderMarkerScreen', SerienRecorderMarkerScreen),
-					  ('SerienRecorderSeasonBeginScreen', SerienRecorderSeasonBeginsScreen),
-					  ('SerienRecorderSeriesInfoScreen', SerienRecorderSeriesInfoScreen),
-					  ('SerienRecorderConflictsScreen', SerienRecorderConflictsScreen),
-					  ('SerienRecorderFileListScreen', SerienRecorderFileListScreen),
-					  ('SerienRecorderLogScreen', SerienRecorderLogScreen),
-					  ('SerienRecorderSearchResultScreen', SerienRecorderSearchResultScreen),
-					  ('SerienRecorderSetupScreen', SerienRecorderSetupScreen),
-					  ('SerienRecorderTimerListScreen', SerienRecorderTimerListScreen),
-					  ('SerienRecorderWishlistScreen', SerienRecorderWishlistScreen),
-					  ('SerienRecorderMainScreen', SerienRecorderMainScreen),
-					  ('SerienRecorderTVPlaner', SerienRecorderTVPlaner),
-					  ('SerienRecorderLogWriter', SerienRecorderLogWriter),
-	                  ('SerienRecorderCoverSelectorScreen', SerienRecorderCoverSelectorScreen)):
-		if fileExists(os.path.join(SerienRecorder.serienRecMainPath, "%s.pyo" % file_name[0])):
-			if (int(os.path.getmtime(os.path.join(SerienRecorder.serienRecMainPath, "%s.pyo" % file_name[0]))) < int(
-					os.path.getmtime(os.path.join(SerienRecorder.serienRecMainPath, "%s.py" % file_name[0])))):
-				reload(file_name[1])
-		else:
-			reload(file_name[1])
 
 	try:
 		session.open(SerienRecorderMainScreen.serienRecMainScreen)
@@ -78,9 +27,9 @@ def SRstart(session, **kwargs):
 def movielist(session, service, **kwargs):
 	from enigma import eServiceCenter
 
-	def handleSeriesSearchEnd(seriesName=None):
-		if seriesName:
-			session.open(SerienRecorderMarkerScreen.serienRecMarker, seriesName)
+	def handleSeriesSearchEnd(series_wlid=None):
+		if series_wlid:
+			session.open(SerienRecorderMarkerScreen.serienRecMarker, series_wlid)
 
 	serviceHandler = eServiceCenter.getInstance()
 	info = serviceHandler.info(service)
@@ -99,9 +48,9 @@ def eventinfo(session, servicelist, **kwargs):
 # EventView or EPGSelection
 def eventview(session, event, ref):
 
-	def handleSeriesSearchEnd(seriesName=None):
-		if seriesName:
-			session.open(SerienRecorderMarkerScreen.serienRecMarker, seriesName)
+	def handleSeriesSearchEnd(series_wlid=None):
+		if series_wlid:
+			session.open(SerienRecorderMarkerScreen.serienRecMarker, series_wlid)
 
 	if ref.getPath() and ref.getPath()[0] == "/":
 		from enigma import eServiceReference

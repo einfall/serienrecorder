@@ -22,21 +22,21 @@ from SerienRecorderScreenHelpers import serienRecBaseScreen, skinFactor, updateM
 from SerienRecorderHelpers import isDreamOS
 from SerienRecorderDatabase import SRDatabase
 from SerienRecorderSeriesServer import SeriesServer
+from SerienRecorderLogWriter import SRLogger
 
 class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
-	def __init__(self, session, serien_name, serie_url, serien_cover):
+	def __init__(self, session, seriesName, seriesWLID):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
-		self.ErrorMsg = ''
 		self.database = SRDatabase(serienRecDataBaseFilePath)
-		self.addedEpisodes = self.database.getTimerForSeries(serien_name)
+		self.serien_fsid = self.database.getMarkerFSID(seriesWLID)
+		self.addedEpisodes = self.database.getTimerForSeries(self.serien_fsid)
 		self.modus = "menu_list"
 		self.session = session
 		self.picload = ePicLoad()
-		self.serien_name = serien_name
-		self.serien_id = 0
-		self.serien_cover = serien_cover
+		self.serien_name = seriesName
+		self.serien_wlid = seriesWLID
 		self.episodes_list_cache = {}
 		self.showEpisodes = True
 		self.aStaffel = None
@@ -77,8 +77,6 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		}, 0)
 
 		self.setupSkin()
-
-		self.serien_id = serie_url
 
 		self.timer_default = eTimer()
 		if isDreamOS():
@@ -152,10 +150,10 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		super(self.__class__, self).setupClose(result)
 
 	def wunschliste(self):
-		super(self.__class__, self).wunschliste(self.serien_id)
+		super(self.__class__, self).wunschliste(self.serien_wlid)
 
 	def searchEpisodes(self):
-		super(self.__class__, self).getCover(self.serien_name)
+		getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
 		self['title'].setText("Suche Episoden ' %s '" % self.serien_name)
 		self.loading = True
 		self.timer_default.start(0)
@@ -183,9 +181,9 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 			self['title'].setText("%s Episoden für ' %s ' gefunden." % (self.numberOfEpisodes, self.serien_name))
 		else:
-			getCover(self, self.serien_name, self.serien_id)
+			getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
 			try:
-				episodes = SeriesServer().doGetEpisodes(int(self.serien_id), int(self.page))
+				episodes = SeriesServer().doGetEpisodes(int(self.serien_wlid), int(self.page))
 				self.resultsEpisodes(episodes)
 				self['title'].setText("%s Episoden für ' %s ' gefunden." % (self.numberOfEpisodes, self.serien_name))
 			except:
@@ -221,13 +219,14 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			]
 
 	def loadTimer(self):
-		self.addedEpisodes = self.database.getTimerForSeries(self.serien_name)
+		self.addedEpisodes = self.database.getTimerForSeries(self.serien_fsid)
 		addedlist = []
 		for timer in self.addedEpisodes:
 			(Staffel, Episode, title, webChannel, start_time) = timer
 			zeile = "%s - S%sE%s - %s" % (self.serien_name, str(Staffel).zfill(2), str(Episode).zfill(2), title)
 			addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), self.serien_name, Staffel, Episode, title, start_time, webChannel))
 
+		addedlist.sort(key=lambda x: (x[1].lower(), int(x[2]) if x[2].isdigit() else x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower()))
 		return addedlist[:]
 
 	def buildList_timer(self, entry):
@@ -269,14 +268,13 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
 		if seasonEpisodeString != "S00E00":
 			title = None
-		self.database.removeTimer(self.serien_name, season, episode, title, None, None, None)
+		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
+		SRLogger.writeLogFilter("timerDebug", "Timer gelöscht: %s %s - %s" % (self.serien_name, seasonEpisodeString, title))
+
+		self.database.removeTimer(self.serien_fsid, season, episode, title, None, None)
 
 	def keyOK(self):
-		if self.loading and self.showEpisodes:
-			return
-
-		check = self['menu_list'].getCurrent()
-		if not check:
+		if self.loading or not self.showEpisodes or self['menu_list'].getCurrent() is None:
 			return
 
 		sindex = self['menu_list'].getSelectedIndex()
@@ -284,15 +282,11 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.page in self.episodes_list_cache:
 			if len(self.episodes_list_cache[self.page]) != 0:
 				if self.episodes_list_cache[self.page][sindex][2]:
-					self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.serien_id, self.episodes_list_cache[self.page][sindex][3], self.episodes_list_cache[self.page][sindex][2])
+					self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.serien_wlid, self.serien_fsid, self.episodes_list_cache[self.page][sindex][3], self.episodes_list_cache[self.page][sindex][2])
 					#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!", MessageBox.TYPE_INFO, timeout=10)
 
 	def keyRed(self):
-		if self.loading:
-			return
-
-		selectedRow = self['menu_list'].getCurrent()
-		if not selectedRow:
+		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
 		sindex = self['menu_list'].getSelectedIndex()
@@ -305,12 +299,12 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 					if isAlreadyAdded:
 						self.removeFromDB(current_episodes_list[sindex][0], current_episodes_list[sindex][1], current_episodes_list[sindex][3])
 					else:
-						self.database.addToTimerList(self.serien_name, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][3], int(time.time()), "", "", 0, 1)
+						self.database.addToTimerList(self.serien_name, self.serien_fsid, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][3], int(time.time()), "", "", 0, 1)
 
-					self.addedEpisodes = self.database.getTimerForSeries(self.serien_name)
+					self.addedEpisodes = self.database.getTimerForSeries(self.serien_fsid)
 					self.chooseMenuList.setList(map(self.buildList_episodes, current_episodes_list))
 		else:
-			(txt, serie, staffel, episode, title, start_time, webChannel) = selectedRow[0]
+			(txt, serie, staffel, episode, title, start_time, webChannel) = self['menu_list'].getCurrent()[0]
 			self.removeFromDB(staffel, episode, title)
 			timerList = self.loadTimer()
 			self.chooseMenuList.setList(map(self.buildList_timer, timerList))
@@ -330,6 +324,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self['text_ok'].hide()
 			timerList = self.loadTimer()
 			self.chooseMenuList.setList(map(self.buildList_timer, timerList))
+			self['menu_list'].moveToIndex(0)
 			self['title'].setText("%s Timer für ' %s ' gefunden." % (len(timerList), self.serien_name))
 			self['headline'].hide()
 		else:
@@ -341,24 +336,21 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self['text_blue'].show()
 			self['text_ok'].show()
 			self.loadEpisodes()
+			self['menu_list'].moveToIndex(0)
 
 	def keyYellow(self):
-		if self.loading and not self.showEpisodes:
-			return
-
-		check = self['menu_list'].getCurrent()
-		if not check:
+		if self.loading or not self.showEpisodes or self['menu_list'].getCurrent() is None:
 			return
 
 		sindex = self['menu_list'].getSelectedIndex()
 		#if len(self.episodes_list_cache) >= self.page:
 		if self.page in self.episodes_list_cache:
 			if len(self.episodes_list_cache[self.page]) != 0:
-				if self.database.addBookmark(self.serien_name, self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][0], config.plugins.serienRec.NoOfRecords.value):
+				if self.database.addBookmark(self.serien_name, self.serien_fsid, self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][1], self.episodes_list_cache[self.page][sindex][0], config.plugins.serienRec.NoOfRecords.value):
 					self.session.open(MessageBox, "Die Episode wurde zum Merkzettel hinzugefügt", MessageBox.TYPE_INFO, timeout = 10)
 
 	def nextPage(self):
-		if self.loading and not self.showEpisodes:
+		if self.loading or not self.showEpisodes:
 			return
 
 		if self.page <= self.maxPages:
@@ -372,7 +364,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self.searchEpisodes()
 
 	def backPage(self):
-		if self.loading and not self.showEpisodes:
+		if self.loading or not self.showEpisodes:
 			return
 
 		if self.page >= 1 and self.maxPages > 1:
@@ -408,11 +400,11 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			print "[SerienRecorder] Staffel: %s" % self.aStaffel
 			print "[SerienRecorder] von Episode: %s" % self.aFromEpisode
 			print "[SerienRecorder] bis Episode: %s" % self.aToEpisode
-			if self.database.addToTimerList(self.serien_name, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
+			if self.database.addToTimerList(self.serien_name, self.serien_fsid, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
 				self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
 
 	def keyBlue(self):
-		if self.loading and not self.showEpisodes:
+		if self.loading or not self.showEpisodes:
 			return
 		self.aStaffel = None
 		self.aFromEpisode = None
@@ -423,15 +415,16 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.stopDisplayTimer()
 
 class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
-	def __init__(self, session, serieName, serienID, episodeTitle, episodeID):
+	def __init__(self, session, serieName, serienID, serienFSID, episodeTitle, episodeID):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.displayMode = 2
 		self.session = session
 		self.picload = ePicLoad()
-		self.serienID = serienID
+		self.serien_wlid = serienID
 		self.serien_name = serieName
+		self.serien_fsid = serienFSID
 		self.episodeID = episodeID
 		self.episodeTitle = episodeTitle
 		self.skin = None
@@ -516,7 +509,7 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		updateMenuKeys(self)
 
 	def wunschliste(self):
-		super(self.__class__, self).wunschliste(self.serienID)
+		super(self.__class__, self).wunschliste(self.serien_wlid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -529,7 +522,7 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		except:
 			infoText = 'Es ist ein Fehler beim Abrufen der Episoden-Informationen aufgetreten!'
 		self['info'].setText(infoText)
-		super(self.__class__, self).getCover(self.serien_name)
+		getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
 
 	def pageUp(self):
 		self['info'].pageUp()

@@ -77,6 +77,13 @@ class SeriesServer:
 		except:
 			return False
 
+	def resetLastEPGUpdate(self, seriesID):
+		try:
+			self.server.sp.cache.resetLastEPGUpdate(seriesID)
+			return True
+		except:
+			return False
+
 	def getSeriesNamesAndInfoByWLID(self, wlIDs):
 		try:
 			return self.server.sp.cache.getNamesAndInfoByWLIDs(wlIDs)
@@ -186,7 +193,7 @@ class SeriesServer:
 		try:
 			searchResults = self.server.sp.cache.searchSeries(searchString, start)
 			for searchResult in searchResults['results']:
-				resultList.append((searchResult['name'].encode('utf-8'), searchResult['country_year'].encode('utf-8'), str(searchResult['id'])))
+				resultList.append((searchResult['name'].encode('utf-8'), searchResult['country_year'].encode('utf-8'), str(searchResult['id']), searchResult['fs_id']))
 			if 'more' in searchResults:
 				more = int(searchResults['more'])
 		except:

@@ -20,8 +20,8 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '3.9.8-beta'
-SRDBVERSION = '3.9.6'
+SRVERSION = '4.0.15-beta'
+SRDBVERSION = '4.0.0'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 def decodeISO8859_1(txt, replace=False):
@@ -56,6 +56,8 @@ def isDreamOS():
 def isVTI():
 	try:
 		from enigma import getVTiVersionString
+		imageversion = getVTiVersionString()
+		print "[SerienRecorder] VTI version: " + imageversion
 	except ImportError:
 		isVTIImage = False
 	else:
@@ -123,8 +125,8 @@ def getmac(interface):
 def getChangedSeriesNames(markers):
 	IDs = []
 	for marker in markers:
-		(Serie, Info, WLID) = marker
-		IDs.append(WLID)
+		(markerID, name, info, wlID, fsID) = marker
+		IDs.append(wlID)
 
 	from SerienRecorderSeriesServer import SeriesServer
 	series = SeriesServer().getSeriesNamesAndInfoByWLID(IDs)
@@ -133,12 +135,12 @@ def getChangedSeriesNames(markers):
 	#from SerienRecorderLogWriter import SRLogger
 	for marker in markers:
 		try:
-			(name, info, wl_id) = marker
+			(markerID, name, info, wlID, fsID) = marker
 			for serie in series:
-				if str(wl_id) == str(serie['id']):
-					if name != serie['name'] or info != serie['info']:
+				if str(wlID) == str(serie['id']):
+					if name != serie['name'] or info != serie['info'] or fsID != serie['fs_id']:
 						#SRLogger.writeTestLog("Found difference: %s [%s / %s]" % (name, serie['name'], serie['info']))
-						result[str(wl_id)] = dict( old_name = name, new_name = serie['name'], new_info = serie['info'])
+						result[str(wlID)] = dict( old_name = name, new_name = serie['name'], new_info = serie['info'], old_fsID = fsID, new_fsID = serie['fs_id'] )
 					break
 		except:
 			continue
@@ -189,7 +191,7 @@ def createBackup():
 		except Exception, e:
 			SRLogger.writeLog("Backup konnte nicht erstellt werden: " + str(e), True)
 
-def getDirname(database, serien_name, staffel):
+def getDirname(database, serien_name, serien_fsid, staffel):
 	import SerienRecorder
 	if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
 		seasonsubdirfillchar = ' '
@@ -205,7 +207,7 @@ def getDirname(database, serien_name, staffel):
 	dirname = None
 	seasonsubdir = -1
 	isMovie = False
-	row = database.getDirNames(serien_name)
+	row = database.getDirNames(serien_fsid)
 	if not row:
 		# It is a movie (because there is no marker)
 		isMovie = True
@@ -217,10 +219,12 @@ def getDirname(database, serien_name, staffel):
 	if isMovie:
 		path = config.plugins.serienRec.tvplaner_movies_filepath.value
 		isCreateSerienSubDir = config.plugins.serienRec.tvplaner_movies_createsubdir.value
+		withYear = False
 		isCreateSeasonSubDir = False
 	else:
 		path = config.plugins.serienRec.savetopath.value
 		isCreateSerienSubDir = config.plugins.serienRec.seriensubdir.value
+		withYear = config.plugins.serienRec.seriensubdirwithyear.value
 		isCreateSeasonSubDir = config.plugins.serienRec.seasonsubdir.value
 
 	if dirname:
@@ -233,6 +237,11 @@ def getDirname(database, serien_name, staffel):
 		dirname = path
 		dirname_serie = dirname
 		if isCreateSerienSubDir:
+			if withYear:
+				info = database.getMarkerInfo(serien_fsid)
+				if info:
+					match = re.search("(\d{4})-?(?:\d{4})?$", info)
+					serien_name = "%s (%s)" % (serien_name, match.group(1))
 			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 			dirname_serie = dirname
 			if isCreateSeasonSubDir:
@@ -399,32 +408,43 @@ class STBHelpers:
 		return int(config.plugins.serienRec.epgTimeSpan.value)
 
 	@classmethod
-	def getEPGEvent(cls, query, channelref, title, starttime):
-		if not query or len(query) != 2:
-			return
-
+	def getEPGEvent(cls, channelref, title, starttime):
+		print "[SerienRecorder] getEPGEvent: Try to find: %s [%d]" % (title, starttime)
 		epgmatches = []
 		epgcache = eEPGCache.getInstance()
+		query = ['RITBDSE', (channelref, 0, int(starttime) - (int(cls.getEPGTimeSpan()) * 60), -1)]
 		allevents = epgcache.lookupEvent(query) or []
 
-		for serviceref, eit, name, begin, duration, shortdesc, extdesc in allevents:
-			_name = name.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").lower()
-			_title = title.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").lower()
+		normalized_title = title.lower().replace(" ", "")
 
-			lowEPGStartTime = int(int(begin) - (int(cls.getEPGTimeSpan()) * 60))
-			highEPGStartTime = int(int(begin) + (int(cls.getEPGTimeSpan()) * 60))
-			if (channelref == serviceref) and (_name.count(_title) or _title.count(_name)):
-				if bool(lowEPGStartTime <= int(starttime) <= highEPGStartTime):
-					epgmatches.append((serviceref, eit, name, begin, duration, shortdesc, extdesc))
-					break
+		lowEPGStartTime = int(int(starttime) - (int(cls.getEPGTimeSpan()) * 60))
+		highEPGStartTime = int(int(starttime) + (int(cls.getEPGTimeSpan()) * 60))
+		print "[SerienRecorder] getEPGEvent: Boundaries: [%d] - [%d]" % (lowEPGStartTime, highEPGStartTime)
+
+		for serviceref, eit, name, begin, duration, shortdesc, extdesc in allevents:
+			normalized_name = name.lower().replace(" ", "")
+
+			nameMatch = False
+			print "[SerienRecorder] getEPGEvent: (%s): %s (%s) [%s] == [%s] (%s)" % (str(eit), str(begin), str(duration), normalized_title, normalized_name, shortdesc)
+			if normalized_name == normalized_title or (normalized_name in normalized_title or normalized_title in normalized_name):
+				nameMatch = True
+
+			if channelref == serviceref and bool(lowEPGStartTime <= int(begin) <= highEPGStartTime) and nameMatch:
+				print "[SerienRecorder] getEPGEvent: Event found"
+				epgmatches.append((serviceref, eit, name, begin, duration, shortdesc, extdesc))
+				break
+
+			if begin > highEPGStartTime:
+				break
+
 		return epgmatches
 
 	@classmethod
-	def getStartEndTimeFromEPG(cls, start_unixtime_eit, end_unixtime_eit, margin_before, margin_after, serien_name, STBRef):
+	def getStartEndTimeFromEPG(cls, start_unixtime_eit, end_unixtime_eit, margin_before, margin_after, serien_name, stbRef):
 		eit = 0
 		if config.plugins.serienRec.eventid.value:
 			# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-			event_matches = cls.getEPGEvent(['RITBDSE', (STBRef, 0, int(start_unixtime_eit) + (int(margin_before) * 60), -1)], STBRef, serien_name, int(start_unixtime_eit) + (int(margin_before) * 60))
+			event_matches = cls.getEPGEvent(stbRef, serien_name, int(start_unixtime_eit) + (int(margin_before) * 60))
 			if event_matches and len(event_matches) > 0:
 				for event_entry in event_matches:
 					print "[SerienRecorder] found eventID: %s" % int(event_entry[1])
@@ -433,7 +453,7 @@ class STBHelpers:
 					end_unixtime_eit = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
 					break
 
-		return eit, end_unixtime_eit, start_unixtime_eit
+		return eit, start_unixtime_eit, end_unixtime_eit
 
 	@classmethod
 	def countEpisodeOnHDD(cls, dirname, seasonEpisodeString, serien_name, stopAfterFirstHit = False, title = None):
@@ -455,10 +475,6 @@ class STBHelpers:
 	@classmethod
 	def getImageVersionString(cls):
 		from Components.About import about
-
-		creator = "n/a"
-		version = "n/a"
-
 		if hasattr(about,'getVTiVersionString'):
 			creator = about.getVTiVersionString()
 		else:
@@ -502,13 +518,11 @@ class STBHelpers:
 		readSettings.close()
 
 	@classmethod
-	def createDirectory(cls, serien_name, dirname, dirname_serie, cover_only=False):
+	def createDirectory(cls, serien_fsid, markerType, dirname, dirname_serie, cover_only=False):
 		from SerienRecorderLogWriter import SRLogger
-		serien_name = doReplaces(serien_name)
-		# dirname = doReplaces(dirname)
-		# dirname_serie = doReplaces(dirname_serie)
+
 		if not fileExists(dirname) and not cover_only:
-			print "[SerienRecorder] Erstelle Verzeichnis %s" % dirname
+			print "[SerienRecorder] Erstelle Verzeichnis: %s" % dirname
 			SRLogger.writeLog("Erstelle Verzeichnis: ' %s '" % dirname)
 			try:
 				os.makedirs(dirname)
@@ -518,16 +532,16 @@ class STBHelpers:
 		#	raise
 
 		# Copy cover only if path exists and series sub dir is activated
-		if fileExists(dirname) and config.plugins.serienRec.seriensubdir.value and config.plugins.serienRec.copyCoverToFolder.value:
-			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%sfolder.jpg" % dirname_serie):
-				shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%sfolder.jpg" % dirname_serie)
+		if markerType == 0 and fileExists(dirname) and config.plugins.serienRec.seriensubdir.value and config.plugins.serienRec.copyCoverToFolder.value:
+			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid)) and not fileExists("%sfolder.jpg" % dirname_serie):
+				shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid), "%sfolder.jpg" % dirname_serie)
 			if config.plugins.serienRec.seasonsubdir.value:
 				covername = "series"
 				if config.plugins.serienRec.copyCoverToFolder.value is "1":
 					covername = "folder"
 
-				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)) and not fileExists("%s%s.jpg" % (dirname, covername)):
-					shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name), "%s%s.jpg" % (dirname, covername))
+				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid)) and not fileExists("%s%s.jpg" % (dirname, covername)):
+					shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid), "%s%s.jpg" % (dirname, covername))
 
 	@classmethod
 	def checkTuner(cls, check_start, check_end, check_stbRef):
@@ -614,7 +628,7 @@ class PicLoader:
 		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
 
 	def load(self, filename):
-		print "[SerienRecorder] PicLoader::load: <%s>" % filename
+		#print "[SerienRecorder] PicLoader::load: <%s>" % filename
 		if isDreamOS():
 			self.picload.startDecode(filename, False)
 		else:
@@ -666,7 +680,7 @@ class PiconLoader:
 	@staticmethod
 	def findPicon(sRef):
 		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, sRef)
-		print "[SerienRecorder] PiconLoader::findPicon: <%s>" % pngname
+		#print "[SerienRecorder] PiconLoader::findPicon: <%s>" % pngname
 		if not fileExists(pngname):
 			pngname = ""
 		return pngname

@@ -63,6 +63,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.dbData = []
 		self.modus = "menu_list"
 		self.aSerie = ""
+		self.aSerieFSID = None
 		self.aStaffel = 0
 		self.aFromEpisode = 0
 		self.aToEpisode = 0
@@ -137,25 +138,32 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
-	def serieInfo(self):
+	def getCurrentSelection(self):
 		if self.modus == "menu_list":
-			check = self['menu_list'].getCurrent()
-			if check is None:
-				return
+			if self['menu_list'].getCurrent() is None:
+				return None, None, None
 			serien_name = self['menu_list'].getCurrent()[0][1]
+			serien_wlid = self['menu_list'].getCurrent()[0][4]
+			serien_fsid = self['menu_list'].getCurrent()[0][5]
 		else:
-			check = self['popup_list'].getCurrent()
-			if check is None:
-				return
+			if self['popup_list'].getCurrent() is None:
+				return None, None, None
 			serien_name = self['popup_list'].getCurrent()[0][0]
+			serien_wlid = self['popup_list'].getCurrent()[0][1]
+			serien_fsid = self['popup_list'].getCurrent()[0][3]
 
-		serien_id = None
-		url = self.database.getMarkerURL(serien_name)
-		if url:
-			serien_id = url
-		if serien_id:
+		return serien_name, serien_wlid, serien_fsid
+
+	def serieInfo(self):
+		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		if serien_name and serien_wlid:
 			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
-			self.session.open(serienRecShowInfo, serien_name, serien_id)
+			self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
+
+	def wunschliste(self):
+		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		if serien_wlid:
+			super(self.__class__, self).wunschliste(serien_wlid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -166,9 +174,10 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.wishlist = []
 		bookmarks = self.database.getBookmarks()
 		for bookmark in bookmarks:
-			(Serie, Staffel, Episode, numberOfRecordings) = bookmark
-			zeile = "%s S%sE%s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2))
-			self.wishlist.append((zeile, Serie, Staffel, Episode))
+			(Serie, Staffel, Episode, numberOfRecordings, fsID) = bookmark
+			row = "%s S%sE%s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2))
+			wlID = self.database.getMarkerWLID(fsID)
+			self.wishlist.append((row, Serie, Staffel, Episode, wlID, fsID))
 
 		self.wishlist_tmp = self.wishlist[:]
 		if config.plugins.serienRec.wishListSorted.value:
@@ -178,16 +187,17 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		(zeile, Serie, Staffel, Episode) = entry
+		(row, serien_name, serien_season, serien_episode, serien_wlid, serien_fsid) = entry
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row)
 		        ]
 
 	@staticmethod
 	def buildList_popup(entry):
-		(Serie,) = entry
+		(serien_name, serien_wlid, serien_info, serien_fsid) = entry
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
+		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_info)
 		        ]
 
 	def answerStaffel(self, aStaffel):
@@ -211,7 +221,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.aToEpisode is None or self.aFromEpisode is None or self.aStaffel is None or self.aToEpisode == "":
 			return
 		else:
-			self.database.addBookmark(self.aSerie, self.aFromEpisode, self.aToEpisode, self.aStaffel, int(config.plugins.serienRec.NoOfRecords.value))
+			self.database.addBookmark(self.aSerie, self.aSerieFSID, self.aFromEpisode, self.aToEpisode, self.aStaffel, int(config.plugins.serienRec.NoOfRecords.value))
 			self.readWishlist()
 
 	def keyOK(self):
@@ -234,24 +244,24 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 
 			self.aSerie = self['popup_list'].getCurrent()[0][0]
+			self.aSerieFSID = self['popup_list'].getCurrent()[0][3]
 			self.aStaffel = 0
 			self.aFromEpisode = 0
 			self.aToEpisode = 0
 			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = "%s: Staffel eingeben:" % self.aSerie)
 
 	def keyRed(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
+		if self['menu_list'].getCurrent() is None:
 			print "[SerienRecorder] Merkzettel ist leer."
 			return
-		else:
-			zeile = self['menu_list'].getCurrent()[0]
-			(title, serie, staffel, episode) = zeile
-			self.dbData.append((serie.lower(), str(staffel).lower(), episode.lower()))
-			self.wishlist_tmp.remove(zeile)
-			self.wishlist.remove(zeile)
-			self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
-			self.delAdded = True
+
+		zeile = self['menu_list'].getCurrent()[0]
+		(title, serie, staffel, episode, fsID) = zeile
+		self.dbData.append((fsID, str(staffel).lower(), episode.lower()))
+		self.wishlist_tmp.remove(zeile)
+		self.wishlist.remove(zeile)
+		self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
+		self.delAdded = True
 
 	def keyGreen(self):
 		if self.delAdded:
@@ -275,15 +285,14 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self.getCover()
 
 	def keyBlue(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
+		if self['menu_list'].getCurrent() is None:
 			print "[SerienRecorder] Merkzettel ist leer."
 			return
+
+		if config.plugins.serienRec.confirmOnDelete.value:
+			self.session.openWithCallback(self.callClearListMsg, MessageBox, "Soll die Liste wirklich geleert werden?", MessageBox.TYPE_YESNO, default = False)
 		else:
-			if config.plugins.serienRec.confirmOnDelete.value:
-				self.session.openWithCallback(self.callClearListMsg, MessageBox, "Soll die Liste wirklich geleert werden?", MessageBox.TYPE_YESNO, default = False)
-			else:
-				self.callClearListMsg(True)
+			self.callClearListMsg(True)
 
 	def callClearListMsg(self, answer):
 		if answer:
@@ -293,23 +302,9 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 	def getCover(self):
-		if self.modus == "menu_list":
-			check = self['menu_list'].getCurrent()
-			if check is None:
-				return
-			serien_name = self['menu_list'].getCurrent()[0][1]
-		else:
-			check = self['popup_list'].getCurrent()
-			if check is None:
-				return
-			serien_name = self['popup_list'].getCurrent()[0][0]
-
-		serien_id = None
-		url = self.database.getMarkerURL(serien_name)
-		if url:
-			serien_id = url
-
-		SerienRecorder.getCover(self, serien_name, serien_id)
+		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		if serien_name and serien_wlid:
+			SerienRecorder.getCover(self, serien_name, serien_wlid, serien_fsid)
 
 	def keyLeft(self):
 		self[self.modus].pageUp()

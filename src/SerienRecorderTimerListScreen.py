@@ -17,6 +17,7 @@ import SerienRecorder
 from SerienRecorderHelpers import PiconLoader, PicLoader, STBHelpers
 from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
 from SerienRecorderDatabase import SRDatabase
+from SerienRecorderLogWriter import SRLogger
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
 	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
@@ -131,24 +132,25 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
-	def serieInfo(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			return
+	def getCurrentSelection(self):
+		if self['menu_list'].getCurrent() is None:
+			return None, None, None
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
-		url = self.database.getMarkerURL(serien_name)
-		if url:
-			serien_id = url
-			if serien_id:
-				from SerienRecorderSeriesInfoScreen import serienRecShowInfo
-				self.session.open(serienRecShowInfo, serien_name, serien_id)
+		serien_fsid = self['menu_list'].getCurrent()[0][10]
+		serien_wlid = self.database.getMarkerWLID(serien_fsid)
+		return serien_name, serien_wlid, serien_fsid
+
+	def serieInfo(self):
+		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		if serien_name and serien_wlid:
+			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
+			self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
 	def wunschliste(self):
-		serien_name = self['menu_list'].getCurrent()[0][0]
-		url = self.database.getMarkerURL(serien_name)
-		serien_id = url
-		super(self.__class__, self).wunschliste(serien_id)
+		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		if serien_wlid:
+			super(self.__class__, self).wunschliste(serien_wlid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -173,12 +175,13 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		timers = self.database.getAllTimer(current_time if self.filter else None)
 		for timer in timers:
-			(serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer) = timer
+			(serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
+			markerType = 0
 			if int(start_time) < int(current_time):
 				deltimer += 1
-				timerList.append((serie, staffel, episode, title, start_time, stbRef, webChannel, "1", 0, bool(activeTimer)))
+				timerList.append((serie, staffel, episode, title, start_time, stbRef, webChannel, "1", 0, bool(activeTimer), serien_fsid, markerType))
 			else:
-				timerList.append((serie, staffel, episode, title, start_time, stbRef, webChannel, "0", eit, bool(activeTimer)))
+				timerList.append((serie, staffel, episode, title, start_time, stbRef, webChannel, "0", eit, bool(activeTimer), serien_fsid, markerType))
 
 		if showTitle:
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
@@ -202,7 +205,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.getCover()
 
 	def buildList(self, entry):
-		(serie, staffel, episode, title, start_time, stbRef, webChannel, foundIcon, eit, activeTimer) = entry
+		(serie, staffel, episode, title, start_time, stbRef, webChannel, foundIcon, eit, activeTimer, serien_fsid, markerType) = entry
 		xtime = time.strftime(self.WochenTag[time.localtime(int(start_time)).tm_wday ] +", %d.%m.%Y - %H:%M", time.localtime(int(start_time)))
 		xtitle = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), title)
 		imageNone = "%simages/black.png" % SerienRecorder.serienRecMainPath
@@ -253,19 +256,15 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			serien_time = self['menu_list'].getCurrent()[0][4]
 			serien_channel = self['menu_list'].getCurrent()[0][6]
 			serien_eit = self['menu_list'].getCurrent()[0][8]
-			self.removeTimer(serien_name, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
+			serien_fsid = self['menu_list'].getCurrent()[0][10]
+			markerType = self['menu_list'].getCurrent()[0][11]
+			self.removeTimer(serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, markerType, serien_eit)
 		else:
 			return
 
-	def removeTimer(self, serien_name, staffel, episode, serien_title, serien_time, serien_channel, serien_eit=0):
-		if config.plugins.serienRec.TimerName.value == "1":  # "<Serienname>"
-			title = serien_name
-		elif config.plugins.serienRec.TimerName.value == "2":  # "SnnEmm - <Episodentitel>"
-			title = "S%sE%s - %s" % (str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-		elif config.plugins.serienRec.TimerName.value == "3":  # "<Serienname> - SnnEmm"
-			title = "%s - S%sE%s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2))
-		else:  # "<Serienname> - SnnEmm - <Episodentitel>"
-			title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
+	def removeTimer(self, serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, markerType, serien_eit=0):
+		from SerienRecorderTimer import serienRecTimer
+		title = serienRecTimer.getTimerName(serien_name, staffel, episode, serien_title, markerType)
 
 		from SerienRecorderTimer import serienRecBoxTimer
 		removed = serienRecBoxTimer.removeTimerEntry(title, serien_time, serien_eit)
@@ -274,7 +273,9 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			print "[SerienRecorder] enigma2 Timer removed."
 
-		self.database.removeTimer(serien_name, staffel, episode, None, serien_time, serien_channel, (serien_eit if serien_eit > 0 else None))
+		self.database.removeTimer(serien_fsid, staffel, episode, None, serien_time, serien_channel)
+		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+		SRLogger.writeLogFilter("timerDebug", "Timer gelöscht: %s %s - %s" % (serien_name, seasonEpisodeString, serien_title))
 
 		self.changesMade = True
 		self.readTimer(False)
@@ -282,28 +283,29 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['title'].setText("Timer '- %s -' gelöscht." % serien_name)
 
 	def keyRed(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			print "[SerienRecorder] Serien Timer leer."
+		if self['menu_list'].getCurrent() is None:
+			print "[SerienRecorder] Angelegte Timer Tabelle leer."
 			return
+
+		serien_name = self['menu_list'].getCurrent()[0][0]
+		staffel = self['menu_list'].getCurrent()[0][1]
+		episode = self['menu_list'].getCurrent()[0][2]
+		serien_title = self['menu_list'].getCurrent()[0][3]
+		serien_time = self['menu_list'].getCurrent()[0][4]
+		serien_channel = self['menu_list'].getCurrent()[0][6]
+		serien_eit = self['menu_list'].getCurrent()[0][8]
+		serien_fsid = self['menu_list'].getCurrent()[0][10]
+		markerType = self['menu_list'].getCurrent()[0][11]
+
+		print self['menu_list'].getCurrent()[0]
+
+		if config.plugins.serienRec.confirmOnDelete.value:
+			self.session.openWithCallback(self.callDeleteSelectedTimer, MessageBox, "Soll '%s - S%sE%s - %s' wirklich gelöscht werden?" %
+			                              (serien_name, str(staffel).zfill(2), str(episode).zfill(2),
+			                              re.sub("\Adump\Z", "(Manuell hinzugefügt !!)", serien_title)),
+			                              MessageBox.TYPE_YESNO, default=False)
 		else:
-			serien_name = self['menu_list'].getCurrent()[0][0]
-			staffel = self['menu_list'].getCurrent()[0][1]
-			episode = self['menu_list'].getCurrent()[0][2]
-			serien_title = self['menu_list'].getCurrent()[0][3]
-			serien_time = self['menu_list'].getCurrent()[0][4]
-			serien_channel = self['menu_list'].getCurrent()[0][6]
-			serien_eit = self['menu_list'].getCurrent()[0][8]
-
-			print self['menu_list'].getCurrent()[0]
-
-			if config.plugins.serienRec.confirmOnDelete.value:
-				self.session.openWithCallback(self.callDeleteSelectedTimer, MessageBox, "Soll '%s - S%sE%s - %s' wirklich gelöscht werden?" %
-				                              (serien_name, str(staffel).zfill(2), str(episode).zfill(2),
-				                              re.sub("\Adump\Z", "(Manuell hinzugefügt !!)", serien_title)),
-				                              MessageBox.TYPE_YESNO, default=False)
-			else:
-				self.removeTimer(serien_name, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
+			self.removeTimer(serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, markerType, serien_eit)
 
 	def keyYellow(self):
 		if self.filter:
@@ -327,8 +329,9 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			current_time = int(time.time())
 			timers = self.database.getAllTimer(current_time)
 			for timer in timers:
-				(serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer) = timer
-				self.removeTimer(serie, staffel, episode, title, start_time, webChannel, eit)
+				(serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
+				markerType = 0
+				self.removeTimer(serie, serien_fsid, staffel, episode, title, start_time, webChannel, markerType, eit)
 
 			self.readTimer(False)
 			self['title'].instance.setForegroundColor(parseColor("red"))
@@ -371,16 +374,9 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 	def getCover(self):
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			return
-
-		serien_name = self['menu_list'].getCurrent()[0][0]
-		serien_id = None
-		url = self.database.getMarkerURL(serien_name)
-		if url:
-			serien_id = url
-		SerienRecorder.getCover(self, serien_name, serien_id)
+		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		if serien_name and serien_wlid:
+			SerienRecorder.getCover(self, serien_name, serien_wlid, serien_fsid)
 
 	def keyLeft(self):
 		self['menu_list'].pageUp()
@@ -413,6 +409,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.session = session
+		self.picload = ePicLoad()
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 
@@ -448,6 +445,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		self.dbData = []
 		self.modus = "menu_list"
 		self.aSerie = ""
+		self.aSerieFSID = None
 		self.aStaffel = "0"
 		self.aFromEpisode = 0
 		self.aToEpisode = 0
@@ -517,25 +515,25 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
-	def serieInfo(self):
+	def getCurrentSelection(self):
 		if self.modus == "menu_list":
-			check = self['menu_list'].getCurrent()
-			if check is None:
-				return
+			if self['menu_list'].getCurrent() is None:
+				return None, None, None
 			serien_name = self['menu_list'].getCurrent()[0][1]
+			serien_fsid = self['menu_list'].getCurrent()[0][7]
 		else:
-			check = self['popup_list'].getCurrent()
-			if check is None:
-				return
+			if self['popup_list'].getCurrent() is None:
+				return None, None, None
 			serien_name = self['popup_list'].getCurrent()[0][0]
+			serien_fsid = self['popup_list'].getCurrent()[0][2]
+		serien_wlid = self.database.getMarkerWLID(serien_fsid)
+		return serien_name, serien_wlid, serien_fsid
 
-		serien_id = None
-		url = self.database.getMarkerURL(serien_name)
-		if url:
-			serien_id = url
-
-		from SerienRecorderSeriesInfoScreen import serienRecShowInfo
-		self.session.open(serienRecShowInfo, serien_name, serien_id)
+	def serieInfo(self):
+		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		if serien_name and serien_wlid:
+			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
+			self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -547,10 +545,11 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		series = []
 		timers = self.database.getAllTimer(None)
 		for timer in timers:
-			(Serie, Staffel, Episode, title, start_time, stbRef, webChannel, eit, active) = timer
+			(Serie, Staffel, Episode, title, start_time, stbRef, webChannel, eit, active, serien_fsid) = timer
+			markerType = 0
 			series.append(Serie)
 			zeile = "%s - S%sE%s - %s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2), title)
-			self.addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), Serie, Staffel, Episode, title, start_time, webChannel))
+			self.addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid))
 
 		self.addedlist_tmp = self.addedlist[:]
 		number_of_series = len(set(series))
@@ -558,13 +557,13 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		self['title'].setText("Für %d Episoden aus %d Serien werden keine Timer mehr erstellt!" % (len(self.addedlist_tmp), number_of_series))
 
 		if config.plugins.serienRec.addedListSorted.value:
-			self.addedlist_tmp.sort()
+			self.addedlist_tmp.sort(key=lambda x: (x[1].lower(), int(x[2]) if x[2].isdigit() else x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower()))
 		self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
 		self.getCover()
 
 	@staticmethod
 	def buildList(entry):
-		(zeile, Serie, Staffel, Episode, title, start_time, webChannel) = entry
+		(zeile, Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid) = entry
 		foregroundColor = parseColor('foreground').argb()
 		return [entry,
 		        (eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile, foregroundColor)
@@ -572,10 +571,11 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList_popup(entry):
-		(Serie,) = entry
+		(Serie,Url,info,fsID) = entry
 		foregroundColor = parseColor('foreground').argb()
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, foregroundColor)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, foregroundColor),
+		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, info, foregroundColor)
 		        ]
 
 	def answerStaffel(self, aStaffel):
@@ -605,7 +605,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 			if self.aStaffel.startswith('0') and len(self.aStaffel) > 1:
 				self.aStaffel = self.aStaffel[1:]
 
-			if self.database.addToTimerList(self.aSerie, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
+			if self.database.addToTimerList(self.aSerie, self.aSerieFSID, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
 				self.readAdded()
 
 	def keyOK(self):
@@ -628,22 +628,20 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 
 			self.aSerie = self['popup_list'].getCurrent()[0][0]
+			self.aSerieFSID = self['popup_list'].getCurrent()[0][2]
 			self.aStaffel = "0"
 			self.aFromEpisode = 0
 			self.aToEpisode = 0
 			self.session.openWithCallback(self.answerStaffel, NTIVirtualKeyBoard, title = "%s: Staffel eingeben:" % self.aSerie)
 
 	def keyRed(self):
-		check = None
 		if self.modus == "menu_list":
-			check = self['menu_list'].getCurrent()
-		if check is None:
-			print "[SerienRecorder] Added-File leer."
-			return
-		else:
+			if self['menu_list'].getCurrent() is None:
+				return
+
 			zeile = self['menu_list'].getCurrent()[0]
-			(txt, serie, staffel, episode, title, start_time, webChannel) = zeile
-			self.dbData.append((serie.lower(), str(staffel).lower(), episode.lower(), title.lower(), start_time, webChannel.lower()))
+			(txt, serie, staffel, episode, title, start_time, webChannel, serien_fsid) = zeile
+			self.dbData.append((serien_fsid, str(staffel).lower(), episode.lower(), title.lower(), start_time, webChannel.lower()))
 			self.addedlist_tmp.remove(zeile)
 			self.addedlist.remove(zeile)
 			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
@@ -661,7 +659,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 				self['text_yellow'].setText("Sortieren")
 				config.plugins.serienRec.addedListSorted.setValue(False)
 			else:
-				self.addedlist_tmp.sort()
+				self.addedlist_tmp.sort(key=lambda x: (x[1].lower(), int(x[2]) if x[2].isdigit() else x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower()))
 				self['text_yellow'].setText("unsortierte Liste")
 				config.plugins.serienRec.addedListSorted.setValue(True)
 			config.plugins.serienRec.addedListSorted.save()
@@ -671,23 +669,9 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 			self.getCover()
 
 	def getCover(self):
-		if self.modus == "menu_list":
-			check = self['menu_list'].getCurrent()
-			if check is None:
-				return
-			serien_name = self['menu_list'].getCurrent()[0][1]
-		else:
-			check = self['popup_list'].getCurrent()
-			if check is None:
-				return
-			serien_name = self['popup_list'].getCurrent()[0][0]
-
-		serien_id = None
-		url = self.database.getMarkerURL(serien_name)
-		if url:
-			serien_id = url
-
-		SerienRecorder.getCover(self, serien_name, serien_id)
+		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		if serien_name and serien_wlid:
+			SerienRecorder.getCover(self, serien_name, serien_wlid, serien_fsid)
 
 	def keyLeft(self):
 		self[self.modus].pageUp()

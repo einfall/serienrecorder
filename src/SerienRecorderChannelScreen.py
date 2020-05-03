@@ -16,7 +16,7 @@ from skin import parseColor
 import SerienRecorder
 from SerienRecorderSeriesServer import SeriesServer
 from SerienRecorderHelpers import isDreamOS, STBHelpers, isVTI
-from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, longButtonText, InitSkin, skinFactor, updateMenuKeys, setMenuTexts
+from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, InitSkin, skinFactor, updateMenuKeys, setMenuTexts
 from SerienRecorderLogWriter import SRLogger
 
 class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
@@ -38,8 +38,8 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		from SerienRecorderDatabase import SRDatabase
 		self.database = SRDatabase(serienRecDataBaseFilePath)
 
-		from difflib import SequenceMatcher
-		self.sequenceMatcher = SequenceMatcher(" ".__eq__, "", "")
+		# from difflib import SequenceMatcher
+		# self.sequenceMatcher = SequenceMatcher(" ".__eq__, "", "")
 		
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"       : (self.keyOK, "Popup-Fenster zur Auswahl des STB-Sender öffnen"),
@@ -95,14 +95,9 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.num_bt_text[3][1] = "Sender prüfen"
 		self.num_bt_text[4][1] = "Alle löschen"
-		if longButtonText:
-			self.num_bt_text[4][0] = ""
-			self['text_red'].setText("An/Aus (lang: Löschen)")
-			self.num_bt_text[4][2] = "Setup Sender (lang: global)"
-		else:
-			self.num_bt_text[4][0] = buttonText_na
-			self['text_red'].setText("(De)aktivieren/Löschen")
-			self.num_bt_text[4][2] = "Setup Sender/global"
+		self.num_bt_text[4][0] = buttonText_na
+		self['text_red'].setText("Ein/Löschen")
+		self.num_bt_text[4][2] = "Setup Sender/global"
 
 		self['text_blue'].setText("Auto-Zuordnung")
 
@@ -227,6 +222,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self.chooseMenuList.setList(map(self.buildList, self.serienRecChannelList))
 		else:
 			self.channelReset(True)
+		self.setMenuKeyText()
 
 	def readWebChannels(self):
 		print "[SerienRecorder] call webpage."
@@ -333,14 +329,15 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		return result
 
 	def findWebChannelInSTBChannels(self, webChannel):
+		from difflib import SequenceMatcher
+
 		result = (None, None)
 		channelFound = False
 
-		# First try to find the HD version
+		# Try to find the HD version first
 		webChannelHD = webChannel + " HD"
 		for servicename,serviceref in self.stbChannelList:
-			self.sequenceMatcher.set_seqs(webChannelHD.lower(), servicename.lower())
-			ratio = self.sequenceMatcher.ratio()
+			ratio = SequenceMatcher(None, webChannelHD.lower(), servicename.lower()).ratio()
 			if ratio >= 0.98:
 				result = (servicename, serviceref)
 				channelFound = True
@@ -348,8 +345,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 		if not channelFound:
 			for servicename,serviceref in self.stbChannelList:
-				self.sequenceMatcher.set_seqs(webChannel.lower(), servicename.lower())
-				ratio = self.sequenceMatcher.ratio()
+				ratio = SequenceMatcher(None, webChannel.lower(), servicename.lower()).ratio()
 				if ratio >= 0.98:
 					result = (servicename, serviceref)
 					break
@@ -427,14 +423,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				self['popup_list2'].hide()
 				self['popup_bg'].hide()
 
-				check = self['list'].getCurrent()
-				if check is None:
-					print "[SerienRecorder] Sender-Liste leer (list)."
-					return
-
-				check = self['popup_list'].getCurrent()
-				if check is None:
-					print "[SerienRecorder] Sender-Liste leer (popup_list)."
+				if self['list'].getCurrent() is None or self['popup_list'].getCurrent() is None:
 					return
 
 				chlistSender = self['list'].getCurrent()[0][0]
@@ -487,8 +476,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 		if self.modus == "list":
 			chlistSender = self['list'].getCurrent()[0][0]
-			sender_status = self['list'].getCurrent()[0][2]
-			print sender_status
 
 			self.database.changeChannelStatus(chlistSender)
 			self['title'].instance.setForegroundColor(parseColor("red"))
@@ -537,9 +524,8 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
 
 	def keyRedLong(self):
-		check = self['list'].getCurrent()
-		if check is None:
-			print "[SerienRecorder] Serien Marker leer."
+		if self['list'].getCurrent() is None:
+			print "[SerienRecorder] Sender Tabelle leer."
 			return
 		else:
 			self.selected_sender = self['list'].getCurrent()[0][0]
@@ -574,17 +560,28 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self['title'].setText("Alle Senderzuordnungen entfernt.")
 		self.showChannels()
 
+	def setMenuKeyText(self):
+		status = self['list'].getCurrent()[0][3]
+		if int(status) == 0:
+			self['text_red'].setText("Ein/Löschen")
+		else:
+			self['text_red'].setText("Aus/Löschen")
+
 	def keyLeft(self):
 		self[self.modus].pageUp()
+		self.setMenuKeyText()
 
 	def keyRight(self):
 		self[self.modus].pageDown()
+		self.setMenuKeyText()
 
 	def keyDown(self):
 		self[self.modus].down()
+		self.setMenuKeyText()
 
 	def keyUp(self):
 		self[self.modus].up()
+		self.setMenuKeyText()
 
 	def __onClose(self):
 		self.stopDisplayTimer()

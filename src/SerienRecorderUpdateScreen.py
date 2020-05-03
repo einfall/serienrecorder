@@ -47,7 +47,7 @@ class checkGitHubUpdate:
 			latestVersion = latestRelease['tag_name'][1:]
 
 			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
-			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("beta", "-1").split(".")
+			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("alpha", "-1").replace("beta", "-1").split(".")
 			remoteversion.extend((max([len(remoteversion), len(version)]) - len(remoteversion)) * '0')
 			remoteversion = map(lambda x: int(x), remoteversion)
 			version.extend((max([len(remoteversion), len(version)]) - len(version)) * '0')

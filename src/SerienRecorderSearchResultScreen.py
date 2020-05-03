@@ -117,17 +117,14 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		updateMenuKeys(self)
 
 	def serieInfo(self):
-		if self.loading:
+		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			return
-
-		serien_id = self['menu_list'].getCurrent()[0][2]
 		serien_name = self['menu_list'].getCurrent()[0][0]
+		serien_wlid = self['menu_list'].getCurrent()[0][2]
+		serien_fsid = self['menu_list'].getCurrent()[0][3]
 		from SerienRecorderSeriesInfoScreen import serienRecShowInfo
-		self.session.open(serienRecShowInfo, serien_name, serien_id)
+		self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -150,15 +147,15 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def results(self, serienlist):
 		(startOffset, moreResults, searchResults) = serienlist
 		self.serienlist.extend(searchResults)
-		self['title'].setText("Die Suche für ' %s ' ergab %s Teffer." % (self.serien_name, str(len(self.serienlist))))
+		self['title'].setText("Die Suche nach ' %s ' ergab %s Treffer." % (self.serien_name, str(len(self.serienlist))))
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
 		# deep copy list
 		resultList = self.serienlist[:]
 
 		if moreResults > 0:
-			resultList.append(("", "", ""))
-			resultList.append(("=> Weitere Ergebnisse laden?", str(moreResults), "-1"))
+			resultList.append(("", "", "", ""))
+			resultList.append(("=> Weitere Ergebnisse laden?", str(moreResults), "-1", ""))
 		self.chooseMenuList.setList(map(self.buildList, resultList))
 		self['menu_list'].moveToIndex(startOffset)
 		self.loading = False
@@ -166,39 +163,35 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		(name_Serie, year_Serie, id_Serie) = entry
+		(serien_name, serien_info, serien_wlid, serien_fsid) = entry
 
 		# weitere Ergebnisse Eintrag
-		if id_Serie == "-1":
-			year_Serie = ""
+		if serien_wlid == "-1":
+			serien_info = ""
 
 		# name_Serie = doReplaces(name_Serie)
 
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 500 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, name_Serie),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, year_Serie)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 500 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
+		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_info)
 		        ]
 
 	def keyOK(self):
-		if self.loading:
+		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		check = self['menu_list'].getCurrent()
-		if check is None:
-			print "[SerienRecorder] keine infos gefunden"
+		serien_name = self['menu_list'].getCurrent()[0][0]
+		serien_info = self['menu_list'].getCurrent()[0][1]
+		serien_wlid = self['menu_list'].getCurrent()[0][2]
+		serien_fsid = self['menu_list'].getCurrent()[0][3]
+		print serien_name, serien_info, serien_wlid, serien_fsid
+
+		if serien_wlid == "":
 			return
 
-		Serie = self['menu_list'].getCurrent()[0][0]
-		Year = self['menu_list'].getCurrent()[0][1]
-		Id = self['menu_list'].getCurrent()[0][2]
-		print Serie, Year, Id
-
-		if Id == "":
-			return
-
-		if Id == "-1":
+		if serien_wlid == "-1":
 			self.chooseMenuList.setList([])
-			self.searchSerie(int(Year))
+			self.searchSerie(int(serien_info))
 			return
 
 		self.serien_name = ""
@@ -208,15 +201,15 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			boxID = config.plugins.serienRec.BoxID.value
 
-		if database.addMarker(str(Id), Serie, Year, boxID, 0):
+		if database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
 			from SerienRecorderLogWriter import SRLogger
-			SRLogger.writeLog("\nSerien Marker für ' %s ' wurde angelegt" % Serie, True)
-			self['title'].setText("Serie '- %s -' zum Serien Marker hinzugefügt." % Serie)
+			SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
+			self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 			self['title'].instance.setForegroundColor(parseColor("green"))
 			if config.plugins.serienRec.openMarkerScreen.value:
-				self.close(Serie)
+				self.close(str(serien_wlid))
 		else:
-			self['title'].setText("Serie '- %s -' existiert bereits im Serien Marker." % Serie)
+			self['title'].setText("Serie '%s (%s)' ist schon vorhanden." % (serien_name, serien_info))
 			self['title'].instance.setForegroundColor(parseColor("red"))
 
 	def keyRed(self):
@@ -256,16 +249,13 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		super(self.__class__, self).wunschliste(serien_id)
 
 	def getCover(self):
-		if self.loading:
-			return
-
-		check = self['menu_list'].getCurrent()
-		if check is None:
+		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		serien_id = self['menu_list'].getCurrent()[0][2]
-		SerienRecorder.getCover(self, serien_name, serien_id)
+		serien_fsid = self['menu_list'].getCurrent()[0][3]
+		SerienRecorder.getCover(self, serien_name, serien_id, serien_fsid)
 
 	def __onClose(self):
 		self.stopDisplayTimer()

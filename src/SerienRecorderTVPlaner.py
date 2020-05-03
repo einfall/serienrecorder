@@ -64,12 +64,12 @@ def getEmailData():
 		else:
 			mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_server_port.value)
 
-	except imaplib.IMAP4.abort:
-		SRLogger.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
+	except imaplib.IMAP4.abort as e:
+		SRLogger.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen [%s]" % str(e), True)
 		return None
 
-	except imaplib.IMAP4.error:
-		SRLogger.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen", True)
+	except imaplib.IMAP4.error as e:
+		SRLogger.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen [%s]" % str(e), True)
 		return None
 
 	try:
@@ -77,16 +77,16 @@ def getEmailData():
 				   decrypt(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
 		print "[serienrecorder]: imap login ok"
 
-	except imaplib.IMAP4.error:
-		SRLogger.writeLog("TV-Planer: Anmeldung auf Server fehlgeschlagen", True)
+	except imaplib.IMAP4.error as e:
+		SRLogger.writeLog("TV-Planer: Anmeldung am Server fehlgeschlagen [%s]" % str(e), True)
 		print "[serienrecorder]: imap login failed"
 		return None
 
 	try:
 		mail.select(config.plugins.serienRec.imap_mailbox.value)
 
-	except imaplib.IMAP4.error:
-		SRLogger.writeLog("TV-Planer: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
+	except imaplib.IMAP4.error as e:
+		SRLogger.writeLog("TV-Planer: Mailbox %r nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), True)
 		return None
 
 	searchstr = TimeHelpers.getMailSearchString()
@@ -97,8 +97,8 @@ def getEmailData():
 			SRLogger.writeLog("TV-Planer: %s" % data, True)
 			return None
 
-	except imaplib.IMAP4.error:
-		SRLogger.writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
+	except imaplib.IMAP4.error as e:
+		SRLogger.writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen [%s]" % (str(config.plugins.serienRec.imap_mail_age.value), str(e)), True)
 		SRLogger.writeLog("TV-Planer: %s" % searchstr, True)
 		return None
 
@@ -112,25 +112,27 @@ def getEmailData():
 	# fetch the email body (RFC822) for the given UID
 	try:
 		result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
-	except:
-		SRLogger.writeLog("TV-Planer: Laden der E-Mail fehlgeschlagen", True)
+	except Exception as e:
+		SRLogger.writeLog("TV-Planer: Laden der E-Mail fehlgeschlagen [%s]" % str(e), True)
 		return None
 
 	mail.logout()
 	# extract email message including headers and alternate payloads
 	email_message = email.message_from_string(data[0][1])
 	if len(email_message) == 0:
-		SRLogger.writeLog("TV-Planer: leere E-Mail", True)
+		SRLogger.writeLog("TV-Planer: Leere E-Mail", True)
 		return None
 
 	# get html of wunschliste
+	SRLogger.writeLog("Extrahiere HTML Part der TV-Planer E-Mail.", True)
 	html = get_html(email_message)
 	if html is None or len(html) == 0:
-		SRLogger.writeLog("TV-Planer: leeres HTML", True)
+		SRLogger.writeLog("TV-Planer: Leeres HTML", True)
 		return None
 
 	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value:
 		try:
+			SRLogger.writeLog("Erstelle Backup der TV-Planer E-Mail.\n")
 			htmlFilePath = SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value
 			writeTVPlanerHTML = open(htmlFilePath, "w")
 			writeTVPlanerHTML.write(html)
@@ -164,6 +166,7 @@ def getEmailData():
 					return ''
 
 		import AdvancedHTMLParser
+		SRLogger.writeLog('Starte HTML Parsing der TV-Planer E-Mail.', True)
 		parser = AdvancedHTMLParser.AdvancedHTMLParser()
 		html = parser.unescape(html).encode('utf-8')
 		parser.parseStr(html)
@@ -230,8 +233,8 @@ def getEmailData():
 					print transmission
 					transmissions.append(transmission)
 
-	except:
-		SRLogger.writeLog("TV-Planer: HTML Parsing abgebrochen", True)
+	except Exception as e:
+		SRLogger.writeLog("TV-Planer: HTML Parsing abgebrochen [%s]" % str(e), True)
 		return None
 
 	# prepare transmissions
@@ -239,7 +242,7 @@ def getEmailData():
 	# calculate start time and end time of list in E-Mail
 	missingTime = False
 	if len(planerDateTime) != 2:
-		SRLogger.writeLog("TV-Planer: falsches Datumsformat", True)
+		SRLogger.writeLog("TV-Planer: Falsches Datumsformat", True)
 		return None
 	(day, month, year) = planerDateTime[0].split('.')
 	if not planerDateTime[1]:
@@ -253,10 +256,10 @@ def getEmailData():
 		(hour, minute) = planerDateTime[1].split(':')
 	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
 	# generate dictionary with final transmissions
-	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:\n" % (planerDateTime[0], planerDateTime[1]))
+	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden %d Sendungen gefunden:\n" % (planerDateTime[0], planerDateTime[1], len(transmissions)))
 	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (planerDateTime[0], planerDateTime[1])
 	if missingTime:
-		SRLogger.writeLog("In der Kopfzeile der TV-Planer E-Mail konnte keine Uhrzeit gefunden werden, bitte kontrollieren Sie die angelegten Timer!\n")
+		SRLogger.writeLog("In der Kopfzeile der TV-Planer E-Mail konnte keine Uhrzeit gefunden werden, bitte die angelegten Timer kontrollieren!\n")
 	transmissiondict = dict()
 	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in transmissions:
 		try:
@@ -276,6 +279,9 @@ def getEmailData():
 				SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
 				print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
 				continue
+
+			# get fernsehserie ID from URL
+			fsID = url[str.rindex(url, '/') + 1:]
 
 			# series
 			transmission = [ seriesname ]
@@ -308,47 +314,55 @@ def getEmailData():
 			transmission += [ '0' ]
 			# url
 			transmission += [ url ]
-			# store in dictionary transmissiondict[seriesname] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
-			if seriesname in transmissiondict:
-				transmissiondict[seriesname] += [ transmission ]
+			# store in dictionary transmissiondict[fsID] = [ seriesname: [ transmission 0 ], [ transmission 1], .... ]
+			if fsID in transmissiondict:
+				transmissiondict[fsID] += [ transmission ]
 			else:
-				transmissiondict[seriesname] = [ transmission ]
-			SRLogger.writeLog("' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype), True)
-			print "[SerienRecorder] ' %s - S%sE%s - %s - %s - %s - %s - %s'" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype)
+				transmissiondict[fsID] = [ transmission ]
+			log = "' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype)
+			SRLogger.writeLog(log, True)
+			print "[SerienRecorder] " + log
 		except Exception as e:
 			SRLogger.writeLog("TV-Planer Verarbeitung fehlgeschlagen! [%s]" % str(e), True)
 
 	if config.plugins.serienRec.tvplaner_create_marker.value:
+		print "[SerienRecorder] Create markers..."
 		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
-		for seriesname in transmissiondict.keys():
+		for fsID in transmissiondict.keys():
+			print "[SerienRecorder] Check whether or not a marker exists for fsid: [%s]" % str(fsID)
 			# marker isn't in database, create new marker
 			# url stored in marker isn't the final one, it is corrected later
-			url = transmissiondict[seriesname][0][-1]
-			marker_type = "Serien Marker"
+			url = transmissiondict[fsID][0][-1]
+			seriesname = transmissiondict[fsID][0][0]
+			marker_type = "Serien-Marker"
 			try:
 				boxID = None
+				seriesInfo = ""
 				if url.startswith('https://www.wunschliste.de/serie'):
-					seriesID = SeriesServer().getIDByFSID(url[str.rindex(url, '/') + 1:])
+					seriesID = SeriesServer().getIDByFSID(fsID)
 					if seriesID > 0:
 						url = str(seriesID)
+						data = SeriesServer().getSeriesNamesAndInfoByWLID([seriesID])
+						if data:
+							seriesInfo = data[0]['info']
 					else:
 						url = None
 					if config.plugins.serienRec.tvplaner_series_activeSTB.value:
 						boxID = config.plugins.serienRec.BoxID.value
 				elif url.startswith('https://www.wunschliste.de/spielfilm'):
-					marker_type = "Temporärer Serien Marker"
+					marker_type = "Temporärer Serien-Marker"
 					if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
 						boxID = config.plugins.serienRec.BoxID.value
 				else:
 					url = None
 
-				if url and not database.markerExists(url):
-					if database.addMarker(url, seriesname, "", boxID, 1 if url.startswith('https://www.wunschliste.de/spielfilm') else 0):
-						SRLogger.writeLog("\n%s für ' %s ' wurde angelegt" % (marker_type, seriesname), True)
-						print "[SerienRecorder] ' %s - %s erzeugt '" % (seriesname, marker_type)
+				if url:
+					if database.addMarker(url, seriesname, seriesInfo, fsID, boxID, 1 if url.startswith('https://www.wunschliste.de/spielfilm') else 0):
+						SRLogger.writeLog("%s für '%s (%s)' wurde angelegt" % (marker_type, seriesname, seriesInfo), True)
+						print "[SerienRecorder] ' %s - %s (%s) erzeugt '" % (seriesname, marker_type, seriesInfo)
 			except Exception as e:
-				SRLogger.writeLog("\n%s für ' %s ' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (marker_type, seriesname, str(e)), True)
-				print "[SerienRecorder] ' %s - %s konnte wegen eines Fehlers nicht angelegt werden [%s]'" % (seriesname, marker_type, str(e))
+				SRLogger.writeLog("%s für '%s' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (marker_type, seriesname, str(e)), True)
+				print "[SerienRecorder] %s - %s konnte wegen eines Fehlers nicht angelegt werden [%s]" % (seriesname, marker_type, str(e))
 	else:
 		SRLogger.writeLog("Es werden keine Serien-Marker aus der TV-Planer E-Mail erstellt.", True)
 
@@ -423,13 +437,23 @@ def resetTVPlanerHTMLBackup():
 	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value:
 		logFile = SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value
 
-		# logFile leeren (renamed to .old)
-		if fileExists(logFile):
-			shutil.move(logFile, "%s.old" % logFile)
+		if not config.plugins.serienRec.longLogFileName.value:
+			# logFile leeren (renamed to .old)
+			if fileExists(logFile):
+				shutil.move(logFile, "%s.old" % logFile)
+		else:
+			lt = datetime.datetime.now() - datetime.timedelta(days=config.plugins.serienRec.deleteLogFilesOlderThan.value)
+			for filename in os.listdir(config.plugins.serienRec.LogFilePath.value):
+				if (filename.find('TV-Planer_') == 0) and (int(os.path.getmtime(os.path.join(config.plugins.serienRec.LogFilePath.value, filename))) < int(lt.strftime("%s"))):
+					try:
+						os.remove('%s%s' % (config.plugins.serienRec.LogFilePath.value, filename))
+					except:
+						SRLogger.writeLog("TV-Planer HTML Backup konnte nicht gelöscht werden: %s" % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
+
 		open(logFile, 'w').close()
 
 def backupTVPlanerHTML():
-	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value:
+	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value and config.plugins.serienRec.longLogFileName.value:
 		lt = time.localtime()
 		logFile = SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value
 		logFileSave = SERIENRECORDER_LONG_TVPLANER_HTML_FILENAME % (config.plugins.serienRec.LogFilePath.value, str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))

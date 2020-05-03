@@ -68,7 +68,8 @@ class SRDatabase:
 																			skipSeriesServer INTEGER DEFAULT NULL,
 																			info TEXT NOT NULL DEFAULT "",
 																			type INTEGER DEFAULT 0,
-																			autoAdjust INTEGER DEFAULT NULL)''')
+																			autoAdjust INTEGER DEFAULT NULL,
+																			fsID TEXT DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -82,15 +83,16 @@ class SRDatabase:
 																		  ErlaubteSTB INTEGER, 
 																		  FOREIGN KEY(ID) REFERENCES SerienMarker(ID))''')
 
-		cur.execute('''CREATE TABLE IF NOT EXISTS AngelegteTimer (Serie TEXT NOT NULL, 
-																			  Staffel TEXT, 
-																			  Episode TEXT, 
-																			  Titel TEXT, 
-																			  StartZeitstempel INTEGER NOT NULL, 
-																			  ServiceRef TEXT NOT NULL, 
-																			  webChannel TEXT NOT NULL, 
-																			  EventID INTEGER DEFAULT 0,
-																			  TimerAktiviert INTEGER DEFAULT 1)''')
+		cur.execute('''CREATE TABLE IF NOT EXISTS AngelegteTimer ( 	Serie TEXT NOT NULL, 
+																	Staffel TEXT, 
+																	Episode TEXT, 
+																	Titel TEXT, 
+																	StartZeitstempel INTEGER NOT NULL, 
+																	ServiceRef TEXT NOT NULL, 
+																	webChannel TEXT NOT NULL, 
+																	EventID INTEGER DEFAULT 0,
+																	TimerAktiviert INTEGER DEFAULT 1,
+																	fsID TEXT DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
 																			  StartZeitstempel INTEGER NOT NULL, 
@@ -99,7 +101,8 @@ class SRDatabase:
 		cur.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
 																		  Staffel TEXT NOT NULL, 
 																		  Episode TEXT NOT NULL,
-																		  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
+																		  AnzahlWiederholungen INTEGER DEFAULT NULL,
+																		  fsID TEXT DEFAULT NULL)''')
 
 		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('Version', ?)", [version])
 		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('ChannelsLastUpdate', ?)", [int(time.time())])
@@ -124,6 +127,20 @@ class SRDatabase:
 
 		return dbVersion
 
+	def isMalformed(self):
+		malformed = False
+		try:
+			cur = self._srDBConn.cursor()
+			cur.execute("PRAGMA quick_check")
+			row = cur.fetchone()
+			if row:
+				malformed = (row[0] != 'ok')
+			cur.close()
+		except:
+			pass
+
+		return malformed
+
 	@staticmethod
 	def hasColumn(rows, columnName):
 		if [item for item in rows if item[1] == columnName]:
@@ -146,6 +163,8 @@ class SRDatabase:
 		timerRows = cur.fetchall()
 		cur.execute("PRAGMA table_info(Channels)")
 		channelRows = cur.fetchall()
+		cur.execute("PRAGMA table_info(Merkzettel)")
+		bookmarkRows = cur.fetchall()
 
 		# Foreign key check
 		try:
@@ -257,6 +276,13 @@ class SRDatabase:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'autoAdjust' konnte nicht korrigiert werden [%s]." % str(e), True)
 
+		if not self.hasColumn(markerRows, 'fsID'):
+			try:
+				cur.execute("ALTER TABLE SerienMarker ADD fsID TEXT DEFAULT NULL")
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'fsID' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
 		if not self.updateToWLID():
 			updateSuccessful = False
 
@@ -287,15 +313,35 @@ class SRDatabase:
 				cur.execute('ALTER TABLE AngelegteTimer ADD TimerAktiviert INTEGER DEFAULT 1')
 			except Exception as e:
 				updateSuccessful = False
-				SRLogger.writeLog("Spalte 'TimerAktiviert' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+				SRLogger.writeLog("Spalte 'TimerAktiviert' konnte nicht in der Tabelle 'AngelegteTimer' angelegt werden [%s]." % str(e), True)
+
+		hasFSIDColumn = self.hasColumn(timerRows, 'fsID')
+		if not hasFSIDColumn:
+			try:
+				cur.execute('ALTER TABLE AngelegteTimer ADD fsID TEXT DEFAULT NULL')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'fsID' konnte nicht in der Tabelle 'AngelegteTimer' angelegt werden [%s]." % str(e), True)
+
+		# if not self.hasColumn(timerRows, 'type'):
+		# 	try:
+		# 		cur.execute('ALTER TABLE AngelegteTimer ADD type INTEGER DEFAULT 0')
+		# 	except Exception as e:
+		# 		updateSuccessful = False
+		# 		SRLogger.writeLog("Spalte 'type' konnte nicht in der Tabelle 'AngelegteTimer' angelegt werden [%s]." % str(e), True)
 
 		try:
 			cur.execute("UPDATE AngelegteTimer SET Episode = '00' WHERE rowid IN (SELECT rowid  FROM AngelegteTimer WHERE Staffel='0' AND (Episode='' OR Episode='0'))")
 		except Exception as e:
 			updateSuccessful = False
-			SRLogger.writeLog("Der Standardwert für die Spalte 'Episode' in der Tabelle 'Angelegte Timer' konnte nicht neu gesetzt werden [%s]." % str(e), True)
+			SRLogger.writeLog("Der Standardwert für die Spalte 'Episode' in der Tabelle 'AngelegteTimer' konnte nicht neu gesetzt werden [%s]." % str(e), True)
 
-		self.updateSeriesMarker()
+		if not self.updateSeriesMarker(hasFSIDColumn):
+			updateSuccessful = False
+
+		if updateSuccessful and not hasFSIDColumn:
+			if not self.updateTimers():
+				updateSuccessful = False
 
 		try:
 			cur.execute('''CREATE TABLE IF NOT EXISTS TimerKonflikte (Message TEXT NOT NULL UNIQUE, 
@@ -310,11 +356,21 @@ class SRDatabase:
 			cur.execute('''CREATE TABLE IF NOT EXISTS Merkzettel (Serie TEXT NOT NULL, 
 																  Staffel TEXT NOT NULL, 
 																  Episode TEXT NOT NULL,
-																  AnzahlWiederholungen INTEGER DEFAULT NULL)''')
+																  AnzahlWiederholungen INTEGER DEFAULT NULL,
+																  fsID TEXT DEFAULT NULL)''')
 		except Exception as e:
 			updateSuccessful = False
 			SRLogger.writeLog("Die Tabelle 'Merkzettel' konnte nicht angelegt werden [%s]." % str(e), True)
 
+		if not self.hasColumn(bookmarkRows, 'fsID'):
+			try:
+				cur.execute('ALTER TABLE Merkzettel ADD fsID TEXT DEFAULT NULL')
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'fsID' konnte nicht in der Tabelle 'Merkzettel' angelegt werden [%s]." % str(e), True)
+
+		if not self.updateBookmarks():
+			updateSuccessful = False
 
 		try:
 			cur.execute('''CREATE TABLE IF NOT EXISTS STBAuswahl (ID INTEGER, 
@@ -362,10 +418,6 @@ class SRDatabase:
 							from SerienRecorderSeriesServer import SeriesServer
 							url = SeriesServer().getIDByFSID(url)
 						cur.execute("UPDATE SerienMarker SET Url=? WHERE ID=?", (url, ID))
-				# Replace series name by ID
-				# cur.execute("UPDATE AngelegteTimer SET Serie=? WHERE Serie=?", (url, name))
-			#cur.execute("DELETE FROM AngelegteTimer WHERE Serie GLOB '*[^0-9]*'")
-			#cur.execute("SELECT Serie FROM AngelegteTimer WHERE Serie NOT IN (SELECT Url FROM SerienMarker) OR Serie GLOB '*[^0-9]*'")
 			cur.execute("COMMIT")
 		except Exception as e:
 			result = False
@@ -374,28 +426,72 @@ class SRDatabase:
 		cur.close()
 		return result
 
-	def updateSeriesMarker(self):
+	def updateSeriesMarker(self, hasFSIDColumn):
 		result = []
+		cur = self._srDBConn.cursor()
 		try:
 			# Update Series-Markers
 			markers = self.getMarkerNamesAndWLID()
 			changedMarkers = getChangedSeriesNames(markers)
-			SRLogger.writeLog("Es wurden %d geänderte Seriennamen gefunden" % len(changedMarkers), True)
+			SRLogger.writeLog("Es wurden %d geänderte Seriennamen bzw. Serieninformationen gefunden" % len(changedMarkers), True)
 
-			cur = self._srDBConn.cursor()
+			cur.execute("BEGIN TRANSACTION")
 			for key, val in changedMarkers.items():
-				cur.execute("UPDATE SerienMarker SET Serie = ?, info = ? WHERE Url = ?", (val['new_name'], val['new_info'], key))
-				SRLogger.writeLog("SerienMarker Tabelle aktualisiert [%s] => [%s] / [%s]: %d" % (val['old_name'], val['new_name'], val['new_info'], cur.rowcount), True)
-				if val['new_name'] != val['old_name']:
-					cur.execute("UPDATE AngelegteTimer SET Serie = ? WHERE TRIM(Serie) = ?", (val['new_name'], val['old_name']))
-					SRLogger.writeLog("AngelegteTimer Tabelle aktualisiert [%s]: %d" % (val['new_name'], cur.rowcount), True)
-					cur.execute("UPDATE Merkzettel SET Serie = ? WHERE TRIM(Serie) = ?", (val['new_name'], val['old_name']))
-					SRLogger.writeLog("Merkzettel Tabelle aktualisiert [%s]: %d" % (val['new_name'], cur.rowcount), True)
-				result.append(val['new_name'])
-			cur.close()
-		except:
-			SRLogger.writeLog("Fehler beim Aktualisieren der Serien-Marker.")
+				cur.execute("UPDATE SerienMarker SET Serie = ?, info = ?, fsID = ? WHERE Url = ?", (val['new_name'], val['new_info'], val['new_fsID'], key))
+				SRLogger.writeLog("SerienMarker Tabelle aktualisiert [%s] (%s) => [%s] (%s) / [%s]: %d" % (val['old_name'], val['old_fsID'], val['new_name'], val['new_fsID'], val['new_info'], cur.rowcount), True)
+				if not hasFSIDColumn:
+					# Update AngelegteTimer and Merkzettel table by name
+					if val['new_name'] != val['old_name']:
+						cur.execute("UPDATE AngelegteTimer SET Serie = ? WHERE TRIM(Serie) = ?", (val['new_name'], val['old_name']))
+						SRLogger.writeLog("AngelegteTimer Tabelle aktualisiert [%s]: %d" % (val['new_name'], cur.rowcount), True)
+						cur.execute("UPDATE Merkzettel SET Serie = ? WHERE TRIM(Serie) = ?", (val['new_name'], val['old_name']))
+						SRLogger.writeLog("Merkzettel Tabelle aktualisiert [%s]: %d" % (val['new_name'], cur.rowcount), True)
 
+				else:
+					if val['new_name'] != val['old_name'] or val['old_fsID'] != val['new_fsID']:
+						cur.execute("UPDATE AngelegteTimer SET Serie = ?, fsID = ? WHERE fsID = ?", (val['new_name'], val['new_fsID'], val['old_fsID']))
+						SRLogger.writeLog("AngelegteTimer Tabelle aktualisiert [%s] (%s): %d" % (val['new_name'], val['new_fsID'], cur.rowcount), True)
+						cur.execute("UPDATE Merkzettel SET Serie = ?, fsID = ? WHERE fsID = ?", (val['new_name'], val['new_fsID'], val['old_fsID']))
+						SRLogger.writeLog("Merkzettel Tabelle aktualisiert [%s] (%s): %d" % (val['new_name'], val['new_fsID'], cur.rowcount), True)
+				result.append(val['new_name'])
+			cur.execute("COMMIT")
+		except Exception as e:
+			result = False
+			cur.execute("ROLLBACK")
+			SRLogger.writeLog("Fehler beim Aktualisieren der Serien-Marker [%s]." % str(e), True)
+		cur.close()
+		return result
+
+	def updateTimers(self):
+		result = False
+		cur = self._srDBConn.cursor()
+		try:
+			# Update AngelegteTimer table => set Fernsehserie ID
+			cur.execute("BEGIN TRANSACTION")
+			cur.execute("UPDATE AngelegteTimer SET fsID = (SELECT fsID FROM SerienMarker WHERE AngelegteTimer.Serie = SerienMarker.Serie)")
+			cur.execute("COMMIT")
+			result = True
+		except Exception as e:
+			result = False
+			cur.execute("ROLLBACK")
+			SRLogger.writeLog("Fehler beim Aktualisieren der angelegten Timer [%s]." % str(e), True)
+		cur.close()
+		return result
+
+	def updateBookmarks(self):
+		result = False
+		cur = self._srDBConn.cursor()
+		try:
+			# Update Merkzettel table => set Fernsehserie ID
+			cur.execute("BEGIN TRANSACTION")
+			cur.execute("UPDATE Merkzettel SET fsID = (SELECT fsID FROM SerienMarker WHERE Merkzettel.Serie = SerienMarker.Serie)")
+			cur.execute("COMMIT")
+			result = True
+		except Exception as e:
+			result = False
+			cur.execute("ROLLBACK")
+			SRLogger.writeLog("Fehler beim Aktualisieren der Merkzettel [%s]." % str(e), True)
+		cur.close()
 		return result
 
 	def optimize(self):
@@ -431,9 +527,9 @@ class SRDatabase:
 		cur.close()
 		return result
 
-	def hasBookmark(self, series, season, episode):
+	def hasBookmark(self, fsID, season, episode):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT COUNT(*) FROM Merkzettel WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (series.lower(), str(season).lower(), str(episode).zfill(2).lower()))
+		cur.execute("SELECT COUNT(*) FROM Merkzettel WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (fsID, str(season).lower(), str(episode).zfill(2).lower()))
 		result = (cur.fetchone()[0] > 0)
 		cur.close()
 		return result
@@ -445,11 +541,11 @@ class SRDatabase:
 		cur.close()
 		return rows
 
-	def addBookmark(self, series, fromEpisode, toEpisode, season, globalNumberOfRecordings):
+	def addBookmark(self, series, fsID, fromEpisode, toEpisode, season, globalNumberOfRecordings):
 		if int(fromEpisode) != 0 or int(toEpisode) != 0:
 			numberOfRecordings = globalNumberOfRecordings
 			cur = self._srDBConn.cursor()
-			cur.execute("SELECT AnzahlWiederholungen FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+			cur.execute("SELECT AnzahlWiederholungen FROM SerienMarker WHERE fsID=?", [fsID])
 			row = cur.fetchone()
 			if row:
 				(AnzahlWiederholungen,) = row
@@ -457,28 +553,28 @@ class SRDatabase:
 					numberOfRecordings = int(AnzahlWiederholungen)
 			for i in range(int(fromEpisode), int(toEpisode) + 1):
 				print "[SerienRecorder] %s Staffel: %s Episode: %s " % (str(series), str(season), str(i))
-				cur.execute("SELECT * FROM Merkzettel WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (series.lower(), season.lower(), str(i).zfill(2).lower()))
+				cur.execute("SELECT * FROM Merkzettel WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (fsID, season.lower(), str(i).zfill(2).lower()))
 				row = cur.fetchone()
 				if not row:
-					cur.execute("INSERT OR IGNORE INTO Merkzettel VALUES (?, ?, ?, ?)", (series, season, str(i).zfill(2), numberOfRecordings))
+					cur.execute("INSERT OR IGNORE INTO Merkzettel VALUES (?, ?, ?, ?, ?)", (series, season, str(i).zfill(2), numberOfRecordings, fsID))
 			cur.close()
 			return True
 		else:
 			return False
 
-	def updateBookmark(self, series, season, episode):
+	def updateBookmark(self, fsID, season, episode):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE Merkzettel SET AnzahlWiederholungen=AnzahlWiederholungen-1 WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (series.lower(), str(season).lower(), episode.lower()))
+		cur.execute("UPDATE OR IGNORE Merkzettel SET AnzahlWiederholungen=AnzahlWiederholungen-1 WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (fsID, str(season).lower(), episode.lower()))
 		cur.close()
 
-	def removeBookmark(self, series, season, episode):
+	def removeBookmark(self, fsID, season, episode):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM Merkzettel WHERE LOWER(SERIE)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND AnzahlWiederholungen<=0", (series.lower(), str(season).lower(), episode.lower()))
+		cur.execute("DELETE FROM Merkzettel WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND AnzahlWiederholungen<=0", (fsID, str(season).lower(), episode.lower()))
 		cur.close()
 
 	def removeBookmarks(self, data):
 		cur = self._srDBConn.cursor()
-		cur.executemany("DELETE FROM Merkzettel WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", data)
+		cur.executemany("DELETE FROM Merkzettel WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", data)
 		cur.close()
 
 	def removeAllBookmarks(self):
@@ -532,19 +628,19 @@ class SRDatabase:
 			directories.append(defaultSavePath)
 		return directories
 
-	def getDirNames(self, series):
+	def getDirNames(self, fsID):
 		result = None
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, type FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, type FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			result = row
 		cur.close()
 		return result
 
-	def getMargins(self, series, channel, globalMarginBefore, globalMarginAfter):
+	def getMargins(self, fsID, channel, globalMarginBefore, globalMarginAfter):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT MAX(IFNULL(SerienMarker.Vorlaufzeit, -1), IFNULL(Channels.Vorlaufzeit, -1)), MAX(IFNULL(SerienMarker.Nachlaufzeit, -1), IFNULL(Channels.Nachlaufzeit, -1)) FROM SerienMarker, Channels WHERE LOWER(SerienMarker.Serie)=? AND LOWER(Channels.WebChannel)=?", (series.lower(), channel.lower()))
+		cur.execute("SELECT MAX(IFNULL(SerienMarker.Vorlaufzeit, -1), IFNULL(Channels.Vorlaufzeit, -1)), MAX(IFNULL(SerienMarker.Nachlaufzeit, -1), IFNULL(Channels.Nachlaufzeit, -1)) FROM SerienMarker, Channels WHERE SerienMarker.fsID=? AND LOWER(Channels.WebChannel)=?", (fsID, channel.lower()))
 		row = cur.fetchone()
 		if not row:
 			margin_before = globalMarginBefore
@@ -561,20 +657,20 @@ class SRDatabase:
 		cur.close()
 		return margin_before, margin_after
 
-	def getVPS(self, series, channel):
+	def getVPS(self, fsID, channel):
 		result = 0
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT CASE WHEN SerienMarker.vps IS NOT NULL AND SerienMarker.vps IS NOT '' THEN SerienMarker.vps ELSE Channels.vps END as vps FROM Channels,SerienMarker WHERE LOWER(Channels.WebChannel)=? AND LOWER(SerienMarker.Serie)=?", (channel.lower(), series.lower()))
+		cur.execute("SELECT CASE WHEN SerienMarker.vps IS NOT NULL AND SerienMarker.vps IS NOT '' THEN SerienMarker.vps ELSE Channels.vps END as vps FROM Channels,SerienMarker WHERE LOWER(Channels.WebChannel)=? AND SerienMarker.fsID=?", (channel.lower(), fsID))
 		row = cur.fetchone()
 		if row:
 			(result,) = row
 		cur.close()
 		return bool(result & 0x1), bool(result & 0x2)
 
-	def getTags(self, series):
+	def getTags(self, wlID):
 		tags = []
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT tags FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT tags FROM SerienMarker WHERE Url=?", [wlID])
 		row = cur.fetchone()
 		if row:
 			(tagString,) = row
@@ -583,30 +679,30 @@ class SRDatabase:
 		cur.close()
 		return tags
 
-	def getAddToDatabase(self, series):
+	def getAddToDatabase(self, wlID):
 		result = True
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT addToDatabase FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT addToDatabase FROM SerienMarker WHERE Url=?", [wlID])
 		row = cur.fetchone()
 		if row:
 			(result,) = row
 		cur.close()
 		return bool(result)
 
-	def getAutoAdjust(self, series, channel):
+	def getAutoAdjust(self, wlID, channel):
 		result = None
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT CASE WHEN SerienMarker.autoAdjust IS NOT NULL THEN SerienMarker.autoAdjust ELSE Channels.autoAdjust END as autoAdjust FROM Channels,SerienMarker WHERE LOWER(Channels.WebChannel)=? AND LOWER(SerienMarker.Serie)=?", (channel.lower(), series.lower()))
+		cur.execute("SELECT CASE WHEN SerienMarker.autoAdjust IS NOT NULL THEN SerienMarker.autoAdjust ELSE Channels.autoAdjust END as autoAdjust FROM Channels,SerienMarker WHERE LOWER(Channels.WebChannel)=? AND SerienMarker.Url=?", (channel.lower(), wlID))
 		row = cur.fetchone()
 		if row:
 			(result,) = row
 		cur.close()
 		return result
 
-	def getUpdateFromEPG(self, series):
+	def getUpdateFromEPG(self, fsID):
 		result = True
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT updateFromEPG FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT updateFromEPG FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			(result,) = row
@@ -615,10 +711,10 @@ class SRDatabase:
 			result = True
 		return bool(result)
 
-	def getSpecialsAllowed(self, series):
+	def getSpecialsAllowed(self, wlID):
 		TimerForSpecials = False
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AlleStaffelnAb, TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT AlleStaffelnAb, TimerForSpecials FROM SerienMarker WHERE Url=?", [wlID])
 		row = cur.fetchone()
 		if row:
 			(AlleStaffelnAb, TimerForSpecials,) = row
@@ -629,9 +725,9 @@ class SRDatabase:
 		cur.close()
 		return bool(TimerForSpecials)
 
-	def getTimeSpan(self, series, globalTimeFrom, globalTimeTo):
+	def getTimeSpan(self, wlID, globalTimeFrom, globalTimeTo):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmezeitVon, AufnahmezeitBis FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT AufnahmezeitVon, AufnahmezeitBis FROM SerienMarker WHERE Url=?", [wlID])
 		row = cur.fetchone()
 		if row:
 			(fromTime, toTime) = row
@@ -664,7 +760,7 @@ class SRDatabase:
 
 	def getMarkerNamesAndWLID(self):
 		cur = self._srDBConn.cursor()
-		sql = "SELECT Serie, info, Url AS wl_id FROM SerienMarker"
+		sql = "SELECT ID, Serie, info, Url, fsID AS wl_id FROM SerienMarker"
 		cur.execute(sql)
 		markers = cur.fetchall()
 		cur.close()
@@ -672,7 +768,7 @@ class SRDatabase:
 
 	def getAllMarkers(self, sortLikeWL):
 		cur = self._srDBConn.cursor()
-		sql = "SELECT SerienMarker.ID, Serie, info, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, COUNT(StaffelAuswahl.ID) AS ErlaubteStaffelCount FROM SerienMarker LEFT JOIN StaffelAuswahl ON StaffelAuswahl.ID = SerienMarker.ID LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID GROUP BY Serie"
+		sql = "SELECT SerienMarker.ID, Serie, info, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, COUNT(StaffelAuswahl.ID) AS ErlaubteStaffelCount, fsID FROM SerienMarker LEFT JOIN StaffelAuswahl ON StaffelAuswahl.ID = SerienMarker.ID LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID GROUP BY fsID"
 		if sortLikeWL:
 			sql += " ORDER BY REPLACE(REPLACE(REPLACE(REPLACE(LOWER(Serie), 'the ', ''), 'das ', ''), 'die ', ''), 'der ', '')"
 		else:
@@ -682,19 +778,19 @@ class SRDatabase:
 		cur.close()
 		return markers
 
-	def getMarkerSettings(self, series):
+	def getMarkerSettings(self, seriesID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust FROM SerienMarker WHERE ID=?", [seriesID])
 		row = cur.fetchone()
 		if not row:
 			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1, 1)
 		cur.close()
 		return row
 
-	def setMarkerSettings(self, series, settings):
-		data = settings + (series.lower(), )
+	def setMarkerSettings(self, seriesID, settings):
+		data = settings + (seriesID, )
 		cur = self._srDBConn.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=? WHERE LOWER(Serie)=?"
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=? WHERE ID=?"
 		cur.execute(sql, data)
 		cur.close()
 
@@ -702,46 +798,38 @@ class SRDatabase:
 		timer = []
 		cur = self._srDBConn.cursor()
 		dayOffsetInSeconds = dayOffset * 86400
-		sql = "SELECT LOWER(Serie), StartZeitstempel, LOWER(webChannel) FROM AngelegteTimer WHERE (StartZeitstempel >= STRFTIME('%s', CURRENT_DATE)+?) AND (StartZeitstempel < (STRFTIME('%s', CURRENT_DATE)+?+86399))"
+		sql = "SELECT fsID, StartZeitstempel, LOWER(webChannel) FROM AngelegteTimer WHERE (StartZeitstempel >= STRFTIME('%s', CURRENT_DATE)+?) AND (StartZeitstempel < (STRFTIME('%s', CURRENT_DATE)+?+86399))"
 		cur.execute(sql, (dayOffsetInSeconds, dayOffsetInSeconds))
 		rows = cur.fetchall()
 		for row in rows:
-			(seriesName, startTimestamp, webChannel) = row
-			timer.append((seriesName, startTimestamp, webChannel))
+			(fsID, startTimestamp, webChannel) = row
+			timer.append((fsID, startTimestamp, webChannel))
 		cur.close()
 		return timer
 
-	def addMarker(self, url, name, info, boxID, type):
+	def addMarker(self, url, name, info, fsID, boxID, markerType):
 		result = False
 		cur = self._srDBConn.cursor()
-		#cur.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", [name.lower()])
-		cur.execute("SELECT * FROM SerienMarker WHERE LOWER(Serie)=?", [name.lower()])
-		row = cur.fetchone()
-		if not row:
-			cur.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, info, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials, type) VALUES (?, ?, ?, 0, 1, 1, -1, 0, -1, 0, ?)", (name, url, info, type))
+		if not self.markerExists(fsID, markerType):
+			cur.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, info, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials, type, autoAdjust, fsID) VALUES (?, ?, ?, 0, 1, 1, -1, 0, -1, 0, ?, NULL, ?)", (name, url, info, markerType, fsID))
+			erlaubteSTB = 0xFFFF
 			if boxID:
-				erlaubteSTB = 0xFFFF
 				erlaubteSTB |= (1 << (int(boxID) - 1))
-				cur.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)",(cur.lastrowid, erlaubteSTB))
+			cur.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)",(cur.lastrowid, erlaubteSTB))
 			result = True
 		cur.close()
 		return result
 
-	def markerExists(self, url):
+	def markerExists(self, fsID, markerType):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT COUNT(*) FROM SerienMarker WHERE Url=?", [url])
+		cur.execute("SELECT COUNT(*) FROM SerienMarker WHERE fsID=? AND type=?", (fsID, markerType))
 		result = (cur.fetchone()[0] > 0)
 		cur.close()
 		return result
 
-	def updateMarkerURL(self, series, url):
+	def getPreferredMarkerChannels(self, wlID, globalUseAlternativeChannel, globalNumberOfRecordings):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE SerienMarker SET Url=? WHERE LOWER(Serie)=?", (url, series.lower()))
-		cur.close()
-
-	def getPreferredMarkerChannels(self, series, globalUseAlternativeChannel, globalNumberOfRecordings):
-		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AnzahlWiederholungen, preferredChannel, useAlternativeChannel FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT AnzahlWiederholungen, preferredChannel, useAlternativeChannel FROM SerienMarker WHERE Url=?", [wlID])
 		row = cur.fetchone()
 		if row:
 			(numberOfRecordings, preferredChannel, useAlternativeChannel) = row
@@ -756,45 +844,65 @@ class SRDatabase:
 			numberOfRecordings = globalNumberOfRecordings
 		return numberOfRecordings, preferredChannel, useAlternativeChannel
 
-	def getMarkerURL(self, series):
-		Url = None
-		cur = self._srDBConn.cursor()
-		cur.execute("SELECT Url FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
-		row = cur.fetchone()
-		if row:
-			(Url, ) = row
-		cur.close()
-		return Url
-
-	def getMarkerID(self, series):
+	def getMarkerID(self, wlID):
 		markerID = None
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("SELECT ID FROM SerienMarker WHERE Url=?", [wlID])
 		row = cur.fetchone()
 		if row:
 			(markerID, ) = row
 		cur.close()
 		return markerID
 
+	def getMarkerFSID(self, wlID):
+		fsID = None
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT fsID FROM SerienMarker WHERE Url=?", [wlID])
+		row = cur.fetchone()
+		if row:
+			(fsID, ) = row
+		cur.close()
+		return fsID
+
+	def getMarkerWLID(self, fsID):
+		wlID = None
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT Url FROM SerienMarker WHERE fsID=?", [fsID])
+		row = cur.fetchone()
+		if row:
+			(wlID, ) = row
+		cur.close()
+		return wlID
+
+	def getMarkerInfo(self, fsID):
+		info = None
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT info FROM SerienMarker WHERE fsID=?", [fsID])
+		row = cur.fetchone()
+		if row:
+			(info, ) = row
+		cur.close()
+		return info
+
 	def getMarkerNames(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT Serie FROM SerienMarker ORDER BY Serie COLLATE NOCASE")
+		cur.execute("SELECT Serie, Url, info, fsID FROM SerienMarker ORDER BY Serie COLLATE NOCASE")
 		rows = cur.fetchall()
 		cur.close()
 		return rows
 
-	def getMarkerSeasonAndChannelSettings(self, name):
+	def getMarkerSeasonAndChannelSettings(self, wlID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID, AlleStaffelnAb, alleSender FROM SerienMarker WHERE LOWER(Serie)=?", [name.lower()])
+		cur.execute("SELECT ID, AlleStaffelnAb, alleSender FROM SerienMarker WHERE Url=?", [wlID])
 		row = cur.fetchone()
 		if not row:
 			row = (0, 999999, 0)
 		cur.close()
 		return row
 
-	def getMarkerSeasonSettings(self, name):
+	def getMarkerSeasonSettings(self, wlID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID, AlleStaffelnAb, AbEpisode, TimerForSpecials FROM SerienMarker WHERE LOWER(Serie)=?", [name.lower()])
+		cur.execute("SELECT ID, AlleStaffelnAb, AbEpisode, TimerForSpecials FROM SerienMarker WHERE Url=?", [wlID])
 		row = cur.fetchone()
 		cur.close()
 		return row
@@ -843,24 +951,24 @@ class SRDatabase:
 		cur.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (markerID, season))
 		cur.close()
 
-	def updateMarkerSeasonsSettings(self, series, fromSeason, fromEpisode, specials):
+	def updateMarkerSeasonsSettings(self, wlID, fromSeason, fromEpisode, specials):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=?, AbEpisode=?, TimerForSpecials=? WHERE LOWER(Serie)=?", (fromSeason, fromEpisode, specials, series.lower()))
+		cur.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=?, AbEpisode=?, TimerForSpecials=? WHERE Url=?", (fromSeason, fromEpisode, specials, wlID))
 		cur.close()
 
-	def setAllChannelsToMarker(self, series, allChannels):
+	def setAllChannelsToMarker(self, wlID, allChannels):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE SerienMarker SET alleSender=? WHERE LOWER(Serie)=?", (allChannels, series.lower()))
+		cur.execute("UPDATE OR IGNORE SerienMarker SET alleSender=? WHERE Url=?", (allChannels, wlID))
 		cur.close()
 
-	def setMarkerEpisode(self, series, fromEpisode):
+	def setMarkerEpisode(self, wlID, fromEpisode):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE SerienMarker SET AbEpisode=? WHERE LOWER(Serie)=?", (int(fromEpisode), series.lower()))
+		cur.execute("UPDATE OR IGNORE SerienMarker SET AbEpisode=? WHERE Url=?", (int(fromEpisode), wlID))
 		cur.close()
 
-	def changeMarkerStatus(self, name, boxID):
+	def changeMarkerStatus(self, wlID, boxID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", [name.lower()])
+		cur.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE Url=?)", [wlID])
 		row = cur.fetchone()
 		if row:
 			(ID, ErlaubteSTB) = row
@@ -869,9 +977,9 @@ class SRDatabase:
 				cur.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=? WHERE ID=?", (ErlaubteSTB, ID))
 		cur.close()
 
-	def setMarkerStatus(self, name, boxID, state):
+	def setMarkerStatus(self, markerID, boxID, state):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", [name.lower()])
+		cur.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID=?", [markerID])
 		row = cur.fetchone()
 		if row:
 			(ID, ErlaubteSTB) = row
@@ -891,64 +999,64 @@ class SRDatabase:
 		cur.execute("UPDATE OR IGNORE STBAuswahl SET ErlaubteSTB=ErlaubteSTB &(~?)", [mask])
 		cur.close()
 
-	def removeMarker(self, series, removeTimers):
+	def removeMarker(self, fsID, removeTimers):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", [series.lower()])
-		cur.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", [series.lower()])
-		cur.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", [series.lower()])
-		cur.execute("DELETE FROM SerienMarker WHERE LOWER(Serie)=?", [series.lower()])
+		cur.execute("DELETE FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE fsID=?)", [fsID])
+		cur.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE fsID=?)", [fsID])
+		cur.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE fsID=?)", [fsID])
+		cur.execute("DELETE FROM SerienMarker WHERE fsID=?", [fsID])
 		if removeTimers:
-			cur.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=?", [series.lower()])
+			cur.execute("DELETE FROM AngelegteTimer WHERE fsID=?", [fsID])
 		cur.close()
 
-	def removeAllMarkerSeasons(self, series):
+	def removeAllMarkerSeasons(self, wlID):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", [series.lower()])
+		cur.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE Url=?)", [wlID])
 		cur.close()
 
-	def removeAllMarkerChannels(self, series):
+	def removeAllMarkerChannels(self, wlID):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE LOWER(Serie)=?)", [series.lower()])
+		cur.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE Url=?)", [wlID])
 		cur.close()
 
-	def timerExists(self, channel, series, season, episode, startUnixtimeLowBound, startUnixtimeHighBound):
+	def timerExists(self, channel, fsID, season, episode, startUnixtimeLowBound, startUnixtimeHighBound):
 		cur = self._srDBConn.cursor()
-		sql = "SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(webChannel)=? AND LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
-		cur.execute(sql, (channel.lower(), series.lower(), str(season).lower(), episode.lower(), startUnixtimeLowBound, startUnixtimeHighBound))
+		sql = "SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(webChannel)=? AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
+		cur.execute(sql, (channel.lower(), fsID, str(season).lower(), episode.lower(), startUnixtimeLowBound, startUnixtimeHighBound))
 		found = (cur.fetchone()[0] > 0)
 		cur.close()
 		return found
 
-	def timerExistsByServiceRef(self, series, stbRef, startUnixtimeLowBound, startUnixtimeHighBound):
+	def timerExistsByServiceRef(self, fsID, stbRef, startUnixtimeLowBound, startUnixtimeHighBound):
 		cur = self._srDBConn.cursor()
-		sql = "SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
-		cur.execute(sql, (series.lower(), stbRef.lower(), startUnixtimeLowBound, startUnixtimeHighBound))
+		sql = "SELECT COUNT(*) FROM AngelegteTimer WHERE fsID=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
+		cur.execute(sql, (fsID, stbRef.lower(), startUnixtimeLowBound, startUnixtimeHighBound))
 		found = (cur.fetchone()[0] > 0)
 		cur.close()
 		return found
 
-	def getNumberOfTimers(self, series, season, episode, title=None, searchOnlyActiveTimers=False):
+	def getNumberOfTimers(self, fsID, season, episode, title=None, searchOnlyActiveTimers=False):
 		cur = self._srDBConn.cursor()
 		if searchOnlyActiveTimers:
 			if title is None:
-				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND TimerAktiviert=1", (series.lower(), str(season).lower(), str(episode).lower()))
+				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND TimerAktiviert=1", (fsID, str(season).lower(), str(episode).lower()))
 			else:
-				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND TimerAktiviert=1", (series.lower(), str(season).lower(), str(episode).lower(), title.lower()))
+				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND TimerAktiviert=1", (fsID, str(season).lower(), str(episode).lower(), title.lower()))
 		else:
 			if title is None:
-				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (series.lower(), str(season).lower(), str(episode).lower()))
+				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (fsID, str(season).lower(), str(episode).lower()))
 			else:
-				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=?", (series.lower(), str(season).lower(), str(episode).lower(), title.lower()))
+				cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=?", (fsID, str(season).lower(), str(episode).lower(), title.lower()))
 		(Anzahl,) = cur.fetchone()
 		cur.close()
 		return Anzahl
 
-	def getTimerForSeries(self, series, searchOnlyActiveTimers=False):
+	def getTimerForSeries(self, fsID, searchOnlyActiveTimers=False):
 		cur = self._srDBConn.cursor()
 		if searchOnlyActiveTimers:
-			cur.execute("SELECT Staffel, Episode, Titel, LOWER(webChannel), StartZeitstempel FROM AngelegteTimer WHERE LOWER(Serie)=? AND TimerAktiviert=1 ORDER BY Staffel, Episode", [series.lower()])
+			cur.execute("SELECT Staffel, Episode, Titel, LOWER(webChannel), StartZeitstempel FROM AngelegteTimer WHERE fsID=? AND TimerAktiviert=1 ORDER BY CAST(Staffel AS INTEGER), Episode", [fsID])
 		else:
-			cur.execute("SELECT Staffel, Episode, Titel, LOWER(webChannel), StartZeitstempel FROM AngelegteTimer WHERE LOWER(Serie)=? ORDER BY Staffel, Episode", [series.lower()])
+			cur.execute("SELECT Staffel, Episode, Titel, LOWER(webChannel), StartZeitstempel FROM AngelegteTimer WHERE fsID=? ORDER BY CAST(Staffel AS INTEGER), Episode", [fsID])
 
 		rows = cur.fetchall()
 		cur.close()
@@ -969,11 +1077,11 @@ class SRDatabase:
 	def getActiveServiceRefs(self):
 		serviceRefs = {}
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT WebChannel, ServiceRef, STBChannel FROM Channels WHERE Erlaubt=1 ORDER BY LOWER(WebChannel)")
+		cur.execute("SELECT WebChannel, ServiceRef, STBChannel, alternativServiceRef, alternativSTBChannel FROM Channels WHERE Erlaubt=1 ORDER BY LOWER(WebChannel)")
 		rows = cur.fetchall()
 		for row in rows:
-			(webChannel, serviceRef, stbChannel) = row
-			serviceRefs[webChannel] = (serviceRef, stbChannel)
+			(webChannel, serviceRef, stbChannel, alternativeServiceRef, alternativeSTBChannel) = row
+			serviceRefs[webChannel] = (serviceRef, stbChannel, alternativeServiceRef, alternativeSTBChannel)
 		cur.close()
 		return serviceRefs
 
@@ -1043,9 +1151,9 @@ class SRDatabase:
 		cur.close()
 		return localChannelListLastUpdated
 
-	def getChannelInfo(self, channel, seriesID, filterMode):
+	def getChannelInfo(self, channel, wlID, filterMode):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url = ?", [str(seriesID)])
+		cur.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url = ?", [str(wlID)])
 		row = cur.fetchone()
 		allChannels = True
 		markerID = 0
@@ -1075,10 +1183,10 @@ class SRDatabase:
 		return webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status
 
 
-	def getMarkerChannels(self, series, withActiveChannels = True):
+	def getMarkerChannels(self, wlID, withActiveChannels = True):
 		channels = []
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ErlaubterSender FROM SenderAuswahl INNER JOIN SerienMarker ON SenderAuswahl.ID=SerienMarker.ID WHERE SerienMarker.Serie=? ORDER BY LOWER(ErlaubterSender)", [series])
+		cur.execute("SELECT ErlaubterSender FROM SenderAuswahl INNER JOIN SerienMarker ON SenderAuswahl.ID=SerienMarker.ID WHERE SerienMarker.Url=? ORDER BY LOWER(ErlaubterSender)", [wlID])
 		rows = cur.fetchall()
 		if len(rows) > 0:
 			channels = list(zip(*rows)[0])
@@ -1137,12 +1245,12 @@ class SRDatabase:
 		cur = self._srDBConn.cursor()
 
 		if seriesFilter:
-			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type FROM SerienMarker WHERE Serie IN(%s) ORDER BY Serie" % ','.join('?' * len(seriesFilter)), seriesFilter)
+			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID FROM SerienMarker WHERE fsID IN(%s) ORDER BY Serie" % ','.join('?' * len(seriesFilter)), seriesFilter)
 		else:
-			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type FROM SerienMarker ORDER BY Serie")
+			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID FROM SerienMarker ORDER BY Serie")
 		rows = cur.fetchall()
 		for row in rows:
-			(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, markerType) = row
+			(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, markerType, fsID) = row
 			enabled = True
 			cur.execute("SELECT ErlaubteSTB FROM STBAuswahl WHERE ID=?", [ID])
 			rowSTB = cur.fetchone()
@@ -1156,7 +1264,7 @@ class SRDatabase:
 			if alleSender:
 				channels = ['Alle', ]
 			else:
-				channels = self.getMarkerChannels(serie, False)
+				channels = self.getMarkerChannels(url, False)
 
 			if AlleStaffelnAb == -2:  # 'Manuell'
 				seasons = [AlleStaffelnAb, ]
@@ -1175,32 +1283,32 @@ class SRDatabase:
 			else:
 				skipSeriesServer = None
 
-			result.append((serie, url, seasons, channels, AbEpisode, AnzahlAufnahmen, enabled, excludedWeekdays, skipSeriesServer, markerType))
+			result.append((serie, url, seasons, channels, AbEpisode, AnzahlAufnahmen, enabled, excludedWeekdays, skipSeriesServer, markerType, fsID))
 		cur.close()
 		return result
 
 
-	def addToTimerList(self, series, fromEpisode, toEpisode, season, episodeTitle, startUnixtime, stbRef, webChannel, eit, activated):
+	def addToTimerList(self, series, fsID, fromEpisode, toEpisode, season, episodeTitle, startUnixtime, stbRef, webChannel, eit, activated):
 		# Es gibt Episodennummern die nicht nur aus Zahlen bestehen, z.B. 14a
 		# um solche Folgen in die Datenbank zu bringen wird hier eine Unterscheidung gemacht.
 		result = False
 		cur = self._srDBConn.cursor()
 		if fromEpisode == toEpisode:
-			cur.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (series, season, str(fromEpisode).zfill(2), episodeTitle, int(startUnixtime), stbRef, webChannel, eit, int(activated)))
+			cur.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (series, season, str(fromEpisode).zfill(2), episodeTitle, int(startUnixtime), stbRef, webChannel, eit, int(activated), fsID))
 			result = True
 		else:
 			if int(fromEpisode) != 0 or int(toEpisode) != 0:
 				for i in range(int(fromEpisode), int(toEpisode)+1):
 					print "[SerienRecorder] %s Staffel: %s Episode: %s " % (str(series), str(season), str(i))
-					cur.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (series, season, str(i).zfill(2), episodeTitle, int(startUnixtime), stbRef, webChannel, eit, int(activated)))
+					cur.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (series, season, str(i).zfill(2), episodeTitle, int(startUnixtime), stbRef, webChannel, eit, int(activated), fsID))
 				result = True
 		cur.close()
 		return result
 
-	def updateTimerEIT(self, series, stbRef, eit, startUnixtimeLowBound, startUnixtimeHighBound, activated):
+	def updateTimerEIT(self, fsID, stbRef, eit, startUnixtimeLowBound, startUnixtimeHighBound, activated):
 		cur = self._srDBConn.cursor()
-		sql = "UPDATE OR IGNORE AngelegteTimer SET EventID=?, TimerAktiviert=? WHERE LOWER(Serie)=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
-		cur.execute(sql, (eit, int(activated), series.lower(), stbRef.lower(), startUnixtimeLowBound, startUnixtimeHighBound))
+		sql = "UPDATE OR IGNORE AngelegteTimer SET EventID=?, TimerAktiviert=? WHERE fsID=? AND LOWER(ServiceRef)=? AND StartZeitstempel>=? AND StartZeitstempel<=?"
+		cur.execute(sql, (eit, int(activated), fsID, stbRef.lower(), startUnixtimeLowBound, startUnixtimeHighBound))
 		cur.close()
 
 	def updateTimerStartTime(self, newStartUnixtime, eit, title, oldStartUnixtime, stbRef):
@@ -1209,23 +1317,20 @@ class SRDatabase:
 		cur.execute(sql, (newStartUnixtime, eit, title, oldStartUnixtime, stbRef.lower()))
 		cur.close()
 
-	def removeTimer(self, series, season, episode, title, startUnixtime, channel, eit = None):
+	def removeTimer(self, fsID, season, episode, title, startUnixtime, channel):
 		cur = self._srDBConn.cursor()
-		if not startUnixtime and not channel and not eit:
+		if not startUnixtime and not channel:
 			if title:
-				cur.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=? OR Titel='')", (series.lower(), season.lower(), str(episode).zfill(2).lower(), title.lower(), "dump"))
+				cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (LOWER(Titel)=? OR Titel=? OR Titel='')", (fsID, season.lower(), str(episode).zfill(2).lower(), title.lower(), "dump"))
 			else:
-				cur.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (series.lower(), season.lower(), str(episode).zfill(2).lower()))
+				cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (fsID, season.lower(), str(episode).zfill(2).lower()))
 		else:
-			if eit:
-				cur.execute("DELETE FROM AngelegteTimer WHERE EventID=? AND StartZeitstempel>=?", (eit, int(time.time())))
-			else:
-				cur.execute("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND Episode=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (series.lower(), season.lower(), episode, startUnixtime, channel.lower()))
+			cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND Episode=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (fsID, season.lower(), episode, startUnixtime, channel.lower()))
 		cur.close()
 
 	def removeTimers(self, data):
 		cur = self._srDBConn.cursor()
-		cur.executemany("DELETE FROM AngelegteTimer WHERE LOWER(Serie)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", data)
+		cur.executemany("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", data)
 		cur.close()
 
 	def removeAllOldTimer(self):
@@ -1236,29 +1341,34 @@ class SRDatabase:
 	def getDeactivatedTimers(self):
 		timers = []
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT Serie, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE TimerAktiviert=0")
+		cur.execute("SELECT Serie, fsID, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE TimerAktiviert=0")
 		rows = cur.fetchall()
 		for row in rows:
-			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
-			timers.append((serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit))
+			(serien_name, serien_fsid, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
+			timers.append((serien_name, serien_fsid, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit))
 		cur.close()
 		return timers
 
-	def activateTimer(self, series, season, episode, title, startUnixtime, stbRef, channel, eit):
+	def activateTimer(self, fsID, season, episode, title, startUnixtime, stbRef, channel, eit):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE AngelegteTimer SET TimerAktiviert=1 WHERE LOWER(Serie)=? AND Staffel=? AND Episode=? AND Titel=? AND StartZeitstempel=? AND ServiceRef=? AND webChannel=? AND EventID=?", (series.lower(), season, episode, title, startUnixtime, stbRef, channel, eit))
+		cur.execute("UPDATE OR IGNORE AngelegteTimer SET TimerAktiviert=1 WHERE fsID=? AND Staffel=? AND Episode=? AND Titel=? AND StartZeitstempel=? AND ServiceRef=? AND webChannel=? AND EventID=?", (fsID, season, episode, title, startUnixtime, stbRef, channel, eit))
 		cur.close()
 
 	def countOrphanTimers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT DISTINCT(Serie) FROM AngelegteTimer WHERE Serie NOT IN (SELECT Serie FROM SerienMarker) AND Staffel != '0' AND Episode != '00'")
+		cur.execute("SELECT DISTINCT(Serie) AS name FROM AngelegteTimer WHERE fsID NOT IN (SELECT fsID FROM SerienMarker) AND Staffel != '0' AND Episode != '00'")
 		rows = cur.fetchall()
+		if len(rows):
+			SRLogger.writeLog("\nFür folgende Serien wurden verwaiste Timereinträge gefunden:", True)
+		for row in rows:
+			(serien_name) = row
+			SRLogger.writeLog("%s" % serien_name, True)
 		cur.close()
 		return len(rows)
 
 	def removeOrphanTimers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM AngelegteTimer WHERE Serie NOT IN (SELECT Serie FROM SerienMarker) AND Staffel != '0' AND Episode != '00'")
+		cur.execute("DELETE FROM AngelegteTimer WHERE fsID NOT IN (SELECT fsID FROM SerienMarker) AND Staffel != '0' AND Episode != '00'")
 		cur.close()
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1293,6 +1403,9 @@ class SRTempDatabase:
 		cur.execute('''CREATE TABLE IF NOT EXISTS GefundeneFolgen ( CurrentTime INTEGER,
 																	FutureTime INTEGER,
 																	SerieName TEXT,
+																	wlID INTEGER,
+																	fsID TEXT,
+																	type INTEGER DEFAULT 0,
 																	Staffel TEXT, 
 																	Episode TEXT, 
 																	SeasonEpisode TEXT,
@@ -1331,14 +1444,14 @@ class SRTempDatabase:
 
 	def addTransmission(self, transmission):
 		cur = self._tempDBConn.cursor()
-		sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays, updateFromEPG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+		sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, wlID, fsID, type, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays, updateFromEPG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		cur.execute(sql, transmission[0])
 		cur.close()
 
-	def getTransmissionForTimerUpdate(self, seriesName, season, episode):
+	def getTransmissionForTimerUpdate(self, fsID, season, episode, start_time):
 		result = None
 		cur = self._tempDBConn.cursor()
-		cur.execute("SELECT SerieName, Staffel, Episode, Title, StartTime, updateFromEPG FROM GefundeneFolgen WHERE EventID > 0 AND LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (seriesName.lower(), season.lower(), episode.lower()))
+		cur.execute("SELECT SerieName, wlID, fsID, Staffel, Episode, Title, StartTime, updateFromEPG FROM GefundeneFolgen WHERE StartTime>=? AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? ORDER BY StartTime", (start_time, fsID, season.lower(), episode.lower()))
 		row = cur.fetchone()
 		if row:
 			result = row
@@ -1348,31 +1461,31 @@ class SRTempDatabase:
 	def getTransmissionsOrderedByNumberOfRecordings(self, numberOfRecordings):
 		result = []
 		cur = self._tempDBConn.cursor()
-		cur.execute("SELECT * FROM (SELECT SerieName, Staffel, Episode, Title, COUNT(*) AS Anzahl FROM GefundeneFolgen WHERE AnzahlAufnahmen>? GROUP BY SerieName, Staffel, Episode, Title) ORDER BY Anzahl", [numberOfRecordings])
+		cur.execute("SELECT * FROM (SELECT SerieName, wlID, fsID, type, Staffel, Episode, Title, COUNT(*) AS Anzahl FROM GefundeneFolgen WHERE AnzahlAufnahmen>? GROUP BY wlID, Staffel, Episode, Title) ORDER BY Anzahl", [numberOfRecordings])
 		rows = cur.fetchall()
 		for row in rows:
 			result.append(row)
 		cur.close()
 		return result
 
-	def getTransmissionsToCreateTimer(self, seriesName, season, episode, title = None):
+	def getTransmissionsToCreateTimer(self, fsID, season, episode, title = None):
 		result = []
 		cur = self._tempDBConn.cursor()
 		if title:
-			cur.execute("SELECT * FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND StartTime>=CurrentTime ORDER BY StartTime", (seriesName.lower(), str(season).lower(), str(episode).lower(), title.lower()))
+			cur.execute("SELECT * FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND StartTime>=CurrentTime ORDER BY StartTime", (fsID, str(season).lower(), str(episode).lower(), title.lower()))
 		else:
-			cur.execute("SELECT * FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartTime>=CurrentTime ORDER BY StartTime", (seriesName.lower(), str(season).lower(), str(episode).lower()))
+			cur.execute("SELECT * FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartTime>=CurrentTime ORDER BY StartTime", (fsID, str(season).lower(), str(episode).lower()))
 		rows = cur.fetchall()
 		for row in rows:
 			result.append(row)
 		cur.close()
 		return result
 
-	def removeTransmission(self, seriesName, season, episode, title, startUnixtime, stbRef):
+	def removeTransmission(self, fsID, season, episode, title, startUnixtime, stbRef):
 		cur = self._tempDBConn.cursor()
 		if title:
-			cur.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND (StartTime=? OR alternativStartTime=?) AND LOWER(ServiceRef)=?", (seriesName.lower(), str(season).lower(), episode.lower(), title.lower(), startUnixtime, startUnixtime, stbRef.lower()))
+			cur.execute("DELETE FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND (StartTime=? OR alternativStartTime=?) AND LOWER(ServiceRef)=?", (fsID, str(season).lower(), episode.lower(), title.lower(), startUnixtime, startUnixtime, stbRef.lower()))
 		else:
-			cur.execute("DELETE FROM GefundeneFolgen WHERE LOWER(SerieName)=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (StartTime=? OR alternativStartTime=?) AND LOWER(ServiceRef)=?", (seriesName.lower(), str(season).lower(), episode.lower(), startUnixtime, startUnixtime, stbRef.lower()))
+			cur.execute("DELETE FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (StartTime=? OR alternativStartTime=?) AND LOWER(ServiceRef)=?", (fsID, str(season).lower(), episode.lower(), startUnixtime, startUnixtime, stbRef.lower()))
 		cur.close()
 

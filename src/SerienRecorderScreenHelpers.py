@@ -62,7 +62,6 @@ try:
 except:
 	pass
 
-longButtonText = False
 buttonText_na = "-----"
 skinName = "SerienRecorder3.0"
 skin = "%sskins/SR_Skin.xml" % serienRecMainPath
@@ -82,8 +81,6 @@ else:
 print "[SerienRecorder] Skinfactor: %s" % skinFactor
 
 def SelectSkin():
-	global longButtonText
-	longButtonText = False
 	global buttonText_na
 	buttonText_na = "-----"
 
@@ -119,35 +116,16 @@ def SelectSkin():
 
 
 def setSkinProperties(self, isLayoutFinshed=True):
-	global longButtonText
-	if isLayoutFinshed:
-		try:
-			x = self['text_3'].instance.size()
-			if x.width() > 250:
-				longButtonText = True
-			else:
-				longButtonText = False
-		except:
-			longButtonText = False
-
-	if longButtonText:
-		self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
-							[buttonText_na, "Konflikt-Liste", "Wunschliste"],
-							[buttonText_na, "Merkzettel", "Timer suchen"],
-							["Neue Serienstarts", buttonText_na, "Hilfe"],
-							["Serien Beschreibung", buttonText_na, "Einstellungen"])
-	else:
-		self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
-							[buttonText_na, "Konflikt-Liste", "Wunschliste"],
-							[buttonText_na, "Merkzettel", "Timer suchen"],
-							["Neue Serienstarts", buttonText_na, "Hilfe"],
-							["Serien Beschreibung", buttonText_na, "Einstellungen"])
+	self.num_bt_text = (["Zeige Log", buttonText_na, "Abbrechen"],
+						[buttonText_na, "Konflikt-Liste", "Wunschliste"],
+						[buttonText_na, "Merkzettel", "Timer suchen"],
+						["Neue Serienstarts", buttonText_na, "Hilfe"],
+						["Serien Beschreibung", buttonText_na, "Einstellungen"])
 
 	if config.plugins.serienRec.showAllButtons.value:
 		setMenuTexts(self)
 
 def InitSkin(self):
-	global longButtonText
 	global buttonText_na
 	global skin
 	global skinName
@@ -161,7 +139,6 @@ def InitSkin(self):
 			SRSkin.close()
 		except:
 			config.plugins.serienRec.showAllButtons.value = False
-			longButtonText = False
 			buttonText_na = "-----"
 
 			skinName = default_skinName
@@ -419,7 +396,7 @@ class serienRecBaseScreen:
 
 	def serieInfo(self):
 		from SerienRecorderSeriesInfoScreen import serienRecShowInfo
-		self.session.open(serienRecShowInfo, self.serien_name, self.serien_id)
+		self.session.open(serienRecShowInfo, self.serien_name, self.serien_wlid, self.serien_fsid)
 
 	def showConflicts(self):
 		from SerienRecorderConflictsScreen import serienRecShowConflicts
@@ -492,21 +469,13 @@ class serienRecBaseScreen:
 			self.displayTimer.stop()
 			self.displayTimer = None
 
-	def getCover(self, serienName):
-		serien_id = None
-		from SerienRecorder import serienRecDataBaseFilePath, getCover
-		database = SRDatabase(serienRecDataBaseFilePath)
-		url = database.getMarkerURL(serienName)
-		if url:
-			serien_id = url
-		getCover(self, serienName, serien_id)
-
 class EditTVDBID:
-	def __init__(self, parent, session, serien_name, serien_id):
+	def __init__(self, parent, session, serien_name, serien_id, serien_fsid):
 		self.parent = parent
 		self.session = session
 		self.serien_name = serien_name
 		self.serien_id = serien_id
+		self.serien_fsid = serien_fsid
 		self.tvdb_id = 0
 
 	def changeTVDBID(self):
@@ -533,7 +502,7 @@ class EditTVDBID:
 			tvdb_id_text = str(self.tvdb_id) if self.tvdb_id > 0 else ''
 			from Screens.InputBox import InputBox
 			from Components.Input import Input
-			self.session.openWithCallback(self.setTVDBID, InputBox, title="TVDB-ID:",
+			self.session.openWithCallback(self.setTVDBID, InputBox, title="TVDB-ID (zum Löschen eine 0 eingeben):",
 		                              windowTitle="TVDB-ID hinzufügen/ändern", text=tvdb_id_text, type=Input.NUMBER)
 
 	def setTVDBID(self, tvdb_id):
@@ -541,4 +510,4 @@ class EditTVDBID:
 			from SerienRecorder import getCover
 			if not SeriesServer().setTVDBID(self.serien_id, tvdb_id):
 				self.session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
-			getCover(self.parent, self.serien_name, self.serien_id, False, True)
+			getCover(self.parent, self.serien_name, self.serien_id, self.serien_fsid, False, True)

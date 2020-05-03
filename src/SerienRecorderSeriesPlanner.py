@@ -66,9 +66,6 @@ class serienRecSeriesPlanner:
 
 		headDate = [data["date"]]
 		timers = []
-		# txt = headDate[0].split(",")
-		# (day, month, year) = txt[1].split(".")
-		# UTCDatum = TimeHelpers.getRealUnixTime(0, 0, day, month, year)
 
 		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
 			timers = self.database.getTimer(daypage)
@@ -81,15 +78,16 @@ class serienRecSeriesPlanner:
 			start_time = TimeHelpers.getUnixTimeWithDayOffset(start_h, start_m, daypage)
 
 			serien_name = event["name"].encode("utf-8")
-			serien_name_lower = serien_name.lower()
 			sender = event["channel"]
 			title = event["title"].encode("utf-8")
 			staffel = event["season"]
 			episode = event["episode"]
-			serien_id = event["id"]
+			serien_wlid = event["id"]
+			serien_fsid = event["fs_id"]
+			serien_info = event["info"]
 
 			if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
-				serienTimers = [timer for timer in timers if timer[0] == serien_name_lower]
+				serienTimers = [timer for timer in timers if timer[0] == serien_fsid]
 				serienTimersOnChannel = [serienTimer for serienTimer in serienTimers if
 				                         serienTimer[2] == sender.lower()]
 				for serienTimerOnChannel in serienTimersOnChannel:
@@ -98,8 +96,8 @@ class serienRecSeriesPlanner:
 						aufnahme = True
 
 				# 0 = no marker, 1 = active marker, 2 = deactive marker
-				if serien_name_lower in markers:
-					serieAdded = 1 if markers[serien_name_lower] else 2
+				if serien_wlid in markers:
+					serieAdded = 1 if markers[serien_wlid] else 2
 
 				staffel = str(staffel).zfill(2)
 				episode = str(episode).zfill(2)
@@ -114,7 +112,7 @@ class serienRecSeriesPlanner:
 
 				bereits_vorhanden = False
 				if config.plugins.serienRec.sucheAufnahme.value:
-					(dirname, dirname_serie) = getDirname(self.database, serien_name, staffel)
+					(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
 					if str(episode).isdigit():
 						if int(episode) == 0:
 							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
@@ -134,9 +132,10 @@ class serienRecSeriesPlanner:
 				neu = event["new"]
 				prime = False
 				transmissionTime = event["time"]
-				url = ''
-				daylist[0].append((regional, paytv, neu, prime, transmissionTime, url, serien_name, sender, staffel,
-				                   episode, title, aufnahme, serieAdded, bereits_vorhanden, serien_id))
+				daylist[0].append((regional, paytv, neu, prime, transmissionTime, serien_name, sender, staffel,
+				                   episode, title, aufnahme, serieAdded, bereits_vorhanden, serien_wlid, serien_fsid, serien_info))
+
+		print "[SerienRecorder] Es wurden %s Serie(n) gefunden" % len(daylist[0])
 
 		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value and headDate:
 			d = headDate[0].split(',')
@@ -206,11 +205,11 @@ class serienRecSeriesPlanner:
 
 	@staticmethod
 	def optimizePlanerData(cache):
-		if time.strftime('%H.%M', datetime.datetime.now().timetuple()) < '01.00':
+		if time.strftime('%H:%M', datetime.datetime.now().timetuple()) < '01:00':
 			t_jetzt = datetime.datetime.now().timetuple()
 		else:
 			t_jetzt = (datetime.datetime.now() - datetime.timedelta(0, 3600)).timetuple()
-		jetzt = time.strftime('%H.%M', t_jetzt)
+		jetzt = time.strftime('%H:%M', t_jetzt)
 		heute = time.strftime('%d.%m.%Y', t_jetzt)
 		if heute in cache:
 			try:

@@ -49,8 +49,9 @@ def ReadConfigFile():
 	# config.plugins.serienRec.fake_entry = NoSave(ConfigNothing())
 	config.plugins.serienRec.BoxID = ConfigSelectionNumber(1, 16, 1, default=1)
 	config.plugins.serienRec.activateNewOnThisSTBOnly = ConfigYesNo(default=False)
-	config.plugins.serienRec.setupType = ConfigSelection(choices=[("0", "einfach"), ("1", "Experte")], default="1")
+	config.plugins.serienRec.setupType = ConfigSelection(choices=[("0", "Einfach"), ("1", "Experte")], default="1")
 	config.plugins.serienRec.seriensubdir = ConfigYesNo(default=False)
+	config.plugins.serienRec.seriensubdirwithyear = ConfigYesNo(default=True)
 	config.plugins.serienRec.seasonsubdir = ConfigYesNo(default=False)
 	config.plugins.serienRec.seasonsubdirnumerlength = ConfigInteger(1, (1, 4))
 	config.plugins.serienRec.seasonsubdirfillchar = ConfigSelection(choices=[("0", "'0'"), ("<SPACE>", "<SPACE>")],
@@ -59,10 +60,10 @@ def ReadConfigFile():
 	config.plugins.serienRec.justremind = ConfigYesNo(default=False)
 	config.plugins.serienRec.zapbeforerecord = ConfigYesNo(default=False)
 	config.plugins.serienRec.afterEvent = ConfigSelection(
-		choices=[("0", "nichts"), ("1", "in Standby gehen"), ("2", "in Deep-Standby gehen"), ("3", "automatisch")],
+		choices=[("0", "Nichts"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen"), ("3", "Automatisch")],
 		default="3")
 	config.plugins.serienRec.AutoBackup = ConfigSelection(
-		choices=[("0", "nein"), ("before", "vor dem Suchlauf"), ("after", "nach dem Suchlauf")], default="before")
+		choices=[("0", "Nein"), ("before", "Vor dem Suchlauf"), ("after", "Nach dem Suchlauf")], default="before")
 	config.plugins.serienRec.BackupPath = ConfigText(default="/media/hdd/SR_Backup/", fixed_size=False,
 	                                                 visible_width=80)
 	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(5, (5, 999))
@@ -72,10 +73,10 @@ def ReadConfigFile():
 	try:
 		from Tools.HardwareInfoVu import HardwareInfoVu
 		config.plugins.serienRec.autochecktype = ConfigSelection(
-			choices=[("0", "Manuell"), ("1", "zur gewählten Uhrzeit")], default="0")
+			choices=[("0", "Manuell"), ("1", "Zur gewählten Uhrzeit")], default="0")
 	except:
 		config.plugins.serienRec.autochecktype = ConfigSelection(
-			choices=[("0", "Manuell"), ("1", "zur gewählten Uhrzeit"), ("2", "nach EPGRefresh")], default="0")
+			choices=[("0", "Manuell"), ("1", "Zur gewählten Uhrzeit"), ("2", "Nach EPGRefresh")], default="0")
 	config.plugins.serienRec.readdatafromfiles = ConfigYesNo(default=False)
 	config.plugins.serienRec.updateInterval = ConfigInteger(24, (0, 24))
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default=False)
@@ -102,6 +103,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.tvplaner_movies_filepath = ConfigText(default="/media/hdd/movie/", fixed_size=False,
 	                                                               visible_width=80)
 	config.plugins.serienRec.tvplaner_movies_createsubdir = ConfigYesNo(default=False)
+	config.plugins.serienRec.tvplaner_movies_createsubdir_with_year = ConfigYesNo(default=True)
 	config.plugins.serienRec.tvplaner_movies_activeSTB = ConfigYesNo(default=False)
 	config.plugins.serienRec.tvplaner_full_check = ConfigYesNo(default=False)
 	config.plugins.serienRec.tvplaner_last_full_check = ConfigInteger(0)
@@ -121,12 +123,14 @@ def ReadConfigFile():
 	config.plugins.serienRec.Autoupdate = ConfigYesNo(default=True)
 	config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default=False)
 	config.plugins.serienRec.afterAutocheck = ConfigSelection(
-		choices=[("0", "keine"), ("1", "in Standby gehen"), ("2", "in Deep-Standby gehen")], default="0")
+		choices=[("0", "Keine"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen")], default="0")
 	config.plugins.serienRec.DSBTimeout = ConfigInteger(20, (0, 999))
 	config.plugins.serienRec.showNotification = ConfigSelection(
-		choices=[("0", "keine"), ("1", "bei Suchlauf-Start"), ("2", "bei Suchlauf-Ende"),
-		         ("3", "bei Suchlauf-Start und Ende")], default="1")
+		choices=[("0", "Keine"), ("1", "Bei Suchlauf-Start"), ("2", "Bei Suchlauf-Ende"),
+		         ("3", "Bei Suchlauf-Start und Ende")], default="1")
 	config.plugins.serienRec.LogFilePath = ConfigText(default=SerienRecorder.serienRecMainPath, fixed_size=False, visible_width=80)
+	config.plugins.serienRec.longLogFileName = ConfigYesNo(default=False)
+	config.plugins.serienRec.deleteLogFilesOlderThan = ConfigInteger(14, (0, 999))
 	config.plugins.serienRec.writeLog = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogChannels = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogAllowedEpisodes = ConfigYesNo(default=True)
@@ -142,7 +146,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.planerCacheSize = ConfigInteger((int(config.plugins.serienRec.checkfordays.value)), (1, 4))
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1, 9))
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default=True)
-	config.plugins.serienRec.showPicons = ConfigSelection(choices=[("0", "nein"), ("1", "ja, über ServiceRef"), ("2", "ja, über Name")], default="1")
+	config.plugins.serienRec.showPicons = ConfigSelection(choices=[("0", "Nein"), ("1", "Ja, über ServiceRef"), ("2", "Ja, über Name")], default="1")
 	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 35, 1, default=0)
 	config.plugins.serienRec.markerColumnWidth = ConfigSelectionNumber(-200, 200, 10, default=0)
 	config.plugins.serienRec.markerNameInset = ConfigSelectionNumber(0, 80, 1, default=40)
@@ -165,7 +169,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.showCover = ConfigYesNo(default=False)
 	config.plugins.serienRec.createPlaceholderCover = ConfigYesNo(default=True)
 	config.plugins.serienRec.refreshPlaceholderCover = ConfigYesNo(default=False)
-	config.plugins.serienRec.copyCoverToFolder = ConfigSelection(choices=[("0", "nein"), ("1", "folder.jpg"), ("2", "series.jpg")], default="1")
+	config.plugins.serienRec.copyCoverToFolder = ConfigSelection(choices=[("0", "Nein"), ("1", "folder.jpg"), ("2", "series.jpg")], default="1")
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default=True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default=True)
 
@@ -183,8 +187,8 @@ def ReadConfigFile():
 	else:
 		config.plugins.serienRec.AlternativeBouquet = ConfigSelection(choices=choices)
 	config.plugins.serienRec.useAlternativeChannel = ConfigYesNo(default=False)
-	config.plugins.serienRec.splitEventTimer = ConfigSelection(choices=[("0", "nein"), ("1", "Timer anlegen"), ("2", "Einzelepisoden bevorzugen")], default="0")
-	config.plugins.serienRec.addSingleTimersForEvent = ConfigSelection(choices=[("0", "nein"), ("1", "ja")], default="0")
+	config.plugins.serienRec.splitEventTimer = ConfigSelection(choices=[("0", "Nein"), ("1", "Timer anlegen"), ("2", "Einzelepisoden bevorzugen")], default="0")
+	config.plugins.serienRec.addSingleTimersForEvent = ConfigSelection(choices=[("0", "Nein"), ("1", "Ja")], default="0")
 
 	config.plugins.serienRec.firstscreen = ConfigSelection(choices=[("0", "SerienPlaner"), ("1", "SerienMarker")], default="0")
 
@@ -480,7 +484,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if self['config'].getCurrent()[1] in \
 		(config.plugins.serienRec.savetopath, config.plugins.serienRec.tvplaner_movies_filepath,
 		config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath,
-		config.plugins.serienRec.databasePath):
+		config.plugins.serienRec.databasePath, config.plugins.serienRec.piconPath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
 		else:
@@ -502,7 +506,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if self['config'].getCurrent()[1] in (
 		config.plugins.serienRec.savetopath, config.plugins.serienRec.tvplaner_movies_filepath,
 		config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath,
-		config.plugins.serienRec.databasePath):
+		config.plugins.serienRec.databasePath, config.plugins.serienRec.piconPath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
 		else:
@@ -543,7 +547,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if self['config'].getCurrent()[1] in (
 		config.plugins.serienRec.savetopath, config.plugins.serienRec.tvplaner_movies_filepath,
 		config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath,
-		config.plugins.serienRec.databasePath):
+		config.plugins.serienRec.databasePath, config.plugins.serienRec.piconPath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
 		else:
@@ -584,7 +588,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if self['config'].getCurrent()[1] in (
 		config.plugins.serienRec.savetopath, config.plugins.serienRec.tvplaner_movies_filepath,
 		config.plugins.serienRec.LogFilePath, config.plugins.serienRec.coverPath, config.plugins.serienRec.BackupPath,
-		config.plugins.serienRec.databasePath):
+		config.plugins.serienRec.databasePath, config.plugins.serienRec.piconPath):
 			self['bt_ok'].show()
 			self['text_ok'].show()
 		else:
@@ -632,6 +636,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                          config.plugins.serienRec.max_season,
 			                                          config.plugins.serienRec.DSBTimeout,
 			                                          config.plugins.serienRec.LogFilePath,
+			                                          config.plugins.serienRec.deleteLogFilesOlderThan,
 			                                          config.plugins.serienRec.deleteOlderThan,
 			                                          config.plugins.serienRec.NoOfRecords,
 			                                          config.plugins.serienRec.tuner):
@@ -676,6 +681,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                          config.plugins.serienRec.max_season,
 			                                          config.plugins.serienRec.DSBTimeout,
 			                                          config.plugins.serienRec.LogFilePath,
+			                                          config.plugins.serienRec.deleteLogFilesOlderThan,
 			                                          config.plugins.serienRec.deleteOlderThan,
 			                                          config.plugins.serienRec.NoOfRecords,
 			                                          config.plugins.serienRec.tuner):
@@ -686,13 +692,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		hasConfigDescription = False
 
 		if not isDreamOS():
-			try:
-				from Components.config import ConfigDescription
-				self.list.append(getConfigListEntry("SYSTEM", ConfigDescription()))
-				hasConfigDescription = True
-			except:
-				self.list.append(getConfigListEntry("SYSTEM", ))
-				self.list.append(getConfigListEntry(400 * "¯", ))
+			self.list.append(getConfigListEntry("SYSTEM", ))
+			self.list.append(getConfigListEntry(400 * "¯", ))
 		else:
 			self.list.append(getConfigListEntry("SYSTEM", ))
 
@@ -704,6 +705,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Speicherort der Serienaufnahmen:", config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
 		if config.plugins.serienRec.seriensubdir.value:
+			self.list.append(getConfigListEntry("Verzeichnisname mit Produktionsjahr:", config.plugins.serienRec.seriensubdirwithyear))
 			self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", config.plugins.serienRec.seasonsubdir))
 			if config.plugins.serienRec.seasonsubdir.value:
 				self.list.append(getConfigListEntry("    Mindestlänge der Staffelnummer im Verzeichnisnamen:",
@@ -722,12 +724,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if not hasConfigDescription:
 			self.list.append(getConfigListEntry("",))
 		if not isDreamOS():
-			try:
-				from Components.config import ConfigDescription
-				self.list.append(getConfigListEntry("AUTO-CHECK", ConfigDescription()))
-			except:
-				self.list.append(getConfigListEntry("AUTO-CHECK", ))
-				self.list.append(getConfigListEntry(400 * "¯", ))
+			self.list.append(getConfigListEntry("AUTO-CHECK", ))
+			self.list.append(getConfigListEntry(400 * "¯", ))
 		else:
 			self.list.append(getConfigListEntry("AUTO-CHECK", ))
 
@@ -809,12 +807,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("",))
 
 		if not isDreamOS():
-			try:
-				from Components.config import ConfigDescription
-				self.list.append(getConfigListEntry("TIMER", ConfigDescription()))
-			except:
-				self.list.append(getConfigListEntry("TIMER", ))
-				self.list.append(getConfigListEntry(400 * "¯", ))
+			self.list.append(getConfigListEntry("TIMER", ))
+			self.list.append(getConfigListEntry(400 * "¯", ))
 		else:
 			self.list.append(getConfigListEntry("TIMER", ))
 
@@ -847,12 +841,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			if not hasConfigDescription:
 				self.list.append(getConfigListEntry("",))
 			if not isDreamOS():
-				try:
-					from Components.config import ConfigDescription
-					self.list.append(getConfigListEntry("OPTIMIERUNGEN", ConfigDescription()))
-				except:
-					self.list.append(getConfigListEntry("OPTIMIERUNGEN", ))
-					self.list.append(getConfigListEntry(400 * "¯", ))
+				self.list.append(getConfigListEntry("OPTIMIERUNGEN", ))
+				self.list.append(getConfigListEntry(400 * "¯", ))
 			else:
 				self.list.append(getConfigListEntry("OPTIMIERUNGEN", ))
 
@@ -865,12 +855,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				self.list.append(getConfigListEntry("",))
 
 			if not isDreamOS():
-				try:
-					from Components.config import ConfigDescription
-					self.list.append(getConfigListEntry("GUI", ConfigDescription()))
-				except:
-					self.list.append(getConfigListEntry("GUI", ))
-					self.list.append(getConfigListEntry(400 * "¯", ))
+				self.list.append(getConfigListEntry("GUI", ))
+				self.list.append(getConfigListEntry(400 * "¯", ))
 			else:
 				self.list.append(getConfigListEntry("GUI", ))
 
@@ -927,17 +913,18 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("",))
 
 		if not isDreamOS():
-			try:
-				from Components.config import ConfigDescription
-				self.list.append(getConfigListEntry("LOG", ConfigDescription()))
-			except:
-				self.list.append(getConfigListEntry("LOG", ))
-				self.list.append(getConfigListEntry(400 * "¯", ))
+			self.list.append(getConfigListEntry("LOG", ))
+			self.list.append(getConfigListEntry(400 * "¯", ))
 		else:
 			self.list.append(getConfigListEntry("LOG", ))
 
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(getConfigListEntry("Speicherort für Log-Datei:", config.plugins.serienRec.LogFilePath))
+			self.list.append(
+				getConfigListEntry("Log-Dateiname mit Datum/Uhrzeit:", config.plugins.serienRec.longLogFileName))
+			if config.plugins.serienRec.longLogFileName.value:
+				self.list.append(getConfigListEntry("    Log-Dateien löschen die älter als x Tage sind:",
+				                                    config.plugins.serienRec.deleteLogFilesOlderThan))
 		self.list.append(getConfigListEntry("DEBUG LOG aktivieren:", config.plugins.serienRec.writeLog))
 		if config.plugins.serienRec.setupType.value == "1":
 			self.list.append(
@@ -972,40 +959,42 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 	def keyOK(self):
 		from SerienRecorderFileListScreen import serienRecFileListScreen
-		ConfigListScreen.keyOK(self)
-		if self['config'].getCurrent()[1] == config.plugins.serienRec.savetopath:
-			# start_dir = "/media/hdd/movie/"
-			start_dir = config.plugins.serienRec.savetopath.value
-			self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
-			                              "Aufnahme-Verzeichnis für Serien auswählen")
-		if self['config'].getCurrent()[1] == config.plugins.serienRec.tvplaner_movies_filepath:
-			# start_dir = "/media/hdd/movie/"
-			start_dir = config.plugins.serienRec.tvplaner_movies_filepath.value
-			self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
-			                              "Aufnahme-Verzeichnis für Filme auswählen")
-		elif self['config'].getCurrent()[1] == config.plugins.serienRec.LogFilePath:
-			start_dir = config.plugins.serienRec.LogFilePath.value
-			self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
-			                              "LogFile-Verzeichnis auswählen")
-		elif self['config'].getCurrent()[1] == config.plugins.serienRec.BackupPath:
-			start_dir = config.plugins.serienRec.BackupPath.value
-			self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
-			                              "Backup-Verzeichnis auswählen")
-		elif self['config'].getCurrent()[1] == config.plugins.serienRec.databasePath:
-			start_dir = config.plugins.serienRec.databasePath.value
-			self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
-			                              "Datenbank-Verzeichnis auswählen")
-		elif self['config'].getCurrent()[1] == config.plugins.serienRec.coverPath:
-			start_dir = config.plugins.serienRec.coverPath.value
-			self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
-			                              "Cover-Verzeichnis auswählen")
-		elif self['config'].getCurrent()[1] == config.plugins.serienRec.piconPath:
-			start_dir = config.plugins.serienRec.piconPath.value
-			self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
-			                              "Picon-Verzeichnis auswählen")
-		elif self['config'].getCurrent()[1] == config.plugins.serienRec.imap_test:
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.imap_test:
 			from SerienRecorderTVPlaner import imaptest
 			imaptest(self.session)
+			# Do not call default OK action
+		else:
+			ConfigListScreen.keyOK(self)
+			if self['config'].getCurrent()[1] == config.plugins.serienRec.savetopath:
+				# start_dir = "/media/hdd/movie/"
+				start_dir = config.plugins.serienRec.savetopath.value
+				self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
+				                              "Aufnahme-Verzeichnis für Serien auswählen")
+			if self['config'].getCurrent()[1] == config.plugins.serienRec.tvplaner_movies_filepath:
+				# start_dir = "/media/hdd/movie/"
+				start_dir = config.plugins.serienRec.tvplaner_movies_filepath.value
+				self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
+				                              "Aufnahme-Verzeichnis für Filme auswählen")
+			elif self['config'].getCurrent()[1] == config.plugins.serienRec.LogFilePath:
+				start_dir = config.plugins.serienRec.LogFilePath.value
+				self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
+				                              "LogFile-Verzeichnis auswählen")
+			elif self['config'].getCurrent()[1] == config.plugins.serienRec.BackupPath:
+				start_dir = config.plugins.serienRec.BackupPath.value
+				self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
+				                              "Backup-Verzeichnis auswählen")
+			elif self['config'].getCurrent()[1] == config.plugins.serienRec.databasePath:
+				start_dir = config.plugins.serienRec.databasePath.value
+				self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
+				                              "Datenbank-Verzeichnis auswählen")
+			elif self['config'].getCurrent()[1] == config.plugins.serienRec.coverPath:
+				start_dir = config.plugins.serienRec.coverPath.value
+				self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
+				                              "Cover-Verzeichnis auswählen")
+			elif self['config'].getCurrent()[1] == config.plugins.serienRec.piconPath:
+				start_dir = config.plugins.serienRec.piconPath.value
+				self.session.openWithCallback(self.selectedMediaFile, serienRecFileListScreen, start_dir,
+				                              "Picon-Verzeichnis auswählen")
 
 	def selectedMediaFile(self, res):
 		if res is not None:
@@ -1054,7 +1043,10 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Serien gespeichert werden.",
 				"Speicherort_der_Aufnahme"),
 			config.plugins.serienRec.seriensubdir: (
-				"Bei 'ja' wird für jede Serien ein eigenes Unterverzeichnis (z.B.\n'%s<Serien_Name>/') für die Aufnahmen erstellt." % config.plugins.serienRec.savetopath.value,
+				"Bei 'ja' wird für jede Serie ein eigenes Unterverzeichnis für die Aufnahmen erstellt, Bei 'nein' wird kein Serienverzeichnis angelegt.",
+				"Serien_Verzeichnis_anlegen"),
+			config.plugins.serienRec.seriensubdirwithyear: (
+				"Bei 'ja' wird für das Unterverzeichnis mit dem Seriennamen und dem Produktionsjahr (z.B.\n'%sDie Simpsons (1989)/') erstellt, bei 'nein' wird nur der Serienname verwendet" % config.plugins.serienRec.savetopath.value,
 				"Serien_Verzeichnis_anlegen"),
 			config.plugins.serienRec.seasonsubdir: (
 				"Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-Verzeichnis (z.B.\n"
@@ -1093,8 +1085,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Mit der OK Taste können die IMAP Einstellungen getestet werden, dabei wird versucht eine Verbindung zum eingestellten E-Mail Server aufzubauen Außerdem werden noch die vorhandenen Postfächer abgerufen.\n\n"
 				"Die Ergebnisse werden im Log ausgegeben.",
 				"Speicherort_der_Aufnahme"),
-			config.plugins.serienRec.tvplaner_create_marker: (
-				"Bei 'ja' werden nicht vorhandene Serien Marker automatisch erzeugt", ""),
+			# config.plugins.serienRec.tvplaner_create_marker: (
+			# 	"Bei 'ja' werden nicht vorhandene Serien-Marker automatisch erzeugt", ""),
 			config.plugins.serienRec.tvplaner_series: ("Bei 'ja' werden Timer für Serien angelegt", ""),
 			config.plugins.serienRec.tvplaner_series_activeSTB: (
 				"Bei 'ja' werden neue TV-Planer Serien nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.",
@@ -1107,8 +1099,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Filmen gespeichert werden.",
 				"Speicherort_der_Aufnahme"),
 			config.plugins.serienRec.tvplaner_movies_createsubdir: (
-				"Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis (z.B.\n'%s<Filmname>/') für die Aufnahmen erstellt." % config.plugins.serienRec.tvplaner_movies_filepath.value,
-				""),
+				"Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis für die Aufnahmen erstellt. Bei 'nein' wird kein Filmordner angelegt.", ""),
 			config.plugins.serienRec.tvplaner_full_check: (
 				"Bei 'ja' wird vor dem Erreichen der eingestellten Zahl von Aufnahmetagen wieder ein voller Suchlauf gestartet",
 				""),
@@ -1313,6 +1304,15 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"1.3_Die_globalen_Einstellungen"),
 			config.plugins.serienRec.LogFilePath: (
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Log-Dateien gespeichert werden.", "Das_Log"),
+			config.plugins.serienRec.longLogFileName: (
+				"Bei 'nein' wird bei jedem Timer-Suchlauf die Log-Datei neu erzeugt.\n"
+				"Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte Log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet "
+				"(z.B.\n" + SerienRecorderLogWriter.SERIENRECORDER_LONG_LOGFILENAME % (
+					config.plugins.serienRec.LogFilePath.value, str(lt.tm_year), str(lt.tm_mon).zfill(2),
+					str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "Das_Log"),
+			config.plugins.serienRec.deleteLogFilesOlderThan: (
+				"Log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht.",
+				"Das_Log"),
 			config.plugins.serienRec.writeLog: (
 				"Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des Timer-Suchlaufs.\n"
 				"Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern.", "Das_Log"),
@@ -1410,6 +1410,14 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if config.plugins.serienRec.TimerName.value == "1":
 			config.plugins.serienRec.sucheAufnahme.value = False
 
+		config.plugins.serienRec.savetopath.value = os.path.join(str(config.plugins.serienRec.savetopath.value), '')
+		config.plugins.serienRec.tvplaner_movies_filepath.value = os.path.join(str(config.plugins.serienRec.tvplaner_movies_filepath.value), '')
+		config.plugins.serienRec.LogFilePath.value = os.path.join(str(config.plugins.serienRec.LogFilePath.value), '')
+		config.plugins.serienRec.BackupPath.value = os.path.join(str(config.plugins.serienRec.BackupPath.value), '')
+		config.plugins.serienRec.databasePath.value = os.path.join(str(config.plugins.serienRec.databasePath.value), '')
+		config.plugins.serienRec.coverPath.value = os.path.join(str(config.plugins.serienRec.coverPath.value), '')
+		config.plugins.serienRec.piconPath.value = os.path.join(str(config.plugins.serienRec.piconPath.value), '')
+
 		config.plugins.serienRec.BoxID.save()
 		config.plugins.serienRec.activateNewOnThisSTBOnly.save()
 		config.plugins.serienRec.setupType.save()
@@ -1417,6 +1425,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.justplay.save()
 		config.plugins.serienRec.afterEvent.save()
 		config.plugins.serienRec.seriensubdir.save()
+		config.plugins.serienRec.seriensubdirwithyear.save()
 		config.plugins.serienRec.seasonsubdir.save()
 		config.plugins.serienRec.seasonsubdirnumerlength.save()
 		config.plugins.serienRec.seasonsubdirfillchar.save()
@@ -1473,6 +1482,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.eventid.save()
 		config.plugins.serienRec.epgTimeSpan.save()
 		config.plugins.serienRec.LogFilePath.save()
+		config.plugins.serienRec.longLogFileName.save()
+		config.plugins.serienRec.deleteLogFilesOlderThan.save()
 		config.plugins.serienRec.writeLog.save()
 		config.plugins.serienRec.writeLogChannels.save()
 		config.plugins.serienRec.writeLogAllowedEpisodes.save()
