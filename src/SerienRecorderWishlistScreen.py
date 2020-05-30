@@ -256,7 +256,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		zeile = self['menu_list'].getCurrent()[0]
-		(title, serie, staffel, episode, fsID) = zeile
+		(title, serie, staffel, episode, wlID, fsID) = zeile
 		self.dbData.append((fsID, str(staffel).lower(), episode.lower()))
 		self.wishlist_tmp.remove(zeile)
 		self.wishlist.remove(zeile)

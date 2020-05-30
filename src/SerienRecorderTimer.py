@@ -12,7 +12,7 @@ from ServiceReference import ServiceReference
 from Tools import Notifications
 
 from SerienRecorderLogWriter import SRLogger
-from SerienRecorderDatabase import SRDatabase, SRTempDatabase
+from SerienRecorderDatabase import SRDatabase
 from SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname
 
 class serienRecTimer:
@@ -59,8 +59,13 @@ class serienRecTimer:
 		deactivatedTimers = self.database.getDeactivatedTimers()
 		for deactivatedTimer in deactivatedTimers:
 			(serien_name, serien_fsid, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = deactivatedTimer
-			markerType = 0
 			if eit > 0:
+				markerType = self.database.getMarkerType(serien_fsid)
+				if markerType is None:
+					# Marker type not found in database => it's a movie
+					markerType = 1
+				else:
+					markerType = int(markerType)
 				serien_wlid = self.database.getMarkerWLID(serien_fsid)
 				recordHandler = NavigationInstance.instance.RecordTimer
 				(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
@@ -196,6 +201,19 @@ class serienRecTimer:
 						# Reset start_unixtime to timer start time to keep database and timer in sync if start time changed lesser than 30 seconds
 						start_unixtime = timer.begin
 
+					# Endzeit
+					updateEndTime = False
+					old_end = time.strftime("%d.%m. - %H:%M", time.localtime(int(timer.end)))
+					print "[SerienRecorder] End: [%s]" % str(timer.end) + " / " + str(end_unixtime)
+					if end_unixtime and timer.end != end_unixtime and abs(end_unixtime - timer.end) > 30:
+						timer.begin = start_unixtime
+						timer.end = end_unixtime
+						NavigationInstance.instance.RecordTimer.timeChanged(timer)
+						updateEndTime = True
+					else:
+						# Reset start_unixtime to timer start time to keep database and timer in sync if start time changed lesser than 30 seconds
+						end_unixtime = timer.end
+
 					# Timername
 					updateName = False
 					old_timername = timer.name
@@ -228,9 +246,13 @@ class serienRecTimer:
 						SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
 						new_start = time.strftime("%d.%m. - %H:%M", time.localtime(int(start_unixtime)))
 						old_start = time.strftime("%d.%m. - %H:%M", time.localtime(int(serien_time)))
+						new_end = time.strftime("%d.%m. - %H:%M", time.localtime(int(end_unixtime)))
 						if updateStartTime:
 							SRLogger.writeLog("   Startzeit wurde aktualisiert von %s auf %s" % (old_start, new_start), True)
 							timer.log(0, "[SerienRecorder] Changed timer start from %s to %s" % (old_start, new_start))
+						if updateEndTime:
+							SRLogger.writeLog("   Endzeit wurde aktualisiert von %s auf %s" % (old_end, new_end), True)
+							timer.log(0, "[SerienRecorder] Changed timer end from %s to %s" % (old_end, new_end))
 						if updateEIT:
 							SRLogger.writeLog("   Event ID wurde aktualisiert von %s auf %s" % (str(old_eit), str(eit)), True)
 							timer.log(0, "[SerienRecorder] Changed event ID from %s to %s" % (str(old_eit), str(eit)))
@@ -604,14 +626,17 @@ class serienRecTimer:
 		                                                         config.plugins.serienRec.margin_before.value,
 		                                                         config.plugins.serienRec.margin_after.value)
 
+		epgSeriesName = self.database.getMarkerEPGName(serien_fsid)
+
 		# try to get eventID (eit) from epgCache
 		if config.plugins.serienRec.eventid.value and self.database.getUpdateFromEPG(serien_fsid):
 			print "[SerienRecorder] Update data from EPG"
 			eit, start_unixtime, end_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, serien_name, stbRef)
+			if eit is 0 and len(epgSeriesName) > 0 and epgSeriesName != serien_name:
+				eit, start_unixtime, end_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, epgSeriesName, stbRef)
 
-		# ueberprueft ob tage x voraus passt und ob die startzeit nicht kleiner ist als die aktuelle uhrzeit
-		#start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
-		#end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
+		start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+		end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
 		show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 		show_end = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
@@ -789,12 +814,19 @@ class serienRecTimer:
 		timers = self.database.getAllTimer(current_time)
 		for timer in timers:
 			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit, active, serien_fsid) = timer
-			markerType = 0
 
 			channelName = STBHelpers.getChannelByRef(self.channelList, stbRef)
 			title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 			print "[SerienRecorder] Update request for timer: %s [%d]" % (title, serien_time)
 
+			markerType = self.database.getMarkerType(serien_fsid)
+			if markerType is None:
+				# Marker type not found in database => it's a movie
+				markerType = 1
+			else:
+				markerType = int(markerType)
+
+			epgSeriesName = self.database.getMarkerEPGName(serien_fsid)
 			(margin_before, margin_after) = self.database.getMargins(serien_fsid, webChannel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
 			db_serien_time = int(serien_time)+(int(margin_before) * 60)
 			transmission = self.tempDB.getTransmissionForTimerUpdate(serien_fsid, staffel, episode, db_serien_time)
@@ -813,51 +845,60 @@ class serienRecTimer:
 			title = "%s - S%sE%s - %s" % (new_serien_name, str(new_staffel).zfill(2), str(new_episode).zfill(2), new_serien_title)
 
 			# event_matches = STBHelpers.getEPGEvent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-			event_matches = STBHelpers.getEPGEvent(stbRef, serien_name, int(serien_time)+(int(margin_before) * 60))
+			(no_events_found, event_matches) = STBHelpers.getEPGEvent(stbRef, serien_name, int(serien_time)+(int(margin_before) * 60))
 			new_event_matches = None
+			no_new_events_found = True
 			if serien_time != new_serien_time and new_serien_time != 0:
-				new_event_matches = STBHelpers.getEPGEvent(stbRef, new_serien_name, int(new_serien_time)+(int(margin_before) * 60))
-			if new_event_matches and len(new_event_matches) > 0 and (not event_matches or (event_matches and len(event_matches) == 0)):
-				# Old event not found but new one with different start time
-				event_matches = new_event_matches
+				(no_new_events_found, new_event_matches) = STBHelpers.getEPGEvent(stbRef, new_serien_name, int(new_serien_time)+(int(margin_before) * 60))
 
 			(dirname, dirname_serie) = getDirname(self.database, new_serien_name, serien_fsid, new_staffel)
-			if event_matches and len(event_matches) > 0:
-				for event_entry in event_matches:
-					eit = int(event_entry[1])
-
-					if config.plugins.serienRec.eventid.value and updateFromEPG:
-						start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
-						end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
-					else:
-						start_unixtime = None
-						end_unixtime = None
-
-					print "[SerienRecorder] try to modify enigma2 timer: %s [%d]" % (title, serien_time)
-
-					if (str(new_staffel) is 'S' or str(new_staffel) is '0') and (str(new_episode) is '0' or str(new_episode) is '00'):
-						SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
-						SRLogger.writeLog("   Timer kann nicht aktualisiert werden @ %s" % channelName, True)
-						break
-
-					# get VPS settings for channel
-					vpsSettings = self.database.getVPS(serien_fsid, webChannel)
-
-					try:
-						# suche in aktivierten Timern
-						self.update(recordHandler.timer_list + recordHandler.processed_timers, eit, end_unixtime, new_episode,
-														new_serien_title, serien_name, serien_fsid, serien_time,
-														new_staffel, start_unixtime, stbRef, title,
-														dirname, vpsSettings, markerType)
-
-					except Exception:
-						print "[SerienRecorder] Modifying enigma2 timer failed:", title, serien_time
-						SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
-						SRLogger.writeLog("   Timeraktualisierung fehlgeschlagen @ %s" % channelName, True)
-					break
-			else:
+			if no_events_found and no_new_events_found:
 				SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
-				SRLogger.writeLog("   Timer konnte nicht aus dem EPG aktualisiert werden, da der Abgleich fehlgeschlagen ist @ %s" % channelName)
+				SRLogger.writeLog("   Timer konnte nicht aus dem EPG aktualisiert werden, nicht genügend EPG Daten vorhanden @ %s" % channelName)
+			else:
+				if new_event_matches and len(new_event_matches) > 0 and (not event_matches or (event_matches and len(event_matches) == 0)):
+					# Old event not found but new one with different start time
+					event_matches = new_event_matches
+				elif len(epgSeriesName) > 0 and epgSeriesName != new_serien_name:
+					# Try to find event with alternative epg series name
+					(no_events_found, event_matches) = STBHelpers.getEPGEvent(stbRef, epgSeriesName, int(serien_time) + (int(margin_before) * 60))
+
+				if event_matches and len(event_matches) > 0:
+					for event_entry in event_matches:
+						eit = int(event_entry[1])
+
+						if config.plugins.serienRec.eventid.value and updateFromEPG:
+							start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
+							end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
+						else:
+							start_unixtime = None
+							end_unixtime = None
+
+						print "[SerienRecorder] try to modify enigma2 timer: %s [%d]" % (title, serien_time)
+
+						if (str(new_staffel) is 'S' or str(new_staffel) is '0') and (str(new_episode) is '0' or str(new_episode) is '00'):
+							SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
+							SRLogger.writeLog("   Timer kann nicht aktualisiert werden @ %s" % channelName, True)
+							break
+
+						# get VPS settings for channel
+						vpsSettings = self.database.getVPS(serien_fsid, webChannel)
+
+						try:
+							# suche in aktivierten Timern
+							self.update(recordHandler.timer_list + recordHandler.processed_timers, eit, end_unixtime, new_episode,
+															new_serien_title, serien_name, serien_fsid, serien_time,
+															new_staffel, start_unixtime, stbRef, title,
+															dirname, vpsSettings, markerType)
+
+						except Exception:
+							print "[SerienRecorder] Modifying enigma2 timer failed:", title, serien_time
+							SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
+							SRLogger.writeLog("   Timeraktualisierung fehlgeschlagen @ %s" % channelName, True)
+						break
+				else:
+					SRLogger.writeLog("' %s - %s '" % (title, dirname), True)
+					SRLogger.writeLog("   Timer konnte nicht aus dem EPG aktualisiert werden, die Sendung wurde im Zeitfenster nicht gefunden @ %s" % channelName)
 
 
 	@staticmethod

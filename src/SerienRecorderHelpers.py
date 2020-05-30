@@ -20,16 +20,9 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.0.15-beta'
-SRDBVERSION = '4.0.0'
+SRVERSION = '4.1.0'
+SRDBVERSION = '4.1.0'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
-
-def decodeISO8859_1(txt, replace=False):
-	txt = unicode(txt, 'ISO-8859-1')
-	txt = txt.encode('utf-8')
-	if replace:
-		txt = doReplaces(txt)
-	return txt
 
 def doReplaces(txt):
 	non_allowed_characters = "/.\\:*?<>|\"'"
@@ -64,39 +57,6 @@ def isVTI():
 		isVTIImage = True
 	return isVTIImage
 
-def checkCI(servref = None, cinum = 0):
-	cifile = "/etc/enigma2/ci%d.xml" % cinum
-
-	if servref is None or not os.path.exists(cifile):
-		return -1
-
-	serviceref = servref.toString()
-	serviceHandler = eServiceCenter.getInstance()
-	info = serviceHandler.info(servref)
-	provider = "unknown"
-	if info is not None:
-		provider = info.getInfoString(servref, iServiceInformation.sProvider)
-
-	sp = serviceref.split(":")
-	namespace = ""
-	if len(sp) > 6:
-		namespace = sp[6]
-
-	f = open(cifile, "r")
-	assignments = f.read()
-	f.close()
-	if assignments.find(serviceref) is not -1:
-		# print "[AUTOPIN] CI Slot %d assigned to %s" % (cinum+1, serviceref)
-		return cinum
-	if assignments.find("provider name") is -1:
-		return -1
-	# service not found, but maybe provider ...
-	providerstr = "provider name=\"%s\" dvbnamespace=\"%s\"" % (provider, namespace)
-	if assignments.find(providerstr) is not -1:
-		# print "[AUTOPIN] CI Slot %d assigned to %s via provider %s" % (cinum+1, serviceref, provider)
-		return cinum
-
-	return -1
 
 def encrypt(key, clear):
 	enc = []
@@ -114,13 +74,6 @@ def decrypt(key, enc):
 		dec_c = chr((256 + ord(enc[i]) - ord(key_c)) % 256)
 		dec.append(dec_c)
 	return "".join(dec)
-
-def getmac(interface):
-	try:
-		mac = open('/sys/class/net/'+interface+'/address').readline()
-	except:
-		mac = "00:00:00:00:00:00"
-	return mac[0:17]
 
 def getChangedSeriesNames(markers):
 	IDs = []
@@ -415,14 +368,16 @@ class STBHelpers:
 		query = ['RITBDSE', (channelref, 0, int(starttime) - (int(cls.getEPGTimeSpan()) * 60), -1)]
 		allevents = epgcache.lookupEvent(query) or []
 
-		normalized_title = title.lower().replace(" ", "")
+		import re
+		regex = re.compile(r"\(\d+/?\d*\)$", re.IGNORECASE)
+		normalized_title = regex.sub("", title.lower().replace(" ", ""))
 
 		lowEPGStartTime = int(int(starttime) - (int(cls.getEPGTimeSpan()) * 60))
 		highEPGStartTime = int(int(starttime) + (int(cls.getEPGTimeSpan()) * 60))
 		print "[SerienRecorder] getEPGEvent: Boundaries: [%d] - [%d]" % (lowEPGStartTime, highEPGStartTime)
 
 		for serviceref, eit, name, begin, duration, shortdesc, extdesc in allevents:
-			normalized_name = name.lower().replace(" ", "")
+			normalized_name = regex.sub("", name.lower().replace(" ", ""))
 
 			nameMatch = False
 			print "[SerienRecorder] getEPGEvent: (%s): %s (%s) [%s] == [%s] (%s)" % (str(eit), str(begin), str(duration), normalized_title, normalized_name, shortdesc)
@@ -437,20 +392,21 @@ class STBHelpers:
 			if begin > highEPGStartTime:
 				break
 
-		return epgmatches
+		# no events found, epg matches
+		return len(allevents) == 0, epgmatches
 
 	@classmethod
 	def getStartEndTimeFromEPG(cls, start_unixtime_eit, end_unixtime_eit, margin_before, margin_after, serien_name, stbRef):
 		eit = 0
 		if config.plugins.serienRec.eventid.value:
 			# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
-			event_matches = cls.getEPGEvent(stbRef, serien_name, int(start_unixtime_eit) + (int(margin_before) * 60))
+			(noEventsFound, event_matches) = cls.getEPGEvent(stbRef, serien_name, int(start_unixtime_eit) + (int(margin_before) * 60))
 			if event_matches and len(event_matches) > 0:
 				for event_entry in event_matches:
 					print "[SerienRecorder] found eventID: %s" % int(event_entry[1])
 					eit = int(event_entry[1])
-					start_unixtime_eit = int(event_entry[3]) - (int(margin_before) * 60)
-					end_unixtime_eit = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
+					start_unixtime_eit = int(event_entry[3])
+					end_unixtime_eit = int(event_entry[3]) + int(event_entry[4])
 					break
 
 		return eit, start_unixtime_eit, end_unixtime_eit
@@ -497,14 +453,12 @@ class STBHelpers:
 		return STBType
 
 	@classmethod
-	def getHardwareUUID(cls):
+	def getmac(cls, interface):
 		try:
-			machineIDFile = open("/var/lib/dbus/machine-id", "r")
-			uuid = machineIDFile.readline().strip()
-			machineIDFile.close()
+			mac = open('/sys/class/net/' + interface + '/address').readline()
 		except:
-			uuid = "unknown"
-		return uuid
+			mac = "00:00:00:00:00:00"
+		return mac[0:17]
 
 	@classmethod
 	def saveEnigmaSettingsToFile(cls, path):
@@ -556,8 +510,8 @@ class STBHelpers:
 		# Aufnahme Tuner braucht CI -1 -> nein, 1 - ja
 		from ServiceReference import ServiceReference
 		provider_ref = ServiceReference(check_stbRef)
-		new_needs_ci_0 = checkCI(provider_ref.ref, 0)
-		new_needs_ci_1 = checkCI(provider_ref.ref, 1)
+		new_needs_ci_0 = STBHelpers.checkCI(provider_ref.ref, 0)
+		new_needs_ci_1 = STBHelpers.checkCI(provider_ref.ref, 1)
 
 		check_stbRef = check_stbRef.split(":")[4:7]
 
@@ -571,8 +525,8 @@ class STBHelpers:
 
 				# vorhandener Timer braucht CI -1 -> nein, 1 - ja
 				# provider_ref = ServiceReference(service_ref)
-				timer_needs_ci_0 = checkCI(service_ref.ref, 0)
-				timer_needs_ci_1 = checkCI(service_ref.ref, 1)
+				timer_needs_ci_0 = STBHelpers.checkCI(service_ref.ref, 0)
+				timer_needs_ci_1 = STBHelpers.checkCI(service_ref.ref, 1)
 
 				service_ref = str(service_ref).split(":")[4:7]
 				# gleicher service
@@ -611,6 +565,41 @@ class STBHelpers:
 			return True
 		else:
 			return len(lTuner) < int(config.plugins.serienRec.tuner.value)
+
+	@classmethod
+	def checkCI(cls, servref=None, cinum=0):
+		cifile = "/etc/enigma2/ci%d.xml" % cinum
+
+		if servref is None or not os.path.exists(cifile):
+			return -1
+
+		serviceref = servref.toString()
+		serviceHandler = eServiceCenter.getInstance()
+		info = serviceHandler.info(servref)
+		provider = "unknown"
+		if info is not None:
+			provider = info.getInfoString(servref, iServiceInformation.sProvider)
+
+		sp = serviceref.split(":")
+		namespace = ""
+		if len(sp) > 6:
+			namespace = sp[6]
+
+		f = open(cifile, "r")
+		assignments = f.read()
+		f.close()
+		if assignments.find(serviceref) is not -1:
+			# print "[AUTOPIN] CI Slot %d assigned to %s" % (cinum+1, serviceref)
+			return cinum
+		if assignments.find("provider name") is -1:
+			return -1
+		# service not found, but maybe provider ...
+		providerstr = "provider name=\"%s\" dvbnamespace=\"%s\"" % (provider, namespace)
+		if assignments.find(providerstr) is not -1:
+			# print "[AUTOPIN] CI Slot %d assigned to %s via provider %s" % (cinum+1, serviceref, provider)
+			return cinum
+
+		return -1
 
 
 # ----------------------------------------------------------------------------------------------------------------------

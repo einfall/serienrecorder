@@ -586,13 +586,21 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		
 	def removeSerienMarker(self, serien_fsid, serien_name, answer):
 		serien_info = self['menu_list'].getCurrent()[0][12]
-		self.database.removeMarker(serien_fsid, answer)
+		serienRecMarker.doRemoveSerienMarker(serien_fsid, serien_name, serien_info, answer)
 		self.changesMade = True
-		SRLogger.writeLog("Der Serien-Marker für '%s (%s)' wurde gelöscht" % (serien_name, serien_info), True)
 		self['title'].instance.setForegroundColor(parseColor("red"))
 		self['title'].setText("Marker für '%s (%s)' wurde gelöscht." % (serien_name, serien_info))
 		self.readSerienMarker()	
-			
+
+	@staticmethod
+	def doRemoveSerienMarker(serien_fsid, serien_name, serien_info, withTimer):
+		from SerienRecorderDatabase import SRDatabase
+		from SerienRecorder import serienRecDataBaseFilePath
+		database = SRDatabase(serienRecDataBaseFilePath)
+		database.removeMarker(serien_fsid, withTimer)
+		from SerienRecorderLogWriter import SRLogger
+		SRLogger.writeLog("Der Serien-Marker für '%s (%s)' wurde gelöscht" % (serien_name, serien_info), True)
+
 	def keyRed(self):
 		if self.modus == "menu_list":
 			if self['menu_list'].getCurrent() is None:
@@ -855,7 +863,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			setMenuTexts(self)
 
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust) = self.database.getMarkerSettings(self.serien_id)
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName) = self.database.getMarkerSettings(self.serien_id)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -972,6 +980,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self.tags = NoSave(
 			ConfigSelection(choices=[len(self.serienmarker_tags) == 0 and "Keine" or ' '.join(self.serienmarker_tags)]))
 
+		# EPG series name
+		if epgSeriesName is None:
+			epgSeriesName = ""
+		self.epgSeriesName = ConfigText(default=epgSeriesName, fixed_size=False, visible_width=50)
+
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
 		self.setInfoText()
@@ -1061,6 +1074,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.list.append(getConfigListEntry("Staffel-Verzeichnis anlegen:", self.seasonsubdir))
 			self.margin_before_index += 1
 
+		self.list.append(getConfigListEntry("Alternativer Serienname im EPG:", self.epgSeriesName))
 		self.margin_after_index = self.margin_before_index + 1
 
 		self.list.append(getConfigListEntry("Aktiviere abweichenden Timervorlauf:", self.enable_margin_before))
@@ -1211,11 +1225,13 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self['text_ok'].hide()
 
 	def ok(self):
-		if self["config"].getCurrent()[1] == self.tags:
+		if self['config'].getCurrent()[1] == self.tags:
 			self.chooseTags()
+		elif self['config'].getCurrent()[1] == self.epgSeriesName:
+			value = self.serien_name if len(self.epgSeriesName.value) == 0 else self.epgSeriesName.value
+			self.session.openWithCallback(self.epgSeriesNameEditFinished, NTIVirtualKeyBoard, title="Serien Titel eingeben:", text=value)
 		else:
-			ConfigListScreen.keyOK(self)
-			if self['config'].instance.getCurrentIndex() == 0:
+			if self['config'].getCurrent()[1] == self.savetopath:
 				if config.plugins.serienRec.seriensubdir.value:
 					self.session.openWithCallback(self.openFileSelector, MessageBox,
 												  "Hier wird das direkte Aufnahme-Verzeichnis für die Serie ausgewählt, es wird nicht automatisch ein Serien-Ordner angelegt.\n\nMit der blauen Taste kann ein Serien-Ordner manuell angelegt werden.",
@@ -1238,6 +1254,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 				print res
 				self.savetopath.value = res
 				self.changedEntry()
+
+	def epgSeriesNameEditFinished(self, res):
+		if res is not None:
+			self.epgSeriesName.value = res
+			self.changedEntry()
 
 	def tagEditFinished(self, res):
 		if res is not None:
@@ -1265,6 +1286,9 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.savetopath: "Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von '%s' gespeichert werden." % self.serien_name,
 			self.seasonsubdir: "Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-Verzeichnis für '%s' (z.B.\n'%sSeason 001') erstellt." % (
 				self.serien_name, self.savetopath.value),
+			self.epgSeriesName: ("Eingabe des Seriennamens wie er im EPG erscheint.\n\n"
+			                     "Manchmal kommt es vor, dass eine Serie bei Wunschliste anders heißt als im EPG (z.B. 'Die 2' vs. 'Die Zwei') das führt dazu, dass der SerienRecorder die Sendung nicht im EPG finden und aktualisieren kann.\n"
+			                     "Wenn sich der Serienname unterscheidet, kann der Name hier eingegeben werden, um darüber die Sendung im EPG zu finden."),
 			self.enable_margin_before: ("Bei 'ja' kann die Vorlaufzeit für Timer von '%s' eingestellt werden.\n"
 										"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Vorlaufzeit.\n"
 										"Ist auch beim aufzunehmenden Sender eine Vorlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.\n"
@@ -1344,6 +1368,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 										  "Bei 'nein' werden alle Wochentage berücksichtigt.") % self.serien_name,
 			self.tags: ("Verwaltet die Tags für die Timer, die für %s angelegt werden.\n\n"
 						"Um diese Option nutzen zu können, muss das Tageditor Plugin installiert sein.") % self.serien_name
+
 		}
 
 		try:
@@ -1423,7 +1448,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self.database.setMarkerSettings(self.serien_id, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),
-		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust))
+		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust, self.epgSeriesName.value))
 
 		self.close(True)
 
@@ -1801,7 +1826,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			(serien_name, sender, start_unixtime, margin_before, margin_after, end_unixtime, label_serie,
 			 staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags,
-			 addToDatabase, autoAdjust) = params
+			 addToDatabase, autoAdjust, epgSeriesName) = params
 			# check sender
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = database.getChannelInfo(sender, wlid, filterMode)
 
@@ -1828,11 +1853,20 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				                                                                              margin_before,
 				                                                                              margin_after, serien_name,
 				                                                                              timer_stbRef)
+				if eit is 0 and len(epgSeriesName) > 0 and epgSeriesName != serien_name:
+					eit, start_unixtime_eit, end_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(start_unixtime,
+					                                                                              end_unixtime,
+					                                                                              margin_before,
+					                                                                              margin_after, epgSeriesName,
+					                                                                              timer_stbRef)
 
 				updateFromEPG = database.getUpdateFromEPG(fsid)
 				if updateFromEPG is False:
 					start_unixtime_eit = start_unixtime
 					end_unixtime_eit = end_unixtime
+
+				start_unixtime_eit = int(start_unixtime_eit) - (int(margin_before) * 60)
+				end_unixtime_eit = int(end_unixtime_eit) + (int(margin_after) * 60)
 
 				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 				konflikt = ""
@@ -1853,10 +1887,17 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					alt_eit, alt_start_unixtime_eit, alt_end_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(
 						start_unixtime, end_unixtime, margin_before, margin_after, serien_name, timer_altstbRef)
 
+					if alt_eit is 0 and len(epgSeriesName) > 0 and epgSeriesName != serien_name:
+						alt_eit, alt_start_unixtime_eit, alt_end_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(
+							start_unixtime, end_unixtime, margin_before, margin_after, epgSeriesName, timer_altstbRef)
+
 					updateFromEPG = database.getUpdateFromEPG(fsid)
 					if updateFromEPG is False:
 						alt_start_unixtime_eit = start_unixtime
 						alt_end_unixtime_eit = end_unixtime
+
+					alt_start_unixtime_eit = int(alt_start_unixtime_eit) - (int(margin_before) * 60)
+					alt_end_unixtime_eit = int(alt_end_unixtime_eit) + (int(margin_after) * 60)
 
 					# versuche timer anzulegen
 					result = serienRecBoxTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit),
@@ -1921,6 +1962,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				# get autoAdjust for marker
 				autoAdjust = database.getAutoAdjust(wlid, sender)
 
+				# get alternative epg series name
+				epgSeriesName = database.getMarkerEPGName(fsid)
+
 				(dirname, dirname_serie) = getDirname(database, serien_name, fsid, staffel)
 
 				# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
@@ -1947,7 +1991,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 				params = (serien_name, sender, start_unixtime, margin_before, margin_after, end_unixtime,
 				          label_serie, staffel, episode, title, dirname, preferredChannel,
-				          bool(useAlternativeChannel), vpsSettings, tags, addToDatabase, autoAdjust)
+				          bool(useAlternativeChannel), vpsSettings, tags, addToDatabase, autoAdjust, epgSeriesName)
 				if (bereits_vorhanden < NoOfRecords) and (bereits_vorhanden_HDD < NoOfRecords):
 					(TimerDone, onTimer, offTimer) = serienRecSendeTermine.createTimer(database, filterMode, wlid, fsid, params)
 				else:

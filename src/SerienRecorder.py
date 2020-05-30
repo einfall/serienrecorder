@@ -99,7 +99,7 @@ def getCover(self, serien_name, serien_id, serien_fsid, auto_check = False, forc
 				showCover(None, self, fsid_serien_cover_path)
 		elif serien_id and (config.plugins.serienRec.showCover.value or (config.plugins.serienRec.downloadCover.value and auto_check)):
 			try:
-				posterURL = SeriesServer().doGetCoverURL(int(serien_id), serien_name)
+				posterURL = SeriesServer().doGetCoverURL(int(serien_id), serien_fsid)
 				#SRLogger.writeLog("Cover URL [%s] (%s) => %s" % (serien_name, serien_fsid, posterURL), True)
 				if posterURL:
 					from twisted.web.client import downloadPage
@@ -286,14 +286,14 @@ class downloadTransmissionsThread(threading.Thread):
 			self.jobQueue.task_done()
 
 	def download(self, data):
-		(seriesID, fsID, timeSpan, markerChannels, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays) = data
+		(seriesID, fsID, timeSpan, markerChannels, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, limitedChannels) = data
 		try:
 			isTransmissionFailed = False
 			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
 		except:
 			isTransmissionFailed = True
 			transmissions = None
-		self.resultQueue.put((isTransmissionFailed, transmissions, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays))
+		self.resultQueue.put((isTransmissionFailed, transmissions, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, limitedChannels))
 
 class processEMailDataThread(threading.Thread):
 	def __init__(self, emailData, jobs, results):
@@ -309,7 +309,7 @@ class processEMailDataThread(threading.Thread):
 			self.jobQueue.task_done()
 
 	def process(self, data):
-		(markerChannels, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, markerType) = data
+		(markerChannels, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, markerType, limitedChannels) = data
 		transmissions = []
 		for key in self.emailData.keys():
 			if self.emailData[key][0][0] == seriesTitle:
@@ -319,7 +319,7 @@ class processEMailDataThread(threading.Thread):
 			if transmission[1] in markerChannels:
 				transmissions.append(transmission[0:-1])
 
-		self.resultQueue.put((transmissions, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, markerType))
+		self.resultQueue.put((transmissions, seriesID, fsID, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, markerType, limitedChannels))
 
 class backgroundThread(threading.Thread):
 	def __init__(self, fnc):
@@ -701,20 +701,25 @@ class serienRecCheckForRecording:
 					self.countSerien += 1
 					if SerieEnabled:
 						# Download only if series is enabled
+						limitedChannels = False
+
 						if 'Alle' in SerieSender:
 							markerChannels = webChannels
 						else:
 							markerChannels = SerieSender
+							limitedChannels = True
 
 						self.countActivatedSeries += 1
 						seriesID = SerieUrl
 
-						jobQueue.put((seriesID, fsID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays))
+						jobQueue.put((seriesID, fsID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, limitedChannels))
+					else:
+						SRLogger.writeLog("' %s ' - Dieser Serien-Marker ist deaktiviert - es werden keine Timer angelegt." % serienTitle, True)
 
 				jobQueue.join()
 				while not resultQueue.empty():
-					(transmissionFailed, transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays) = resultQueue.get()
-					self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, 0)
+					(transmissionFailed, transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, limitedChannels) = resultQueue.get()
+					self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, excludedWeekdays, 0)
 					resultQueue.task_done()
 
 				break
@@ -766,17 +771,22 @@ class serienRecCheckForRecording:
 				print serienTitle
 				if SerieEnabled:
 					# Process only if series is enabled
+					limitedChannels = False
+
 					if 'Alle' in SerieSender:
 						markerChannels = { x : x for x in webChannels }
 					else:
 						markerChannels = { x : x for x in SerieSender }
+						limitedChannels = True
 
-					jobQueue.put((markerChannels, SerieUrl, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType))
+					jobQueue.put((markerChannels, SerieUrl, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType, limitedChannels))
+				else:
+					SRLogger.writeLog("' %s ' - Dieser Serien-Marker ist deaktiviert - es werden keine Timer angelegt." % serienTitle, True)
 
 			jobQueue.join()
 			while not resultQueue.empty():
-				(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType) = resultQueue.get()
-				self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType)
+				(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType, limitedChannels) = resultQueue.get()
+				self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, excludedWeekdays, markerType)
 				resultQueue.task_done()
 
 		self.createTimer()
@@ -883,7 +893,7 @@ class serienRecCheckForRecording:
 		# in den deep-standby fahren.
 		self.askForDSB()
 
-	def processTransmission(self, data, serien_wlid, serien_fsid, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays=None, markerType=0):
+	def processTransmission(self, data, serien_wlid, serien_fsid, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, excludedWeekdays=None, markerType=0):
 		self.count_url += 1
 
 		if data is None:
@@ -892,6 +902,9 @@ class serienRecCheckForRecording:
 			return
 
 		print "[SerienRecorder] processTransmissions: %r [%d]" % (serien_name.encode('utf-8'), len(data))
+
+		if len(data) == 0 and limitedChannels:
+			SRLogger.writeLogFilter("channels", "Für ' %s ' wurden keine Ausstrahlungstermine gefunden, die Sender sind am Marker eingeschränkt." % serien_name)
 
 		(fromTime, toTime) = self.database.getTimeSpan(serien_wlid, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
 		if self.noOfRecords < AnzahlAufnahmen:

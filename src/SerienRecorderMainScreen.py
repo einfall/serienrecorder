@@ -300,20 +300,20 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if not SerienRecorder.initDB():
 			print "[SerienRecorder] initDB failed"
 			super(self.__class__, self).close()
-
-		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
-		if not self.database.hasChannels():
-			print "[SerienRecorder] Channellist is empty !"
-			from SerienRecorderChannelScreen import serienRecMainChannelEdit
-			self.session.openWithCallback(self.readPlanerData, serienRecMainChannelEdit)
 		else:
-			self.serviceRefs = self.database.getActiveServiceRefs()
-			channelListUpToDate = serienRecMainScreen.checkChannelListTimelineness(self.database)
-
-			if channelListUpToDate:
-				self.switchStartScreen()
+			self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+			if not self.database.hasChannels():
+				print "[SerienRecorder] Channellist is empty !"
+				from SerienRecorderChannelScreen import serienRecMainChannelEdit
+				self.session.openWithCallback(self.readPlanerData, serienRecMainChannelEdit)
 			else:
-				self.session.openWithCallback(self.handleChannelListUpdate, MessageBox, "Die Senderliste wurde auf dem Server aktualisiert.\nSie muss auch im SerienRecorder aktualisiert werden.\nWechseln Sie zur Senderzuordnung und aktualisieren Sie die Senderliste mit der grünen Taste.\n\nZur Senderzuordnung wechseln?", MessageBox.TYPE_YESNO)
+				self.serviceRefs = self.database.getActiveServiceRefs()
+				channelListUpToDate = serienRecMainScreen.checkChannelListTimelineness(self.database)
+
+				if channelListUpToDate:
+					self.switchStartScreen()
+				else:
+					self.session.openWithCallback(self.handleChannelListUpdate, MessageBox, "Die Senderliste wurde auf dem Server aktualisiert.\nSie muss auch im SerienRecorder aktualisiert werden.\nWechseln Sie zur Senderzuordnung und aktualisieren Sie die Senderliste mit der grünen Taste.\n\nZur Senderzuordnung wechseln?", MessageBox.TYPE_YESNO)
 
 	def handleChannelListUpdate(self, showChannelEdit=False):
 		if showChannelEdit:

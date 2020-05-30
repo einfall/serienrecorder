@@ -69,7 +69,8 @@ class SRDatabase:
 																			info TEXT NOT NULL DEFAULT "",
 																			type INTEGER DEFAULT 0,
 																			autoAdjust INTEGER DEFAULT NULL,
-																			fsID TEXT DEFAULT NULL)''')
+																			fsID TEXT DEFAULT NULL,
+																			epgSeriesName TEXT DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -176,6 +177,7 @@ class SRDatabase:
 				for foreignKeyCheck in foreignKeyChecks:
 					cur.execute("DELETE FROM %s WHERE ROWID=?" % foreignKeyCheck[0], [foreignKeyCheck[1]])
 				cur.execute("COMMIT")
+				SRLogger.writeLog("Fremdschlüssel Korrektur wurde erfolgreich durchgeführt.", True)
 		except Exception as e:
 			cur.execute("ROLLBACK")
 			SRLogger.writeLog("Fremdschlüssel Korrektur konnte nicht durchgeführt werden [%s]." % str(e), True)
@@ -283,6 +285,13 @@ class SRDatabase:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'fsID' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
 
+		if not self.hasColumn(markerRows, 'epgSeriesName'):
+			try:
+				cur.execute("ALTER TABLE SerienMarker ADD epgSeriesName TEXT DEFAULT NULL")
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'epgSeriesName' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
 		if not self.updateToWLID():
 			updateSuccessful = False
 
@@ -323,20 +332,13 @@ class SRDatabase:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'fsID' konnte nicht in der Tabelle 'AngelegteTimer' angelegt werden [%s]." % str(e), True)
 
-		# if not self.hasColumn(timerRows, 'type'):
-		# 	try:
-		# 		cur.execute('ALTER TABLE AngelegteTimer ADD type INTEGER DEFAULT 0')
-		# 	except Exception as e:
-		# 		updateSuccessful = False
-		# 		SRLogger.writeLog("Spalte 'type' konnte nicht in der Tabelle 'AngelegteTimer' angelegt werden [%s]." % str(e), True)
-
 		try:
-			cur.execute("UPDATE AngelegteTimer SET Episode = '00' WHERE rowid IN (SELECT rowid  FROM AngelegteTimer WHERE Staffel='0' AND (Episode='' OR Episode='0'))")
+			cur.execute("UPDATE AngelegteTimer SET Episode = '00' WHERE rowid IN (SELECT rowid FROM AngelegteTimer WHERE Staffel='0' AND (Episode='' OR Episode='0'))")
 		except Exception as e:
 			updateSuccessful = False
 			SRLogger.writeLog("Der Standardwert für die Spalte 'Episode' in der Tabelle 'AngelegteTimer' konnte nicht neu gesetzt werden [%s]." % str(e), True)
 
-		if not self.updateSeriesMarker(hasFSIDColumn):
+		if self.updateSeriesMarker(hasFSIDColumn) is False:
 			updateSuccessful = False
 
 		if updateSuccessful and not hasFSIDColumn:
@@ -780,17 +782,17 @@ class SRDatabase:
 
 	def getMarkerSettings(self, seriesID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust FROM SerienMarker WHERE ID=?", [seriesID])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName FROM SerienMarker WHERE ID=?", [seriesID])
 		row = cur.fetchone()
 		if not row:
-			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1, 1)
+			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1, 1, None)
 		cur.close()
 		return row
 
 	def setMarkerSettings(self, seriesID, settings):
 		data = settings + (seriesID, )
 		cur = self._srDBConn.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=? WHERE ID=?"
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=?, epgSeriesName=? WHERE ID=?"
 		cur.execute(sql, data)
 		cur.close()
 
@@ -883,6 +885,26 @@ class SRDatabase:
 			(info, ) = row
 		cur.close()
 		return info
+
+	def getMarkerEPGName(self, fsID):
+		epgSeriesName = None
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT epgSeriesName FROM SerienMarker WHERE fsID=?", [fsID])
+		row = cur.fetchone()
+		if row:
+			(epgSeriesName, ) = row
+		cur.close()
+		return "" if not epgSeriesName else epgSeriesName
+
+	def getMarkerType(self, fsID):
+		markerType = None
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT type FROM SerienMarker WHERE fsID=?", [fsID])
+		row = cur.fetchone()
+		if row:
+			(markerType, ) = row
+		cur.close()
+		return markerType
 
 	def getMarkerNames(self):
 		cur = self._srDBConn.cursor()
@@ -1325,7 +1347,10 @@ class SRDatabase:
 			else:
 				cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (fsID, season.lower(), str(episode).zfill(2).lower()))
 		else:
-			cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND Episode=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (fsID, season.lower(), episode, startUnixtime, channel.lower()))
+			if not fsID:
+				cur.execute("DELETE FROM AngelegteTimer WHERE LOWER(Staffel)=? AND Episode=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (season.lower(), episode, startUnixtime, channel.lower()))
+			else:
+				cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND Episode=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (fsID, season.lower(), episode, startUnixtime, channel.lower()))
 		cur.close()
 
 	def removeTimers(self, data):
@@ -1368,7 +1393,7 @@ class SRDatabase:
 
 	def removeOrphanTimers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM AngelegteTimer WHERE fsID NOT IN (SELECT fsID FROM SerienMarker) AND Staffel != '0' AND Episode != '00'")
+		cur.execute("DELETE FROM AngelegteTimer WHERE (fsID NOT IN (SELECT fsID FROM SerienMarker) AND Staffel != '0' AND Episode != '00') OR fsid IS NULL")
 		cur.close()
 
 # ----------------------------------------------------------------------------------------------------------------------

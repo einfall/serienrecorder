@@ -14,7 +14,7 @@ import time, shutil, os, re, random
 
 import SerienRecorder
 from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, setSkinProperties, SelectSkin
-from SerienRecorderHelpers import encrypt, getmac, STBHelpers, isDreamOS, isVTI, SRVERSION, SRDBVERSION
+from SerienRecorderHelpers import encrypt, STBHelpers, isDreamOS, SRVERSION, SRDBVERSION
 import SerienRecorderLogWriter
 
 def ReadConfigFile():
@@ -874,7 +874,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				                                    config.plugins.serienRec.DisplayRefreshRate))
 			self.list.append(getConfigListEntry("Starte Plugin mit:", config.plugins.serienRec.firstscreen))
 			self.list.append(getConfigListEntry("Zeige Picons:", config.plugins.serienRec.showPicons))
-			if config.plugins.serienRec.showPicons.value:
+			if config.plugins.serienRec.showPicons.value != "0":
 				self.list.append(getConfigListEntry("    Verzeichnis mit Picons:", config.plugins.serienRec.piconPath))
 			self.list.append(getConfigListEntry("Cover herunterladen:", config.plugins.serienRec.downloadCover))
 			if config.plugins.serienRec.downloadCover.value:
@@ -1436,12 +1436,12 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.imap_server_ssl.save()
 		config.plugins.serienRec.imap_server_port.save()
 		if config.plugins.serienRec.imap_login.value != "*":
-			config.plugins.serienRec.imap_login_hidden.value = encrypt(getmac("eth0"), config.plugins.serienRec.imap_login.value)
+			config.plugins.serienRec.imap_login_hidden.value = encrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login.value)
 			config.plugins.serienRec.imap_login.value = "*"
 		config.plugins.serienRec.imap_login.save()
 		config.plugins.serienRec.imap_login_hidden.save()
 		if config.plugins.serienRec.imap_password.value != "*":
-			config.plugins.serienRec.imap_password_hidden.value = encrypt(getmac("eth0"), config.plugins.serienRec.imap_password.value)
+			config.plugins.serienRec.imap_password_hidden.value = encrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_password.value)
 			config.plugins.serienRec.imap_password.value = "*"
 		config.plugins.serienRec.imap_password.save()
 		config.plugins.serienRec.imap_password_hidden.save()

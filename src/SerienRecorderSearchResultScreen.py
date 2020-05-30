@@ -176,6 +176,23 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_info)
 		        ]
 
+	@staticmethod
+	def createMarker(serien_wlid, serien_name, serien_info, serien_fsid):
+		result = False
+
+		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
+			boxID = None
+		else:
+			boxID = config.plugins.serienRec.BoxID.value
+
+		if database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
+			from SerienRecorderLogWriter import SRLogger
+			SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
+			result = True
+
+		return result
+
 	def keyOK(self):
 		if self.loading or self['menu_list'].getCurrent() is None:
 			return
@@ -195,21 +212,13 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 
 		self.serien_name = ""
-		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
-		if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
-			boxID = None
-		else:
-			boxID = config.plugins.serienRec.BoxID.value
-
-		if database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
-			from SerienRecorderLogWriter import SRLogger
-			SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
+		if serienRecSearchResultScreen.createMarker(serien_wlid, serien_name, serien_info, serien_fsid):
 			self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 			self['title'].instance.setForegroundColor(parseColor("green"))
 			if config.plugins.serienRec.openMarkerScreen.value:
 				self.close(str(serien_wlid))
 		else:
-			self['title'].setText("Serie '%s (%s)' ist schon vorhanden." % (serien_name, serien_info))
+			self['title'].setText("Marker '%s (%s)' ist schon vorhanden." % (serien_name, serien_info))
 			self['title'].instance.setForegroundColor(parseColor("red"))
 
 	def keyRed(self):

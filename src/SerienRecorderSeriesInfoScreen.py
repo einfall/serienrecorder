@@ -35,6 +35,7 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 			"startTeletext"  : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"red"   : (self.keyCancel, "zurück zur vorherigen Ansicht"),
 			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
+			"1"		: (self.createInfoFile, "Serien-Informationen in Textdatei exportieren"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
@@ -59,6 +60,7 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		super(self.__class__, self).setSkinProperties()
 
 		self['text_red'].setText("Zurück")
+		self.num_bt_text[1][0] = "Exportieren"
 		self.num_bt_text[4][0] = buttonText_na
 
 		super(self.__class__, self).startDisplayTimer()
@@ -102,6 +104,32 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 			infoText = 'Es ist ein Fehler beim Abrufen der Serien-Informationen aufgetreten!'
 		self['info'].setText(infoText)
 		SerienRecorder.getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
+
+	def createInfoFile(self):
+		from SerienRecorderHelpers import getDirname
+		from Tools.Directories import fileExists
+		from Screens.MessageBox import MessageBox
+
+		errorText = None
+		(dirname, dirname_serie) = getDirname(self.database, self.serien_name, self.serien_fsid, 0)
+		if fileExists(dirname) and dirname != config.plugins.serienRec.savetopath.value and config.plugins.serienRec.seriensubdir.value:
+			try:
+				infoText = SeriesServer().getSeriesInfo(self.serien_wlid)
+			except:
+				infoText = None
+				errorText = 'Es ist ein Fehler beim Abrufen der Serien-Informationen aufgetreten!'
+
+			if infoText:
+				try:
+					folderFile = open('%s/folder.txt' % dirname, 'w')
+					folderFile.write('%s\n' % infoText)
+					folderFile.close()
+					self.session.open(MessageBox, "Serien-Informationen in den Ordner ' %s ' gespeichert." % dirname, MessageBox.TYPE_INFO, timeout=5)
+				except Exception as e:
+					errorText = 'Fehler beim Schreiben der Datei [%s]!' % str(e)
+
+		if errorText:
+			self.session.open(MessageBox, errorText, MessageBox.TYPE_ERROR, timeout=0)
 
 	def pageUp(self):
 		self['info'].pageUp()

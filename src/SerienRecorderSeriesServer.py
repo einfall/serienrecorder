@@ -90,12 +90,16 @@ class SeriesServer:
 		except:
 			return {}
 
-	def getSeriesInfo(self, seriesID):
+	def getSeriesInfo(self, seriesID, raw=False):
 		infoText = ""
 		try:
 			seriesInfo = self.server.sp.cache.getSeriesInfo(seriesID)
 		except:
 			return infoText
+
+		if raw:
+			return seriesInfo
+
 		# Title
 		if 'title' in seriesInfo:
 			infoText += seriesInfo['title'].encode('utf-8')
@@ -200,9 +204,9 @@ class SeriesServer:
 			resultList = []
 		return start, more, resultList
 
-	def doGetCoverURL(self, seriesID, seriesName):
+	def doGetCoverURL(self, seriesID, fsID):
 		try:
-			return self.server.sp.cache.getCoverURL(int(seriesID), seriesName)
+			return self.server.sp.cache.getCoverURL(int(seriesID), fsID)
 		except:
 			return ''
 

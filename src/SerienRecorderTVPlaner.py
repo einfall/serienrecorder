@@ -11,7 +11,7 @@ import time
 from HTMLParser import HTMLParser
 
 import SerienRecorder
-from SerienRecorderHelpers import decrypt, getmac
+from SerienRecorderHelpers import decrypt, STBHelpers
 from Components.config import config
 from Screens.MessageBox import MessageBox
 from SerienRecorderDatabase import SRDatabase
@@ -64,17 +64,16 @@ def getEmailData():
 		else:
 			mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_server_port.value)
 
-	except imaplib.IMAP4.abort as e:
-		SRLogger.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen [%s]" % str(e), True)
+	except (imaplib.IMAP4.abort, imaplib.IMAP4.error, imaplib.IMAP4.readonly) as e:
+		SRLogger.writeLog("TV-Planer: Verbindung zum E-Mail Server fehlgeschlagen [%s]" % str(e), True)
 		return None
-
-	except imaplib.IMAP4.error as e:
-		SRLogger.writeLog("TV-Planer: Verbindung zum Server fehlgeschlagen [%s]" % str(e), True)
+	except:
+		SRLogger.writeLog("TV-Planer: Verbindung zum E-Mail Server fehlgeschlagen [unbekannter Fehler]", True)
 		return None
 
 	try:
-		mail.login(decrypt(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-				   decrypt(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+		mail.login(decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
+				   decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
 		print "[serienrecorder]: imap login ok"
 
 	except imaplib.IMAP4.error as e:
@@ -371,6 +370,8 @@ def getEmailData():
 
 
 def imaptest(session):
+	import ssl
+
 	try:
 		if config.plugins.serienRec.imap_server_ssl.value:
 			mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
@@ -379,18 +380,26 @@ def imaptest(session):
 			mail = imaplib.IMAP4(config.plugins.serienRec.imap_server.value,
 								 config.plugins.serienRec.imap_server_port.value)
 
+
+	except (imaplib.IMAP4.abort, imaplib.IMAP4.error, imaplib.IMAP4.readonly, ssl.SSLError) as e:
+		session.open(MessageBox, "Verbindung zum E-Mail Server fehlgeschlagen [%s]" % str(e), MessageBox.TYPE_INFO, timeout=10)
+		SRLogger.writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen [%s]" % str(e), True)
+		return None
 	except:
-		session.open(MessageBox, "Verbindung zum E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-		SRLogger.writeLog("IMAP Check: Verbindung zum Server fehlgeschlagen", True)
+		import sys
+		e = sys.exc_info()[0]
+		session.open(MessageBox, "Verbindung zum E-Mail Server fehlgeschlagen [%s]" % str(e), MessageBox.TYPE_INFO, timeout=10)
+		SRLogger.writeLog("IMAP Check: Verbindung zum E-Mail Server fehlgeschlagen [%s]" % str(e), True)
 		return None
 
-	try:
-		mail.login(decrypt(getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-				   decrypt(getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
 
-	except imaplib.IMAP4.error:
-		session.open(MessageBox, "Anmeldung am E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-		SRLogger.writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen", True)
+	try:
+		mail.login(decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
+				   decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+
+	except imaplib.IMAP4.error as e:
+		session.open(MessageBox, "Anmeldung am E-Mail Server fehlgeschlagen [%s]" % str(e), MessageBox.TYPE_INFO, timeout=10)
+		SRLogger.writeLog("IMAP Check: Anmeldung auf Server fehlgeschlagen [%s]" % str(e), True)
 		return None
 
 	try:
@@ -403,16 +412,16 @@ def imaptest(session):
 				x = item.split()
 				mailbox = string.join(x[2:])
 				SRLogger.writeLog("%s" % mailbox, True)
-	except imaplib.IMAP4.error:
-		session.open(MessageBox, "Abrufen der Postfächer vom E-Mail Server fehlgeschlagen", MessageBox.TYPE_INFO, timeout=10)
-		SRLogger.writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen", True)
+	except imaplib.IMAP4.error as e:
+		session.open(MessageBox, "Abrufen der Postfächer vom E-Mail Server fehlgeschlagen [%s]" % str(e), MessageBox.TYPE_INFO, timeout=10)
+		SRLogger.writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen [%s]" % str(e), True)
 
 	try:
 		mail.select(config.plugins.serienRec.imap_mailbox.value)
 
-	except imaplib.IMAP4.error:
-		session.open(MessageBox, "Postfach [%r] nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, MessageBox.TYPE_INFO, timeout=10)
-		SRLogger.writeLog("IMAP Check: Mailbox %r nicht gefunden" % config.plugins.serienRec.imap_mailbox.value, True)
+	except imaplib.IMAP4.error as e:
+		session.open(MessageBox, "Postfach [%r] nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), MessageBox.TYPE_INFO, timeout=10)
+		SRLogger.writeLog("IMAP Check: Mailbox %r nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), True)
 		mail.logout()
 		return None
 
@@ -424,9 +433,9 @@ def imaptest(session):
 		if result != 'OK':
 			SRLogger.writeLog("IMAP Check: %s" % data, True)
 
-	except imaplib.IMAP4.error:
-		session.open(MessageBox, "Fehler beim Abrufen der TV-Planer E-Mail", MessageBox.TYPE_INFO, timeout=10)
-		SRLogger.writeLog("IMAP Check: Fehler beim Abrufen der Mailbox", True)
+	except imaplib.IMAP4.error as e:
+		session.open(MessageBox, "Fehler beim Abrufen der TV-Planer E-Mails [%s]" % str(e), MessageBox.TYPE_INFO, timeout=10)
+		SRLogger.writeLog("IMAP Check: Fehler beim Abrufen der TV-Planer E-Mails [%s]" % str(e), True)
 		SRLogger.writeLog("IMAP Check: %s" % mail.error.message, True)
 
 	mail.logout()
