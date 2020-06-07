@@ -10,6 +10,9 @@ var data =
 {   menus: [
     {href: "index.htm", title: "Einleitung", submenus: [
         { href: "index.htm#installation", title: "Installation"},
+		{ href: "index.htm#beta-version", title: "Installation von Beta-Versionen"},
+		{ href: "index.htm#githubpluginupdater", title: "Der GithubPluginUpdater"},
+		{ href: "index.htm#zusatz-plugins", title: "Zusatz Plugins"},
         { href: "index.htm#erste_schritte", title: "Erste Schritte"},
         { href: "index.htm#einstellungen", title: "Globale Einstellungen"},
         { href: "index.htm#autocheck", title: "Autocheck (AC, Suchlauf)"},
@@ -38,7 +41,7 @@ var data =
         { href: "serienmarker.htm#staffel-auswaehlen", title: "Staffel auswählen"},
         { href: "serienmarker.htm#sendetermine", title: "Sendetermine"},
         { href: "serienmarker.htm#timer-liste", title: "Timer-Liste"},
-		{ href: "serienmarker.htm#serien-menu", title: "Serien-Marker Menü"},
+		{ href: "serienmarker.htm#serien-menu", title: "Serien-Marker Einstellungen"},
 		{ href: "serienmarker.htm#tastatur-sm", title: "Tastaturbelegung"},
     ]},
 	{href: "eiligen.htm", title: "Für die ganz Eiligen",},
