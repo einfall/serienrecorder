@@ -68,7 +68,8 @@
                     <img src="images/globale-einstellungen.png" alt="Die globalen Einstellungen im Überblick" align="center">
                     <p><small>Die globalen Einstellungen </small></p>
                 </div>
-				
+<!-- Dies wurde wieder entfernt	!!!!			
+
 				<p>Mittlerweile hat sich das Aussehen des SerienRecoder Menüs etwas geändert.
 				<br>Die einzelnen Abschnitte ( System, Auto-Check etc.) sind in "Sektionen" eingeteilt und können mit hilfe der <span class="label label-default">Channel <span class="glyphicon glyphicon-arrow-up">&nbsp;<span class="glyphicon glyphicon-arrow-down"></span></span></span> bzw. <span class="label label-default">Bouquet <span class="glyphicon glyphicon-arrow-up">&nbsp;<span class="glyphicon glyphicon-arrow-down"></span></span></span> Tasten direkt angesteuert werden. Man sieht auch sofort, wie viel Abschnitte (1/6) es insgesamt sind. (siehe <strong>Bild 01</strong>)
 				<br>Wenn ein Abschnitt mehr Optionen hat, als auf eine Seite passen, dann bekommt die erste Zahl noch eine Erweiterung (2.1/6). (siehe <strong>Bild 02</strong>)
@@ -94,6 +95,7 @@
            
 			
 			</div>
+-->			
 			
 <!-- Die Farbtasten -->			
 			
@@ -188,7 +190,12 @@
                             Ist diese Option gesetzt, wird für jede Serie ein Unterverzeichnis mit dem Namen der Serie im Verzeichnis, das unter "Speicherort für Aufnahmen" eingestellt ist, angelegt. Das Verzeichnis wird erst dann angelegt, wenn für die betreffende Serie ein Timer erstellt wird.
 							<br>Sollte der Speicherort nicht erreichbar sein (z.B. NAS), wird die Aufnahmen auf das Hauptaufnahme-Verzeichnis umgelegt.
                         </p>
-                    </li>
+						<ul>
+                            <li>
+                                <strong>Verzeichnisname mit Produktionsjahr:</strong>
+                                <p>Wenn dies aktiv ist, wird dem Serien-Verzeichnis das Produktionsjahr der Serie angehängt, damit man im Falle von gleichnamigen Serien diese auch unterscheiden kann.
+                                </p>
+                            </li>
                     <li>
                         <strong>Staffelverzeichnis anlegen:</strong>
                         <p>
@@ -211,6 +218,8 @@
                         </ul>
 						<div class="alert alert-info" role="alert">Die Staffel-Verzeichnisse können vom SR auch mit dem deutschen Namen <strong>"Staffel"</strong> angelegt werden, dazu muss man im SerienRecoder Verzeichnis eine Datei mit dem Namen <strong>"Staffel"</strong> anlegen. Sofern noch Staffel-Verzeichnisse mit dem Namen <strong>"Season"</strong> existieren, kann man die manuell in <strong>"Staffel"</strong> umbenennen.</div>
                     </li>
+					</ul>
+					</li>
                     <li>
                         <strong>Automatisches Plugin-Update:</strong>
                         <p>
@@ -951,7 +960,7 @@
                         <p>Standardmäßig stehen die Log-Dateien im SR-Plugin Ordner                          
                         </p>
                     </li>
-<!--                  
+                  
 				   <li>
                         <strong>Log-Dateiname mit Datum und Uhrzeit:</strong>
                         <p>Steht dies auf <strong>Nein</strong>, wird die Log-Datei jeden Tag überschrieben. Dies hat den Nachteil, das man keine fortlaufenden Log-Dateien hat, für eine eventuelle Fehlersuche.
@@ -966,7 +975,7 @@
 						<br>
                     </li>
 					
- -->					
+					
                     <li>
                         <strong>DEBUG LOG aktivieren:</strong>
                         <p>Ist diese gesetzt, werden folgende <strong>DEBUG LOG</strong> Optionen, sofern diese dann auf JA gesetzt sind, im Log mit angegeben.

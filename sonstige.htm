@@ -63,7 +63,7 @@
 				<br><br>Das kein Cover geladen wird, man aber auf der Webseite von TheTVDB eines sieht, liegt oft daran, das den Covern auf TheTVDB eine "Sprache" zugeteilt wurde. Anfangs hat der SR öfters keine Cover gefunden, da er nur nach "deutschen Covern" gesucht hat. Da die Cover aber meist gleich sind, egal ob Deutsch oder Englisch und auch vielen "egal" ist, ob es ein deutsches oder anders sprachiges Cover ist (Hauptsache es wird überhaupt eines geladen der Optik wegen), werden auch englische Cover heruntergeladen.
 				<br>Ein weiterer Grund dafür, das kein Cover geladen wird kann sein, das die <a href="sonstige.htm#tvdb-id"><strong><u>TVDB-ID</u></strong></a> auf dem SerienServer nicht vorhanden ist.
 				<br>
-				Falls einem das "automatisch" geladene Cover (es wird immer das Cover mit der besten Bewertung und den meisten Stimmen geladen) nicht zusagt, kann man im Serien-Marker-Menü mit der Taste <kbd class="blue">Cover auswählen</kbd> die <strong>Cover-Auswahl</strong> öffnen, um sich evtl. ein anderes Cover auszusuchen. In dieser <strong>Cover-Auswahl</strong> kann man mit <kbd>OK</kbd> das selektierte Cover übernehmen oder aber man verlässt die Cover-Auswahl mit <kbd>EXIT</kbd>, ohne eine Änderung.
+				Falls einem das "automatisch" geladene Cover (es wird immer das Cover mit der besten Bewertung und den meisten Stimmen geladen) nicht zusagt, kann man in den Serien-Marker-Einstellungen mit der Taste <kbd class="blue">Cover auswählen</kbd> die <strong>Cover-Auswahl</strong> öffnen, um sich evtl. ein anderes Cover auszusuchen. In dieser <strong>Cover-Auswahl</strong> kann man mit <kbd>OK</kbd> das selektierte Cover übernehmen oder aber man verlässt die Cover-Auswahl mit <kbd>EXIT</kbd>, ohne eine Änderung.
 				</p>
 				<p><h5><strong>Beispiel Screenshots für die Cover-Auswahl</strong></h5><small>(Klick zum vergrößern)</small></p>
 					<div class="row">
@@ -377,6 +377,13 @@
 				<br>Abweichende Einstellungen im Serien-Marker-Menü "überschreiben" die Einstellungen am Sender in der Senderzuordnung.
 				<br>Die Einstellungen im SerienRecorder findet man unter <a href="serienplaner.htm#vps-sender"><strong><u>Senderzuordnung</u></strong></a> und unter <a href="serienmarker.htm#vps-marker"><strong><u>Serien-Marker-Menü</u></strong></a>.
 				</p>
+				<br>
+				<p><strong>Anmerkung </strong>
+				<div class="alert alert-info" role="alert">Wenn beim Anlegen eines Timers keine EIT im EPG gefunden wurde, der Sender aber VPS unterstützt, wurde VPS am Timer deaktiviert, weil es ohne EIT nicht funktioniert.
+				Wurde dann später beim Aktualisieren des Timers doch eine EIT für die Sendung gefunden, wurde diese zwar an den Timer gesetzt, VPS blieb aber abgeschaltet.
+				Jetzt, seit <strong>Release-Version 4.1.0</strong>, wird VPS auch aktiviert wenn beim Aktualiseren eine EIT gefunden wurde und für den Marker/Sender VPS aktiviert wurde.</div>
+				</p>
+				
 				<br>
 				<p><strong>Beispiel </strong>
 				<br><br>

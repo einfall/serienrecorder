@@ -64,7 +64,7 @@
                     Neben dem Namen des Serien-Markers lassen sich an jedem Eintrag in der Liste auch noch (Skinabhängig) wichtige Einstellungen ablesen. Im unteren Bild kann man sehen, das für die angezeigten Serien alle zugeordneten Sender und auch alle Staffeln erlaubt sind. Zudem sieht man das jede Episode nur einmal aufgenommen werden soll (Wdh=0) und sowohl die Vorlaufzeit als auch die Nachlaufzeit auf 5 min stehen. Das Aufnahmeverzeichnis ist auch zu sehen.
 					<br>Auch werden in vielen Skins die Cover zu den gerade selektierten Serien und auch die (manchmal komplette) Tastaturbelegung angezeigt.
                 </p>
-				<p>Zusätzlich werden zu den Serien jetzt auch Produktionsort und -Jahr der Serie angezeigt (Nicht auf dem Screenshot unten enthalten). Diese Zusatzinformationen werden auch in der Datenbank gespeichert.
+				<p>Zusätzlich werden zu den Serien jetzt auch Produktionsort und -Jahr der Serie angezeigt (Nicht auf dem Screenshot unten enthalten). Diese Zusatzinformationen werden auch in der Datenbank gespeichert. Damit können dann auch (endlich) gleichnamige Serien hinzugefügt werden, wodurch diese unterschieden werden, dies geht seit Release-Version 4.1.0.
 				</p>
 				<p>Aus der Serien-Marker-Ansicht kommt man mit <kbd>EXIT</kbd> wieder zurück zur Serien-Planer-Ansicht, sofern man von dort auch gekommen ist. Der SerienRecorder läßt sich auch direkt mit der Marker-Ansicht starten, dann wird mit <kbd>EXIT</kbd> der SR beendet und mit <kbd>lang EXIT</kbd> kommt man zur Serien-Planer-Ansicht.
 				</p>
@@ -209,15 +209,16 @@
                 </div>
             </div>
 			
-<!-- Das Serien-Marker Menü -->			
+<!-- Die Serien-Marker Einstellungen -->			
 			
 			<span id="serien-menu" class="anchor"></span>
 			<br>
-			<h2 class="header">Das Serien-Marker Menü</h2>
+			<h2 class="header">Die Serien-Marker Einstellungen</h2>
 			<br>
             <div class="row">
-				<p>Es wird aufgerufen mit der <span class="label label-default">Menü</span> Taste in der Serien-Marker Ansicht. Hier können für jede Serie individuelle Einstellungen getroffen werden, die nur für diese Serie abweichend von den globalen Einstellungen sind. Diese Einstellungen "überschreiben" natürlich idR die Einstellungen im Globalen Menü.
-				<br>Abweichend von der Tastaturbelegung in der Serien-Marker-Ansicht, wird hier mit Taste <kbd class="blue">Blau</kbd> das Cover zurückgesetzt. Das bedeutet, daß das vorhandene Cover gelöscht wird und sofort das "neue" Cover von TheTVDB runtergeladen wird, sofern vorhanden.
+				<p>Diese werden aufgerufen mit der <span class="label label-default">Menü</span> Taste in der Serien-Marker Ansicht. Hier können für jede Serie individuelle Einstellungen getroffen werden, die nur für diese Serie abweichend von den globalen Einstellungen sind. Diese Einstellungen "überschreiben" natürlich idR die Einstellungen in edn Globalen Einstellungen.
+				<br>Abweichend von der Tastaturbelegung in der Serien-Marker-Ansicht, wird hier mit Taste <kbd class="blue">Blau</kbd> die Cover-Auswahl aufgerufen. Damit wird ein neues Fenster geöffnet, wo Cover der gerade aktiven Serie von TheTVDB heruntergeladen werden. Dort kann dann aus der Liste ein Cover selektiert und mit <kbd>OK</kbd> bestätigt/gespeichert werden. 
+				<br>Mit der Taste <kbd>EXIT</kbd> verlässt man die Cover-Auswahl, ohne Änderungen zu speichern.
 				</p>
 				<br>
                 <ul>
@@ -228,8 +229,15 @@
 						<br>Über die GELBE Taste kann man das Aufnahmeverzeichnis wieder auf "Standard" zurücksetzen.
 						</p>
 						<div class="bs-callout bs-callout-info">Das Anlegen eines Ordners ist manchmal etwas "schwierig". Sollte also jemand Probleme dabei haben, dann mal folgendes ausprobieren.
-						<br>Im Marker-Menü bei Speicherort OK-Taste, dann das Verzeichnis wählen (aber NICHT reingehen, nur den Curser drauf), dort dann GRÜN drücken. Jetzt öffnet sich idR die virtuelle Tastatur, wo noch der alte Pfad drin steht. Dort NICHTS machen, außer die Taste EXIT drücken. Jetzt sollte im Menü der angewählte Speicherort eingetragen sein.</p>
+						<br>In den Serien-Marker-Einstellungen bei Speicherort OK-Taste, dann das Verzeichnis wählen (aber NICHT reingehen, nur den Curser drauf), dort dann GRÜN drücken. Jetzt öffnet sich idR die virtuelle Tastatur, wo noch der alte Pfad drin steht. Dort NICHTS machen, außer die Taste EXIT drücken. Jetzt sollte im Menü der angewählte Speicherort eingetragen sein.</p>
                         </div>
+					</li>
+					<li>
+                        <strong>Alternativer Serienname im EPG:</strong>
+					
+                        <p>Der alternative Serienname wird zusätzlichen beim Abgleich mit dem EPG verwendet. Es wird zuerst versucht, über den Serien-Marker Namen die Sendung im EPG zu finden, wenn das nicht klappt, wird es über den EPG Seriennamen (wenn konfiguriert) versucht. Manchmal unterscheiden sich Serien-Marker Name und EPG Name nur um wenige Zeichen, das führt dann dazu, dass der SerienRecorder die Sendung nicht im EPG finden kann und deswegen den Timer nicht aktualisiert (z.B. "Die Heiland: Wir sind Anwalt" und "Die Heiland - Wir sind Anwalt").
+						</p>
+						
 					</li>
 					<li>
                         <strong>Aktiviere abweichenden Timervorlauf:</strong>
@@ -433,10 +441,13 @@
 						</p>
 					</li>
 					<br>
-					<h4 class="header">Die Farbtasten im Serien-Marker-Menü</h4>
+					
+<!-- Die Farbtasten im Serien-Marker-Einstellungen -->
+					
+					<h4 class="header">Die Farbtasten der Serien-Marker-Einstellungen</h4>
 					<kbd class="red">Abbrechen</kbd> <kbd class="green">Speichern</kbd> <kbd class="yellow">- - - - -</kbd> <kbd class="blue">Cover auswählen</kbd>
 					<br><br><br>
-					Mit der Taste <kbd class="red">ROT</kbd> für <strong>Abbrechen</strong> werden die hier im Serien-Marker-Menü gemachten Einstellungen verworfen und man kehrt zurück zur Serien-Marker-Ansicht.
+					Mit der Taste <kbd class="red">ROT</kbd> für <strong>Abbrechen</strong> werden die hier in den Serien-Marker-Einstellungen gemachten Änderungen verworfen und man kehrt zurück zur Serien-Marker-Ansicht.
 					<br><br>
 					Mit der Taste <kbd class="green">GRÜN</kbd> für <strong>Speichern</strong> werden die Änderungen dauerhaft gespeichert und man kehrt zurück zur Serien-Marker-Ansicht.
 					<br><br>
@@ -472,7 +483,7 @@
 			<br><br>
             <h3 class="sub-header"><strong>Tastaturbelegung in der Serien-Marker Ansicht</strong></h3>
 			<ul>
-			<p>Nicht Serien-Marker-Menü, denn dort ist es abweichend (siehe weiter oben).
+			<p>Nicht Serien-Marker-Einstellungen, denn dort ist es abweichend (siehe weiter oben).
 			</p>
 			</ul>	
 			<table class="keys table table-bordered"> 
@@ -515,8 +526,8 @@
 				</tr>
 				<tr class="active"> 
 					<td><kbd>Menü</kbd>+<kbd>lang Menü</kbd></td> 
-					<td>Serien-Marker Menü / Globale Einstellungen</td> 
-					<td><a href="serienmarker.htm#serien-menu"><strong><u>Serien-Marker Menü /</u></strong></a><a href="einstellungen.htm"><strong><u>/ Globale Einstellungen</u></strong></a></td> 
+					<td>Serien-Marker-Einstellungen / Globale Einstellungen</td> 
+					<td><a href="serienmarker.htm#serien-menu"><strong><u>Serien-Marker-Einstellungen /</u></strong></a><a href="einstellungen.htm"><strong><u>/ Globale Einstellungen</u></strong></a></td> 
 				</tr>
 				<tr class="success"> 
 					<td><kbd>Help</kbd>+<kbd>lang Help</kbd></td> 
