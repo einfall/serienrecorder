@@ -1859,14 +1859,15 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					                                                                              margin_before,
 					                                                                              margin_after, epgSeriesName,
 					                                                                              timer_stbRef)
+				if eit > 0:
+					# Adjust the EPG start/end time with margins
+					start_unixtime_eit = int(start_unixtime_eit) - (int(margin_before) * 60)
+					end_unixtime_eit = int(end_unixtime_eit) + (int(margin_after) * 60)
 
 				updateFromEPG = database.getUpdateFromEPG(fsid)
 				if updateFromEPG is False:
 					start_unixtime_eit = start_unixtime
 					end_unixtime_eit = end_unixtime
-
-				start_unixtime_eit = int(start_unixtime_eit) - (int(margin_before) * 60)
-				end_unixtime_eit = int(end_unixtime_eit) + (int(margin_after) * 60)
 
 				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 				konflikt = ""

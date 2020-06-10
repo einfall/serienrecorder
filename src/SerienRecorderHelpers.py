@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.1.0'
+SRVERSION = '4.1.1-beta'
 SRDBVERSION = '4.1.0'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
@@ -487,14 +487,18 @@ class STBHelpers:
 
 		# Copy cover only if path exists and series sub dir is activated
 		if markerType == 0 and fileExists(dirname) and config.plugins.serienRec.seriensubdir.value and config.plugins.serienRec.copyCoverToFolder.value:
+			print "[SerienRecorder] Cover soll in Verzeichnis kopiert werden: %s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid)
 			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid)) and not fileExists("%sfolder.jpg" % dirname_serie):
+				print "[SerienRecorder] Kopiere Cover in Verzeichnis: %sfolder.jpg" % dirname_serie
 				shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid), "%sfolder.jpg" % dirname_serie)
 			if config.plugins.serienRec.seasonsubdir.value:
+				print "[SerienRecorder] Staffel Unterverzeichnis vorhanden"
 				covername = "series"
 				if config.plugins.serienRec.copyCoverToFolder.value is "1":
 					covername = "folder"
 
 				if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid)) and not fileExists("%s%s.jpg" % (dirname, covername)):
+					print "[SerienRecorder] Kopiere Cover in Verzeichnis: %s%s.jpg" % (dirname, covername)
 					shutil.copyfile("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid), "%s%s.jpg" % (dirname, covername))
 
 	@classmethod

@@ -51,8 +51,12 @@ Neue Funktionen:
 - VPS wird jetzt beim Aktualisieren des Timers gesetzt, sobald eine EIT vorhanden ist (siehe Anmerkungen 2)
 - Timer für Filme aus der TV-Planer E-Mail werden jetzt ohne Staffel und Episode angelegt
 - In den Serien-Marker Einstellungen gibt es jetzt eine neue Option mit der man einen alternativen Serien-Marker vergeben kann, den EPG Seriennamen (siehe Anmerkungn 6)
-- Die Funktion "Cover zurücksetzen" (blaue Taste in den Markereinstellungen) wurde erweitert und ist jetzt eine Coverauswahl über die man ein Cover für die Serie auswählen kann.
-
+- "Cover zurücksetzen" (blaue Taste) in "Cover auswählen" geändert (siehe Anmerkungen 10)
+- In den globalen Einstellungen gibt es jetzt "Einzug der Serien-Namen in der Serien-Marker Ansicht" - dort ist 40 als Standardwert vorgeben und man kann einen Wert von 0 - 80 einstellen um die Position des Serien-Namens zu setzen um die einzelnen Serien-Marker optisch besser voneinander zu trennen. Je nachdem mit welcher Ansicht man startet, werden die Änderungen direkt wirksam bzw. nach einem SerienRecorder Neustart.
+- Updateprüfung für Senderliste (siehe Anmerkungen 8)
+- Unterstützung für die VTI Funktion "Aufnahmezeiten automatisch an EPG Daten anpassen" (siehe Anmerkungen 9)
+- Im Log werden jetzt beim Anlegen von Timern auch die Endzeiten der Timer mit ausgegeben
+- Die Timer-Liste kann jetzt aus der Episodenliste aufgerufen werden (siehe Anmerkungen 11)
 
 Änderungen:
 
@@ -76,6 +80,13 @@ Neue Funktionen:
 - Wird ein Timer über die Sendetermine Ansicht erstellt, wird im Log jetzt statt "Manueller Auto-Check" der Hinweis "Manuelle Timererstellung aus Sendeterminen" ausgegeben.
 - Es wird jetzt auch die Endzeit beim Aktualisieren der Timer berücksichtigt, bisher wurde die Endzeit nur dann aktualisiert, wenn sich auch die Startzeit geändert hat, jetzt reicht auch eine geänderte Endzeit um den Timer zu aktualisieren - das wird dann auch so ins Log geschrieben.
 - Ist ein SerienRecorder Skin auf der Box nicht lauffähig wirdjetzt eine Fehlermeldung beim Starten ausgegeben und der Skin wird zurückgesetzt.
+- Beim Starten werden jetzt die Berechtigungen auf die Datenbank überprüft
+- "Senderliste aktualisieren" verbessert (jetzt werden auch Änderungen in Groß-/Kleinschreibungen erkannt - Beispiel "kabel eins" => "Kabel Eins")
+- Aktualisierung der Senderliste wird jetzt im Log protokolliert
+- IMAP Einstellungen können jetzt direkt in den globalen Einstellungen getestet werden, dafür gibt es eine neue Option "IMAP Einstellungen testen"
+- Sendernamen für ausstehende Timer in der Timer-Liste (siehe Anmerkungen 12)
+- Timer Symbol für noch ausstehende Timer in der Timer-Liste (so können die noch ausstehenden Timern von den bereits abgearbeiteten Timern unterschieden werden, wenn man die komplette Liste anzeigen lässt)
+- Zusätzliche Auswahl beim Timername "<Serienname> - SnnEmm"
 
 Bugfixes:
 
@@ -86,6 +97,12 @@ Bugfixes:
 - Absturz in der Merkzettel Ansicht behoben
 - Probleme bei der Eingabe in den Serieneinstellungen behoben, weil "Cover zurücksetzen" jetzt über die blaue Taste und nicht mehr über Taste 2 erreichbar ist.
 - Update Probleme bei Boxen mit DreamOS behoben (Danke an @Sven H)
+- Kein Absturz mehr beim Verarbeiten der TV-Planer E-Mail wenn eine Sendung Anführungszeichen im Namen hat
+- Senderzuordnung verbessert (es werden jetzt auch wieder die SD Kanäle gefunden, bei der automatischen Zuordnung)
+- Fehlende Logausgabe wenn erlaubte Zeitspanne am Marker gesetzt ist und "Immer Timer anlegen, wenn keine Wiederholung gefunden wird" ausgeschaltet ist.
+- Falsche Logausgabe bei erlaubte Zeitspanne korrigiert (siehe Anmerkungen 7)
+- Refreshfehler beim Löschen von Sendern aus der Senderliste behoben
+- Bei einigen Screens passte bei HD Skins der Sendername nicht in die Spalte - dies wurde behoben
 
 Anmerkungen:
 
@@ -109,6 +126,21 @@ Diese Option gibt es auch für Filme
 5. Bei "Alle Sender" wurden auch nur die aktiven Sender benutzt und nicht alle in der Senderzuordnung. Ich habe z.B. bei mir keine Sky Sender aktiv, die hätten eigentlich bei "Alle Sender" angezeigt werden müssen, das ist jetzt wieder korrekt.
 
 6. Der alternative Markername wird zusätzlichen beim Abgleich mit dem EPG verwendet. Es wird zuerst versucht, über den Serien-Marker Namen die Sendung im EPG zu finden, wenn das nicht klappt, wird es über den EPG Seriennamen (wenn konfiguriert) versucht. Manchmal unterscheiden sich Serien-Marker Name und EPG Name nur um wenige Zeichen, das führt dann dazu, dass der SerienRecorder die Sendung nicht im EPG finden kann und deswegen den Timer nicht aktualisiert (z.B. "Die Heiland: Wir sind Anwalt" und "Die Heiland - Wir sind Anwalt")
+
+7. Es wurde zweimal der gleiche Zeitbereich ausgegeben, jetzt wird der Bereich der der Start- und Endzeit der Sendung entspricht z.B. (01:05 - 02:55) ausgegeben und der Zeitbereich der für den Marker (bzw. global) eingestellt ist z.B. [20:00 - 23:59]. Außerdem hieß es bisher "Timer nicht in Zeitspanne".
+' World Wrestling Entertainment - S00E00 - Wrestling-Magazin, USA 2019 ' - Sendung (01:05 - 02:55) nicht in Zeitspanne [20:00 - 23:59]
+
+8. Es gibt jetzt eine Updateprüfung für die Senderliste - diese wird beim Öffnen des SerienRecorders ausgeführt. Dabei wird geprüft ob auf dem Serien-Server eine aktuellere Senderliste vorhanden ist. Wenn ja wird der SerienRecorder Benutzer zum Aktualisieren aufgefordert.
+
+9. Die VTI Funktion "Aufnahmezeiten automatisch an EPG Daten anpassen" kann jetzt durch den SerienRecorder an den Timer gesetzt werden oder nicht. Es gilt immer die Einstellung aus dem VTI. Ausnahmen können im SerienRecorder für bestimmte Sender (Senderzuordnung => Einstellungen) vorgenommen werden und/oder am Serien-Marker.
+Beispiel: Die Funktion ist im VTI nicht aktiv, sie soll aber für Timer vom SerienRecorder auf dem Sender ZDF aktiv sein, dann aktiviert man die Option am Sender ZDF im SerienRecorder.
+
+10. In den Serien-Marker Einstellungen wurde die Funktion "Cover zurücksetzen" durch "Cover auswählen" ersetzt. Die neue Funktion zeigt jetzt alle deutschen und englischen Cover der Serie an und man kann für den Serien-Marker ein bestimmtes Cover auswählen. Es werden nur Cover in Deutsch und Englisch von TheTVDB geholt, alle anderen Sprachen bisher noch nicht. Evtl. erweitere ich das noch.
+
+11. Man kann jetzt in der Episoden-Liste über die grüne Taste die Timer-Liste für diese Serie anzeigen lassen und dort dann einzelne Timer Einträge löschen.
+
+12. In der Timer-Liste werden jetzt für noch ausstehende Timer die Sendernamen aus dem Timer angezeigt und nicht mehr die Wunschliste (Web) Sender.
+Das hat den Vorteil, dass man direkt sieht auf welchem Sender SD/HD/UHD aufgenommen wird.
 
 Viel Spaß mit dem SerienRecorder!
 

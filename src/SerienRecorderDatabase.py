@@ -1355,7 +1355,15 @@ class SRDatabase:
 
 	def removeTimers(self, data):
 		cur = self._srDBConn.cursor()
-		cur.executemany("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", data)
+		for dataset in data:
+			print '[SerienRecorder] RemoveTimers: %r' % dataset[0]
+			if dataset[0] is None:
+				print '[SerienRecorder] Delete without fsid'
+				cur.execute("DELETE FROM AngelegteTimer WHERE LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", dataset[1:])
+			else:
+				print '[SerienRecorder] Delete with fsid'
+				cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", dataset)
+		#cur.executemany("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", data)
 		cur.close()
 
 	def removeAllOldTimer(self):

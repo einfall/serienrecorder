@@ -635,8 +635,9 @@ class serienRecTimer:
 			if eit is 0 and len(epgSeriesName) > 0 and epgSeriesName != serien_name:
 				eit, start_unixtime, end_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, margin_after, epgSeriesName, stbRef)
 
-		start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
-		end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
+		if eit > 0:
+			start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+			end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
 		show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
 		show_end = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
