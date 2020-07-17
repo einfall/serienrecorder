@@ -438,6 +438,8 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
+			"nextBouquet": (self.previousSeries, "zur vorherigen Serie springen"),
+			"prevBouquet": (self.nextSeries, "zur nächsten Serie springen"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -534,7 +536,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 			if self['popup_list'].getCurrent() is None:
 				return None, None, None
 			serien_name = self['popup_list'].getCurrent()[0][0]
-			serien_fsid = self['popup_list'].getCurrent()[0][2]
+			serien_fsid = self['popup_list'].getCurrent()[0][3]
 		serien_wlid = self.database.getMarkerWLID(serien_fsid)
 		return serien_name, serien_wlid, serien_fsid
 
@@ -636,7 +638,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 
 			self.aSerie = self['popup_list'].getCurrent()[0][0]
-			self.aSerieFSID = self['popup_list'].getCurrent()[0][2]
+			self.aSerieFSID = self['popup_list'].getCurrent()[0][3]
 			self.aStaffel = "0"
 			self.aFromEpisode = 0
 			self.aToEpisode = 0
@@ -676,6 +678,26 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
 			self.getCover()
 
+	def previousSeries(self):
+		(selected_serien_name, selected_serien_wlid, selected_serien_fsid) = self.getCurrentSelection()
+		selectedIndex = self['menu_list'].getSelectedIndex()
+		print "[SerienRecorder] selectedIndex = %d" % selectedIndex
+		for i, (txt, serie, staffel, episode, title, start_time, webChannel, serien_fsid) in reversed(list(enumerate(self.addedlist_tmp[:selectedIndex]))):
+			if serien_fsid != selected_serien_fsid or i == 0:
+				print "[SerienRecorder] index = %d" % i
+				self['menu_list'].moveToIndex(i)
+				break
+		self.getCover()
+
+	def nextSeries(self):
+		(selected_serien_name, selected_serien_wlid, selected_serien_fsid) = self.getCurrentSelection()
+		selectedIndex = self['menu_list'].getSelectedIndex()
+		for i, (txt, serie, staffel, episode, title, start_time, webChannel, serien_fsid) in list(enumerate(self.addedlist_tmp[selectedIndex:])):
+			if serien_fsid != selected_serien_fsid or selectedIndex + i == len(self.addedlist_tmp):
+				self['menu_list'].moveToIndex(selectedIndex + i)
+				break
+		self.getCover()
+
 	def getCover(self):
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		if serien_name and serien_wlid:
@@ -708,5 +730,6 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyCancel(self):
 		if self.delAdded:
 			self.session.openWithCallback(self.callDeleteMsg, MessageBox, "Sollen die Änderungen gespeichert werden?", MessageBox.TYPE_YESNO, default = True)
+			self.close()
 		else:
 			self.close()

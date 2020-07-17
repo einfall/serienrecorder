@@ -66,6 +66,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			"red_long"      : (self.keyRedLong, "ausgewählten Serien-Marker löschen"),
 			"green"         : (self.keyGreen, "zur Senderauswahl"),
 			"yellow"        : (self.keyYellow, "Sendetermine für ausgewählte Serien anzeigen"),
+			"yellow_long"   : (self.resetTransmissions, "Sendetermine für ausgewählte Serien zurücksetzen"),
 			"blue"	        : (self.keyBlue, "Ansicht Timer-Liste öffnen"),
 			"info"	        : (self.keyCheck, "Suchlauf für Timer starten"),
 			"left"          : (self.keyLeft, "zur vorherigen Seite blättern"),
@@ -75,7 +76,6 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			"menu"          : (self.markerSetup, "Menü für Serien-Einstellungen öffnen"),
 			"menu_long"     : (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"startTeletext" : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
-			#"startTeletext_long" : (self.resetTransmissions, "Ausstrahlungstermine auf dem SerienServer zurücksetzen"),
 			"0"		        : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"1"		        : (self.searchSeries, "Serie manuell suchen"),
 			"2"		        : (self.changeTVDBID, "TVDB-ID ändern"),
@@ -250,7 +250,10 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		if serien_wlid:
-			SeriesServer().resetLastEPGUpdate(serien_wlid)
+			if SeriesServer().resetLastEPGUpdate(serien_wlid):
+				self.session.open(MessageBox, "Die Sendetermine für ' %s ' wurden zurückgesetzt." % serien_name, MessageBox.TYPE_INFO, timeout=5)
+			else:
+				self.session.open(MessageBox, "Fehler beim Zurücksetzen der Sendetermine für ' %s '." % serien_name, MessageBox.TYPE_ERROR, timeout=5)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)

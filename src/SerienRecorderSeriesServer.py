@@ -79,7 +79,7 @@ class SeriesServer:
 
 	def resetLastEPGUpdate(self, seriesID):
 		try:
-			self.server.sp.cache.resetLastEPGUpdate(seriesID)
+			self.server.sp.cache.resetEPGLastModified(seriesID)
 			return True
 		except:
 			return False

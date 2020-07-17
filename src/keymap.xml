@@ -17,7 +17,8 @@
 		<key id="KEY_RED" mapto="red_long" flags="l" />
 
 		<key id="KEY_F2" mapto="yellow" flags="mr" />
-		<key id="KEY_YELLOW" mapto="yellow" flags="m" />
+		<key id="KEY_YELLOW" mapto="yellow" flags="b" />
+		<key id="KEY_YELLOW" mapto="yellow_long" flags="l" />
 
 		<key id="KEY_F3" mapto="green" flags="mr" />
 		<key id="KEY_GREEN" mapto="green" flags="m" />

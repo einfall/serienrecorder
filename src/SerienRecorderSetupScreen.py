@@ -115,7 +115,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.forceRecording = ConfigYesNo(default=False)
 	config.plugins.serienRec.TimerForSpecials = ConfigYesNo(default=False)
 	config.plugins.serienRec.TimeSpanForRegularTimer = ConfigInteger(7, (
-	int(config.plugins.serienRec.checkfordays.value), 999))
+		int(config.plugins.serienRec.checkfordays.value), 999))
 	config.plugins.serienRec.forceManualRecording = ConfigYesNo(default=False)
 	config.plugins.serienRec.margin_before = ConfigInteger(default_before, (0, 99))
 	config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0, 99))
@@ -311,9 +311,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self['config'] = ConfigListHC(self.list, self.session)
 		self.setInfoText()
 		if config.plugins.serienRec.setupType.value == "1":
-			self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.BoxID][0])
+			self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.BoxID])
 		else:
-			self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.setupType][0])
+			self['config_information_text'].setText(self.HilfeTexte[config.plugins.serienRec.setupType])
 
 		# config.plugins.serienRec.showAdvice.value = True
 		if config.plugins.serienRec.showAdvice.value:
@@ -476,7 +476,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self['config'].instance.moveSelection(self['config'].instance.pageUp)
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
 			text = "Keine Information verfügbar."
 		self["config_information_text"].setText(text)
@@ -498,7 +498,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self['config'].instance.moveSelection(self['config'].instance.pageDown)
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
 			text = "Keine Information verfügbar."
 		self["config_information_text"].setText(text)
@@ -514,12 +514,12 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self['text_ok'].hide()
 
 	def keyDown(self):
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.TimeSpanForRegularTimer:
+			print "[SerienRecorder] keyDown: " + str(self.HilfeTexte[config.plugins.serienRec.TimeSpanForRegularTimer])
 		if self['config'].getCurrent()[1] == config.plugins.serienRec.updateInterval:
 			self.changedEntry()
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.checkfordays:
 			x = int(config.plugins.serienRec.TimeSpanForRegularTimer.value)
-			config.plugins.serienRec.TimeSpanForRegularTimer = ConfigInteger(7, (
-			int(config.plugins.serienRec.checkfordays.value), 999))
 			if int(config.plugins.serienRec.checkfordays.value) > x:
 				config.plugins.serienRec.TimeSpanForRegularTimer.value = int(
 					config.plugins.serienRec.checkfordays.value)
@@ -539,7 +539,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self['config'].instance.moveSelection(self['config'].instance.moveDown)
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
 			text = "Keine Information verfügbar."
 		self["config_information_text"].setText(text)
@@ -555,12 +555,12 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self['text_ok'].hide()
 
 	def keyUp(self):
+		if self['config'].getCurrent()[1] == config.plugins.serienRec.TimeSpanForRegularTimer:
+			print "[SerienRecorder] keyUp: " + str(self.HilfeTexte[config.plugins.serienRec.TimeSpanForRegularTimer])
 		if self['config'].getCurrent()[1] == config.plugins.serienRec.updateInterval:
 			self.changedEntry()
 		elif self['config'].getCurrent()[1] == config.plugins.serienRec.checkfordays:
 			x = int(config.plugins.serienRec.TimeSpanForRegularTimer.value)
-			config.plugins.serienRec.TimeSpanForRegularTimer = ConfigInteger(7, (
-			int(config.plugins.serienRec.checkfordays.value), 999))
 			if int(config.plugins.serienRec.checkfordays.value) > x:
 				config.plugins.serienRec.TimeSpanForRegularTimer.value = int(
 					config.plugins.serienRec.checkfordays.value)
@@ -580,7 +580,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self['config'].instance.moveSelection(self['config'].instance.moveUp)
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
 			text = "Keine Information verfügbar."
 		self["config_information_text"].setText(text)
@@ -1033,120 +1033,104 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.BoxID: (
 				"Die ID (Nummer) der STB. Läuft der SerienRecorder auf mehreren Boxen, die alle auf die selbe Datenbank (im Netzwerk) zugreifen, "
 				"können einzelne Marker über diese ID für jede Box einzeln aktiviert oder deaktiviert werden. Timer werden dann nur auf den Boxen erstellt, "
-				"für die der Marker aktiviert ist.", "1.3_Die_globalen_Einstellungen"),
+				"für die der Marker aktiviert ist."),
 			config.plugins.serienRec.activateNewOnThisSTBOnly: (
-				"Bei 'ja' werden neue Serien-Marker nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'ja' werden neue Serien-Marker nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt."),
 			config.plugins.serienRec.setupType: (
-				"Hier kann die Komplexität des Einstellungs-Menüs eingestellt werden.", "1.3_Die_globalen_Einstellungen"),
+				"Hier kann die Komplexität des Einstellungs-Menüs eingestellt werden."),
 			config.plugins.serienRec.savetopath: (
-				"Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Serien gespeichert werden.",
-				"Speicherort_der_Aufnahme"),
+				"Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Serien gespeichert werden."),
 			config.plugins.serienRec.seriensubdir: (
-				"Bei 'ja' wird für jede Serie ein eigenes Unterverzeichnis für die Aufnahmen erstellt, Bei 'nein' wird kein Serienverzeichnis angelegt.",
-				"Serien_Verzeichnis_anlegen"),
+				"Bei 'ja' wird für jede Serie ein eigenes Unterverzeichnis für die Aufnahmen erstellt, Bei 'nein' wird kein Serienverzeichnis angelegt."),
 			config.plugins.serienRec.seriensubdirwithyear: (
-				"Bei 'ja' wird für das Unterverzeichnis mit dem Seriennamen und dem Produktionsjahr (z.B.\n'%sDie Simpsons (1989)/') erstellt, bei 'nein' wird nur der Serienname verwendet" % config.plugins.serienRec.savetopath.value,
-				"Serien_Verzeichnis_anlegen"),
+				"Bei 'ja' wird für das Unterverzeichnis mit dem Seriennamen und dem Produktionsjahr (z.B.\n'%sDie Simpsons (1989)/') erstellt, bei 'nein' wird nur der Serienname verwendet" % config.plugins.serienRec.savetopath.value),
 			config.plugins.serienRec.seasonsubdir: (
 				"Bei 'ja' wird für jede Staffel ein eigenes Unterverzeichnis im Serien-Verzeichnis (z.B.\n"
 				"'%s<Serien_Name>/Season %s') erstellt." % (config.plugins.serienRec.savetopath.value, str("1").zfill(
-					config.plugins.serienRec.seasonsubdirnumerlength.value)), "Staffel_Verzeichnis_anlegen"),
+					config.plugins.serienRec.seasonsubdirnumerlength.value))),
 			config.plugins.serienRec.seasonsubdirnumerlength: (
-				"Die Anzahl der Stellen, auf die die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt wird.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Die Anzahl der Stellen, auf die die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt wird."),
 			config.plugins.serienRec.seasonsubdirfillchar: (
-				"Auswahl, ob die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt werden.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Auswahl, ob die Staffelnummer im Namen des Staffel-Verzeichnisses mit führenden Nullen oder mit Leerzeichen aufgefüllt werden."),
 			config.plugins.serienRec.deltime: (
 				"Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:%s Uhr)." % (
 					str(config.plugins.serienRec.deltime.value[0]).zfill(2),
-					str(config.plugins.serienRec.deltime.value[1]).zfill(2)), "1.3_Die_globalen_Einstellungen"),
+					str(config.plugins.serienRec.deltime.value[1]).zfill(2))),
 			config.plugins.serienRec.maxDelayForAutocheck: (
-				"Hier wird die Zeitspanne (in Minuten) eingestellt, innerhalb welcher der automatische Timer-Suchlauf ausgeführt wird. Diese Zeitspanne beginnt zu der oben eingestellten Uhrzeit.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Hier wird die Zeitspanne (in Minuten) eingestellt, innerhalb welcher der automatische Timer-Suchlauf ausgeführt wird. Diese Zeitspanne beginnt zu der oben eingestellten Uhrzeit."),
 			config.plugins.serienRec.Autoupdate: (
-				"Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'ja' wird bei jedem Start des SerienRecorders nach verfügbaren Updates gesucht."),
 			config.plugins.serienRec.tvplaner: (
-				"Bei 'ja' ruft der SerienRecorder regelmäßig eine IMAP Mailbox ab und sucht nach E-Mails des Wunschliste TV-Planers",
-				""),
-			config.plugins.serienRec.imap_server: ("Name des IMAP Servers (z.B. imap.gmx.de)", ""),
-			config.plugins.serienRec.imap_server_ssl: ("Zugriff über SSL (Port ohne SSL = 143, Port mit SSL = 993", ""),
-			config.plugins.serienRec.imap_server_port: ("Portnummer für den Zugriff", ""),
-			config.plugins.serienRec.imap_login: ("Benutzername des IMAP Accounts (z.B. abc@gmx.de)", ""),
-			config.plugins.serienRec.imap_password: ("Passwort des IMAP Accounts", ""),
-			config.plugins.serienRec.imap_mailbox: ("Name des Ordners in dem die E-Mails ankommen (z.B. INBOX)", ""),
+				"Bei 'ja' ruft der SerienRecorder regelmäßig eine IMAP Mailbox ab und sucht nach E-Mails des Wunschliste TV-Planers"),
+			config.plugins.serienRec.imap_server: ("Name des IMAP Servers (z.B. imap.gmx.de)"),
+			config.plugins.serienRec.imap_server_ssl: ("Zugriff über SSL (Port ohne SSL = 143, Port mit SSL = 993"),
+			config.plugins.serienRec.imap_server_port: ("Portnummer für den Zugriff"),
+			config.plugins.serienRec.imap_login: ("Benutzername des IMAP Accounts (z.B. abc@gmx.de)"),
+			config.plugins.serienRec.imap_password: ("Passwort des IMAP Accounts"),
+			config.plugins.serienRec.imap_mailbox: ("Name des Ordners in dem die E-Mails ankommen (z.B. INBOX)"),
 			config.plugins.serienRec.imap_mail_subject: (
-				"Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)", ""),
+				"Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)"),
 			config.plugins.serienRec.imap_check_interval: (
-				"Die Mailbox wird alle <n> Minuten überprüft (default: 30)", ""),
+				"Die Mailbox wird alle <n> Minuten überprüft (default: 30)"),
 			config.plugins.serienRec.imap_test: (
 				"Mit der OK Taste können die IMAP Einstellungen getestet werden, dabei wird versucht eine Verbindung zum eingestellten E-Mail Server aufzubauen Außerdem werden noch die vorhandenen Postfächer abgerufen.\n\n"
-				"Die Ergebnisse werden im Log ausgegeben.",
-				"Speicherort_der_Aufnahme"),
+				"Die Ergebnisse werden im Log ausgegeben."),
 			# config.plugins.serienRec.tvplaner_create_marker: (
-			# 	"Bei 'ja' werden nicht vorhandene Serien-Marker automatisch erzeugt", ""),
-			config.plugins.serienRec.tvplaner_series: ("Bei 'ja' werden Timer für Serien angelegt", ""),
+			# 	"Bei 'ja' werden nicht vorhandene Serien-Marker automatisch erzeugt"),
+			config.plugins.serienRec.tvplaner_series: ("Bei 'ja' werden Timer für Serien angelegt"),
 			config.plugins.serienRec.tvplaner_series_activeSTB: (
-				"Bei 'ja' werden neue TV-Planer Serien nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.",
-				""),
+				"Bei 'ja' werden neue TV-Planer Serien nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt."),
 			config.plugins.serienRec.tvplaner_movies: ("Bei 'ja' werden Timer für Filme angelegt", ""),
 			config.plugins.serienRec.tvplaner_movies_activeSTB: (
-				"Bei 'ja' werden neue TV-Planer Filme nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt.",
-				""),
+				"Bei 'ja' werden neue TV-Planer Filme nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt."),
 			config.plugins.serienRec.tvplaner_movies_filepath: (
-				"Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Filmen gespeichert werden.",
-				"Speicherort_der_Aufnahme"),
+				"Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Filmen gespeichert werden."),
 			config.plugins.serienRec.tvplaner_movies_createsubdir: (
-				"Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis für die Aufnahmen erstellt. Bei 'nein' wird kein Filmordner angelegt.", ""),
+				"Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis für die Aufnahmen erstellt. Bei 'nein' wird kein Filmordner angelegt."),
 			config.plugins.serienRec.tvplaner_full_check: (
-				"Bei 'ja' wird vor dem Erreichen der eingestellten Zahl von Aufnahmetagen wieder ein voller Suchlauf gestartet",
-				""),
+				"Bei 'ja' wird vor dem Erreichen der eingestellten Zahl von Aufnahmetagen wieder ein voller Suchlauf gestartet"),
 			config.plugins.serienRec.tvplaner_skipSerienServer: (
-				"Bei 'ja' werden Timer nur aus der TV-Planer E-Mail angelegt, es werden keine Termine vom Serien-Server abgerufen.",
-				""),
+				"Bei 'ja' werden Timer nur aus der TV-Planer E-Mail angelegt, es werden keine Termine vom Serien-Server abgerufen."),
 			config.plugins.serienRec.databasePath: (
-				"Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird.",
-				"Speicherort_der_Datenbank"),
+				"Das Verzeichnis auswählen und/oder erstellen, in dem die Datenbank gespeichert wird."),
 			config.plugins.serienRec.AutoBackup: (
 				"Bei 'vor dem Suchlauf' werden vor jedem Timer-Suchlauf die Datenbank des SR, die 'alte' log-Datei und die enigma2-Timer-Datei ('/etc/enigma2/timers.xml') in ein neues Verzeichnis kopiert, "
 				"dessen Name sich aus dem aktuellen Datum und der aktuellen Uhrzeit zusammensetzt (z.B.\n'%s%s%s%s%s%s/').\n"
 				"Bei 'nach dem Suchlauf' wird das Backup nach dem Timer-Suchlauf erstellt. Bei 'nein' wird kein Backup erstellt (nicht empfohlen)." % (
 					config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2),
-					str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "1.3_Die_globalen_Einstellungen"),
+					str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))),
 			config.plugins.serienRec.deleteBackupFilesOlderThan: (
-				"Backup-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Backup-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."),
 			config.plugins.serienRec.coverPath: (
-				"Das Verzeichnis auswählen und/oder erstellen, in dem die Cover gespeichert werden.",
-				"Speicherort_der_Cover"),
+				"Das Verzeichnis auswählen und/oder erstellen, in dem die Cover gespeichert werden."),
 			config.plugins.serienRec.BackupPath: (
-				"Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert werden.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert werden."),
 			config.plugins.serienRec.checkfordays: (
 				"Es werden nur Timer für Folgen erstellt, die innerhalb der nächsten hier eingestellten Anzahl von Tagen ausgestrahlt werden \n"
 				"(also bis %s)." % time.strftime("%d.%m.%Y - %H:%M", time.localtime(
-					int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))), "Timer_Fuer_X_Tage"),
+					int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400)))),
 			config.plugins.serienRec.globalFromTime: ("Die Uhrzeit, ab wann Aufnahmen erlaubt sind.\n"
 			                                          "Die erlaubte Zeitspanne beginnt um %s:%s Uhr." % (
 				                                          str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2),
-				                                          str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2)),
-			                                          "Frueheste_Zeit"),
+				                                          str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2))
+			                                          ),
 			config.plugins.serienRec.globalToTime: ("Die Uhrzeit, bis wann Aufnahmen erlaubt sind.\n"
 			                                        "Die erlaubte Zeitspanne endet um %s:%s Uhr." % (
 				                                        str(config.plugins.serienRec.globalToTime.value[0]).zfill(2),
-				                                        str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)),
-			                                        "Spaeteste_Zeit"),
+				                                        str(config.plugins.serienRec.globalToTime.value[1]).zfill(2))
+			                                        ),
 			config.plugins.serienRec.eventid: (
 				"Bei 'ja' wird versucht die Sendung anhand der Anfangs- und Endzeiten im EPG zu finden. "
 				"Außerdem erfolgt bei jedem Timer-Suchlauf ein Abgleich der Anfangs- und Endzeiten aller Timer mit den EPG-Daten.\n"
-				"Diese Funktion muss aktiviert sein, wenn VPS benutzt werden soll.", "Hole_EventID"),
+				"Diese Funktion muss aktiviert sein, wenn VPS benutzt werden soll."),
 			config.plugins.serienRec.epgTimeSpan: (
 				"Die Anzahl Minuten um die der EPG Suchzeitraum nach vorne und hinten vergrößert werden soll (Standard: 10 min).\n\n"
 				"Beispiel: Eine Sendung soll laut Wunschliste um 3:20 Uhr starten, im EPG ist die Startzeit aber 3:28 Uhr, um die Sendung im EPG zu finden wird der Suchzeitraum um den eingestellten Wert "
-				"vergrößert, im Standard wird also von 3:10 Uhr bis 3:30 Uhr gesucht um die Sendung im EPG zu finden.",
-				"Hole_EventID"),
+				"vergrößert, im Standard wird also von 3:10 Uhr bis 3:30 Uhr gesucht um die Sendung im EPG zu finden."),
+			config.plugins.serienRec.TimeSpanForRegularTimer: (
+				"Die Anzahl der Tage, die maximal auf eine Wiederholung gewartet wird, die innerhalb der erlaubten Zeitspanne ausgestrahlt wird. "
+				"Wird keine passende Wiederholung gefunden oder eine Wiederholung, die zu weit in der Zukunft liegt, "
+				"wird ein Timer für den frühestmöglichen Termin, auch außerhalb der erlaubten Zeitspanne, erstellt."),
 			config.plugins.serienRec.forceRecording: (
 				"Bei 'ja' werden auch Timer für Folgen erstellt, die ausserhalb der erlaubten Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, "
 				"falls KEINE Wiederholung innerhalb der erlaubten Zeitspanne gefunden wird.\n"
@@ -1154,183 +1138,139 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 					str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2),
 					str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2),
 					str(config.plugins.serienRec.globalToTime.value[0]).zfill(2),
-					str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Immer_aufnehmen"),
-			config.plugins.serienRec.TimeSpanForRegularTimer: (
-				"Die Anzahl der Tage, die maximal auf eine Wiederholung gewartet wird, die innerhalb der erlaubten Zeitspanne ausgestrahlt wird. "
-				"Wird keine passende Wiederholung gefunden (oder aber eine Wiederholung, die aber zu weit in der Zukunft liegt), "
-				"wird ein Timer für den frühestmöglichen Termin (auch außerhalb der erlaubten Zeitspanne) erstellt.",
-				"1.3_Die_globalen_Einstellungen"),
+					str(config.plugins.serienRec.globalToTime.value[1]).zfill(2))),
 			config.plugins.serienRec.NoOfRecords: (
-				"Die Anzahl der Aufnahmen, die von einer Folge gemacht werden sollen.", "1.3_Die_globalen_Einstellungen"),
+				"Die Anzahl der Aufnahmen, die von einer Folge gemacht werden sollen."),
 			config.plugins.serienRec.selectNoOfTuners: (
 				"Bei 'ja' wird die Anzahl der vom SR benutzten Tuner für gleichzeitige Aufnahmen begrenzt.\n"
-				"Bei 'nein' werden alle verfügbaren Tuner für Timer benutzt, die Überprüfung ob noch ein weiterer Timer erzeugt werden kann, übernimmt enigma2.",
-				"Anzahl_der_Tuner"),
+				"Bei 'nein' werden alle verfügbaren Tuner für Timer benutzt, die Überprüfung ob noch ein weiterer Timer erzeugt werden kann, übernimmt enigma2."),
 			config.plugins.serienRec.tuner: (
-				"Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten.",
-				"Anzahl_der_Tuner"),
+				"Die maximale Anzahl von Tunern für gleichzeitige (sich überschneidende) Timer. Überprüft werden dabei ALLE Timer, nicht nur die vom SerienRecorder erstellten."),
 			config.plugins.serienRec.wakeUpDSB: (
 				"Bei 'ja' wird die STB vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
-				"Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die STB im Deep-Standby befindet.",
-				"Deep-Standby"),
+				"Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die STB im Deep-Standby befindet."),
 			config.plugins.serienRec.afterAutocheck: (
-				"Hier kann ausgewählt werden, ob die STB nach dem automatischen Suchlauf in Standby oder Deep-Standby gehen soll.",
-				"Deep-Standby"),
+				"Hier kann ausgewählt werden, ob die STB nach dem automatischen Suchlauf in Standby oder Deep-Standby gehen soll."),
 			config.plugins.serienRec.DSBTimeout: (
 				"Bevor die STB in den Deep-Standby fährt, wird für die hier eingestellte Dauer (in Sekunden) eine entsprechende Nachricht auf dem Bildschirm angezeigt. "
-				"Während dieser Zeitspanne hat der Benutzer die Möglichkeit, das Herunterfahren der STB abzubrechen. Nach Ablauf dieser Zeitspanne fährt die STB automatisch in den Deep-Stanby.",
-				"Deep-Standby"),
+				"Während dieser Zeitspanne hat der Benutzer die Möglichkeit, das Herunterfahren der STB abzubrechen. Nach Ablauf dieser Zeitspanne fährt die STB automatisch in den Deep-Stanby."),
 			self.kindOfTimer: ("Es kann ausgewählt werden, wie Timer angelegt werden. Die Auswahlmöglichkeiten sind:\n"
 			                   "  - 'aufnehmen': Ein 'normaler' Timer wird erstellt\n"
 			                   "  - 'umschalten': Es wird ein Timer erstellt, bei dem nur auf den aufzunehmenden Sender umgeschaltet wird. Es erfolgt KEINE Aufnahme\n"
 			                   "  - 'umschalten und aufnehmen': Es wird ein Timer erstellt, bei dem vor der Aufnahme auf den aufzunehmenden Sender umgeschaltet wird\n"
-			                   "  - 'Erinnerung': Es wird ein Timer erstellt, bei dem lediglich eine Erinnerungs-Nachricht auf dem Bildschirm eingeblendet wird. Es wird weder umgeschaltet, noch erfolgt eine Aufnahme",
-			                   "1.3_Die_globalen_Einstellungen"),
+			                   "  - 'Erinnerung': Es wird ein Timer erstellt, bei dem lediglich eine Erinnerungs-Nachricht auf dem Bildschirm eingeblendet wird. Es wird weder umgeschaltet, noch erfolgt eine Aufnahme"),
 			config.plugins.serienRec.afterEvent: (
 				"Es kann ausgewählt werden, was nach dem Event passieren soll. Die Auswahlmöglichkeiten sind:\n"
 				"  - 'nichts': Die STB bleibt im aktuellen Zustand.\n"
 				"  - 'in Standby gehen': Die STB geht in den Standby\n"
 				"  - 'in Deep-Standby gehen': Die STB geht in den Deep-Standby\n"
-				"  - 'automatisch': Die STB entscheidet automatisch (Standardwert)", "1.3_Die_globalen_Einstellungen"),
+				"  - 'automatisch': Die STB entscheidet automatisch (Standardwert)"),
 			config.plugins.serienRec.margin_before: ("Die Vorlaufzeit für Aufnahmen in Minuten.\n"
-			                                         "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem tatsächlichen Beginn der Sendung",
-			                                         "1.3_Die_globalen_Einstellungen"),
+			                                         "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem tatsächlichen Beginn der Sendung"),
 			config.plugins.serienRec.margin_after: ("Die Nachlaufzeit für Aufnahmen in Minuten.\n"
-			                                        "Die Aufnahme endet um die hier eingestellte Anzahl von Minuten noch dem tatsächlichen Ende der Sendung",
-			                                        "1.3_Die_globalen_Einstellungen"),
+			                                        "Die Aufnahme endet um die hier eingestellte Anzahl von Minuten noch dem tatsächlichen Ende der Sendung"),
 			config.plugins.serienRec.forceManualRecording: (
 				"Bei 'nein' erfolgt beim manuellen Anlegen von Timern in 'Sendetermine' eine Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen erreicht wurde. "
 				"In diesem Fall wird der Timer NICHT angelegt, und es erfolgt ein entsprechender Eintrag im log.\n"
 				"Bei 'ja' wird beim manuellen Anlegen von Timern in 'Sendetermine' die Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen vorhanden sind, "
-				"ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht.",
-				"1.3_Die_globalen_Einstellungen"),
+				"ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht."),
 			config.plugins.serienRec.splitEventTimer: (
 				"Bei 'nein' werden Event-Programmierungen (S01E01/1x02/1x03) als eigenständige Sendungen behandelt. "
 				"Ansonsten wird versucht die einzelnen Episoden eines Events erkennen.\n\n"
 				"Bei 'Timer anlegen' wird zwar weiterhin nur ein Timer angelegt, aber die Einzelepisoden werden in der Datenbank als 'bereits getimert' markiert."
 				"Sollten bereits alle Einzelepisoden vorhanden sein, wird für das Event kein Timer angelegt.\n\n"
 				"Bei 'Einzelepisoden bevorzugen' wird versucht Timer für die Einzelepisoden anzulegen. "
-				"Falls das nicht möglich ist, wird ein Timer für das Event erstellt.", "1.3_Die_globalen_Einstellungen"),
+				"Falls das nicht möglich ist, wird ein Timer für das Event erstellt."),
 			config.plugins.serienRec.addSingleTimersForEvent: (
 				"Bei 'ja' werden die Einzelepisoden in der Datenbank als 'bereits getimert' markiert, falls ein Timer für das Event angelegt werden muss.\n"
-				"Bei 'nein' werden, wenn ein Timer für das Event angelegt werden musste, ggf. später auch Timer für Einzelepisoden angelegt.", "1.3_Die_globalen_Einstellungen"),
+				"Bei 'nein' werden, wenn ein Timer für das Event angelegt werden musste, ggf. später auch Timer für Einzelepisoden angelegt."),
 			config.plugins.serienRec.TimerName: (
 				"Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält weiterhin die Staffel und Episoden Informationen.\n"
 				"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden."
-				"In diesem Fall funktioniert aber die Funktion 'Zeige ob die Episode als Aufnahme auf der HDD ist' nicht, weil der Dateiname die nötigen Informationen nicht enthält.",
-				"1.3_Die_globalen_Einstellungen"),
+				"In diesem Fall funktioniert aber die Funktion 'Zeige ob die Episode als Aufnahme auf der HDD ist' nicht, weil der Dateiname die nötigen Informationen nicht enthält."),
 			config.plugins.serienRec.selectBouquets: (
 				"Bei 'ja' können 2 Bouquets (Standard und Alternativ) für die Sender-Zuordnung verwendet werden.\n"
-				"Bei 'nein' werden alle Bouquets (in einer Liste zusammengefasst) für die Sender-Zuordnung benutzt.",
-				"Bouquet_Auswahl"),
+				"Bei 'nein' werden alle Bouquets (in einer Liste zusammengefasst) für die Sender-Zuordnung benutzt."),
 			config.plugins.serienRec.MainBouquet: (
-				"Auswahl, welches Bouquet bei der Sender-Zuordnung als Standard verwendet werden soll.", "Bouquet_Auswahl"),
+				"Auswahl, welches Bouquet bei der Sender-Zuordnung als Standard verwendet werden soll."),
 			config.plugins.serienRec.AlternativeBouquet: (
-				"Auswahl, welches Bouquet bei der Sender-Zuordnung als Alternative verwendet werden soll.",
-				"Bouquet_Auswahl"),
+				"Auswahl, welches Bouquet bei der Sender-Zuordnung als Alternative verwendet werden soll."),
 			config.plugins.serienRec.useAlternativeChannel: (
 				"Mit 'ja' oder 'nein' kann ausgewählt werden, ob versucht werden soll, einen Timer auf dem jeweils anderen Sender (Standard oder alternativ) zu erstellen, "
-				"falls der Timer auf dem bevorzugten Sender nicht angelegt werden kann.", "Bouquet_Auswahl"),
+				"falls der Timer auf dem bevorzugten Sender nicht angelegt werden kann."),
 			config.plugins.serienRec.showPicons: (
-				"Gibt an ob und wie Sender-Logos z.B. in der Serien-Planer Ansichten angezeigt werden sollen.", "1.3_Die_globalen_Einstellungen"),
+				"Gibt an ob und wie Sender-Logos z.B. in der Serien-Planer Ansichten angezeigt werden sollen."),
 			config.plugins.serienRec.piconPath: (
-				"Wählen Sie das Verzeichnis aus dem die Sender-Logos geladen werden sollen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Wählen Sie das Verzeichnis aus dem die Sender-Logos geladen werden sollen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."),
 			config.plugins.serienRec.downloadCover: ("Bei 'nein' werden keine Cover heruntergeladen und angezeigt.\n"
 			                                         "Bei 'ja' werden Cover heruntergeladen.\n"
 			                                         "  - Wenn 'Zeige Cover' auf 'ja' steht, werden alle Cover heruntergeladen.\n"
-			                                         "  - Wenn 'Zeige Cover' auf 'nein' steht, werden beim Auto-Check nur Cover der Serien-Marker heruntergeladen.",
-			                                         "1.3_Die_globalen_Einstellungen"),
-			config.plugins.serienRec.showCover: (
-				"Bei 'nein' werden keine Cover angezeigt.", "1.3_Die_globalen_Einstellungen"),
+			                                         "  - Wenn 'Zeige Cover' auf 'nein' steht, werden beim Auto-Check nur Cover der Serien-Marker heruntergeladen."),
+			config.plugins.serienRec.showCover: ("Bei 'nein' werden keine Cover angezeigt."),
 			config.plugins.serienRec.createPlaceholderCover: (
-				"Bei 'ja' werden Platzhalter Dateien erzeugt wenn kein Cover vorhanden ist - das hat den Vorteil, dass nicht immer wieder nach dem Cover gesucht wird.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'ja' werden Platzhalter Dateien erzeugt wenn kein Cover vorhanden ist - das hat den Vorteil, dass nicht immer wieder nach dem Cover gesucht wird."),
 			config.plugins.serienRec.refreshPlaceholderCover: (
-				"Bei 'ja' wird in regelmäßigen Abständen (alle 60 Tage) nach einem Cover für die Serie gesucht um die Platzhalter Datei zu ersetzen.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'ja' wird in regelmäßigen Abständen (alle 60 Tage) nach einem Cover für die Serie gesucht um die Platzhalter Datei zu ersetzen."),
 			config.plugins.serienRec.copyCoverToFolder: (
 				"Bei 'nein' wird das entsprechende Cover nicht in den Serien- und Staffelordner kopiert. Die anderen Optionen bestimmen den Namen der Datei im Staffelordner.\n"
-				"Im Serienordner werden immer Cover mit dem Namen 'folder.jpg' angelegt. Für den Staffelordner kann der Name ausgewählt werden, da einige Movielist Plugins das Cover unter einem anderen Namen suchen.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Im Serienordner werden immer Cover mit dem Namen 'folder.jpg' angelegt. Für den Staffelordner kann der Name ausgewählt werden, da einige Movielist Plugins das Cover unter einem anderen Namen suchen."),
 			config.plugins.serienRec.listFontsize: (
-				"Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."),
 			config.plugins.serienRec.markerColumnWidth: (
-				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von Standardbreite kann die Spalte schmaler bzw. breiter machen.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von Standardbreite kann die Spalte schmaler bzw. breiter machen."),
 			config.plugins.serienRec.markerNameInset: (
-				"Mit dieser Einstellung kann der Einzug der Serien-Namen in der Serien-Marker Ansicht angepasst werden. Damit lässt sich eine deutlichere optische Abgrenzung der einzelnen Serien-Marker erreichen.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Mit dieser Einstellung kann der Einzug der Serien-Namen in der Serien-Marker Ansicht angepasst werden. Damit lässt sich eine deutlichere optische Abgrenzung der einzelnen Serien-Marker erreichen."),
 			config.plugins.serienRec.intensiveTimersuche: (
-				"Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist.",
-				"intensive_Suche"),
+				"Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist."),
 			config.plugins.serienRec.sucheAufnahme: (
 				"Bei 'ja' wird ein Symbol für jede Episode angezeigt, die als Aufnahme auf der Festplatte gefunden wurde, diese Suche ist aber sehr zeitintensiv.\n"
-				"Zusätzlich sorgt diese Option dafür, dass für Episoden die auf der Festplatte gefunden werden, kein Timer mehr angelegt wird.",
-				"Aufnahme_vorhanden"),
+				"Zusätzlich sorgt diese Option dafür, dass für Episoden die auf der Festplatte gefunden werden, kein Timer mehr angelegt wird."),
 			config.plugins.serienRec.markerSort: ("Bei 'Alphabetisch' werden die Serien-Marker alphabetisch sortiert.\n"
 			                                      "Bei 'Wunschliste' werden die Serien-Marker so wie bei Wunschliste sortiert, d.h 'der, die, das und the' werden bei der Sortierung nicht berücksichtigt.\n"
-			                                      "Dadurch werden z.B. 'Die Simpsons' unter 'S' einsortiert.",
-			                                      "1.3_Die_globalen_Einstellungen"),
+			                                      "Dadurch werden z.B. 'Die Simpsons' unter 'S' einsortiert."),
 			config.plugins.serienRec.max_season: (
-				"Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann."),
 			config.plugins.serienRec.confirmOnDelete: (
-				"Bei 'ja' erfolt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem entgültigen Löschen von Serienmarkern oder Timern.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'ja' erfolt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem entgültigen Löschen von Serienmarkern oder Timern."),
 			config.plugins.serienRec.showNotification: (
-				"Je nach Einstellung wird eine Nachricht auf dem Bildschirm eingeblendet, sobald der automatische Timer-Suchlauf startet bzw. endet.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Je nach Einstellung wird eine Nachricht auf dem Bildschirm eingeblendet, sobald der automatische Timer-Suchlauf startet bzw. endet."),
 			config.plugins.serienRec.showMessageOnConflicts: (
 				"Bei 'ja' wird für jeden Timer, der beim automatische Timer-Suchlauf wegen eines Konflikts nicht angelegt werden konnte, eine Nachricht auf dem Bildschirm eingeblendet.\n"
-				"Diese Nachrichten bleiben solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Diese Nachrichten bleiben solange auf dem Bildschirm bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
 			config.plugins.serienRec.DisplayRefreshRate: (
-				"Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Das Zeitintervall in Sekunden, in dem die Anzeige der Options-Tasten wechselt."),
 			config.plugins.serienRec.seasonFilter: (
-				"Bei 'ja' werden in der Sendetermine Ansicht nur Termine angezeigt, die der am Marker eingestellten Staffeln entsprechen.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'ja' werden in der Sendetermine Ansicht nur Termine angezeigt, die der am Marker eingestellten Staffeln entsprechen."),
 			config.plugins.serienRec.timerFilter: (
-				"Bei 'ja' werden in der Sendetermine Ansicht nur Termine angezeigt, für die noch Timer angelegt werden müssen.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'ja' werden in der Sendetermine Ansicht nur Termine angezeigt, für die noch Timer angelegt werden müssen."),
 			config.plugins.serienRec.refreshViews: (
 				"Bei 'ja' werden die Anzeigen nach Änderungen von Markern, Sendern, etc. sofort aktualisiert, was aber je nach STB-Typ und Internet-Verbindung zeitintensiv sein kann.\n"
-				"Bei 'nein' erfolgt die Aktualisierung erst, wenn die Anzeige erneut geöffnet wird.",
-				"Sofortige_Aktualisierung"),
+				"Bei 'nein' erfolgt die Aktualisierung erst, wenn die Anzeige erneut geöffnet wird."),
 			config.plugins.serienRec.openMarkerScreen: (
-				"Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können."),
 			config.plugins.serienRec.LogFilePath: (
-				"Das Verzeichnis auswählen und/oder erstellen, in dem die Log-Dateien gespeichert werden.", "Das_Log"),
+				"Das Verzeichnis auswählen und/oder erstellen, in dem die Log-Dateien gespeichert werden."),
 			config.plugins.serienRec.longLogFileName: (
 				"Bei 'nein' wird bei jedem Timer-Suchlauf die Log-Datei neu erzeugt.\n"
 				"Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte Log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet "
 				"(z.B.\n" + SerienRecorderLogWriter.SERIENRECORDER_LONG_LOGFILENAME % (
 					config.plugins.serienRec.LogFilePath.value, str(lt.tm_year), str(lt.tm_mon).zfill(2),
-					str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)), "Das_Log"),
+					str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))),
 			config.plugins.serienRec.deleteLogFilesOlderThan: (
-				"Log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht.",
-				"Das_Log"),
+				"Log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."),
 			config.plugins.serienRec.writeLog: (
 				"Bei 'nein' erfolgen nur grundlegende Eintragungen in die log-Datei, z.B. Datum/Uhrzeit des Timer-Suchlaufs, Beginn neuer Staffeln, Gesamtergebnis des Timer-Suchlaufs.\n"
-				"Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern.", "Das_Log"),
+				"Bei 'ja' erfolgen detaillierte Eintragungen, abhängig von den ausgewählten Filtern."),
 			config.plugins.serienRec.writeLogVersion: (
-				"Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten.",
-				"Das_Log"),
+				"Bei 'ja' erfolgen Einträge in die log-Datei, die Informationen über die verwendete STB und das Image beinhalten."),
 			config.plugins.serienRec.writeLogChannels: (
-				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Sender-Zuordnung kein STB-Sender zugeordnet ist, oder der STB-Sender deaktiviert ist.",
-				"Das_Log"),
+				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn dem ausstrahlenden Sender in der Sender-Zuordnung kein STB-Sender zugeordnet ist, oder der STB-Sender deaktiviert ist."),
 			config.plugins.serienRec.writeLogAllowedEpisodes: (
-				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist.",
-				"Das_Log"),
+				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist."),
 			config.plugins.serienRec.writeLogAdded: (
-				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist.",
-				"Das_Log"),
+				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist."),
 			config.plugins.serienRec.writeLogDisk: (
-				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Aufnahmen vorhanden ist.",
-				"Das_Log"),
+				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Aufnahmen vorhanden ist."),
 			config.plugins.serienRec.writeLogTimeRange: (
 				"Bei 'ja' erfolgen Einträge in die log-Datei, wenn die zu timende Folge nicht in der erlaubten Zeitspanne (%s:%s - %s:%s) liegt, "
 				"sowie wenn gemäß der Einstellung 'Immer Timer anlegen, wenn keine Wiederholung gefunden wird' = 'ja' "
@@ -1338,42 +1278,35 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 					str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2),
 					str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2),
 					str(config.plugins.serienRec.globalToTime.value[0]).zfill(2),
-					str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)), "Das_Log"),
+					str(config.plugins.serienRec.globalToTime.value[1]).zfill(2))),
 			config.plugins.serienRec.writeLogTimeLimit: (
 				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der Sendetermin für die zu timende Folge in der Verganhenheit, \n"
 				"oder mehr als die in 'Timer für X Tage erstellen' eingestellte Anzahl von Tagen in der Zukunft liegt (jetzt also nach %s)." % time.strftime(
 					"%d.%m.%Y - %H:%M",
-					time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400))),
-				"Das_Log"),
+					time.localtime(int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400)))),
 			config.plugins.serienRec.writeLogTimerDebug: (
-				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der zu erstellende Timer bereits vorhanden ist, oder der Timer erfolgreich angelegt wurde.",
-				"Das_Log"),
+				"Bei 'ja' erfolgt ein Eintrag in die log-Datei, wenn der zu erstellende Timer bereits vorhanden ist, oder der Timer erfolgreich angelegt wurde."),
 			config.plugins.serienRec.tvplaner_backupHTML: (
-				"Bei 'ja' wird die TV-Planer E-Mail als HTML im Logverzeichnis abgespeichert und ins Backup Verzeichnis kopiert, falls das SerienRecorder Backup aktiviert ist.",
-				"Das_Log"),
+				"Bei 'ja' wird die TV-Planer E-Mail als HTML im Logverzeichnis abgespeichert und ins Backup Verzeichnis kopiert, falls das SerienRecorder Backup aktiviert ist."),
 			config.plugins.serienRec.logScrollLast: (
-				"Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang.", "Das_Log"),
+				"Bei 'ja' wird beim Anzeigen der log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang."),
 			config.plugins.serienRec.logWrapAround: (
 				"Bei 'ja' erfolgt die Anzeige der log-Datei mit Zeilenumbruch, d.h. es werden 3 Zeilen pro Eintrag angezeigt.\n"
-				"Bei 'nein' erfolgt die Anzeige der log-Datei mit 1 Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)",
-				"Das_Log"),
+				"Bei 'nein' erfolgt die Anzeige der log-Datei mit 1 Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)"),
 			config.plugins.serienRec.firstscreen: (
-				"Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen."),
 			config.plugins.serienRec.SkinType: (
-				"Hier kann das Erscheinungsbild des SR ausgewählt werden.", "1.3_Die_globalen_Einstellungen"),
+				"Hier kann das Erscheinungsbild des SR ausgewählt werden."),
 			config.plugins.serienRec.showAllButtons: (
-				"Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt."),
 			config.plugins.serienRec.autochecktype: (
 				"Bei 'manuell' wird kein automatischer Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
 				"Bei 'zur gewählten Uhrzeit' wird der automatische Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
-				"Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer) - nicht verfügbar auf VU+ Boxen.",
-				"1.3_Die_globalen_Einstellungen"),
+				"Bei 'nach EPGRefresh' wird der automatische Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer) - nicht verfügbar auf VU+ Boxen."),
 		}
 
 		try:
-			text = self.HilfeTexte[self['config'].getCurrent()[1]][0]
+			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
 			text = "Keine Information verfügbar."
 
