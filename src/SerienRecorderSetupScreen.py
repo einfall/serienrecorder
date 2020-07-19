@@ -1070,6 +1070,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.imap_mailbox: ("Name des Ordners in dem die E-Mails ankommen (z.B. INBOX)"),
 			config.plugins.serienRec.imap_mail_subject: (
 				"Betreff der TV-Planer E-Mails (default: TV Wunschliste TV-Planer)"),
+			config.plugins.serienRec.imap_mail_age: ("Anzahl der Tage die beim Abrufen der E-Mails berücksichtigt werden, es wird aber immer nur die aktuellste Datei für die Timererstellung verwendet."),
 			config.plugins.serienRec.imap_check_interval: (
 				"Die Mailbox wird alle <n> Minuten überprüft (default: 30)"),
 			config.plugins.serienRec.imap_test: (
@@ -1080,7 +1081,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.tvplaner_series: ("Bei 'ja' werden Timer für Serien angelegt"),
 			config.plugins.serienRec.tvplaner_series_activeSTB: (
 				"Bei 'ja' werden neue TV-Planer Serien nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt."),
-			config.plugins.serienRec.tvplaner_movies: ("Bei 'ja' werden Timer für Filme angelegt", ""),
+			config.plugins.serienRec.tvplaner_movies: ("Bei 'ja' werden Timer für Filme angelegt"),
 			config.plugins.serienRec.tvplaner_movies_activeSTB: (
 				"Bei 'ja' werden neue TV-Planer Filme nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt."),
 			config.plugins.serienRec.tvplaner_movies_filepath: (

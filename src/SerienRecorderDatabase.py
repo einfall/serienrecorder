@@ -1087,9 +1087,9 @@ class SRDatabase:
 	def getAllTimer(self, startUnixtime):
 		cur = self._srDBConn.cursor()
 		if startUnixtime:
-			cur.execute("SELECT * FROM AngelegteTimer WHERE StartZeitstempel>=?", [startUnixtime])
+			cur.execute("SELECT ROWID, * FROM AngelegteTimer WHERE StartZeitstempel>=?", [startUnixtime])
 		else:
-			cur.execute("SELECT * FROM AngelegteTimer")
+			cur.execute("SELECT ROWID, * FROM AngelegteTimer")
 
 		rows = cur.fetchall()
 		cur.close()
@@ -1353,17 +1353,11 @@ class SRDatabase:
 				cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND Episode=? AND StartZeitstempel=? AND LOWER(webChannel)=?", (fsID, season.lower(), episode, startUnixtime, channel.lower()))
 		cur.close()
 
-	def removeTimers(self, data):
+	def removeTimers(self, row_ids):
 		cur = self._srDBConn.cursor()
-		for dataset in data:
-			print '[SerienRecorder] RemoveTimers: %r' % dataset[0]
-			if dataset[0] is None:
-				print '[SerienRecorder] Delete without fsid'
-				cur.execute("DELETE FROM AngelegteTimer WHERE LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", dataset[1:])
-			else:
-				print '[SerienRecorder] Delete with fsid'
-				cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", dataset)
-		#cur.executemany("DELETE FROM AngelegteTimer WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND StartZeitstempel=? AND LOWER(webChannel)=?", data)
+		for row_id in row_ids:
+			print '[SerienRecorder] RemoveTimers: %d' % row_id
+			cur.execute("DELETE FROM AngelegteTimer WHERE ROWID=?", [row_id])
 		cur.close()
 
 	def removeAllOldTimer(self):

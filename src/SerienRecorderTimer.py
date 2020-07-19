@@ -814,7 +814,7 @@ class serienRecTimer:
 		#SRLogger.writeLog("<< Suche im EPG anhand der Uhrzeit", True)
 		timers = self.database.getAllTimer(current_time)
 		for timer in timers:
-			(serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit, active, serien_fsid) = timer
+			(row_id, serien_name, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit, active, serien_fsid) = timer
 
 			channelName = STBHelpers.getChannelByRef(self.channelList, stbRef)
 			title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)

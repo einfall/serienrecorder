@@ -1974,20 +1974,14 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
 				if str(episode).isdigit():
 					if int(episode) == 0:
-						bereits_vorhanden = database.getNumberOfTimers(fsid, staffel, str(int(episode)),
-						                                                    title, searchOnlyActiveTimers=True)
-						bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
-						                                                     serien_name, False, title)
+						bereits_vorhanden = database.getNumberOfTimers(fsid, str(staffel), str(episode), title, searchOnlyActiveTimers=True)
+						bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False, title)
 					else:
-						bereits_vorhanden = database.getNumberOfTimers(fsid, staffel, str(int(episode)),
-						                                                    searchOnlyActiveTimers=True)
-						bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
-						                                                     serien_name, False)
+						bereits_vorhanden = database.getNumberOfTimers(fsid, str(staffel), str(episode), searchOnlyActiveTimers=True)
+						bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False)
 				else:
-					bereits_vorhanden = database.getNumberOfTimers(fsid, staffel, episode,
-					                                                    searchOnlyActiveTimers=True)
-					bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name,
-					                                                     False)
+					bereits_vorhanden = database.getNumberOfTimers(fsid, str(staffel), str(episode), searchOnlyActiveTimers=True)
+					bereits_vorhanden_HDD = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name, False)
 
 				(NoOfRecords, preferredChannel, useAlternativeChannel) = database.getPreferredMarkerChannels(
 					wlid, config.plugins.serienRec.useAlternativeChannel.value,

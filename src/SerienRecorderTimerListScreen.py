@@ -175,7 +175,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		timers = self.database.getAllTimer(current_time if self.filter else None)
 		for timer in timers:
-			(serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
+			(row_id, serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
 			if int(start_time) < int(current_time):
 				completedTimer += 1
 				timerList.append((serie, staffel, episode, title, start_time, stbRef, webChannel, True, 0, bool(activeTimer), serien_fsid))
@@ -339,7 +339,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			current_time = int(time.time())
 			timers = self.database.getAllTimer(current_time)
 			for timer in timers:
-				(serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
+				(row_id, serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
 				self.removeTimer(serie, serien_fsid, staffel, episode, title, start_time, webChannel, eit)
 
 			self.readTimer(False)
@@ -453,7 +453,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		self.delAdded = False
 		self.addedlist = []
 		self.addedlist_tmp = []
-		self.dbData = []
+		self.rowIDsToBeDeleted = []
 		self.modus = "menu_list"
 		self.aSerie = ""
 		self.aSerieFSID = None
@@ -530,8 +530,8 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.modus == "menu_list":
 			if self['menu_list'].getCurrent() is None:
 				return None, None, None
-			serien_name = self['menu_list'].getCurrent()[0][1]
-			serien_fsid = self['menu_list'].getCurrent()[0][7]
+			serien_name = self['menu_list'].getCurrent()[0][2]
+			serien_fsid = self['menu_list'].getCurrent()[0][8]
 		else:
 			if self['popup_list'].getCurrent() is None:
 				return None, None, None
@@ -556,10 +556,10 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		series = []
 		timers = self.database.getAllTimer(None)
 		for timer in timers:
-			(Serie, Staffel, Episode, title, start_time, stbRef, webChannel, eit, active, serien_fsid) = timer
+			(row_id, Serie, Staffel, Episode, title, start_time, stbRef, webChannel, eit, active, serien_fsid) = timer
 			series.append(Serie)
 			zeile = "%s - S%sE%s - %s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2), title)
-			self.addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid))
+			self.addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), row_id, Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid))
 
 		self.addedlist_tmp = self.addedlist[:]
 		number_of_series = len(set(series))
@@ -567,13 +567,13 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		self['title'].setText("Für %d Episoden aus %d Serien werden keine Timer mehr erstellt!" % (len(self.addedlist_tmp), number_of_series))
 
 		if config.plugins.serienRec.addedListSorted.value:
-			self.addedlist_tmp.sort(key=lambda x: (x[1].lower(), int(x[2]) if x[2].isdigit() else x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower()))
+			self.addedlist_tmp.sort(key=lambda x: (x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower(), int(x[4]) if x[4].isdigit() else x[4].lower()))
 		self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
 		self.getCover()
 
 	@staticmethod
 	def buildList(entry):
-		(zeile, Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid) = entry
+		(zeile, row_id, Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid) = entry
 		foregroundColor = parseColor('foreground').argb()
 		return [entry,
 		        (eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile, foregroundColor)
@@ -650,8 +650,8 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 
 			zeile = self['menu_list'].getCurrent()[0]
-			(txt, serie, staffel, episode, title, start_time, webChannel, serien_fsid) = zeile
-			self.dbData.append((serien_fsid, str(staffel).lower(), episode.lower(), title.lower(), start_time, webChannel.lower()))
+			(txt, row_id, serie, staffel, episode, title, start_time, webChannel, serien_fsid) = zeile
+			self.rowIDsToBeDeleted.append(row_id)
 			self.addedlist_tmp.remove(zeile)
 			self.addedlist.remove(zeile)
 			self.chooseMenuList.setList(map(self.buildList, self.addedlist_tmp))
@@ -659,7 +659,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyGreen(self):
 		if self.modus == "menu_list" and self.delAdded:
-			self.database.removeTimers(self.dbData)
+			self.database.removeTimers(self.rowIDsToBeDeleted)
 		self.close()
 
 	def keyYellow(self):
@@ -669,7 +669,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 				self['text_yellow'].setText("Sortieren")
 				config.plugins.serienRec.addedListSorted.setValue(False)
 			else:
-				self.addedlist_tmp.sort(key=lambda x: (x[1].lower(), int(x[2]) if x[2].isdigit() else x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower()))
+				self.addedlist_tmp.sort(key=lambda x: (x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower(), int(x[4]) if x[4].isdigit() else x[4].lower()))
 				self['text_yellow'].setText("unsortierte Liste")
 				config.plugins.serienRec.addedListSorted.setValue(True)
 			config.plugins.serienRec.addedListSorted.save()
@@ -682,7 +682,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		(selected_serien_name, selected_serien_wlid, selected_serien_fsid) = self.getCurrentSelection()
 		selectedIndex = self['menu_list'].getSelectedIndex()
 		print "[SerienRecorder] selectedIndex = %d" % selectedIndex
-		for i, (txt, serie, staffel, episode, title, start_time, webChannel, serien_fsid) in reversed(list(enumerate(self.addedlist_tmp[:selectedIndex]))):
+		for i, (txt, row_id, serie, staffel, episode, title, start_time, webChannel, serien_fsid) in reversed(list(enumerate(self.addedlist_tmp[:selectedIndex]))):
 			if serien_fsid != selected_serien_fsid or i == 0:
 				print "[SerienRecorder] index = %d" % i
 				self['menu_list'].moveToIndex(i)
@@ -692,7 +692,7 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 	def nextSeries(self):
 		(selected_serien_name, selected_serien_wlid, selected_serien_fsid) = self.getCurrentSelection()
 		selectedIndex = self['menu_list'].getSelectedIndex()
-		for i, (txt, serie, staffel, episode, title, start_time, webChannel, serien_fsid) in list(enumerate(self.addedlist_tmp[selectedIndex:])):
+		for i, (txt, row_id, serie, staffel, episode, title, start_time, webChannel, serien_fsid) in list(enumerate(self.addedlist_tmp[selectedIndex:])):
 			if serien_fsid != selected_serien_fsid or selectedIndex + i == len(self.addedlist_tmp):
 				self['menu_list'].moveToIndex(selectedIndex + i)
 				break
