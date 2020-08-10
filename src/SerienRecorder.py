@@ -965,7 +965,7 @@ class serienRecCheckForRecording:
 			# ueberprueft welche sender aktiviert und eingestellt sind.
 			#
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(sender)
-			if stbChannel == "":
+			if stbChannel == "" and altstbChannel == "":
 				SRLogger.writeLogFilter("channels", "' %s ' - STB-Sender nicht gefunden ' -> ' %s '" % (label_serie, webChannel))
 				continue
 
