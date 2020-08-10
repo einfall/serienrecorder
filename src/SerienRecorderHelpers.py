@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil, base64
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.1.3-beta'
+SRVERSION = '4.1.4-beta'
 SRDBVERSION = '4.1.0'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
@@ -100,6 +100,8 @@ def getChangedSeriesNames(markers):
 	return result
 
 def createBackup():
+	print "[SerienRecorder] Creating backup..."
+
 	import SerienRecorder
 	from SerienRecorderLogWriter import SRLogger
 	from SerienRecorderTVPlaner import SERIENRECORDER_TVPLANER_HTML_FILENAME
@@ -143,6 +145,8 @@ def createBackup():
 				shutil.copy(SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value, BackupPath)
 		except Exception, e:
 			SRLogger.writeLog("Backup konnte nicht erstellt werden: " + str(e), True)
+
+	print "[SerienRecorder] Creating backup done"
 
 def getDirname(database, serien_name, serien_fsid, staffel):
 	import SerienRecorder

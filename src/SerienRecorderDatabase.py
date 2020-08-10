@@ -642,7 +642,12 @@ class SRDatabase:
 
 	def getMargins(self, fsID, channel, globalMarginBefore, globalMarginAfter):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT MAX(IFNULL(SerienMarker.Vorlaufzeit, -1), IFNULL(Channels.Vorlaufzeit, -1)), MAX(IFNULL(SerienMarker.Nachlaufzeit, -1), IFNULL(Channels.Nachlaufzeit, -1)) FROM SerienMarker, Channels WHERE SerienMarker.fsID=? AND LOWER(Channels.WebChannel)=?", (fsID, channel.lower()))
+		cur.execute("SELECT COUNT(*) FROM SerienMarker WHERE fsID=?", [fsID])
+		markerExists = (cur.fetchone()[0] > 0)
+		if markerExists:
+			cur.execute("SELECT MAX(IFNULL(SerienMarker.Vorlaufzeit, -1), IFNULL(Channels.Vorlaufzeit, -1)), MAX(IFNULL(SerienMarker.Nachlaufzeit, -1), IFNULL(Channels.Nachlaufzeit, -1)) FROM SerienMarker, Channels WHERE SerienMarker.fsID=? AND LOWER(Channels.WebChannel)=?", (fsID, channel.lower()))
+		else:
+			cur.execute("SELECT IFNULL(Vorlaufzeit, -1), IFNULL(Nachlaufzeit, -1) FROM Channels WHERE LOWER(WebChannel)=?", [channel.lower()])
 		row = cur.fetchone()
 		if not row:
 			margin_before = globalMarginBefore

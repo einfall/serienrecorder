@@ -567,7 +567,7 @@ class serienRecTimer:
 				if self.database.getNumberOfTimers(serien_fsid, staffel, episode, title, False):
 					continue
 				show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
-				SRLogger.writeLog("' %s ' - Keine Wiederholung gefunden! -> %s" % (label_serie, show_start), True)
+				SRLogger.writeLogFilter("timeRange", "' %s ' - Keine Wiederholung gefunden! -> %s" % (label_serie, show_start), True)
 				# programmiere Timer
 				if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime,
 				                timer_end_unixtime, timer_stbRef, timer_eit, serien_name, serien_wlid, serien_fsid, markerType, webChannel,
@@ -580,7 +580,7 @@ class serienRecTimer:
 			for singleTitle, staffel, singleEpisode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, timer_eit, dirname, serien_name, serien_wlid, serien_fsid, markerType, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel, current_time, future_time in eventRecordings[:]:
 				if self.shouldCreateEventTimer(serien_fsid, staffel, singleEpisode, singleTitle):
 					show_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
-					SRLogger.writeLog("   ' %s ' - Einzelepisoden nicht gefunden! -> %s" % (label_serie, show_start),
+					SRLogger.writeLogFilter("timerDebug", "   ' %s ' - Einzelepisoden nicht gefunden! -> %s" % (label_serie, show_start),
 					                  True)
 					# programmiere Timer
 					if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime,
@@ -818,7 +818,7 @@ class serienRecTimer:
 
 			channelName = STBHelpers.getChannelByRef(self.channelList, stbRef)
 			title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-			print "[SerienRecorder] Update request for timer: %s [%d]" % (title, serien_time)
+			print "[SerienRecorder] Update request for timer: %s [%d] @ %s" % (title, serien_time, channelName)
 
 			markerType = self.database.getMarkerType(serien_fsid)
 			if markerType is None:

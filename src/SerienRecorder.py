@@ -91,7 +91,8 @@ def getCover(self, serien_name, serien_id, serien_fsid, auto_check = False, forc
 
 		if config.plugins.serienRec.refreshPlaceholderCover.value and fileExists(fsid_serien_cover_path) and os.path.getsize(fsid_serien_cover_path) == 0:
 			statinfo = os.stat(fsid_serien_cover_path)
-			if (statinfo.st_ctime + 5184000) <= time.time(): # Older than 60 days
+			print "[SerienRecorder] path = " + fsid_serien_cover_path + " / statinfo.st_mtime = " + str(statinfo.st_mtime) + " / current time = " + str(time.time())
+			if (statinfo.st_mtime + 5184000) <= time.time(): # Older than 60 days
 				os.remove(fsid_serien_cover_path)
 
 		if fileExists(fsid_serien_cover_path):
@@ -445,7 +446,6 @@ class serienRecCheckForRecording:
 		global autoCheckFinished
 		autoCheckFinished = False
 
-		print "[SerienRecorder] settings:"
 		print "[SerienRecorder] manuell:", self.manuell
 		print "[SerienRecorder] tvplaner_manuell:", self.tvplaner_manuell
 		print "[SerienRecorder] uhrzeit check:", config.plugins.serienRec.timeUpdate.value
@@ -456,7 +456,11 @@ class serienRecCheckForRecording:
 		global refreshTimer
 		global refreshTimerConnection
 
+		print "[SerienRecorder] Check file access for log file and backup folder"
 		SRLogger.checkFileAccess()
+		if config.plugins.serienRec.AutoBackup.value != "0":
+			# Try to access the backup directory to wake up the disks
+			os.path.exists(config.plugins.serienRec.BackupPath.value)
 
 		SRLogger.writeLog("\n---------' %s '---------" % self.uhrzeit, True)
 
@@ -490,6 +494,8 @@ class serienRecCheckForRecording:
 			print "[SerienRecorder] Auto-Check Timer stop."
 			SRLogger.writeLog("Auto-Check stop.", True)
 
+		self.speedStartTime = time.time()
+		print "[SerienRecorder] Stopwatch Start: " + str(self.speedStartTime)
 		if config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
 			refreshTimer = eTimer()
@@ -551,14 +557,14 @@ class serienRecCheckForRecording:
 
 		self.markers = []
 		self.messageList = []
-		self.speedStartTime = time.clock()
 
 		# teste Verbindung ins Internet
+		print "[SerienRecorder] Check internet connection"
 		if not testWebConnection():
 			SRLogger.writeLog("\nKeine Verbindung ins Internet. Check wurde abgebrochen!!\n", True)
 
 			# Statistik
-			self.speedEndTime = time.clock()
+			self.speedEndTime = time.time()
 			speedTime = (self.speedEndTime - self.speedStartTime)
 			SRLogger.writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime, True)
 			print "[SerienRecorder] ---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.)'---------" % speedTime
@@ -578,6 +584,7 @@ class serienRecCheckForRecording:
 			return
 
 		# Versuche Verzeichnisse zu erreichen
+		print "[SerienRecorder] Check configured recording directories"
 		try:
 			SRLogger.writeLog("\nPrüfe konfigurierte Aufnahmeverzeichnisse:", True)
 			recordDirectories = self.database.getRecordDirectories(config.plugins.serienRec.savetopath.value)
@@ -588,6 +595,7 @@ class serienRecCheckForRecording:
 			SRLogger.writeLog("Es konnten nicht alle Aufnahmeverzeichnisse gefunden werden", True)
 
 		# suche nach neuen Serien, Covern und Planer-Cache
+		print "[SerienRecorder] Update series planer data"
 		from twisted.internet import reactor
 		from SerienRecorderSeriesPlanner import serienRecSeriesPlanner
 		seriesPlanner = serienRecSeriesPlanner(self.manuell)
@@ -599,6 +607,8 @@ class serienRecCheckForRecording:
 		self.startCheckTransmissions()
 
 	def startCheckTransmissions(self):
+		print "[SerienRecorder] Start check transmissions"
+		
 		self.database = SRDatabase(serienRecDataBaseFilePath)
 		self.tempDB = SRTempDatabase()
 		self.tempDB.initialize()
@@ -624,6 +634,7 @@ class serienRecCheckForRecording:
 		# hier werden die wunschliste markers eingelesen
 		self.emailData = None
 		if config.plugins.serienRec.tvplaner.value and (not self.manuell or self.tvplaner_manuell):
+			print "[SerienRecorder] Parsing TV-Planer e-mail"
 			# When TV-Planer processing is enabled then regular autocheck
 			# is only running for the transmissions received by email.
 			try:
@@ -674,7 +685,7 @@ class serienRecCheckForRecording:
 				self.tempDB.cleanUp()
 				if not (config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_skipSerienServer.value):
 					SRLogger.writeLog("\n---------' Verarbeite Daten vom Server %s ---------\n" % fullCheck, True)
-					print "[SerienRecorder] Verarbeite Daten vom Server"
+					print "[SerienRecorder] Processing data from Serien-Server"
 
 				# Create a job queue to keep the jobs processed by the threads
 				# Create a result queue to keep the results of the job threads
@@ -757,6 +768,7 @@ class serienRecCheckForRecording:
 		if config.plugins.serienRec.tvplaner.value and self.emailData is not None:
 			# check mailbox for TV-Planer EMail and create timer
 			SRLogger.writeLog("\n---------' Verarbeite Daten aus TV-Planer E-Mail '---------\n", True)
+			print "[SerienRecorder] Processing data from TV-Planer e-mail"
 
 			jobQueue = Queue.Queue()
 			resultQueue = Queue.Queue()
@@ -819,7 +831,8 @@ class serienRecCheckForRecording:
 		(countTimer, countTimerUpdate, countNotActiveTimer, countTimerFromWishlist, self.messageList) = timer.getCounts()
 
 		# Statistik
-		self.speedEndTime = time.clock()
+		self.speedEndTime = time.time()
+		print "[SerienRecorder] Stopwatch End: " + str(self.speedEndTime)
 		speedTime = (self.speedEndTime - self.speedStartTime)
 		if config.plugins.serienRec.eventid.value:
 			SRLogger.writeLog("%s/%s Serie(n) sind vorgemerkt davon wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer), str(countTimerUpdate)), True)
