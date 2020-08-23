@@ -39,108 +39,46 @@ langer Tastendruck:
 Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
-CHANGELOG 4.1.0
+CHANGELOG 4.1.5
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste.
 Cover, Episodenliste, Serien-/Episodeninformationen stammen von TheTVDB.
 
 Neue Funktionen:
 
-- Es können jetzt auch gleichnamige Serien angelegt werden, dazu waren diverse Änderungen am Code der Datenbank und dem SerienServer nötig (siehe Anmerkungen 1)
-- In allen Ansichten in denen man Serien-Marker hinzufügen kann (Top 30, Planer, Starts, Suche), wird jetzt auch die Info Spalte (Herstellungsland/Jahr) in den Serien-Marker übernommen.
-- VPS wird jetzt beim Aktualisieren des Timers gesetzt, sobald eine EIT vorhanden ist (siehe Anmerkungen 2)
-- Timer für Filme aus der TV-Planer E-Mail werden jetzt ohne Staffel und Episode angelegt
-- In den Serien-Marker Einstellungen gibt es jetzt eine neue Option mit der man einen alternativen Serien-Marker vergeben kann, den EPG Seriennamen (siehe Anmerkungn 6)
-- "Cover zurücksetzen" (blaue Taste) in "Cover auswählen" geändert (siehe Anmerkungen 10)
-- In den globalen Einstellungen gibt es jetzt "Einzug der Serien-Namen in der Serien-Marker Ansicht" - dort ist 40 als Standardwert vorgeben und man kann einen Wert von 0 - 80 einstellen um die Position des Serien-Namens zu setzen um die einzelnen Serien-Marker optisch besser voneinander zu trennen. Je nachdem mit welcher Ansicht man startet, werden die Änderungen direkt wirksam bzw. nach einem SerienRecorder Neustart.
-- Updateprüfung für Senderliste (siehe Anmerkungen 8)
-- Unterstützung für die VTI Funktion "Aufnahmezeiten automatisch an EPG Daten anpassen" (siehe Anmerkungen 9)
-- Im Log werden jetzt beim Anlegen von Timern auch die Endzeiten der Timer mit ausgegeben
-- Die Timer-Liste kann jetzt aus der Episodenliste aufgerufen werden (siehe Anmerkungen 11)
+- Man kann jetzt in der Timerliste (Liste bearbeiten) mit den Bouquet Tasten zwischen den Serien springen
+- Man kann jetzt mit "gelb lang" in der Serien-Marker Ansicht die Sendetermine auf dem Server zurücksetzen
+Wenn es z.B. Änderungen bei einer Serie gibt, können die Termine auf dem SerienServer zurückgesetzt werden, sodass der SerienServer die Daten neu von Wunschliste abruft.
+Diese Funktion wirkt sich direkt auf den SerienServer aus - es reicht also wenn das ein User macht, wenn nach dem Zurücksetzen die Termine immer noch falsch sind, dann ist Wunschliste nicht aktuell. Sollte die Funktion missbraucht werden, werde ich sie wieder deaktivieren.
+- Aufwecken des Backup Ordners zu Beginn des Auto-Checks
 
 Änderungen:
 
-- Logbackup wieder eingebaut
-- Bereiche in der Einstellungen Ansicht entfernt (dort gab es Probleme bei einigen Boxen)
-- Cover werden jetzt nicht mehr mit dem Seriennamen (bei dem gewisse Sonderzeichen ersetzt wurden) sondern mit der Fernsehserie ID (z.B. doctor-who) gespeichert (siehe Anmerkungen 3)
-- Optimierte Timererstellung - es werden jetzt erst beim Anlegen des Timers die Daten aus dem EPG geholt. So muss nicht, wie bisher, jeder Ausstrahlungstermin im EPG gesucht werden, auch wenn später gar kein Timer angelegt werden musste.
-- Neue Option in den globalen Einstellungen bei "Serien-Verzeichnis anlegen" - man kann jetzt zwischen "nein", "ja" und "ja, nur Serienname" entscheiden. (siehe Anmerkungen 4)
-- Verbesserte Timer-Aktualisierung: Die Suche nach Timern im EPG wurde optimiert, dadurch sollte die Sendung zuverlässiger gefunden werden
-- Im Log werden jetzt die realen Sender und nicht mehr die Wunschliste Sender (Websender) ausgegeben.
-- IMAP Test (Taste 5) aus der Serien-Planer Ansicht entfernt
-- Überall wo Verzeichnisse ausgewählt werden können, wird jetzt beim Speichern ein Slash (/) am Ende angefügt, falls nicht bereits vorhanden
-- Logausgabe für TV-Planer Funktion verbessert
-- Logausgabe wenn Timer gelöscht wird
-- Logausgabe beim Auto-Check wenn ein Serien-Marker deaktiviert ist und deswegen keine Timer erstellt werden
-- Logausgabe beim Auto-Check wenn Sender am Serien-Marker eingeschränkt sind
-- Überschrift der Serien-Planer Ansicht angepasst
-- Einige Bezeichnungen im Log und UI angepasst bzw. korrigiert
-- Alle Uhrzeiten werden jetzt mit Doppelpunkte ausgegeben: Aus 20.15 wurde 20:15
-- In der Sendetermine Ansicht wird jetzt der Wochentag und nicht nur die Datum/Uhrzeit ausgegeben
-- Wird ein Timer über die Sendetermine Ansicht erstellt, wird im Log jetzt statt "Manueller Auto-Check" der Hinweis "Manuelle Timererstellung aus Sendeterminen" ausgegeben.
-- Es wird jetzt auch die Endzeit beim Aktualisieren der Timer berücksichtigt, bisher wurde die Endzeit nur dann aktualisiert, wenn sich auch die Startzeit geändert hat, jetzt reicht auch eine geänderte Endzeit um den Timer zu aktualisieren - das wird dann auch so ins Log geschrieben.
-- Ist ein SerienRecorder Skin auf der Box nicht lauffähig wirdjetzt eine Fehlermeldung beim Starten ausgegeben und der Skin wird zurückgesetzt.
-- Beim Starten werden jetzt die Berechtigungen auf die Datenbank überprüft
-- "Senderliste aktualisieren" verbessert (jetzt werden auch Änderungen in Groß-/Kleinschreibungen erkannt - Beispiel "kabel eins" => "Kabel Eins")
-- Aktualisierung der Senderliste wird jetzt im Log protokolliert
-- IMAP Einstellungen können jetzt direkt in den globalen Einstellungen getestet werden, dafür gibt es eine neue Option "IMAP Einstellungen testen"
-- Sendernamen für ausstehende Timer in der Timer-Liste (siehe Anmerkungen 12)
-- Timer Symbol für noch ausstehende Timer in der Timer-Liste (so können die noch ausstehenden Timern von den bereits abgearbeiteten Timern unterschieden werden, wenn man die komplette Liste anzeigen lässt)
-- Zusätzliche Auswahl beim Timername "<Serienname> - SnnEmm"
+- Weitere Logmeldungen beim Kopieren von Covern ins Serienverzeichnis (Debuglog)
+- Einstellungsdialog überarbeitet
+- Löschen von Einträgen aus Timer-Liste verbessert.
+Wenn es für eine Episode mehrere Einträge gab, wurden alle Einträge für diese Episode gelöscht und nicht nur der ausgewählte.
+Jetzt wird tatsächlich nur der ausgewählte Eintrag gelöscht.
+- Die Ausführungszeit des Auto-Checks wurde falsch berechnet, so kam ein viel zu kurzer Wert heraus.
+Jetzt wird die Zeit korrekt am Ende des Auto-Checks angezeigt und entspricht besser der Anzeigedauer des Spinners.
+- Optimierungen beim Auto-Check
+- Diverse neue Logmeldungen im Debuglog für den Auto-Check
+- Alleinige Zuweisung eines alternativen Senders führt nicht zur Meldung "STB-Sender nicht gefunden"
 
 Bugfixes:
 
-- Sortierung der Timer-Liste korrigiert
-- Beim Aktualisieren von Timern konnte es vorkommen, dass die Startzeit im Timer geändert wurde aber nicht in der Datenbank (wenn sie nur einige Sekunden anders war)
-- Löschen von Timern nicht mehr über EIT
-- Der Filter (gelbe Taste) bei den Sendeterminen hat offenbar schon lange nicht mehr richtig funktioniert. (siehe Anmerkungen 5)
-- Absturz in der Merkzettel Ansicht behoben
-- Probleme bei der Eingabe in den Serieneinstellungen behoben, weil "Cover zurücksetzen" jetzt über die blaue Taste und nicht mehr über Taste 2 erreichbar ist.
-- Update Probleme bei Boxen mit DreamOS behoben (Danke an @Sven H)
-- Kein Absturz mehr beim Verarbeiten der TV-Planer E-Mail wenn eine Sendung Anführungszeichen im Namen hat
-- Senderzuordnung verbessert (es werden jetzt auch wieder die SD Kanäle gefunden, bei der automatischen Zuordnung)
-- Fehlende Logausgabe wenn erlaubte Zeitspanne am Marker gesetzt ist und "Immer Timer anlegen, wenn keine Wiederholung gefunden wird" ausgeschaltet ist.
-- Falsche Logausgabe bei erlaubte Zeitspanne korrigiert (siehe Anmerkungen 7)
-- Refreshfehler beim Löschen von Sendern aus der Senderliste behoben
-- Bei einigen Screens passte bei HD Skins der Sendername nicht in die Spalte - dies wurde behoben
+- In der Timerliste werden jetzt die realen Sendernamen angezeigt auch wenn man Picons deaktiviert hat.
+- Einige Einträge (ohne Fernsehserie ID) in der Timer-Liste konnten nicht gelöscht werden, das ist jetzt behoben.
+- Bei Timern die nicht aus dem EPG aktualisiert werden konnten, wird jetzt wieder die richtige Vor- und Nachlaufzeit gesetzt.
+- Fehler beim Anlegen von manuellen Einträgen in die Timerliste behoben
+- Kein Absturz mehr in der Einstellungen Ansicht
+- Fehler beim manuellen Timern aus der Sendetermine Ansicht behoben.
+Wenn nicht mehr als ein Timer pro Episode erlaubt war, wurde u.U. doch ein weiterer Timer angelegt.
+- Cover Platzhalter wurden nicht korrekt aktualisiert.
+Trotz der Einstellung, dass Platzhalter Cover nach 60 Tagen erneut überprüft werden sollten, wurden diese nicht neu geladen. Das ist jetzt korrigiert.
+- Wenn an einem Sender eine abweichende Vor-/Nachlaufzeit eingestellt war, wurde beim Aktualisieren der Filmtimer die globale Vor-/Nachlaufzeit am Timer gesetzt.
+Der Grund hierfür war, dass für Filme kein Serien-Marker existiert und deswegen die Datenbank Abfrage keine Ergebnisse geliefert hat.
 
-Anmerkungen:
-
-1. Es können jetzt Serien-Marker für gleichnamige Serien (z.B. MacGyver, Doctor Who) angelegt werden, der SerienRecorder verwaltet die Einträge in der Datenbank jetzt nicht mehr über den Namen sondern über die Wunschliste bzw. Fernsehserie ID. In diesem Zusammenhang hat sich allerdings ein Problem bei Filmen (die man über die TV-Planer E-Mail) getimert hat, ergeben. Leider kennt der SerienServer die Fernsehserie ID von Filmen nicht. Deswegen kann die Timer-Liste für Filme nicht korrekt beim Datenbank Update aktualisiert werden. Damit erkennt der SerienRecorder alle Filme in der SerienRecorder Datenbank als nicht vorhanden, und wird erneut Timer erstellen. Das betrifft aber nur bereits vorhandene Einträge, für neue Timer berücksichtigt der SerienRecorder die Fernsehserie ID aus der TV-Planer E-Mail.
-
-Es gibt es jetzt zwei Lösungsmöglichkeiten:
-
-a) Entweder man lebt mit dieser Einschränkung
-b) Man benutzt ein Datenbank Tool auf dem Computer und ergänzt selbst die Fernsehserie ID in der Datenbank.
-
-2. Wenn beim Anlegen eines Timers keine EIT im EPG gefunden wurde, der Sender aber VPS unterstützt, wurde VPS am Timer deaktiviert, weil es ohne EIT nicht funktioniert.
-Wurde dann später beim Aktualisieren des Timers doch eine EIT für die Sendung gefunden, wurde diese zwar an den Timer gesetzt, VPS blieb aber abgeschaltet.
-Jetzt wird VPS auch aktiviert wenn beim Aktualiseren eine EIT gefunden wurde und für den Marker/Sender VPS aktiviert wurde.
-
-3. Durch die neuen Covernamen erkennt man trotzdem sofort um welches Cover es sich handelt, außerdem müssen keine Sonderzeichen mehr ersetzt, weil es die nicht gibt.
-Der SerienRecorder konvertiert die bisherigen Namen automatisch wenn das Cover im SerienRecorder angezeigt werden soll - neue Cover werden schon mit dem "neuen" Namen gespeichert.
-
-4. Wenn jemand vorher die Option aktiv hatte, müsste die jetzige Einstellung "ja" sein - damit werden Serien-Verzeichnisse in der Form <Serienname> (<Produktionsjahr>) angelegt.
-Diese Option gibt es auch für Filme
-
-5. Bei "Alle Sender" wurden auch nur die aktiven Sender benutzt und nicht alle in der Senderzuordnung. Ich habe z.B. bei mir keine Sky Sender aktiv, die hätten eigentlich bei "Alle Sender" angezeigt werden müssen, das ist jetzt wieder korrekt.
-
-6. Der alternative Markername wird zusätzlichen beim Abgleich mit dem EPG verwendet. Es wird zuerst versucht, über den Serien-Marker Namen die Sendung im EPG zu finden, wenn das nicht klappt, wird es über den EPG Seriennamen (wenn konfiguriert) versucht. Manchmal unterscheiden sich Serien-Marker Name und EPG Name nur um wenige Zeichen, das führt dann dazu, dass der SerienRecorder die Sendung nicht im EPG finden kann und deswegen den Timer nicht aktualisiert (z.B. "Die Heiland: Wir sind Anwalt" und "Die Heiland - Wir sind Anwalt")
-
-7. Es wurde zweimal der gleiche Zeitbereich ausgegeben, jetzt wird der Bereich der der Start- und Endzeit der Sendung entspricht z.B. (01:05 - 02:55) ausgegeben und der Zeitbereich der für den Marker (bzw. global) eingestellt ist z.B. [20:00 - 23:59]. Außerdem hieß es bisher "Timer nicht in Zeitspanne".
-' World Wrestling Entertainment - S00E00 - Wrestling-Magazin, USA 2019 ' - Sendung (01:05 - 02:55) nicht in Zeitspanne [20:00 - 23:59]
-
-8. Es gibt jetzt eine Updateprüfung für die Senderliste - diese wird beim Öffnen des SerienRecorders ausgeführt. Dabei wird geprüft ob auf dem Serien-Server eine aktuellere Senderliste vorhanden ist. Wenn ja wird der SerienRecorder Benutzer zum Aktualisieren aufgefordert.
-
-9. Die VTI Funktion "Aufnahmezeiten automatisch an EPG Daten anpassen" kann jetzt durch den SerienRecorder an den Timer gesetzt werden oder nicht. Es gilt immer die Einstellung aus dem VTI. Ausnahmen können im SerienRecorder für bestimmte Sender (Senderzuordnung => Einstellungen) vorgenommen werden und/oder am Serien-Marker.
-Beispiel: Die Funktion ist im VTI nicht aktiv, sie soll aber für Timer vom SerienRecorder auf dem Sender ZDF aktiv sein, dann aktiviert man die Option am Sender ZDF im SerienRecorder.
-
-10. In den Serien-Marker Einstellungen wurde die Funktion "Cover zurücksetzen" durch "Cover auswählen" ersetzt. Die neue Funktion zeigt jetzt alle deutschen und englischen Cover der Serie an und man kann für den Serien-Marker ein bestimmtes Cover auswählen. Es werden nur Cover in Deutsch und Englisch von TheTVDB geholt, alle anderen Sprachen bisher noch nicht. Evtl. erweitere ich das noch.
-
-11. Man kann jetzt in der Episoden-Liste über die grüne Taste die Timer-Liste für diese Serie anzeigen lassen und dort dann einzelne Timer Einträge löschen.
-
-12. In der Timer-Liste werden jetzt für noch ausstehende Timer die Sendernamen aus dem Timer angezeigt und nicht mehr die Wunschliste (Web) Sender.
-Das hat den Vorteil, dass man direkt sieht auf welchem Sender SD/HD/UHD aufgenommen wird.
 
 Viel Spaß mit dem SerienRecorder!
 
