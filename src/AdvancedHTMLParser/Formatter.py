@@ -1,6 +1,11 @@
-# Copyright (c) 2015, 2017, 2018 Tim Savannah under LGPLv3. 
-# See LICENSE (https://gnu.org/licenses/lgpl-3.0.txt) for more information.
-#   HTML formatting (HTML->XHTML conversion as well)
+'''
+    Copyright (c) 2015, 2017, 2018 Tim Savannah under LGPLv3. All Rights Reserved.
+
+    See LICENSE (https://gnu.org/licenses/lgpl-3.0.txt) for more information.
+
+    HTML formatting (HTML->XHTML conversion as well)
+'''
+
 
 import sys
 
@@ -106,7 +111,7 @@ class AdvancedHTMLFormatter(HTMLParser):
 
     def getRoot(self):
         '''
-            getRoot - returns the root Tag 
+            getRoot - returns the root Tag
                 @return - AdvancedTag at root. If you provided multiple root nodes, this will be a "holder" with tagName value as constants.INVISIBLE_ROOT_TAG
         '''
         return self.root
@@ -170,7 +175,7 @@ class AdvancedHTMLFormatter(HTMLParser):
         else:
             raise MultipleRootNodeException()
 
-        if self.inPreformatted is 0:
+        if self.inPreformatted == 0:
             newTag._indent = self._getIndent()
 
         if tagName in PREFORMATTED_TAGS:
@@ -401,7 +406,7 @@ def handle_starttag_slim(self, tagName, attributeList, isSelfClosing=False):
     else:
         raise MultipleRootNodeException()
 
-    if self.inPreformatted is 0:
+    if self.inPreformatted == 0:
         newTag._indent = self._getIndent()
 
     if tagName in PREFORMATTED_TAGS:

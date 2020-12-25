@@ -5,6 +5,7 @@ from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 
 from Tools import Notifications
+from Tools.Directories import fileExists
 
 from Components.Label import Label
 from Components.ActionMap import ActionMap
@@ -15,30 +16,40 @@ from Components.ProgressBar import ProgressBar
 from enigma import getDesktop, eTimer, eConsoleAppContainer
 from twisted.web.client import getPage, downloadPage
 
+from .SerienRecorderHelpers import isDreamOS, toStr, PY2
+
 import Screens.Standby
-import httplib
+import os
 
 try:
 	import simplejson as json
 except ImportError:
 	import json
 
-from SerienRecorderHelpers import *
-
 class checkGitHubUpdate:
 	def __init__(self, session):
 		self.session = session
 
 	def checkForUpdate(self):
+
 		import ssl
 		if ssl.OPENSSL_VERSION_NUMBER < 268439552:
-			Notifications.AddPopup("Leider ist die Suche nach SerienRecorder Updates auf Ihrer Box technisch nicht möglich - bitte deaktivieren Sie die automatische Plugin-Update Funktion, in den SerienRecorder Einstellungen, um diese Meldung zu unterdrücken!", MessageBox.TYPE_INFO, timeout=0)
+			Notifications.AddPopup("Leider ist die Suche nach SerienRecorder Updates auf dieser Box technisch nicht möglich - die automatische Plugin-Update Funktion wird deaktiviert!", MessageBox.TYPE_INFO, timeout=0)
+			config.plugins.serienRec.Autoupdate.value = False
+			config.plugins.serienRec.Autoupdate.save()
+			configfile.save()
 			return
 
-		if hasattr(ssl, '_create_unverified_context'):
-			ssl._create_default_https_context = ssl._create_unverified_context
-		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
-		try:
+		def checkReleases():
+			if hasattr(ssl, '_create_unverified_context'):
+				ssl._create_default_https_context = ssl._create_unverified_context
+
+			if PY2:
+				import httplib
+			else:
+				import http.client as httplib
+
+			conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
 			conn.request(url="/repos/einfall/serienrecorder/releases/latest", method="GET", headers={
 				'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
 			rawData = conn.getresponse()
@@ -49,17 +60,17 @@ class checkGitHubUpdate:
 			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
 			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("alpha", "-1").replace("beta", "-1").split(".")
 			remoteversion.extend((max([len(remoteversion), len(version)]) - len(remoteversion)) * '0')
-			remoteversion = map(lambda x: int(x), remoteversion)
+			remoteversion = [int(x) for x in remoteversion]
 			version.extend((max([len(remoteversion), len(version)]) - len(version)) * '0')
-			version = map(lambda x: int(x), version)
+			version = [int(x) for x in version]
 
 			if remoteversion > version:
-				updateName = latestRelease['name'].encode('utf-8')
-				updateInfo = latestRelease['body'].encode('utf-8')
+				updateName = toStr(latestRelease['name'])
+				updateInfo = toStr(latestRelease['body'])
 				downloadURL = None
 				downloadFileSize = 5 * 1024
 				for asset in latestRelease['assets']:
-					updateURL = asset['browser_download_url'].encode('utf-8')
+					updateURL = toStr(asset['browser_download_url'])
 					if isDreamOS() and updateURL.endswith(".deb"):
 						downloadURL = updateURL
 						downloadFileSize = int(asset['size'] / 1024)
@@ -70,9 +81,29 @@ class checkGitHubUpdate:
 						break
 
 				if downloadURL:
-					self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
-		except:
-			Notifications.AddPopup("Unerwarteter Fehler beim Überprüfen der SerienRecorder Version", MessageBox.TYPE_INFO, timeout=3)
+					return updateName, updateInfo, downloadURL, downloadFileSize
+
+			return None
+
+		def onUpdateAvailable(result):
+			if result:
+				(updateName, updateInfo, downloadURL, downloadFileSize) = result
+				self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
+
+		def onUpdateCheckFailed():
+			print("[SerienRecorder] Update check failed")
+			self.session.open(MessageBox, "Bei der Suche nach einer neuen SerienRecorder Version ist ein Fehler aufgetreten!", MessageBox.TYPE_INFO, timeout=5)
+
+		import twisted.python.runtime
+		if twisted.python.runtime.platform.supportsThreads():
+			from twisted.internet.threads import deferToThread
+			deferToThread(checkReleases).addCallback(onUpdateAvailable).addErrback(onUpdateCheckFailed)
+		else:
+			try:
+				result = checkReleases()
+				onUpdateAvailable(result)
+			except:
+				onUpdateCheckFailed()
 
 
 class checkGitHubUpdateScreen(Screen):
@@ -180,7 +211,7 @@ class checkGitHubUpdateScreen(Screen):
 		self.close()
 
 	def cmdData(self, data):
-		print data
+		#print data
 		self['srlog'].setText(data)
 
 	def updateProgressBar(self):
@@ -211,12 +242,12 @@ class checkGitHubUpdateScreen(Screen):
 			self.progressTimerConnection = None
 
 	def downloadFinished(self, result):
-		print "[SerienRecorder] downloadFinished"
+		print("[SerienRecorder] downloadFinished")
 		self.downloadDone = True
 		self.progress = 0
 		self['status'].setText("")
 
-		print "[SerienRecorder] Filepath: " + self.filePath
+		print("[SerienRecorder] Filepath: " + self.filePath)
 		if fileExists(self.filePath):
 			self['status'].setText("Installation wurde gestartet, bitte warten...")
 
@@ -229,9 +260,9 @@ class checkGitHubUpdateScreen(Screen):
 				self.console.dataAvail.append(self.cmdData)
 				command = "opkg update && opkg install --force-overwrite --force-depends --force-downgrade %s" % str(self.filePath)
 
-			print "[SerienRecorder] Executing command: " + command
+			print("[SerienRecorder] Executing command: " + command)
 			retval = self.console.execute(command)
-			print "[SerienRecorder] Return: " + str(retval)
+			print("[SerienRecorder] Return: " + str(retval))
 		else:
 			self.downloadError()
 
@@ -241,12 +272,12 @@ class checkGitHubUpdateScreen(Screen):
 		self.close()
 
 	def finishedPluginUpdate(self, retval):
-		print "[SerienRecorder] finishPluginUpdate [retval = " + str(retval) + "]"
+		print("[SerienRecorder] finishPluginUpdate [retval = " + str(retval) + "]")
 		#self.console.kill()
 		#self.stopProgressTimer()
 		self['status'].setText("")
 		if fileExists(self.filePath):
-			print "[SerienRecorder] Removing file: " + self.filePath
+			print("[SerienRecorder] Removing file: " + self.filePath)
 			os.remove(self.filePath)
 
 		if retval == 0:

@@ -11,9 +11,9 @@ from Tools.Directories import fileExists
 
 from enigma import ePicLoad, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER
 
-import SerienRecorder
-from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
-from SerienRecorderDatabase import SRDatabase
+from . import SerienRecorder
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
+from .SerienRecorderDatabase import SRDatabase
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
 	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
@@ -157,7 +157,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def serieInfo(self):
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		if serien_name and serien_wlid:
-			from SerienRecorderSeriesInfoScreen import serienRecShowInfo
+			from .SerienRecorderSeriesInfoScreen import serienRecShowInfo
 			self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
 	def wunschliste(self):
@@ -182,7 +182,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.wishlist_tmp = self.wishlist[:]
 		if config.plugins.serienRec.wishListSorted.value:
 			self.wishlist_tmp.sort()
-		self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
+		self.chooseMenuList.setList(list(map(self.buildList, self.wishlist_tmp)))
 		self.getCover()
 
 	@staticmethod
@@ -214,13 +214,16 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def answerToEpisode(self, aToEpisode):
 		self.aToEpisode = aToEpisode
-		print "[SerienRecorder] Staffel: %s" % self.aStaffel
-		print "[SerienRecorder] von Episode: %s" % self.aFromEpisode
-		print "[SerienRecorder] bis Episode: %s" % self.aToEpisode
+		print("[SerienRecorder] Staffel: %s" % self.aStaffel)
+		print("[SerienRecorder] von Episode: %s" % self.aFromEpisode)
+		print("[SerienRecorder] bis Episode: %s" % self.aToEpisode)
 
 		if self.aToEpisode is None or self.aFromEpisode is None or self.aStaffel is None or self.aToEpisode == "":
 			return
 		else:
+			if self.aStaffel.startswith('0') and len(self.aStaffel) > 1:
+				self.aStaffel = self.aStaffel[1:]
+
 			self.database.addBookmark(self.aSerie, self.aSerieFSID, self.aFromEpisode, self.aToEpisode, self.aStaffel, int(config.plugins.serienRec.NoOfRecords.value))
 			self.readWishlist()
 
@@ -231,7 +234,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_bg'].show()
 			self['menu_list'].hide()
 			l = self.database.getMarkerNames()
-			self.chooseMenuList_popup.setList(map(self.buildList_popup, l))
+			self.chooseMenuList_popup.setList(list(map(self.buildList_popup, l)))
 			self['popup_list'].moveToIndex(0)
 		else:
 			self.modus = "menu_list"
@@ -240,7 +243,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_bg'].hide()
 
 			if self['popup_list'].getCurrent() is None:
-				print "[SerienRecorder] Marker-Liste leer."
+				print("[SerienRecorder] Marker-Liste leer.")
 				return
 
 			self.aSerie = self['popup_list'].getCurrent()[0][0]
@@ -252,7 +255,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyRed(self):
 		if self['menu_list'].getCurrent() is None:
-			print "[SerienRecorder] Merkzettel ist leer."
+			print("[SerienRecorder] Merkzettel ist leer.")
 			return
 
 		zeile = self['menu_list'].getCurrent()[0]
@@ -260,7 +263,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.dbData.append((fsID, str(staffel).lower(), episode.lower()))
 		self.wishlist_tmp.remove(zeile)
 		self.wishlist.remove(zeile)
-		self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
+		self.chooseMenuList.setList(list(map(self.buildList, self.wishlist_tmp)))
 		self.delAdded = True
 
 	def keyGreen(self):
@@ -281,12 +284,12 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			config.plugins.serienRec.wishListSorted.save()
 			SerienRecorder.configfile.save()
 
-			self.chooseMenuList.setList(map(self.buildList, self.wishlist_tmp))
+			self.chooseMenuList.setList(list(map(self.buildList, self.wishlist_tmp)))
 			self.getCover()
 
 	def keyBlue(self):
 		if self['menu_list'].getCurrent() is None:
-			print "[SerienRecorder] Merkzettel ist leer."
+			print("[SerienRecorder] Merkzettel ist leer.")
 			return
 
 		if config.plugins.serienRec.confirmOnDelete.value:

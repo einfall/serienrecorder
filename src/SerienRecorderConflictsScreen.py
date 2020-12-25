@@ -11,9 +11,9 @@ from Components.config import config
 from enigma import eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER
 import time
 
-import SerienRecorder
-from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
-from SerienRecorderDatabase import SRDatabase
+from . import SerienRecorder
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
+from .SerienRecorderDatabase import SRDatabase
 
 class serienRecShowConflicts(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session):
@@ -112,7 +112,7 @@ class serienRecShowConflicts(serienRecBaseScreen, Screen, HelpableScreen):
 					self.conflictsListe.append(("            -> %s" % row2.strip()))
 				self.conflictsListe.append(("-" * 100))
 				self.conflictsListe.append("")
-		self.chooseMenuList.setList(map(self.buildList, self.conflictsListe))
+		self.chooseMenuList.setList(list(map(self.buildList, self.conflictsListe)))
 
 	@staticmethod
 	def buildList(entry):
@@ -134,7 +134,7 @@ class serienRecShowConflicts(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyBlue(self):
 		if self['menu_list'].getCurrent() is None:
-			print "[SerienRecorder] Conflict-List leer."
+			print("[SerienRecorder] Conflict-List leer.")
 			return
 		else:
 			if config.plugins.serienRec.confirmOnDelete.value:

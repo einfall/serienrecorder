@@ -9,12 +9,11 @@ from Components.GUIComponent import GUIComponent
 from enigma import eListboxPythonMultiContent, eListbox, gFont, RT_VALIGN_CENTER, RT_HALIGN_LEFT, RT_HALIGN_CENTER
 from enigma import getDesktop
 
-from twisted.web.client import downloadPage
 from twisted.internet import defer
 
 from Tools.Directories import fileExists
 
-from SerienRecorderHelpers import PicLoader
+from .SerienRecorderHelpers import PicLoader
 
 import os, shutil
 
@@ -65,11 +64,11 @@ class CoverSelectorScreen(Screen):
 	def __onLayoutFinished(self):
 		self._numberOfCovers = 0
 
-		from SerienRecorderSeriesServer import SeriesServer
-		print "[SerienRecorder] Get covers for id = ", str(self._serien_wlid)
+		from .SerienRecorderSeriesServer import SeriesServer
+		print("[SerienRecorder] Get covers for id = " + str(self._serien_wlid))
 		covers = SeriesServer().getCoverURLs(self._serien_wlid)
 		if covers is not None:
-			print "[SerienRecorder] Number of covers found = ", len(covers)
+			print("[SerienRecorder] Number of covers found = " + str(len(covers)))
 			self._numberOfCovers = len(covers)
 			ds = defer.DeferredSemaphore(tokens=5)
 			downloads = [ds.run(self.download, cover).addCallback(self.buildList, cover).addErrback(self.buildList, cover) for cover in covers]
@@ -78,9 +77,14 @@ class CoverSelectorScreen(Screen):
 			self['footer'].setText("Keine Cover gefunden!")
 
 	def download(self, cover):
+		from twisted.web import client
+		from .SerienRecorderHelpers import toBinary
+
 		path = self._tempDir + str(cover['id']) + '.jpg'
+		print("[SerienRecorder] Temp cover path = " + path)
 		if not fileExists(path):
-			return downloadPage(cover['url'], path)
+			print("[SerienRecorder] Downloading cover %s => %s" % (cover['url'], path))
+			return client.downloadPage(toBinary(cover['url']), path)
 		else:
 			return True
 
@@ -89,13 +93,13 @@ class CoverSelectorScreen(Screen):
 		self['list'].setList(self._coverList)
 
 	def dataError(self, error):
+		print("[SerienRecorder] Cover download error = ", error)
 		self['footer'].setText("Fehler beim Laden der Cover!")
 
 	def dataFinish(self, res):
 		self['footer'].setText("Es wurden %d Cover gefunden" % self._numberOfCovers)
 
 	def keyOK(self):
-		from SerienRecorderHelpers import doReplaces
 		from Components.config import config
 
 		selectedRow = self['list'].getCurrent()

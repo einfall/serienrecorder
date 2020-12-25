@@ -13,9 +13,9 @@ from Tools.Directories import fileExists
 from enigma import ePicLoad, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER
 from skin import parseColor
 
-import SerienRecorder
-from SerienRecorderScreenHelpers import serienRecBaseScreen, updateMenuKeys, InitSkin, skinFactor
-from SerienRecorderDatabase import SRDatabase
+from . import SerienRecorder
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, updateMenuKeys, InitSkin, skinFactor
+from .SerienRecorderDatabase import SRDatabase
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
 	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
@@ -123,7 +123,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		serien_wlid = self['menu_list'].getCurrent()[0][2]
 		serien_fsid = self['menu_list'].getCurrent()[0][3]
-		from SerienRecorderSeriesInfoScreen import serienRecShowInfo
+		from .SerienRecorderSeriesInfoScreen import serienRecShowInfo
 		self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
 	def setupClose(self, result):
@@ -132,7 +132,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self.searchSerie()
 
 	def searchSerie(self, start = 0):
-		print "[SerienRecorder] suche ' %s '" % self.serien_name
+		print("[SerienRecorder] suche ' %s '" % self.serien_name)
 		self['title'].setText("Suche nach ' %s '" % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 		if start == 0:
@@ -156,7 +156,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if moreResults > 0:
 			resultList.append(("", "", "", ""))
 			resultList.append(("=> Weitere Ergebnisse laden?", str(moreResults), "-1", ""))
-		self.chooseMenuList.setList(map(self.buildList, resultList))
+		self.chooseMenuList.setList(list(map(self.buildList, resultList)))
 		self['menu_list'].moveToIndex(startOffset)
 		self.loading = False
 		self.getCover()
@@ -187,7 +187,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			boxID = config.plugins.serienRec.BoxID.value
 
 		if database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
-			from SerienRecorderLogWriter import SRLogger
+			from .SerienRecorderLogWriter import SRLogger
 			SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
 			result = True
 
@@ -201,7 +201,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_info = self['menu_list'].getCurrent()[0][1]
 		serien_wlid = self['menu_list'].getCurrent()[0][2]
 		serien_fsid = self['menu_list'].getCurrent()[0][3]
-		print serien_name, serien_info, serien_wlid, serien_fsid
+		#print(serien_name, serien_info, serien_wlid, serien_fsid)
 
 		if serien_wlid == "":
 			return
@@ -229,7 +229,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def wSearch(self, serien_name):
 		if serien_name:
-			print serien_name
+			#print(serien_name)
 			self.chooseMenuList.setList([])
 			self['title'].setText("")
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
@@ -280,7 +280,7 @@ class downloadSearchResults(threading.Thread):
 		self.startOffset = startOffset
 		self.searchResults = None
 	def run(self):
-		from SerienRecorderSeriesServer import SeriesServer
+		from .SerienRecorderSeriesServer import SeriesServer
 		self.searchResults = SeriesServer().doSearch(self.seriesName, self.startOffset)
 
 	def getData(self):

@@ -8,10 +8,10 @@ from Components.config import config
 
 from enigma import ePicLoad
 
-import SerienRecorder
-from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin
-from SerienRecorderSeriesServer import SeriesServer
-from SerienRecorderDatabase import SRDatabase
+from . import SerienRecorder
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin
+from .SerienRecorderSeriesServer import SeriesServer
+from .SerienRecorderDatabase import SRDatabase
 
 class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session, serien_name, serien_wlid, serien_fsid):
@@ -24,6 +24,7 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		self.serien_wlid = serien_wlid
 		self.serien_fsid = serien_fsid
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
+		self.infoText = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
@@ -98,35 +99,49 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		super(self.__class__, self).setupClose(result)
 
 	def getData(self):
-		try:
-			infoText = SeriesServer().getSeriesInfo(self.serien_wlid)
-		except:
-			infoText = 'Es ist ein Fehler beim Abrufen der Serien-Informationen aufgetreten!'
-		self['info'].setText(infoText)
 		SerienRecorder.getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
 
+		def downloadSeriesInfo():
+			print("[SerienRecorder] downloadSeriesInfo")
+			return SeriesServer().getSeriesInfo(self.serien_wlid)
+
+		def onDownloadSeriesInfoSuccessful(result):
+			self.infoText = result
+			self['info'].setText(result)
+
+		def onDownloadSeriesInfoFailed():
+			self.infoText = None
+			self['info'].setText("Es ist ein Fehler beim Abrufen der Serien-Informationen aufgetreten!")
+
+		import twisted.python.runtime
+		if twisted.python.runtime.platform.supportsThreads():
+			from twisted.internet.threads import deferToThread
+			deferToThread(downloadSeriesInfo).addCallback(onDownloadSeriesInfoSuccessful).addErrback(onDownloadSeriesInfoFailed)
+		else:
+			try:
+				result = downloadSeriesInfo()
+				onDownloadSeriesInfoSuccessful(result)
+			except:
+				onDownloadSeriesInfoFailed()
+
 	def createInfoFile(self):
-		from SerienRecorderHelpers import getDirname
+		from .SerienRecorderHelpers import getDirname
 		from Tools.Directories import fileExists
 		from Screens.MessageBox import MessageBox
 
 		errorText = None
 		(dirname, dirname_serie) = getDirname(self.database, self.serien_name, self.serien_fsid, 0)
 		if fileExists(dirname) and dirname != config.plugins.serienRec.savetopath.value and config.plugins.serienRec.seriensubdir.value:
-			try:
-				infoText = SeriesServer().getSeriesInfo(self.serien_wlid)
-			except:
-				infoText = None
-				errorText = 'Es ist ein Fehler beim Abrufen der Serien-Informationen aufgetreten!'
-
-			if infoText:
+			if self.infoText:
 				try:
 					folderFile = open('%s/folder.txt' % dirname, 'w')
-					folderFile.write('%s\n' % infoText)
+					folderFile.write('%s\n' % self.infoText)
 					folderFile.close()
 					self.session.open(MessageBox, "Serien-Informationen in den Ordner ' %s ' gespeichert." % dirname, MessageBox.TYPE_INFO, timeout=5)
 				except Exception as e:
-					errorText = 'Fehler beim Schreiben der Datei [%s]!' % str(e)
+					errorText = "Fehler beim Schreiben der Datei [%s]!" % str(e)
+			else:
+				errorText = "Fehler beim Abrufen der Serien-Informationen!"
 
 		if errorText:
 			self.session.open(MessageBox, errorText, MessageBox.TYPE_ERROR, timeout=0)

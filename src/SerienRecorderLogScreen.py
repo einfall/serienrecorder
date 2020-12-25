@@ -10,8 +10,8 @@ from Tools.Directories import fileExists
 
 from enigma import eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_WRAP, RT_VALIGN_CENTER
 
-from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
-from SerienRecorderLogWriter import SRLogger
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
+from .SerienRecorderLogWriter import SRLogger
 import os
 
 class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
@@ -109,7 +109,7 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 			self['title'].hide()
 			self['path'].setText("LogFile:\n(%s)" % logFilePath)
 			self['path'].show()
-			self.chooseMenuList.setList(map(self.buildList, logliste))
+			self.chooseMenuList.setList(list(map(self.buildList, logliste)))
 			if config.plugins.serienRec.logScrollLast.value:
 				count = len(logliste)
 				if count != 0:

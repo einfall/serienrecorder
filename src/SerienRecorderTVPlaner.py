@@ -1,27 +1,25 @@
 # -*- coding: utf-8 -*-
-import datetime
-import email
-import imaplib
-import os
-import quopri
-import re
-import shutil
-import string
-import time
-from HTMLParser import HTMLParser
+import datetime, email, imaplib, os, re, shutil, time
 
-import SerienRecorder
-from SerienRecorderHelpers import decrypt, STBHelpers
 from Components.config import config
 from Screens.MessageBox import MessageBox
-from SerienRecorderDatabase import SRDatabase
-from SerienRecorderHelpers import TimeHelpers
-from SerienRecorderSeriesServer import SeriesServer
-from SerienRecorderLogWriter import SRLogger
 from Tools.Directories import fileExists
+
+from .SerienRecorderHelpers import decrypt, STBHelpers, TimeHelpers, toStr, toBinary, PY3
+from .SerienRecorderDatabase import SRDatabase
+from .SerienRecorderSeriesServer import SeriesServer
+from .SerienRecorderLogWriter import SRLogger
 
 SERIENRECORDER_TVPLANER_HTML_FILENAME = "%sTV-Planer.html"
 SERIENRECORDER_LONG_TVPLANER_HTML_FILENAME = "%sTV-Planer_%s%s%s%s%s.html"
+
+def getMailSearchString(age, subject):
+	date = datetime.date.today() - datetime.timedelta(age)
+	months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+	searchstr = '(SENTSINCE {day:02d}-{month}-{year:04d} SUBJECT "' + subject + '")'
+	searchstr = searchstr.format(day=date.day, month=months[date.month - 1], year=date.year)
+	return searchstr
+
 
 def getEmailData():
 	# extract all html parts
@@ -32,6 +30,7 @@ def getEmailData():
 				if part.get_content_type() == 'text/html':
 					return part.get_payload()
 
+	print("[SerienRecorder] Loading TV-Planer e-mail")
 	SRLogger.writeLog("\n---------' Lade TV-Planer E-Mail '---------\n", True)
 
 	# get emails
@@ -74,21 +73,21 @@ def getEmailData():
 	try:
 		mail.login(decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
 				   decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
-		print "[serienrecorder]: imap login ok"
+		print("[SerienRecorder] IMAP login ok")
 
 	except imaplib.IMAP4.error as e:
 		SRLogger.writeLog("TV-Planer: Anmeldung am Server fehlgeschlagen [%s]" % str(e), True)
-		print "[serienrecorder]: imap login failed"
+		print("[SerienRecorder] IMAP login failed")
 		return None
 
 	try:
-		mail.select(config.plugins.serienRec.imap_mailbox.value)
+		mail.select(config.plugins.serienRec.imap_mailbox.value, True)
 
 	except imaplib.IMAP4.error as e:
-		SRLogger.writeLog("TV-Planer: Mailbox %r nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), True)
+		SRLogger.writeLog("TV-Planer: Mailbox ' %s ' nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), True)
 		return None
 
-	searchstr = TimeHelpers.getMailSearchString()
+	searchstr = getMailSearchString(config.plugins.serienRec.imap_mail_age.value, config.plugins.serienRec.imap_mail_subject.value)
 	try:
 		result, data = mail.uid('search', None, searchstr)
 		if result != 'OK':
@@ -117,7 +116,10 @@ def getEmailData():
 
 	mail.logout()
 	# extract email message including headers and alternate payloads
-	email_message = email.message_from_string(data[0][1])
+	if PY3:
+		email_message = email.message_from_bytes(data[0][1])
+	else:
+		email_message = email.message_from_string(data[0][1])
 	if len(email_message) == 0:
 		SRLogger.writeLog("TV-Planer: Leere E-Mail", True)
 		return None
@@ -148,26 +150,29 @@ def getEmailData():
 		def getTextContentByTitle(node, titleValue, default):
 			titleNodes = node.childNodes.getElementsByAttr('title', titleValue)
 			if titleNodes:
-				return titleNodes[0].textContent.encode('utf-8')
+				return toStr(titleNodes[0].textContent)
 			else:
 				return default
 
 		def getEpisodeTitle(node):
 			childNodes = node.childNodes.getElementsByTagName('a')
 			if childNodes:
-				return childNodes[0].textContent.encode('utf-8')
+				return toStr(childNodes[0].textContent)
 			else:
 				# Movies does not a link to the episode => only country, year
 				childNodes = node.childNodes.getElementsByTagName('span')
 				if childNodes:
-					return childNodes[0].textContent.encode('utf-8')
+					return toStr(childNodes[0].textContent)
 				else:
 					return ''
 
-		import AdvancedHTMLParser
+		from . import AdvancedHTMLParser
 		SRLogger.writeLog('Starte HTML Parsing der TV-Planer E-Mail.', True)
+		print("[SerienRecorder] TV-Planer: Start HTML parsing")
 		parser = AdvancedHTMLParser.AdvancedHTMLParser()
-		html = parser.unescape(html).encode('utf-8')
+		if PY3:
+			html = toStr(html)
+		html = parser.unescape(html)
 		parser.parseStr(html)
 
 		# Get tables from HTML
@@ -179,9 +184,9 @@ def getEmailData():
 		endtime_regexp = re.compile('.*bis:\s(.*)\sUhr.*')
 
 		# Get date and time of TV-Planer
-		header = tables[1].getAllChildNodes().getElementsByTagName('div')[0].textContent.encode('utf-8')
+		header = toStr(tables[1].getAllChildNodes().getElementsByTagName('div')[0].textContent)
 		planerDateTime = date_regexp.findall(header)[0]
-		print planerDateTime
+		print("[SerienRecorder] TV-Planer date/time: %s" % str(planerDateTime))
 
 		# Get transmissions
 		transmissions = []
@@ -193,7 +198,7 @@ def getEmailData():
 				transmissionColumns = transmissionRow.childNodes
 				# Each transmission row has three columns
 				# [0]: Start time
-				starttime = transmissionColumns[0].textContent.encode('utf-8')
+				starttime = toStr(transmissionColumns[0].textContent)
 				if starttime != 'Anzeige':
 					transmission.append(starttime.replace(' Uhr', ''))
 					# [1]: URL, Title, Season, Episode, Info
@@ -203,11 +208,11 @@ def getEmailData():
 
 					if transmissionColumn.firstChild:
 						# First child is always URL + Title
-						url_title = url_title_regexp.findall(transmissionColumn.firstChild.toHTML().encode('utf-8'))[0]
+						url_title = url_title_regexp.findall(toStr(transmissionColumn.firstChild.toHTML()))[0]
 						transmission.extend(url_title)
 					if transmissionColumn.lastChild:
 						# Last element => End time (it has to be filled with a time because later on the time will be splitted)
-						endtime = endtime_regexp.findall(transmissionColumn.lastChild.toHTML().encode('utf-8'))
+						endtime = endtime_regexp.findall(toStr(transmissionColumn.lastChild.toHTML()))
 						if endtime:
 							episodeInfo[4] = endtime[0]
 
@@ -224,15 +229,16 @@ def getEmailData():
 							divPartIndex += 1
 						elif transmissionPart.tagName == 'div' and divPartIndex == 1:
 							# Second div element => Episode info
-							episodeInfo[3] = transmissionPart.textContent.encode('utf-8')
+							episodeInfo[3] = toStr(transmissionPart.textContent)
 
 					transmission.extend(episodeInfo)
 					# [2] Channel
-					transmission.append(transmissionColumns[2].textContent.encode('utf-8'))
-					print transmission
+					transmission.append(toStr(transmissionColumns[2].textContent))
+					#print("[SerienRecorder] " + transmission)
 					transmissions.append(transmission)
 
 	except Exception as e:
+		print("[SerienRecorder] TV-Planer: Break HTML parsing [%s]" % str(e))
 		SRLogger.writeLog("TV-Planer: HTML Parsing abgebrochen [%s]" % str(e), True)
 		return None
 
@@ -244,7 +250,7 @@ def getEmailData():
 		SRLogger.writeLog("TV-Planer: Falsches Datumsformat", True)
 		return None
 	(day, month, year) = planerDateTime[0].split('.')
-	if not planerDateTime[1]:
+	if len(planerDateTime[1]) == 0:
 		if transmissions:
 			# Get time of first transmission
 			(hour, minute) = transmissions[0][0].split(':')
@@ -256,27 +262,29 @@ def getEmailData():
 	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
 	# generate dictionary with final transmissions
 	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden %d Sendungen gefunden:\n" % (planerDateTime[0], planerDateTime[1], len(transmissions)))
-	print "[SerienRecorder] Ab dem %s %s Uhr wurden die folgenden Sendungen gefunden:" % (planerDateTime[0], planerDateTime[1])
+	print("[SerienRecorder] TV-Planer: Found %d number of transmissions from %s %s o'clock:" % (len(transmissions), planerDateTime[0], planerDateTime[1]))
 	if missingTime:
 		SRLogger.writeLog("In der Kopfzeile der TV-Planer E-Mail konnte keine Uhrzeit gefunden werden, bitte die angelegten Timer kontrollieren!\n")
 	transmissiondict = dict()
-	for starttime, url, seriesname, season, episode, titel, description, endtime, channel in transmissions:
+
+	import quopri
+	for starttime, url, seriesname, season, episode, title, description, endtime, channel in transmissions:
 		try:
 			if url.startswith('https://www.wunschliste.de/spielfilm'):
 				if not config.plugins.serienRec.tvplaner_movies.value:
-					SRLogger.writeLog("' %s - Filmaufzeichnung ist deaktiviert '" % seriesname, True)
-					print "' %s - Filmaufzeichnung ist deaktiviert '" % seriesname
+					SRLogger.writeLog("' %s ' - Filmaufzeichnung ist deaktiviert" % seriesname, True)
+					print("[SerienRecorder] TV-Planer: ' %s ' - Movie recording is disabled" % seriesname)
 					continue
 				transmissiontype = '[ Film ]'
 			elif url.startswith('https://www.wunschliste.de/serie'):
 				if not config.plugins.serienRec.tvplaner_series.value:
-					SRLogger.writeLog("' %s - Serienaufzeichnung ist deaktiviert '" % seriesname, True)
-					print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
+					SRLogger.writeLog("' %s ' - Serienaufzeichnung ist deaktiviert" % seriesname, True)
+					print("[SerienRecorder] TV-Planer: ' %s ' - Series recording is disabled" % seriesname)
 					continue
 				transmissiontype = '[ Serie ]'
 			else:
-				SRLogger.writeLog("' %s - Ungültige URL %r '" % (seriesname, url), True)
-				print "' %s - Serienaufzeichnung ist deaktiviert '" % seriesname
+				SRLogger.writeLog("' %s ' - Ungültige URL [%s]" % (seriesname, str(url)), True)
+				print("[SerienRecorder] TV-Planer: ' %s ' - Invalid URL [%s]" % seriesname, str(url))
 				continue
 
 			# get fernsehserie ID from URL
@@ -308,7 +316,7 @@ def getEmailData():
 				episode = '00'
 			transmission += [ episode ]
 			# title
-			transmission += [ quopri.decodestring(titel) ]
+			transmission += [ toStr(quopri.decodestring(toBinary(title))) ]
 			# last
 			transmission += [ '0' ]
 			# url
@@ -318,53 +326,56 @@ def getEmailData():
 				transmissiondict[fsID] += [ transmission ]
 			else:
 				transmissiondict[fsID] = [ transmission ]
-			log = "' %s - S%sE%s - %s - %s - %s - %s - %s '" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype)
+			log = "' %s - S%sE%s - %s ' - %s - %s - %s - %s" % (transmission[0], str(transmission[4]).zfill(2), str(transmission[5]).zfill(2), transmission[6], transmission[1], time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionstart_unix))), time.strftime("%d.%m.%Y %H:%M", time.localtime(int(transmissionend_unix))), transmissiontype)
 			SRLogger.writeLog(log, True)
-			print "[SerienRecorder] " + log
+			print("[SerienRecorder] TV-Planer: %s" % log)
 		except Exception as e:
+			print("[SerienRecorder] TV-Planer: Processing TV-Planer e-mail failed: [%s]" % str(e))
 			SRLogger.writeLog("TV-Planer Verarbeitung fehlgeschlagen! [%s]" % str(e), True)
 
-	if config.plugins.serienRec.tvplaner_create_marker.value:
-		print "[SerienRecorder] Create markers..."
-		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
-		for fsID in transmissiondict.keys():
-			print "[SerienRecorder] Check whether or not a marker exists for fsid: [%s]" % str(fsID)
-			# marker isn't in database, create new marker
-			# url stored in marker isn't the final one, it is corrected later
-			url = transmissiondict[fsID][0][-1]
-			seriesname = transmissiondict[fsID][0][0]
-			marker_type = "Serien-Marker"
-			try:
-				boxID = None
-				seriesInfo = ""
-				if url.startswith('https://www.wunschliste.de/serie'):
-					seriesID = SeriesServer().getIDByFSID(fsID)
-					if seriesID > 0:
-						url = str(seriesID)
-						data = SeriesServer().getSeriesNamesAndInfoByWLID([seriesID])
-						if data:
-							seriesInfo = data[0]['info']
-					else:
-						url = None
-					if config.plugins.serienRec.tvplaner_series_activeSTB.value:
-						boxID = config.plugins.serienRec.BoxID.value
-				elif url.startswith('https://www.wunschliste.de/spielfilm'):
-					marker_type = "Temporärer Serien-Marker"
-					if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
-						boxID = config.plugins.serienRec.BoxID.value
+	# Create marker
+	SRLogger.writeLog("\n", True)
+	from .SerienRecorder import serienRecDataBaseFilePath
+	print("[SerienRecorder] TV-Planer: Create markers...")
+	database = SRDatabase(serienRecDataBaseFilePath)
+	for fsID in list(transmissiondict.keys()):
+		print("[SerienRecorder] TV-Planer: Check whether or not a marker exists for fsid: [%s]" % str(fsID))
+		# marker isn't in database, create new marker
+		# url stored in marker isn't the final one, it is corrected later
+		url = transmissiondict[fsID][0][-1]
+		seriesname = transmissiondict[fsID][0][0]
+		marker_type = "Serien-Marker"
+		try:
+			boxID = None
+			seriesInfo = ""
+			if url.startswith('https://www.wunschliste.de/serie'):
+				seriesID = SeriesServer().getIDByFSID(fsID)
+				if seriesID > 0:
+					url = str(seriesID)
+					data = SeriesServer().getSeriesNamesAndInfoByWLID([seriesID])
+					if data:
+						seriesInfo = data[0]['info']
 				else:
 					url = None
+				if config.plugins.serienRec.tvplaner_series_activeSTB.value:
+					boxID = config.plugins.serienRec.BoxID.value
+			elif url.startswith('https://www.wunschliste.de/spielfilm'):
+				marker_type = "Temporärer Serien-Marker"
+				if config.plugins.serienRec.tvplaner_movies_activeSTB.value:
+					boxID = config.plugins.serienRec.BoxID.value
+			else:
+				url = None
 
-				if url:
-					if database.addMarker(url, seriesname, seriesInfo, fsID, boxID, 1 if url.startswith('https://www.wunschliste.de/spielfilm') else 0):
-						SRLogger.writeLog("%s für '%s (%s)' wurde angelegt" % (marker_type, seriesname, seriesInfo), True)
-						print "[SerienRecorder] ' %s - %s (%s) erzeugt '" % (seriesname, marker_type, seriesInfo)
-			except Exception as e:
-				SRLogger.writeLog("%s für '%s' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (marker_type, seriesname, str(e)), True)
-				print "[SerienRecorder] %s - %s konnte wegen eines Fehlers nicht angelegt werden [%s]" % (seriesname, marker_type, str(e))
-	else:
-		SRLogger.writeLog("Es werden keine Serien-Marker aus der TV-Planer E-Mail erstellt.", True)
-
+			if url:
+				if database.addMarker(url, seriesname, seriesInfo, fsID, boxID, 1 if url.startswith('https://www.wunschliste.de/spielfilm') else 0):
+					if len(seriesInfo) == 0:
+						SRLogger.writeLog("%s für ' %s ' wurde angelegt" % (marker_type, seriesname), True)
+					else:
+						SRLogger.writeLog("%s für ' %s (%s) ' wurde angelegt" % (marker_type, seriesname, seriesInfo), True)
+					print("[SerienRecorder] TV-Planer: %s created ' %s ' (%s)" % (marker_type, seriesname, seriesInfo))
+		except Exception as e:
+			SRLogger.writeLog("%s für ' %s ' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (marker_type, seriesname, str(e)), True)
+			print("[SerienRecorder] TV-Planer: %s - %s could not been created [%s]" % (seriesname, marker_type, str(e)))
 
 	return transmissiondict
 
@@ -373,6 +384,8 @@ def imaptest(session):
 	import ssl
 
 	try:
+		SRLogger.writeLog("IMAP Check: Versuche Verbindung zum IMAP Server [%s:%s] aufzubauen..." % (str(config.plugins.serienRec.imap_server.value), str(config.plugins.serienRec.imap_server_port.value)))
+
 		if config.plugins.serienRec.imap_server_ssl.value:
 			mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
 									 config.plugins.serienRec.imap_server_port.value)
@@ -392,10 +405,14 @@ def imaptest(session):
 		SRLogger.writeLog("IMAP Check: Verbindung zum E-Mail Server fehlgeschlagen [%s]" % str(e), True)
 		return None
 
-
 	try:
-		mail.login(decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
-				   decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value))
+		username = decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value)
+		blured_username = "".join("*" if i % 2 == 0 else char for i, char in enumerate(username, 1))
+		password = decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_password_hidden.value)
+		blured_password = "".join("*" if i % 2 == 0 else char for i, char in enumerate(password, 1))
+
+		SRLogger.writeLog("IMAP Check: Versuche Anmeldung am Server mit [%s] und Kennwort [%s]..." % (blured_username, blured_password))
+		mail.login(username, password)
 
 	except imaplib.IMAP4.error as e:
 		session.open(MessageBox, "Anmeldung am E-Mail Server fehlgeschlagen [%s]" % str(e), MessageBox.TYPE_INFO, timeout=10)
@@ -403,21 +420,29 @@ def imaptest(session):
 		return None
 
 	try:
-		import string
+		def parse_mailbox(data):
+			import re
+			matches = re.match('\((.*?)\)\s"(.*?)"\s"?(.*?)"?$', data)
+			return (matches.group(1), matches.group(2), matches.group(3))
 
-		SRLogger.writeLog("Postfächer:", True)
+		SRLogger.writeLog("Versuche Postfächer vom E-Mail Server abzurufen...", True)
 		result, data = mail.list('""', '*')
 		if result == 'OK':
-			for item in data[:]:
-				x = item.split()
-				mailbox = string.join(x[2:])
-				SRLogger.writeLog("%s" % mailbox, True)
+			print("[SerienRecorder] Mailboxes %s" % data)
+			SRLogger.writeLog("Postfächer:", True)
+			for item in data:
+				flags, separator, name = parse_mailbox(toStr(item))
+				print("[SerienRecorder] %30s : Flags = [%s], Separator = [%s]" % (toStr(name), toStr(flags), toStr(separator)))
+				SRLogger.writeLog(toStr(name), True)
+
 	except imaplib.IMAP4.error as e:
 		session.open(MessageBox, "Abrufen der Postfächer vom E-Mail Server fehlgeschlagen [%s]" % str(e), MessageBox.TYPE_INFO, timeout=10)
 		SRLogger.writeLog("IMAP Check: Abrufen der Postfächer fehlgeschlagen [%s]" % str(e), True)
 
 	try:
-		mail.select(config.plugins.serienRec.imap_mailbox.value)
+		SRLogger.writeLog("IMAP Check: Versuche Postfach [%s] auszuwählen..." % str(config.plugins.serienRec.imap_mailbox.value))
+
+		mail.select(config.plugins.serienRec.imap_mailbox.value, True)
 
 	except imaplib.IMAP4.error as e:
 		session.open(MessageBox, "Postfach [%r] nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), MessageBox.TYPE_INFO, timeout=10)
@@ -425,11 +450,15 @@ def imaptest(session):
 		mail.logout()
 		return None
 
-	searchstr = TimeHelpers.getMailSearchString()
+	searchstr = getMailSearchString(config.plugins.serienRec.imap_mail_age.value, config.plugins.serienRec.imap_mail_subject.value)
 	SRLogger.writeLog("IMAP Check: %s" % searchstr, True)
 	try:
 		result, data = mail.uid('search', None, searchstr)
-		SRLogger.writeLog("IMAP Check: %s (%d)" % (result, len(data[0].split(' '))), True)
+		mail_count = 0
+		if len(data[0]) > 0:
+			mail_count = len(toStr(data[0]).split(' '))
+
+		SRLogger.writeLog("IMAP Check: %s (%d)" % (result, mail_count), True)
 		if result != 'OK':
 			SRLogger.writeLog("IMAP Check: %s" % data, True)
 

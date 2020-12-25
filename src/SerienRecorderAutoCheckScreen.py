@@ -7,12 +7,55 @@ from Screens.MessageBox import MessageBox
 from Components.MenuList import MenuList
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config
+from Components.Label import Label
+from Components.ProgressBar import ProgressBar
 
-from enigma import eTimer, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER, RT_WRAP
+from enigma import eTimer, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER, RT_WRAP, getDesktop
 
-import SerienRecorder
-from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
-from SerienRecorderHelpers import isDreamOS
+from .SerienRecorderCheckForRecording import checkForRecordingInstance
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
+from .SerienRecorderHelpers import isDreamOS
+
+class serienRecNewRunAutoCheckScreen(Screen):
+	DESKTOP_WIDTH = getDesktop(0).size().width()
+	DESKTOP_HEIGHT = getDesktop(0).size().height()
+
+	screenWidth = 600
+	screenHeight = 120
+	if DESKTOP_WIDTH > 1280:
+		factor = 1.5
+		screenWidth *= factor
+		screenHeight *= factor
+
+	skin = """
+			<screen name="SerienRecorderAutoCheck" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
+				<widget name="headline" position="10,20" size="%d,40" foregroundColor="#00ff4a3c" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
+				<widget name="progressslider" position="10,75" size="%d,25" borderWidth="1" zPosition="1" backgroundColor="#00242424"/>
+			</screen>""" % ((DESKTOP_WIDTH - screenWidth) / 2, (DESKTOP_HEIGHT - screenHeight) / 2, screenWidth, screenHeight, "SerienRecorder Timer-Suchlauf", screenWidth - 20, screenWidth - 20)
+
+	def __init__(self, session, version):
+		self.session = session
+		self.version = version
+		Screen.__init__(self, session)
+
+		self['headline'] = Label("")
+		self['progressslider'] = ProgressBar()
+
+		self["actions"] = ActionMap(["SerienRecorderActions", ], {
+			"ok": self.keyExit,
+			"cancel": self.keyExit,
+		}, -1)
+
+		self.onLayoutFinish.append(self.__onLayoutFinished)
+
+	def __onLayoutFinished(self):
+		self['headline'].setText("Timer-Suchlauf wird ausgeführt - bitte warten...")
+		self['progressslider'].setValue(-1)
+
+
+	def keyExit(self):
+		self.close()
+
 
 class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session, withTVPlanner=False):
@@ -21,7 +64,6 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		HelpableScreen.__init__(self)
 		self.session = session
 		self.withTVPlanner = withTVPlanner
-		print "[SerienRecorder] 0__init__ withTVPlanner:", withTVPlanner
 		self.autoCheckRunning = False
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
@@ -47,7 +89,9 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.readLogTimer_conn = None
 
 		self.onLayoutFinish.append(self.setSkinProperties)
-		self.onLayoutFinish.append(self.startCheck)
+		self.onFirstExecBegin.append(self.askForExecute)
+		#self.onLayoutFinish.append(self.startCheck)
+		#self.onLayoutFinish.append(self.readLog)
 		self.onClose.append(self.__onClose)
 
 	def callHelpAction(self, *args):
@@ -94,51 +138,70 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
-		if result[1]:
+		# if result[1]:
+		# 	self.startCheck()
+
+	def askForExecute(self):
+		if config.plugins.serienRec.tvplaner.value:
+			self.session.openWithCallback(self.executeAutoCheck, MessageBox, "Bei 'ja' wird der Suchlauf für TV-Planer Timer gestartet, bei 'nein' wird ein voller Suchlauf durchgeführt.", MessageBox.TYPE_YESNO)
+		else:
+			self.session.openWithCallback(self.executeFullAutoCheck, MessageBox, "Soll ein Suchlauf für Timer gestartet werden?", MessageBox.TYPE_YESNO)
+
+	def executeAutoCheck(self, withTVPlaner):
+		print("[SerienRecorder] ExecuteAutocCheck: %s" % str(withTVPlaner))
+		self.withTVPlanner = withTVPlaner
+		self.startCheck()
+
+	def executeFullAutoCheck(self, execute):
+		print("[SerienRecorder] ExecuteFullAutoCheck: %s" % str(execute))
+		if execute:
+			self.withTVPlanner = False
 			self.startCheck()
+		else:
+			self.close()
 
 	def startCheck(self):
 		# Log Reload Timer
-		print "[SerienRecorder] startCheck timer"
-		SerienRecorder.autoCheckFinished = False
+		print("[SerienRecorder] startCheck timer")
+		checkForRecordingInstance.setAutoCheckFinished(False)
 		self.autoCheckRunning = False
 		if isDreamOS():
 			self.readLogTimer_conn = self.readLogTimer.timeout.connect(self.readLog)
 		else:
 			self.readLogTimer.callback.append(self.readLog)
-		self.readLogTimer.start(2500)
+		self.readLogTimer.start(2000)
 
-	def executeAutoCheck(self):
+	def runAutoCheck(self):
 		if not self.autoCheckRunning:
 			self.autoCheckRunning = True
-			SerienRecorder.serienRecCheckForRecording(self.session, True, self.withTVPlanner)
+			checkForRecordingInstance.initialize(self.session, True, self.withTVPlanner)
 
 	def readLog(self):
-		print "[SerienRecorder] readLog called"
-		if SerienRecorder.autoCheckFinished:
+		print("[SerienRecorder] readLog called")
+		if checkForRecordingInstance.isAutoCheckFinished():
 			if self.readLogTimer:
 				self.readLogTimer.stop()
 				self.readLogTimer = None
-			print "[SerienRecorder] update log reader stopped."
+			print("[SerienRecorder] update log reader stopped.")
 			self['title'].setText("Auto-Check fertig !")
 
-			from SerienRecorderLogWriter import SRLogger
+			from .SerienRecorderLogWriter import SRLogger
 			logFileHandle = open(SRLogger.getLogFilePath(), "r")
 			for zeile in logFileHandle.readlines():
 				if (not config.plugins.serienRec.logWrapAround.value) or (len(zeile.strip()) > 0):
 					self.logliste.append(zeile)
 			logFileHandle.close()
-			self.chooseMenuList.setList(map(self.buildList, self.logliste))
+			self.chooseMenuList.setList(list(map(self.buildList, self.logliste)))
 			if config.plugins.serienRec.logScrollLast.value:
 				count = len(self.logliste)
 				if count != 0:
 					self['log'].moveToIndex(int(count - 1))
-			SerienRecorder.autoCheckRunning = False
+			self.autoCheckRunning = False
 		else:
-			print "[SerienRecorder] waiting"
+			print("[SerienRecorder] waiting")
 			self.points += " ."
 			self['title'].setText("Suche nach neuen Timern läuft.%s" % self.points)
-			self.executeAutoCheck()
+			self.runAutoCheck()
 
 	@staticmethod
 	def buildList(entry):
@@ -169,5 +232,4 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.stopDisplayTimer()
 
 	def keyCancel(self):
-		if SerienRecorder.autoCheckFinished:
-			self.close(config.plugins.serienRec.refreshViews.value)
+		self.close(True)

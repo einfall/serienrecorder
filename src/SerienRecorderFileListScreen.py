@@ -9,7 +9,7 @@ from Components.config import config
 from Components.FileList import FileList
 from Tools.Directories import fileExists
 
-from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, setMenuTexts, InitSkin
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, setMenuTexts, InitSkin
 import os
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
@@ -142,7 +142,7 @@ class serienRecFileListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def wSearch(self, Path_name):
 		if Path_name:
 			Path_name = "%s%s/" % (self['menu_list'].getSelection()[0], Path_name)
-			print Path_name
+			print(Path_name)
 			if not os.path.exists(Path_name):
 				try:
 					os.makedirs(Path_name)

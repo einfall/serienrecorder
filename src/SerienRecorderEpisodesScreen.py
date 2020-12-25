@@ -1,7 +1,7 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Episodes Screen
-import re, time
+import os, time
 
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
@@ -17,12 +17,12 @@ if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualK
 else:
 	from Screens.VirtualKeyBoard import VirtualKeyBoard as NTIVirtualKeyBoard
 
-from SerienRecorder import serienRecDataBaseFilePath, getCover, serienRecMainPath
-from SerienRecorderScreenHelpers import serienRecBaseScreen, skinFactor, updateMenuKeys, setSkinProperties, buttonText_na, setMenuTexts, InitSkin
-from SerienRecorderHelpers import isDreamOS
-from SerienRecorderDatabase import SRDatabase
-from SerienRecorderSeriesServer import SeriesServer
-from SerienRecorderLogWriter import SRLogger
+from .SerienRecorder import serienRecDataBaseFilePath, getCover
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, skinFactor, updateMenuKeys, setSkinProperties, buttonText_na, setMenuTexts, InitSkin
+from .SerienRecorderHelpers import isDreamOS, toStr
+from .SerienRecorderDatabase import SRDatabase
+from .SerienRecorderSeriesServer import SeriesServer
+from .SerienRecorderLogWriter import SRLogger
 
 class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session, seriesName, seriesWLID):
@@ -77,15 +77,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		}, 0)
 
 		self.setupSkin()
-
-		self.timer_default = eTimer()
-		if isDreamOS():
-			self.timer_default_conn = self.timer_default.timeout.connect(self.loadEpisodes)
-		else:
-			self.timer_default.callback.append(self.loadEpisodes)
-
 		self.onLayoutFinish.append(self.setSkinProperties)
-		self.onLayoutFinish.append(self.searchEpisodes)
+		self.onLayoutFinish.append(self.loadEpisodes)
 		self.onClose.append(self.__onClose)
 
 	def callHelpAction(self, *args):
@@ -100,7 +93,6 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_yellow'].setText("Auf den Merkzettel")
 		self['text_blue'].setText("Manuell hinzufügen")
 
-		#self['headline'].instance.setHAlign(2)
 		self['headline'].instance.setForegroundColor(parseColor('red'))
 		self['headline'].instance.setFont(parseFont("Regular;16", ((1,1),(1,1))))
 
@@ -152,43 +144,55 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def wunschliste(self):
 		super(self.__class__, self).wunschliste(self.serien_wlid)
 
-	def searchEpisodes(self):
-		getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
-		self['title'].setText("Suche Episoden ' %s '" % self.serien_name)
-		self.loading = True
-		self.timer_default.start(0)
-
 	def resultsEpisodes(self, data):
 		self.maxPages = 1
 		self.episodes_list_cache[self.page] = []
 		for episode in data["episodes"]:
 			if "title" in episode:
-				title = episode["title"].encode("utf-8")
+				title = toStr(episode["title"])
 			else:
 				title = "-"
 			self.episodes_list_cache[self.page].append(
 				[episode["season"], episode["episode"], episode["id"], title])
 
-		self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
+		self.chooseMenuList.setList(list(map(self.buildList_episodes, self.episodes_list_cache[self.page])))
 		self.numberOfEpisodes = data["numEpisodes"]
 
 		self.loading = False
 		self.showPages()
 
 	def loadEpisodes(self):
-		self.timer_default.stop()
+		getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
 		if self.page in self.episodes_list_cache:
-			self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
+			self.chooseMenuList.setList(list(map(self.buildList_episodes, self.episodes_list_cache[self.page])))
 			self['title'].setText("%s Episoden für ' %s ' gefunden." % (self.numberOfEpisodes, self.serien_name))
 		else:
-			getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
-			try:
-				episodes = SeriesServer().doGetEpisodes(int(self.serien_wlid), int(self.page))
-				self.resultsEpisodes(episodes)
+			self.loading = True
+			self['title'].setText("Lade Episodenliste...")
+			def downloadEpisodes():
+				print("[SerienRecorder] downloadEpisodes")
+				return SeriesServer().doGetEpisodes(int(self.serien_wlid), int(self.page))
+
+			def onDownloadEpisodesSuccessful(result):
+				self.resultsEpisodes(result)
 				self['title'].setText("%s Episoden für ' %s ' gefunden." % (self.numberOfEpisodes, self.serien_name))
-			except:
+
+			def onDownloadEpisodesFailed():
+				print("[SerienRecorder]: Abfrage beim SerienServer doGetEpisodes() fehlgeschlagen")
 				self['title'].setText("Fehler beim Abrufen der Episodenliste")
 				self.loading = False
+
+			import twisted.python.runtime
+			if twisted.python.runtime.platform.supportsThreads():
+				from twisted.internet.threads import deferToThread
+				deferToThread(downloadEpisodes).addCallback(onDownloadEpisodesSuccessful).addErrback(onDownloadEpisodesFailed)
+			else:
+				try:
+					result = downloadEpisodes()
+					onDownloadEpisodesSuccessful(result)
+				except:
+					onDownloadEpisodesFailed()
+
 		self['headline'].show()
 
 	def buildList_episodes(self, entry):
@@ -196,9 +200,10 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
 
-		imageMinus = "%simages/red_dot.png" % serienRecMainPath
-		imagePlus = "%simages/green_dot.png" % serienRecMainPath
-		imageNone = "%simages/black.png" % serienRecMainPath
+		serienRecMainPath = os.path.dirname(__file__)
+		imageMinus = "%s/images/red_dot.png" % serienRecMainPath
+		imagePlus = "%s/images/green_dot.png" % serienRecMainPath
+		imageNone = "%s/images/black.png" % serienRecMainPath
 
 		middleImage = imageNone
 
@@ -302,12 +307,12 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 						self.database.addToTimerList(self.serien_name, self.serien_fsid, current_episodes_list[sindex][1], current_episodes_list[sindex][1], current_episodes_list[sindex][0], current_episodes_list[sindex][3], int(time.time()), "", "", 0, 1)
 
 					self.addedEpisodes = self.database.getTimerForSeries(self.serien_fsid)
-					self.chooseMenuList.setList(map(self.buildList_episodes, current_episodes_list))
+					self.chooseMenuList.setList(list(map(self.buildList_episodes, current_episodes_list)))
 		else:
 			(txt, serie, staffel, episode, title, start_time, webChannel) = self['menu_list'].getCurrent()[0]
 			self.removeFromDB(staffel, episode, title)
 			timerList = self.loadTimer()
-			self.chooseMenuList.setList(map(self.buildList_timer, timerList))
+			self.chooseMenuList.setList(list(map(self.buildList_timer, timerList)))
 			self['title'].setText("%s Timer für ' %s ' gefunden." % (len(timerList), self.serien_name))
 
 	def keyGreen(self):
@@ -323,7 +328,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self['text_blue'].hide()
 			self['text_ok'].hide()
 			timerList = self.loadTimer()
-			self.chooseMenuList.setList(map(self.buildList_timer, timerList))
+			self.chooseMenuList.setList(list(map(self.buildList_timer, timerList)))
 			self['menu_list'].moveToIndex(0)
 			self['title'].setText("%s Timer für ' %s ' gefunden." % (len(timerList), self.serien_name))
 			self['headline'].hide()
@@ -360,7 +365,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				self.page += 1
 
 			self.showPages()
-			self.chooseMenuList.setList(map(self.buildList_episodes, []))
+			self.chooseMenuList.setList(list(map(self.buildList_episodes, [])))
 			self.searchEpisodes()
 
 	def backPage(self):
@@ -374,7 +379,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				self.page -= 1
 
 			self.showPages()
-			self.chooseMenuList.setList(map(self.buildList_episodes, []))
+			self.chooseMenuList.setList(list(map(self.buildList_episodes, [])))
 			self.searchEpisodes()
 
 	def answerStaffel(self, aStaffel):
@@ -397,11 +402,11 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if not self.aToEpisode: # or self.aFromEpisode is None or self.aStaffel is None:
 			return
 		else:
-			print "[SerienRecorder] Staffel: %s" % self.aStaffel
-			print "[SerienRecorder] von Episode: %s" % self.aFromEpisode
-			print "[SerienRecorder] bis Episode: %s" % self.aToEpisode
+			print("[SerienRecorder] Staffel: %s" % self.aStaffel)
+			print("[SerienRecorder] von Episode: %s" % self.aFromEpisode)
+			print("[SerienRecorder] bis Episode: %s" % self.aToEpisode)
 			if self.database.addToTimerList(self.serien_name, self.serien_fsid, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
-				self.chooseMenuList.setList(map(self.buildList_episodes, self.episodes_list_cache[self.page]))
+				self.chooseMenuList.setList(list(map(self.buildList_episodes, self.episodes_list_cache[self.page])))
 
 	def keyBlue(self):
 		if self.loading or not self.showEpisodes:
@@ -517,12 +522,28 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 			self.getData()
 
 	def getData(self):
-		try:
-			infoText = SeriesServer().getEpisodeInfo(self.episodeID)
-		except:
-			infoText = 'Es ist ein Fehler beim Abrufen der Episoden-Informationen aufgetreten!'
-		self['info'].setText(infoText)
 		getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
+
+		def downloadEpisodeInfo():
+			print("[SerienRecorder] downloadEpisodeInfo")
+			return SeriesServer().getEpisodeInfo(self.episodeID)
+
+		def onDownloadEpisodeInfoSuccessful(result):
+			self['info'].setText(result)
+
+		def onDownloadEpisodeInfoFailed():
+			self['info'].setText("Es ist ein Fehler beim Abrufen der Episoden-Informationen aufgetreten!")
+
+		import twisted.python.runtime
+		if twisted.python.runtime.platform.supportsThreads():
+			from twisted.internet.threads import deferToThread
+			deferToThread(downloadEpisodeInfo).addCallback(onDownloadEpisodeInfoSuccessful).addErrback(onDownloadEpisodeInfoFailed)
+		else:
+			try:
+				result = downloadEpisodeInfo()
+				onDownloadEpisodeInfoSuccessful(result)
+			except:
+				onDownloadEpisodeInfoFailed()
 
 	def pageUp(self):
 		self['info'].pageUp()

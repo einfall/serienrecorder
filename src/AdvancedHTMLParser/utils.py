@@ -1,12 +1,18 @@
-# Copyright (c) 2015, 2017 Tim Savannah  under terms of LGPLv3
-#  Some misc utils and regular expressions
+'''
+    Copyright (c) 2015, 2017, 2019 Tim Savannah  under terms of LGPLv3. All Rights Reserved.
+
+    See LICENSE (https://gnu.org/licenses/lgpl-3.0.txt) for more information.
+
+
+    Some misc utils and regular expressions
+'''
 
 import sys
 import re
 
-__all__ = ('IE_CONDITIONAL_PATTERN', 'END_HTML', 'START_HTML', 'DOCTYPE_MATCH', 
+__all__ = ('IE_CONDITIONAL_PATTERN', 'END_HTML', 'START_HTML', 'DOCTYPE_MATCH',
     'stripIEConditionals', 'addStartTag', 'escapeQuotes', 'unescapeQuotes', 'tostr', 'isstr',
-    'stripWordsOnly', 
+    'stripWordsOnly',
 )
 
 IE_CONDITIONAL_PATTERN = re.compile('[<][!][-][-][ \t\r\n]*[\[][ \t\r\n]*if.*-->', re.MULTILINE)
@@ -78,6 +84,11 @@ def unescapeQuotes(value):
     '''
     return value.replace('&quot;', '"')
 
+
+# TODO: Use the types in compat.py
+
+# TODO: Evaluate all uses and determine if should be done like this,
+#         or properly encoded/decoded using the encoding specified in the parser
 if sys.version_info.major < 3:
     def tostr(value):
         if not isinstance(value, (str, unicode)):
@@ -89,6 +100,9 @@ if sys.version_info.major < 3:
 else:
     def tostr(value):
         return str(value)
- 
+
     def isstr(value):
         return isinstance(value, str)
+
+
+# vim: set ts=4 sw=4 st=4 expandtab :

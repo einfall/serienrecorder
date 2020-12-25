@@ -68,9 +68,9 @@
 	<widget name="text_9" position="1052,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 	<widget name="text_menu" position="1052,688" size="200,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 
-	<widget name="Web_Channel" position="45,115" size="200,30" font="Regular; 25" backgroundColor="#26181d20" foregroundColor="#000090e6" />			
-	<widget name="STB_Channel" position="360,115" size="200,30" font="Regular; 25" backgroundColor="#26181d20" foregroundColor="#000090e6" />			
-	<widget name="alt_STB_Channel" position="610,115" size="200,30" font="Regular; 25" backgroundColor="#26181d20" foregroundColor="#000090e6" />			
+	<widget name="Web_Channel" position="45,115" size="200,30" font="Regular; 25" backgroundColor="#26181d20" foregroundColor="#000090e6" transparent="1" />
+	<widget name="STB_Channel" position="360,115" size="200,30" font="Regular; 25" backgroundColor="#26181d20" foregroundColor="#000090e6" transparent="1" />
+	<widget name="alt_STB_Channel" position="610,115" size="200,30" font="Regular; 25" backgroundColor="#26181d20" foregroundColor="#000090e6" transparent="1" />
 	<widget name="separator" position="10,145" size="880,2" backgroundColor="#00aaaaaa" zPosition="6" />
 	<widget name="list" position="10,145" size="880,475" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel25_1200.png" />
 	<widget name="popup_list2" position="180,170" size="580,370" backgroundColor="#00181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="6" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/sel25_1200.png" />

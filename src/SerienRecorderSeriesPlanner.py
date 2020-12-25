@@ -2,73 +2,72 @@
 
 # This file contains the SerienRecoder Series Planner
 import threading, os, time, datetime
-import cPickle as pickle
 from Components.config import config
 from Tools.Directories import fileExists
 
-import SerienRecorder
-from SerienRecorderLogWriter import SRLogger
-from SerienRecorderDatabase import SRDatabase
-from SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname
+from .SerienRecorderLogWriter import SRLogger
+from .SerienRecorderDatabase import SRDatabase
+from .SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname, toStr, PY2
 
-class downloadPlanerData(threading.Thread):
+if PY2:
+	import cPickle as pickle
+else:
+	import pickle
+
+class downloadPlannerData(threading.Thread):
 	def __init__ (self, daypage, webChannels):
 		threading.Thread.__init__(self)
 		self.daypage = daypage
 		self.webChannels = webChannels
-		self.planerData = None
+		self.plannerData = None
 	def run(self):
 		try:
-			from SerienRecorderSeriesServer import SeriesServer
-			self.planerData = SeriesServer().doGetPlanerData(self.daypage, self.webChannels)
+			from .SerienRecorderSeriesServer import SeriesServer
+			self.plannerData = SeriesServer().doGetPlannerData(self.daypage, self.webChannels)
 		except:
 			SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten [%s]\n" % str(self.daypage), True)
 
 	def getData(self):
-		return self.daypage, self.planerData
+		return self.daypage, self.plannerData
 
 
 class serienRecSeriesPlanner:
-	def __init__(self, manuell):
-		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
-		self.manuell = manuell
+	def __init__(self):
+		from .SerienRecorder import getDataBaseFilePath
+		self.database = SRDatabase(getDataBaseFilePath())
 
-	def updatePlanerData(self):
-
+	def updatePlannerData(self):
 		webChannels = self.database.getActiveChannels()
+		markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
+
 		SRLogger.writeLog("\nLaden der SerienPlaner-Daten gestartet ...", True)
 
-		markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
-		downloadPlanerDataResults = []
-		for daypage in range(int(config.plugins.serienRec.planerCacheSize.value)):
-			planerData = downloadPlanerData(int(daypage), webChannels)
-			downloadPlanerDataResults.append(planerData)
-			planerData.start()
+		downloadPlannerDataResults = []
+		plannerCacheSize = 2
+		for daypage in range(plannerCacheSize):
+			plannerData = downloadPlannerData(int(daypage), webChannels)
+			downloadPlannerDataResults.append(plannerData)
+			plannerData.start()
 
 		try:
-			for planerDataThread in downloadPlanerDataResults:
-				planerDataThread.join()
-				if not planerDataThread.getData():
+			for plannerDataThread in downloadPlannerDataResults:
+				plannerDataThread.join()
+				if not plannerDataThread.getData():
 					continue
 
-				(daypage, planerData) = planerDataThread.getData()
-				self.processPlanerData(planerData, markers, daypage)
-
-			self.postProcessPlanerData()
+				(daypage, plannerData) = plannerDataThread.getData()
+				self.processPlannerData(plannerData, markers, daypage)
 		except:
 			SRLogger.writeLog("Fehler beim Abrufen oder Verarbeiten der SerienPlaner-Daten")
 		SRLogger.writeLog("... Laden der SerienPlaner-Daten beendet\n", True)
 
-	def processPlanerData(self, data, markers, daypage):
+	def processPlannerData(self, data, markers, daypage):
 		if not data or len(data) == 0:
 			pass
 		daylist = [[]]
 
 		headDate = [data["date"]]
-		timers = []
-
-		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
-			timers = self.database.getTimer(daypage)
+		timers = self.database.getTimer(daypage)
 
 		for event in data["events"]:
 			aufnahme = False
@@ -77,110 +76,110 @@ class serienRecSeriesPlanner:
 			start_m = event["time"][+3:]
 			start_time = TimeHelpers.getUnixTimeWithDayOffset(start_h, start_m, daypage)
 
-			serien_name = event["name"].encode("utf-8")
+			serien_name = toStr(event["name"])
 			sender = event["channel"]
-			title = event["title"].encode("utf-8")
+			title = toStr(event["title"])
 			staffel = event["season"]
 			episode = event["episode"]
 			serien_wlid = event["id"]
 			serien_fsid = event["fs_id"]
 			serien_info = event["info"]
 
-			if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
-				serienTimers = [timer for timer in timers if timer[0] == serien_fsid]
-				serienTimersOnChannel = [serienTimer for serienTimer in serienTimers if
-				                         serienTimer[2] == sender.lower()]
-				for serienTimerOnChannel in serienTimersOnChannel:
-					if (int(serienTimerOnChannel[1]) >= (int(start_time) - 300)) and (
-							int(serienTimerOnChannel[1]) < (int(start_time) + 300)):
-						aufnahme = True
+			serienTimers = [timer for timer in timers if timer[0] == serien_fsid]
+			serienTimersOnChannel = [serienTimer for serienTimer in serienTimers if
+			                         serienTimer[2] == sender.lower()]
+			for serienTimerOnChannel in serienTimersOnChannel:
+				if (int(serienTimerOnChannel[1]) >= (int(start_time) - 300)) and (
+						int(serienTimerOnChannel[1]) < (int(start_time) + 300)):
+					aufnahme = True
 
-				# 0 = no marker, 1 = active marker, 2 = deactive marker
-				if serien_wlid in markers:
-					serieAdded = 1 if markers[serien_wlid] else 2
+			# 0 = no marker, 1 = active marker, 2 = deactive marker
+			if serien_wlid in markers:
+				serieAdded = 1 if markers[serien_wlid] else 2
 
-				staffel = str(staffel).zfill(2)
-				episode = str(episode).zfill(2)
+			staffel = str(staffel).zfill(2)
+			episode = str(episode).zfill(2)
 
-				##############################
-				#
-				# CHECK
-				#
-				# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
-				#
-				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+			##############################
+			#
+			# CHECK
+			#
+			# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
+			#
+			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 
-				bereits_vorhanden = False
-				if config.plugins.serienRec.sucheAufnahme.value:
-					(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
-					if str(episode).isdigit():
-						if int(episode) == 0:
-							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
-							                                                 serien_name, False,
-							                                                 title) > 0 and True or False
-						else:
-							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
-							                                                 serien_name,
-							                                                 False) > 0 and True or False
+			bereits_vorhanden = False
+			if config.plugins.serienRec.sucheAufnahme.value:
+				(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
+				if str(episode).isdigit():
+					if int(episode) == 0:
+						bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
+						                                                 serien_name, False,
+						                                                 title) > 0 and True or False
 					else:
-						bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name,
+						bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString,
+						                                                 serien_name,
 						                                                 False) > 0 and True or False
+				else:
+					bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, serien_name,
+					                                                 False) > 0 and True or False
 
-				title = "%s - %s" % (seasonEpisodeString, title)
-				regional = False
-				paytv = False
-				neu = event["new"]
-				prime = False
-				transmissionTime = event["time"]
-				daylist[0].append((regional, paytv, neu, prime, transmissionTime, serien_name, sender, staffel,
-				                   episode, title, aufnahme, serieAdded, bereits_vorhanden, serien_wlid, serien_fsid, serien_info))
+			title = "%s - %s" % (seasonEpisodeString, title)
+			regional = False
+			paytv = False
+			neu = event["new"]
+			prime = False
+			transmissionTime = event["time"]
+			daylist[0].append((regional, paytv, neu, prime, transmissionTime, serien_name, sender, staffel,
+			                   episode, title, aufnahme, serieAdded, bereits_vorhanden, serien_wlid, serien_fsid, serien_info))
 
-		print "[SerienRecorder] Es wurden %s Serie(n) gefunden" % len(daylist[0])
+		print("[SerienRecorder] Es wurden %s Serie(n) gefunden" % len(daylist[0]))
 
-		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value and headDate:
+		if headDate:
 			d = headDate[0].split(',')
 			d.reverse()
 			key = d[0].strip()
-			cache = self.loadPlanerData(1)
+			cache = self.loadPlannerData(1)
 			cache.update({key: (headDate, daylist)})
+			self.writePlannerData(1, cache)
 
-	def postProcessPlanerData(self):
-		if (not self.manuell) and config.plugins.serienRec.planerCacheEnabled.value:
-			cache = self.loadPlanerData(1)
-			self.writePlanerData(1, cache)
+		return headDate, daylist
 
 	@staticmethod
-	def writePlanerData(planerType, cache):
-		if not os.path.exists("%stmp/" % SerienRecorder.serienRecMainPath):
+	def writePlannerData(plannerType, cache):
+		serienRecPlannerPath = "/var/cache/serienrecorder"
+
+		if not os.path.exists(serienRecPlannerPath):
 			try:
-				os.makedirs("%stmp/" % SerienRecorder.serienRecMainPath)
+				os.makedirs(serienRecPlannerPath)
 			except:
 				pass
-		if os.path.isdir("%stmp/" % SerienRecorder.serienRecMainPath):
+		if os.path.isdir(serienRecPlannerPath):
 			try:
-				os.chmod("%stmp/planer_%s" % (SerienRecorder.serienRecMainPath, str(planerType)), 0o666)
+				os.chmod("%s/planer_%s" % (serienRecPlannerPath, str(plannerType)), 0o666)
 			except:
 				pass
 
-			f = open("%stmp/planer_%s" % (SerienRecorder.serienRecMainPath, str(planerType)), "wb")
+			f = open("%s/planer_%s" % (serienRecPlannerPath, str(plannerType)), "wb")
 			try:
-				p = pickle.Pickler(f, 2)
+				p = pickle.Pickler(f)
 				p.dump(cache)
 			except:
 				pass
 			f.close()
 
 			try:
-				os.chmod("%stmp/planer_%s" % (SerienRecorder.serienRecMainPath, str(planerType)), 0o666)
+				os.chmod("%s/planer_%s" % (serienRecPlannerPath, str(plannerType)), 0o666)
 			except:
 				pass
 
 	@staticmethod
-	def loadPlanerData(planerType):
+	def loadPlannerData(plannerType):
 		cache = {}
-		planerFile = "%stmp/planer_%s" % (SerienRecorder.serienRecMainPath, str(planerType))
-		if fileExists(planerFile):
-			f = open(planerFile, "rb")
+
+		plannerFile = "/var/cache/serienrecorder/planer_%s" % str(plannerType)
+		if fileExists(plannerFile):
+			f = open(plannerFile, "rb")
 			try:
 				u = pickle.Unpickler(f)
 				cache = u.load()
@@ -189,34 +188,34 @@ class serienRecSeriesPlanner:
 			f.close()
 
 			try:
-				heute = time.strptime(time.strftime('%d.%m.%Y', datetime.datetime.now().timetuple()), '%d.%m.%Y')
+				d_now_str = time.strptime(time.strftime('%d.%m.%Y', datetime.datetime.now().timetuple()), '%d.%m.%Y')
 				l = []
 				for key in cache:
-					if time.strptime(key, '%d.%m.%Y') < heute: l.append(key)
+					if time.strptime(key, '%d.%m.%Y') < d_now_str: l.append(key)
 				for key in l:
 					del cache[key]
 			except:
 				pass
 
-			if planerType == 1:
-				serienRecSeriesPlanner.optimizePlanerData(cache)
+			if plannerType == 1:
+				serienRecSeriesPlanner.optimizePlannerData(cache)
 
 		return cache
 
 	@staticmethod
-	def optimizePlanerData(cache):
+	def optimizePlannerData(cache):
 		if time.strftime('%H:%M', datetime.datetime.now().timetuple()) < '01:00':
-			t_jetzt = datetime.datetime.now().timetuple()
+			t_now = datetime.datetime.now().timetuple()
 		else:
-			t_jetzt = (datetime.datetime.now() - datetime.timedelta(0, 3600)).timetuple()
-		jetzt = time.strftime('%H:%M', t_jetzt)
-		heute = time.strftime('%d.%m.%Y', t_jetzt)
-		if heute in cache:
+			t_now = (datetime.datetime.now() - datetime.timedelta(0, 3600)).timetuple()
+		t_now_str = time.strftime('%H:%M', t_now)
+		d_now_str = time.strftime('%d.%m.%Y', t_now)
+		if d_now_str in cache:
 			try:
-				for a in cache[heute][1]:
+				for a in cache[d_now_str][1]:
 					l = []
 					for b in a:
-						if b[4] < jetzt:
+						if b[4] < t_now_str:
 							l.append(b)
 						else:
 							break

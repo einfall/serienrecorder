@@ -1,17 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
 from Plugins.Plugin import PluginDescriptor
-from Tools.Directories import fileExists
-
-import os
-import SerienRecorder
-import SerienRecorderMarkerScreen
-import SerienRecorderSearchResultScreen
-import SerienRecorderMainScreen
 
 def SRstart(session, **kwargs):
 
 	try:
-		session.open(SerienRecorderMainScreen.serienRecMainScreen)
+		from .SerienRecorderMainScreen import serienRecMainScreen
+		session.open(serienRecMainScreen)
 	except:
 		import traceback
 		from Screens.MessageBox import MessageBox
@@ -29,28 +23,35 @@ def movielist(session, service, **kwargs):
 
 	def handleSeriesSearchEnd(series_wlid=None):
 		if series_wlid:
-			session.open(SerienRecorderMarkerScreen.serienRecMarker, series_wlid)
+			from .SerienRecorderMarkerScreen import serienRecMarker
+			session.open(serienRecMarker, series_wlid)
 
 	serviceHandler = eServiceCenter.getInstance()
 	info = serviceHandler.info(service)
 	seriesName = info and info.getName(service) or ""
 	if seriesName:
-		SerienRecorder.initDB()
-		session.open(SerienRecorderSearchResultScreen.serienRecSearchResultScreen, seriesName)
-		session.openWithCallback(handleSeriesSearchEnd, SerienRecorderSearchResultScreen.serienRecSearchResultScreen, seriesName)
+		from .SerienRecorder import initDB
+		from .SerienRecorderSearchResultScreen import serienRecSearchResultScreen
+
+		initDB()
+		session.open(serienRecSearchResultScreen, seriesName)
+		session.openWithCallback(handleSeriesSearchEnd, serienRecSearchResultScreen, seriesName)
 
 # Event Info
 def eventinfo(session, servicelist, **kwargs):
-	SerienRecorder.initDB()
+	from .SerienRecorder import initDB, serienRecEPGSelection
+
+	initDB()
 	ref = session.nav.getCurrentlyPlayingServiceReference()
-	session.open(SerienRecorder.serienRecEPGSelection, ref)
+	session.open(serienRecEPGSelection, ref)
 
 # EventView or EPGSelection
 def eventview(session, event, ref):
 
 	def handleSeriesSearchEnd(series_wlid=None):
 		if series_wlid:
-			session.open(SerienRecorderMarkerScreen.serienRecMarker, series_wlid)
+			from .SerienRecorderMarkerScreen import serienRecMarker
+			session.open(serienRecMarker, series_wlid)
 
 	if ref.getPath() and ref.getPath()[0] == "/":
 		from enigma import eServiceReference
@@ -58,7 +59,7 @@ def eventview(session, event, ref):
 	else:
 		seriesName = event and event.getEventName() or ""
 		if seriesName:
-			from SerienRecorderSearchResultScreen import serienRecSearchResultScreen
+			from .SerienRecorderSearchResultScreen import serienRecSearchResultScreen
 			session.openWithCallback(handleSeriesSearchEnd, serienRecSearchResultScreen, seriesName)
 
 
@@ -70,9 +71,11 @@ def Plugins(**kwargs):
 	else:
 		isDreamboxOS = True
 
+	from .SerienRecorder import autostart, getNextWakeup
+
 	pluginDescriptors = [
 		PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART],
-						 fnc=SerienRecorder.autostart, wakeupfnc=SerienRecorder.getNextWakeup),
+						 fnc=autostart, wakeupfnc=getNextWakeup),
 		PluginDescriptor(name="SerienRecorder", description="Nie wieder eine Folge deiner Lieblingsserie verpassen",
 						 where=[PluginDescriptor.WHERE_PLUGINMENU], icon="plugin.png", fnc=SRstart),
 		PluginDescriptor(name="SerienRecorder", description="Nie wieder eine Folge deiner Lieblingsserie verpassen",

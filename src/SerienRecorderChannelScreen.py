@@ -13,11 +13,24 @@ from Components.config import config, ConfigInteger, getConfigListEntry, ConfigY
 from enigma import eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, loadPNG, RT_VALIGN_CENTER, eTimer
 from skin import parseColor
 
-import SerienRecorder
-from SerienRecorderSeriesServer import SeriesServer
-from SerienRecorderHelpers import isDreamOS, STBHelpers, isVTI
-from SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, InitSkin, skinFactor, updateMenuKeys, setMenuTexts
-from SerienRecorderLogWriter import SRLogger
+import os
+
+from .SerienRecorderSeriesServer import SeriesServer
+from .SerienRecorderHelpers import STBHelpers, isVTI, toStr
+from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, InitSkin, skinFactor, updateMenuKeys, setMenuTexts
+from .SerienRecorderLogWriter import SRLogger
+
+def checkChannelListTimelineness(database):
+	channelListUpToDate = True
+	remoteChannelListLastUpdated = SeriesServer.getChannelListLastUpdate()
+	if remoteChannelListLastUpdated:
+		localChannelListLastUpdated = database.getChannelListLastUpdate()
+		if 0 < int(localChannelListLastUpdated) < int(remoteChannelListLastUpdated):
+			SRLogger.writeLog("Auf dem Serien-Server wurde die Senderliste aktualisiert - es muss auch eine Aktualisierung in der Senderzuordnung des SerienRecorders durchgeführt werden.", True)
+			channelListUpToDate = False
+
+	return channelListUpToDate
+
 
 class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 	def __init__(self, session):
@@ -34,8 +47,8 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self.chooseMenuList_popup = None
 		self.chooseMenuList_popup2 = None
 
-		from SerienRecorder import serienRecDataBaseFilePath
-		from SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		from .SerienRecorderDatabase import SRDatabase
 		self.database = SRDatabase(serienRecDataBaseFilePath)
 
 		# from difflib import SequenceMatcher
@@ -73,13 +86,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self.modus = "list"
 		self.changesMade = False
 
-		self.timer_default = eTimer()
-		if isDreamOS():
-			self.timer_default_conn = self.timer_default.timeout.connect(self.showChannels)
-		else:
-			self.timer_default.callback.append(self.showChannels)
-
-		self.onLayoutFinish.append(self.__onLayoutFinished)
+		self.onLayoutFinish.append(self.showChannels)
 		self.onClose.append(self.__onClose)
 		self.onLayoutFinish.append(self.setSkinProperties)
 
@@ -134,8 +141,8 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self['title'].setText("Lade Wunschliste-Sender...")
 
 		self['Web_Channel'].setText("Wunschliste")
-		self['STB_Channel'].setText("STB-Sender")
-		self['alt_STB_Channel'].setText("alt. STB-Sender")
+		self['STB_Channel'].setText("Box-Sender")
+		self['alt_STB_Channel'].setText("alt. Box-Sender")
 
 		self['Web_Channel'].show()
 		self['STB_Channel'].show()
@@ -176,10 +183,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		if result[1]:
 			self.showChannels()
 
-	def __onLayoutFinished(self):
-		self['title'].setText("Lade Wunschliste-Sender...")
-		self.timer_default.start(0)
-
 	def checkChannels(self):
 		channels = self.database.getChannels(True)
 		if config.plugins.serienRec.selectBouquets.value:
@@ -210,7 +213,6 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self.session.open(MessageBox, "Alle zugewiesenen Sender sind noch vorhanden.", MessageBox.TYPE_INFO, timeout=7)
 
 	def showChannels(self):
-		self.timer_default.stop()
 		self.serienRecChannelList = []
 		channels = self.database.getChannels(True)
 		for channel in channels:
@@ -219,18 +221,10 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 		if len(self.serienRecChannelList) != 0:
 			self['title'].setText("Sender zuordnen")
-			self.chooseMenuList.setList(map(self.buildList, self.serienRecChannelList))
+			self.chooseMenuList.setList(list(map(self.buildList, self.serienRecChannelList)))
 		else:
 			self.channelReset(True)
 		self.setMenuKeyText()
-
-	def readWebChannels(self):
-		print "[SerienRecorder] call webpage."
-		self['title'].setText("Lade Wunschliste-Sender...")
-		try:
-			self.createWebChannels(SeriesServer().doGetWebChannels(), False)
-		except:
-			self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
 
 	def createWebChannels(self, webChannelList, autoMatch):
 		if webChannelList:
@@ -286,17 +280,17 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 						self.database.addChannels(channels)
 
 			else:
-				print "[SerienRecorder] webChannel list leer."
+				print("[SerienRecorder] webChannel list leer.")
 
 			if len(self.serienRecChannelList) != 0:
-				self.chooseMenuList.setList(map(self.buildList, self.serienRecChannelList))
+				self.chooseMenuList.setList(list(map(self.buildList, self.serienRecChannelList)))
 			else:
-				print "[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist."
+				print("[SerienRecorder] Fehler bei der Erstellung der SerienRecChlist.")
 
 		else:
-			print "[SerienRecorder] get webChannel error."
+			print("[SerienRecorder] get webChannel error.")
 
-		self['title'].setText("Wunschliste-Sender / STB-Sender")
+		self['title'].setText("Wunschliste-Sender / Box-Sender")
 
 	@staticmethod
 	def getMissingWebChannels(webChannels, dbChannels):
@@ -308,7 +302,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		# append missing (new) channels
 		for webChannel in webChannels:
 			if webChannel not in [dbWebChannel for dbWebChannel in dbWebChannels]:
-				added.append(webChannel.encode('utf-8'))
+				added.append(toStr(webChannel))
 
 		# append removed channels
 		for dbWebChannel in dbWebChannels:
@@ -354,12 +348,12 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		from SerienRecorder import serienRecMainPath
 		(webSender, stbSender, altstbSender, status) = entry
+		serienRecMainPath = os.path.dirname(__file__)
 		if int(status) == 0:
-			imageStatus = "%simages/minus.png" % serienRecMainPath
+			imageStatus = "%s/images/minus.png" % serienRecMainPath
 		else:
-			imageStatus = "%simages/plus.png" % serienRecMainPath
+			imageStatus = "%s/images/plus.png" % serienRecMainPath
 
 		return [entry,
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 10, 7 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imageStatus)),
@@ -377,7 +371,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyOK(self):
 		if self['list'].getCurrent() is None:
-			print "[SerienRecorder] Sender-Liste leer."
+			print("[SerienRecorder] Sender-Liste leer.")
 			return
 
 		if self.modus == "list":
@@ -389,12 +383,12 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				self.stbChannelList = STBHelpers.buildSTBChannelList()
 			self.stbChannelList.insert(0, ("", ""))
-			self.chooseMenuList_popup.setList(map(self.buildList_popup, self.stbChannelList))
+			self.chooseMenuList_popup.setList(list(map(self.buildList_popup, self.stbChannelList)))
 			idx = 0
 			(stbChannel, altstbChannel) = self.database.getSTBChannel(self['list'].getCurrent()[0][0])
 			if stbChannel:
 				try:
-					idx = zip(*self.stbChannelList)[0].index(stbChannel)
+					idx = list(zip(*self.stbChannelList))[0].index(stbChannel)
 				except:
 					pass
 			self['popup_list'].moveToIndex(idx)
@@ -407,16 +401,16 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				self['popup_bg'].show()
 				self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.AlternativeBouquet.value)
 				self.stbChannelList.insert(0, ("", ""))
-				self.chooseMenuList_popup2.setList(map(self.buildList_popup, self.stbChannelList))
+				self.chooseMenuList_popup2.setList(list(map(self.buildList_popup, self.stbChannelList)))
 				idx = 0
 				(stbChannel, altstbChannel) = self.database.getSTBChannel(self['list'].getCurrent()[0][0])
 				if stbChannel:
 					try:
-						idx = zip(*self.stbChannelList)[0].index(altstbChannel)
+						idx = list(zip(*self.stbChannelList))[0].index(altstbChannel)
 					except:
 						pass
 				self['popup_list2'].moveToIndex(idx)
-				self['title'].setText("alternativer STB-Sender für %s:" % self['list'].getCurrent()[0][0])
+				self['title'].setText("alternativer Box-Sender für %s:" % self['list'].getCurrent()[0][0])
 			else:
 				self.modus = "list"
 				self['popup_list'].hide()
@@ -431,7 +425,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				stbRef = self['popup_list'].getCurrent()[0][1]
 				altstbSender = self['popup_list2'].getCurrent()[0][0]
 				altstbRef = self['popup_list2'].getCurrent()[0][1]
-				print "[SerienRecorder] select:", chlistSender, stbSender, stbRef, altstbSender, altstbRef
+				print("[SerienRecorder] select:", chlistSender, stbSender, stbRef, altstbSender, altstbRef)
 				channels = []
 				if stbSender != "" or altstbSender != "":
 					channels.append((stbSender, stbRef, altstbSender, altstbRef, 1, chlistSender.lower()))
@@ -448,17 +442,17 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_bg'].hide()
 
 			if self['list'].getCurrent() is None:
-				print "[SerienRecorder] Sender-Liste leer (list)."
+				print("[SerienRecorder] Sender-Liste leer (list).")
 				return
 
 			if self['popup_list'].getCurrent() is None:
-				print "[SerienRecorder] Sender-Liste leer (popup_list)."
+				print("[SerienRecorder] Sender-Liste leer (popup_list).")
 				return
 
 			chlistSender = self['list'].getCurrent()[0][0]
 			stbSender = self['popup_list'].getCurrent()[0][0]
 			stbRef = self['popup_list'].getCurrent()[0][1]
-			print "[SerienRecorder] select:", chlistSender, stbSender, stbRef
+			print("[SerienRecorder] select:", chlistSender, stbSender, stbRef)
 			channels = []
 			if stbSender != "":
 				channels.append((stbSender, stbRef, 1, chlistSender.lower()))
@@ -471,7 +465,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyRed(self):
 		if self['list'].getCurrent() is None:
-			print "[SerienRecorder] Sender-Liste leer."
+			print("[SerienRecorder] Sender-Liste leer.")
 			return
 
 		if self.modus == "list":
@@ -491,7 +485,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def channelReset(self, execute):
 		if execute:
-			print "[SerienRecorder] channel-list reset..."
+			print("[SerienRecorder] channel-list reset...")
 			SRLogger.writeLog("Senderliste wird aktualisiert...")
 
 			if config.plugins.serienRec.selectBouquets.value:
@@ -499,17 +493,31 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				self.stbChannelList = STBHelpers.buildSTBChannelList()
 			self['title'].setText("Lade Wunschliste-Sender...")
-			try:
-				self.createWebChannels(SeriesServer().doGetWebChannels(), False)
+
+			def downloadWebChannels():
+				return SeriesServer().doGetWebChannels()
+			def onDownloadWebChannelsSuccessful(result):
+				self.createWebChannels(result, False)
 				self.database.setChannelListLastUpdate()
-			except:
+			def onDownloadWebChannelsFailed():
 				self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
 				SRLogger.writeLog("Fehler beim Laden der Senderliste vom SerienServer.", True)
+
+			import twisted.python.runtime
+			if twisted.python.runtime.platform.supportsThreads():
+				from twisted.internet.threads import deferToThread
+				deferToThread(downloadWebChannels).addCallback(onDownloadWebChannelsSuccessful).addErrback(onDownloadWebChannelsFailed)
+			else:
+				try:
+					result = downloadWebChannels()
+					onDownloadWebChannelsSuccessful(result)
+				except:
+					onDownloadWebChannelsFailed()
 		else:
-			print "[SerienRecorder] channel-list ok."
+			print("[SerienRecorder] channel-list ok.")
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.autoMatch, MessageBox, "Es wird versucht, für alle nicht zugeordneten Wunschliste-Sender, einen passenden STB-Sender zu finden, dabei werden zunächst HD Sender bevorzugt.\n\nDies kann, je nach Umfang der Senderliste, einige Zeit (u.U. einige Minuten) dauern - bitte haben Sie Geduld!\n\nAutomatische Zuordnung jetzt durchführen?", MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.autoMatch, MessageBox, "Es wird versucht, für alle nicht zugeordneten Wunschliste-Sender, einen passenden Box-Sender zu finden, dabei werden zunächst HD Sender bevorzugt.\n\nDies kann, je nach Umfang der Senderliste, einige Zeit (u.U. einige Minuten) dauern - bitte haben Sie Geduld!\n\nAutomatische Zuordnung jetzt durchführen?", MessageBox.TYPE_YESNO)
 
 	def autoMatch(self, execute):
 		if execute:
@@ -518,14 +526,30 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				self.stbChannelList = STBHelpers.buildSTBChannelList()
 			self['title'].setText("Versuche automatische Zuordnung...")
-			try:
-				self.createWebChannels(SeriesServer().doGetWebChannels(), True)
-			except:
+
+			def downloadWebChannels():
+				return SeriesServer().doGetWebChannels()
+			def onDownloadWebChannelsSuccessful(result):
+				self.createWebChannels(result, True)
+				self.database.setChannelListLastUpdate()
+			def onDownloadWebChannelsFailed():
 				self['title'].setText("Fehler beim Laden der Wunschliste-Sender")
+				SRLogger.writeLog("Fehler beim Laden der Senderliste vom SerienServer.", True)
+
+			import twisted.python.runtime
+			if twisted.python.runtime.platform.supportsThreads():
+				from twisted.internet.threads import deferToThread
+				deferToThread(downloadWebChannels).addCallback(onDownloadWebChannelsSuccessful).addErrback(onDownloadWebChannelsFailed)
+			else:
+				try:
+					result = downloadWebChannels()
+					onDownloadWebChannelsSuccessful(result)
+				except:
+					onDownloadWebChannelsFailed()
 
 	def keyRedLong(self):
 		if self['list'].getCurrent() is None:
-			print "[SerienRecorder] Sender Tabelle leer."
+			print("[SerienRecorder] Sender Tabelle leer.")
 			return
 		else:
 			self.selected_sender = self['list'].getCurrent()[0][0]
@@ -596,10 +620,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_list2'].hide()
 			self['popup_bg'].hide()
 		else:
-			if config.plugins.serienRec.refreshViews.value:
-				self.close(self.changesMade)
-			else:
-				self.close(False)
+			self.close(self.changesMade)
 
 class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScreen):
 	def __init__(self, session, webSender):
@@ -609,8 +630,8 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 		self.session = session
 		self.webSender = webSender
 
-		from SerienRecorder import serienRecDataBaseFilePath
-		from SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		from .SerienRecorderDatabase import SRDatabase
 		self.database = SRDatabase(serienRecDataBaseFilePath)
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
@@ -755,7 +776,7 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 		if self.enable_margin_after.value:
 			self.list.append(getConfigListEntry("      Timernachlauf (in Min.):", self.margin_after))
 
-		from SerienRecorder import VPSPluginAvailable
+		from .SerienRecorder import VPSPluginAvailable
 		if VPSPluginAvailable:
 			self.list.append(getConfigListEntry("VPS für diesen Sender aktivieren:", self.enable_vps))
 			if self.enable_vps.value:

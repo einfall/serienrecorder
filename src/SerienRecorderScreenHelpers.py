@@ -16,11 +16,8 @@ if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualK
 else:
 	from Screens.VirtualKeyBoard import VirtualKeyBoard as NTIVirtualKeyBoard
 
-
-from SerienRecorder import serienRecMainPath
-from SerienRecorderDatabase import SRDatabase
-from SerienRecorderHelpers import isDreamOS, SRMANUALURL
-from SerienRecorderSeriesServer import SeriesServer
+from .SerienRecorderHelpers import isDreamOS, SRMANUALURL
+from .SerienRecorderSeriesServer import SeriesServer
 
 # check VPS availability
 try:
@@ -51,20 +48,21 @@ if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/Browser/Browser.pyo"):
 else:
 	DMMBrowserInstalled = False
 
-import keymapparser
+import keymapparser, os
+serienRecMainPath = os.path.dirname(__file__)
 
 try:
-	keymapparser.removeKeymap("%skeymap.xml" % serienRecMainPath)
+	keymapparser.removeKeymap("%s/keymap.xml" % serienRecMainPath)
 except:
 	pass
 try:
-	keymapparser.readKeymap("%skeymap.xml" % serienRecMainPath)
+	keymapparser.readKeymap("%s/keymap.xml" % serienRecMainPath)
 except:
 	pass
 
 buttonText_na = "-----"
 skinName = "SerienRecorder3.0"
-skin = "%sskins/SR_Skin.xml" % serienRecMainPath
+skin = "%s/skins/SR_Skin.xml" % serienRecMainPath
 default_skinName = skinName
 default_skin = skin
 skinFactor = 1
@@ -78,7 +76,7 @@ elif DESKTOP_WIDTH > 1280:
 	skinFactor = 1.5
 else:
 	skinFactor = 1
-print "[SerienRecorder] Skinfactor: %s" % skinFactor
+print("[SerienRecorder] Skinfactor: %s" % skinFactor)
 
 def SelectSkin():
 	global buttonText_na
@@ -103,15 +101,15 @@ def SelectSkin():
 			pass
 
 	elif config.plugins.serienRec.SkinType.value in ("", "Skin2", "AtileHD", "StyleFHD", "Black Box"):
-		skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
+		skin = "%s/skins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
 		skin = skin.replace("//", "/")
 		if config.plugins.serienRec.SkinType.value in ("Skin2", "StyleFHD", "Black Box"):
 			config.plugins.serienRec.showAllButtons.value = True
 		if config.plugins.serienRec.SkinType.value in ("Skin2", "AtileHD", "Black Box"):
 			buttonText_na = ""
 	else:
-		if fileExists("%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)):
-			skin = "%sskins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
+		if fileExists("%s/skins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)):
+			skin = "%s/skins/%s/SR_Skin.xml" % (serienRecMainPath, config.plugins.serienRec.SkinType.value)
 			buttonText_na = ""
 
 
@@ -387,23 +385,23 @@ class serienRecBaseScreen:
 		updateMenuKeys(self)
 
 	def readLogFile(self):
-		from SerienRecorderLogScreen import serienRecReadLog
+		from .SerienRecorderLogScreen import serienRecReadLog
 		self.session.open(serienRecReadLog)
 
 	def showProposalDB(self):
-		from SerienRecorderSeasonBeginsScreen import serienRecShowSeasonBegins
+		from .SerienRecorderSeasonBeginsScreen import serienRecShowSeasonBegins
 		self.session.open(serienRecShowSeasonBegins)
 
 	def serieInfo(self):
-		from SerienRecorderSeriesInfoScreen import serienRecShowInfo
+		from .SerienRecorderSeriesInfoScreen import serienRecShowInfo
 		self.session.open(serienRecShowInfo, self.serien_name, self.serien_wlid, self.serien_fsid)
 
 	def showConflicts(self):
-		from SerienRecorderConflictsScreen import serienRecShowConflicts
+		from .SerienRecorderConflictsScreen import serienRecShowConflicts
 		self.session.open(serienRecShowConflicts)
 
 	def showWishlist(self):
-		from SerienRecorderWishlistScreen import serienRecWishlistScreen
+		from .SerienRecorderWishlistScreen import serienRecWishlistScreen
 		self.session.open(serienRecWishlistScreen)
 
 	def wunschliste(self, seriesID):
@@ -424,11 +422,11 @@ class serienRecBaseScreen:
 			self.session.open(MessageBox, "Um diese Funktion nutzen zu können muss das Plugin '%s' installiert sein." % "Webbrowser", MessageBox.TYPE_INFO, timeout = 10)
 
 	def showAbout(self):
-		from SerienRecorderAboutScreen import serienRecAboutScreen
+		from .SerienRecorderAboutScreen import serienRecAboutScreen
 		self.session.open(serienRecAboutScreen)
 
 	def recSetup(self):
-		from SerienRecorderSetupScreen import serienRecSetup
+		from .SerienRecorderSetupScreen import serienRecSetup
 		self.session.openWithCallback(self.setupClose, serienRecSetup)
 
 	def setupClose(self, result):
@@ -437,8 +435,8 @@ class serienRecBaseScreen:
 		else:
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					from SerienRecorder import serienRecCheckForRecording
-					serienRecCheckForRecording(self.session, False)
+					from .SerienRecorderCheckForRecording import checkForRecordingInstance
+					checkForRecordingInstance.initialize(self.session, False, False)
 
 	def keyLeft(self):
 		self[self.modus].pageUp()
@@ -453,16 +451,10 @@ class serienRecBaseScreen:
 		self[self.modus].up()
 
 	def keyRed(self):
-		if config.plugins.serienRec.refreshViews.value:
-			self.close(self.changesMade)
-		else:
-			self.close(False)
+		self.close(self.changesMade)
 
 	def keyCancel(self):
-		if config.plugins.serienRec.refreshViews.value:
-			self.close(self.changesMade)
-		else:
-			self.close(False)
+		self.close(self.changesMade)
 
 	def stopDisplayTimer(self):
 		if self.displayTimer:
@@ -485,7 +477,7 @@ class EditTVDBID:
 				self.session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!", MessageBox.TYPE_ERROR, timeout=5)
 			else:
 				tvdb_id_text = str(self.tvdb_id) if self.tvdb_id > 0 else 'Keine'
-				message = "Für ' %s ' ist folgende TVBD-ID zugewiesen: %s\n\nMöchten Sie die TVDB-ID ändern?" % (self.serien_name, tvdb_id_text)
+				message = "Für ' %s ' ist folgende TVDB-ID zugewiesen: %s\n\nMöchten Sie die TVDB-ID ändern?" % (self.serien_name, tvdb_id_text)
 				self.session.openWithCallback(self.enterTVDBID, MessageBox, message, MessageBox.TYPE_YESNO, default = False)
 		else:
 			message = "Cover und Serien-/Episodeninformationen stammen von 'TheTVDB' - dafür muss jeder Serie eine TVDB-ID zugewiesen werden. " \
@@ -507,7 +499,7 @@ class EditTVDBID:
 
 	def setTVDBID(self, tvdb_id):
 		if tvdb_id:
-			from SerienRecorder import getCover
+			from .SerienRecorder import getCover
 			if not SeriesServer().setTVDBID(self.serien_id, tvdb_id):
 				self.session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
 			getCover(self.parent, self.serien_name, self.serien_id, self.serien_fsid, False, True)

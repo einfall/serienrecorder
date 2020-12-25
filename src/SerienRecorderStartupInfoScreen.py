@@ -10,7 +10,8 @@ from Components.ScrollLabel import ScrollLabel
 from Components.config import config, configfile
 
 from enigma import getDesktop
-import SerienRecorder
+
+import os
 
 class ShowStartupInfo(Screen):
 	DESKTOP_WIDTH  = getDesktop(0).size().width()
@@ -36,7 +37,8 @@ class ShowStartupInfo(Screen):
 
 	def __init__(self, session):
 		self.session = session
-		self.serienRecInfoFilePath = "%sStartupInfoText" % SerienRecorder.serienRecMainPath
+		self.serienRecInfoFilePath = "%s/StartupInfoText" % os.path.dirname(__file__)
+
 
 		Screen.__init__(self, session)
 

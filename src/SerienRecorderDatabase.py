@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import pickle, shutil, sqlite3, time
 
-from SerienRecorderHelpers import getChangedSeriesNames
-from SerienRecorderLogWriter import SRLogger
+from .SerienRecorderHelpers import getChangedSeriesNames
+from .SerienRecorderLogWriter import SRLogger
 
 class SRDatabase:
 	def __init__(self, dbfilepath):
@@ -408,16 +408,16 @@ class SRDatabase:
 				(ID,name,url) = row
 				# If URL starts with 'http' remove incorrect markers and convert URL to WL ID
 				if str.startswith(url, 'http'):
-					if str.rfind(url, '=') is -1:
+					if str.rfind(url, '=') == -1:
 						cur.execute("DELETE FROM STBAuswahl WHERE ID=?", [ID])
 						cur.execute("DELETE FROM StaffelAuswahl WHERE ID=?", [ID])
 						cur.execute("DELETE FROM SenderAuswahl WHERE ID=?", [ID])
 						cur.execute("DELETE FROM SerienMarker WHERE ID=?", [ID])
-						SRLogger.writeLog("Fehlerhafter SerienMarker musste gelöscht werden [%s => %s]" % (name, url), True)
+						SRLogger.writeLog("Fehlerhafter SerienMarker musste gelöscht werden [%s → %s]" % (name, url), True)
 					else:
 						url = url[str.rindex(url, '=') + 1:]
 						if not url.isdigit():
-							from SerienRecorderSeriesServer import SeriesServer
+							from .SerienRecorderSeriesServer import SeriesServer
 							url = SeriesServer().getIDByFSID(url)
 						cur.execute("UPDATE SerienMarker SET Url=? WHERE ID=?", (url, ID))
 			cur.execute("COMMIT")
@@ -438,9 +438,9 @@ class SRDatabase:
 			SRLogger.writeLog("Es wurden %d geänderte Seriennamen bzw. Serieninformationen gefunden" % len(changedMarkers), True)
 
 			cur.execute("BEGIN TRANSACTION")
-			for key, val in changedMarkers.items():
+			for key, val in list(changedMarkers.items()):
 				cur.execute("UPDATE SerienMarker SET Serie = ?, info = ?, fsID = ? WHERE Url = ?", (val['new_name'], val['new_info'], val['new_fsID'], key))
-				SRLogger.writeLog("SerienMarker Tabelle aktualisiert [%s] (%s) => [%s] (%s) / [%s]: %d" % (val['old_name'], val['old_fsID'], val['new_name'], val['new_fsID'], val['new_info'], cur.rowcount), True)
+				SRLogger.writeLog("SerienMarker Tabelle aktualisiert [%s] (%s) → [%s] (%s) / [%s]: %d" % (val['old_name'], val['old_fsID'], val['new_name'], val['new_fsID'], val['new_info'], cur.rowcount), True)
 				if not hasFSIDColumn:
 					# Update AngelegteTimer and Merkzettel table by name
 					if val['new_name'] != val['old_name']:
@@ -554,7 +554,7 @@ class SRDatabase:
 				if str(AnzahlWiederholungen).isdigit():
 					numberOfRecordings = int(AnzahlWiederholungen)
 			for i in range(int(fromEpisode), int(toEpisode) + 1):
-				print "[SerienRecorder] %s Staffel: %s Episode: %s " % (str(series), str(season), str(i))
+				print("[SerienRecorder] %s Staffel: %s Episode: %s " % (str(series), str(season), str(i)))
 				cur.execute("SELECT * FROM Merkzettel WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=?", (fsID, season.lower(), str(i).zfill(2).lower()))
 				row = cur.fetchone()
 				if not row:
@@ -655,10 +655,10 @@ class SRDatabase:
 		else:
 			(margin_before, margin_after) = row
 
-		if margin_before is None or margin_before is -1:
+		if margin_before is None or margin_before == -1:
 			margin_before = globalMarginBefore
 
-		if margin_after is None or margin_after is -1:
+		if margin_after is None or margin_after == -1:
 			margin_after = globalMarginAfter
 
 		cur.close()
@@ -1062,6 +1062,25 @@ class SRDatabase:
 		cur.close()
 		return found
 
+	def getNumberOfTimersByBouquet(self, fsID, season, episode, title=None):
+		cur = self._srDBConn.cursor()
+		if title is None:
+			cur.execute("SELECT COUNT(*), LENGTH(c.STBChannel) > 0, LENGTH(c.alternativSTBChannel) > 0 FROM AngelegteTimer as t, Channels AS c WHERE LOWER(c.webChannel) = LOWER(t.webChannel) AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND TimerAktiviert=1 AND c.Erlaubt=1 GROUP BY t.webChannel", (fsID, str(season).lower(), str(episode).lower()))
+		else:
+			cur.execute("SELECT COUNT(*), LENGTH(c.STBChannel) > 0, LENGTH(c.alternativSTBChannel) > 0 FROM AngelegteTimer as t, Channels AS c WHERE LOWER(c.webChannel) = LOWER(t.webChannel) AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND TimerAktiviert=1 AND c.Erlaubt=1 GROUP BY t.webChannel", (fsID, str(season).lower(), str(episode).lower(), title.lower()))
+
+		rows = cur.fetchall()
+		count_primary_bouquet = 0
+		count_secondary_bouquet = 0
+		for row in rows:
+			(count, primary_bouquet, secondary_bouquet) = row
+			if primary_bouquet > 0:
+				count_primary_bouquet += count
+			elif secondary_bouquet > 0:
+				count_secondary_bouquet += count
+		cur.close()
+		return count_primary_bouquet, count_secondary_bouquet
+
 	def getNumberOfTimers(self, fsID, season, episode, title=None, searchOnlyActiveTimers=False):
 		cur = self._srDBConn.cursor()
 		if searchOnlyActiveTimers:
@@ -1100,6 +1119,15 @@ class SRDatabase:
 		cur.close()
 		return rows
 
+	def isBouquetActive(self, channel):
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT LENGTH(STBChannel) > 0, LENGTH(alternativSTBChannel) > 0 FROM Channels WHERE LOWER(webChannel)=? AND Erlaubt=1", [channel.lower()])
+		row = cur.fetchone()
+		if not row:
+			row = (0, 0)
+		(is_stb_channel, is_alt_stb_channel) = row
+		cur.close()
+		return bool(is_stb_channel), bool(is_alt_stb_channel)
 
 	def getActiveServiceRefs(self):
 		serviceRefs = {}
@@ -1216,7 +1244,7 @@ class SRDatabase:
 		cur.execute("SELECT ErlaubterSender FROM SenderAuswahl INNER JOIN SerienMarker ON SenderAuswahl.ID=SerienMarker.ID WHERE SerienMarker.Url=? ORDER BY LOWER(ErlaubterSender)", [wlID])
 		rows = cur.fetchall()
 		if len(rows) > 0:
-			channels = list(zip(*rows)[0])
+			channels = [x[0] for x in rows]
 
 		if len(channels) == 0 and withActiveChannels:
 			channels = self.getActiveChannels()
@@ -1263,7 +1291,7 @@ class SRDatabase:
 		cur.execute("SELECT ErlaubteStaffel FROM StaffelAuswahl WHERE ID=? AND ErlaubteStaffel<? ORDER BY ErlaubteStaffel", (seriesID, fromSeason))
 		rows = cur.fetchall()
 		if len(rows) > 0:
-			seasons = list(zip(*rows)[0])
+			seasons = [x[0] for x in rows]
 		cur.close()
 		return seasons
 
@@ -1326,7 +1354,7 @@ class SRDatabase:
 		else:
 			if int(fromEpisode) != 0 or int(toEpisode) != 0:
 				for i in range(int(fromEpisode), int(toEpisode)+1):
-					print "[SerienRecorder] %s Staffel: %s Episode: %s " % (str(series), str(season), str(i))
+					print("[SerienRecorder] %s Staffel: %s Episode: %s " % (str(series), str(season), str(i)))
 					cur.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (series, season, str(i).zfill(2), episodeTitle, int(startUnixtime), stbRef, webChannel, eit, int(activated), fsID))
 				result = True
 		cur.close()
@@ -1361,7 +1389,7 @@ class SRDatabase:
 	def removeTimers(self, row_ids):
 		cur = self._srDBConn.cursor()
 		for row_id in row_ids:
-			print '[SerienRecorder] RemoveTimers: %d' % row_id
+			print("[SerienRecorder] RemoveTimers: %d" % row_id)
 			cur.execute("DELETE FROM AngelegteTimer WHERE ROWID=?", [row_id])
 		cur.close()
 
@@ -1448,12 +1476,8 @@ class SRTempDatabase:
 																	ServiceRef TEXT, 
 																	StartTime INTEGER,
 																	EndTime INTEGER,
-																	EventID INTEGER,
 																	alternativStbChannel TEXT, 
 																	alternativServiceRef TEXT, 
-																	alternativStartTime INTEGER,
-																	alternativEndTime INTEGER,
-																	alternativEventID INTEGER,
 																	DirName TEXT,
 																	AnzahlAufnahmen INTEGER,
 																	AufnahmezeitVon INTEGER,
@@ -1476,14 +1500,16 @@ class SRTempDatabase:
 
 	def addTransmission(self, transmission):
 		cur = self._tempDBConn.cursor()
-		sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, wlID, fsID, type, Staffel, Episode, SeasonEpisode, Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, EventID, alternativStbChannel, alternativServiceRef, alternativStartTime, alternativEndTime, alternativEventID, DirName, AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays, updateFromEPG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+		sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, wlID, fsID, type, Staffel, Episode, SeasonEpisode," \
+		      " Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, alternativStbChannel, alternativServiceRef, DirName," \
+		      " AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays, updateFromEPG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		cur.execute(sql, transmission[0])
 		cur.close()
 
 	def getTransmissionForTimerUpdate(self, fsID, season, episode, start_time):
 		result = None
 		cur = self._tempDBConn.cursor()
-		cur.execute("SELECT SerieName, wlID, fsID, Staffel, Episode, Title, StartTime, updateFromEPG FROM GefundeneFolgen WHERE StartTime>=? AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? ORDER BY StartTime", (start_time, fsID, season.lower(), episode.lower()))
+		cur.execute("SELECT SerieName, wlID, fsID, Staffel, Episode, Title, StartTime, EndTime, updateFromEPG FROM GefundeneFolgen WHERE StartTime>=? AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? ORDER BY StartTime", (start_time, fsID, season.lower(), episode.lower()))
 		row = cur.fetchone()
 		if row:
 			result = row
@@ -1516,8 +1542,8 @@ class SRTempDatabase:
 	def removeTransmission(self, fsID, season, episode, title, startUnixtime, stbRef):
 		cur = self._tempDBConn.cursor()
 		if title:
-			cur.execute("DELETE FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND (StartTime=? OR alternativStartTime=?) AND LOWER(ServiceRef)=?", (fsID, str(season).lower(), episode.lower(), title.lower(), startUnixtime, startUnixtime, stbRef.lower()))
+			cur.execute("DELETE FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Title)=? AND StartTime=? AND LOWER(ServiceRef)=?", (fsID, str(season).lower(), episode.lower(), title.lower(), startUnixtime, stbRef.lower()))
 		else:
-			cur.execute("DELETE FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND (StartTime=? OR alternativStartTime=?) AND LOWER(ServiceRef)=?", (fsID, str(season).lower(), episode.lower(), startUnixtime, startUnixtime, stbRef.lower()))
+			cur.execute("DELETE FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartTime=? AND LOWER(ServiceRef)=?", (fsID, str(season).lower(), episode.lower(), startUnixtime, stbRef.lower()))
 		cur.close()
 

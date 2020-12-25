@@ -7,7 +7,6 @@ from Screens.MessageBox import MessageBox
 from Tools import Notifications
 from Tools.Directories import fileExists
 
-import SerienRecorder
 import os, shutil, datetime, time
 
 SERIENRECORDER_LOGFILENAME = "%sSerienRecorder.log"
@@ -25,12 +24,16 @@ class SRLogger:
 			try:
 				open(logFile, 'a').close()
 			except (IOError, OSError):
-				logFile = SERIENRECORDER_LOGFILENAME % SerienRecorder.serienRecMainPath
+				logFile = SERIENRECORDER_LOGFILENAME % os.path.dirname(__file__)
 				open(logFile, 'a').close()
 
 			writeLogFile = open(logFile, 'a')
-			writeLogFile.write('%s\n' % text)
-			writeLogFile.close()
+			try:
+				writeLogFile.write('%s\n' % text)
+			except Exception as e:
+				print("[SerienRecorder] Error while writing to log file [%s]" % str(e))
+			finally:
+				writeLogFile.close()
 
 	@classmethod
 	def writeLogFilter(cls, logtype, text, forceWrite=False):
@@ -39,21 +42,24 @@ class SRLogger:
 			try:
 				open(logFile, 'a').close()
 			except (IOError, OSError):
-				logFile = SERIENRECORDER_LOGFILENAME % SerienRecorder.serienRecMainPath
+				logFile = SERIENRECORDER_LOGFILENAME % os.path.dirname(__file__)
 				open(logFile, 'a').close()
 
 			writeLogFile = open(logFile, 'a')
-			if (logtype is "channels" and config.plugins.serienRec.writeLogChannels.value) or \
-					(logtype is "allowedEpisodes" and config.plugins.serienRec.writeLogAllowedEpisodes.value) or \
-					(logtype is "added" and config.plugins.serienRec.writeLogAdded.value) or \
-					(logtype is "disk" and config.plugins.serienRec.writeLogDisk.value) or \
-					(logtype is "timeRange" and config.plugins.serienRec.writeLogTimeRange.value) or \
-					(logtype is "timeLimit" and config.plugins.serienRec.writeLogTimeLimit.value) or \
-					(logtype is "timerDebug" and config.plugins.serienRec.writeLogTimerDebug.value):
-				# write log
-				writeLogFile.write('%s\n' % text)
-
-			writeLogFile.close()
+			try:
+				if (logtype == "channels" and config.plugins.serienRec.writeLogChannels.value) or \
+						(logtype == "allowedEpisodes" and config.plugins.serienRec.writeLogAllowedEpisodes.value) or \
+						(logtype == "added" and config.plugins.serienRec.writeLogAdded.value) or \
+						(logtype == "disk" and config.plugins.serienRec.writeLogDisk.value) or \
+						(logtype == "timeRange" and config.plugins.serienRec.writeLogTimeRange.value) or \
+						(logtype == "timeLimit" and config.plugins.serienRec.writeLogTimeLimit.value) or \
+						(logtype == "timerDebug" and config.plugins.serienRec.writeLogTimerDebug.value):
+					# write log
+					writeLogFile.write('%s\n' % text)
+			except Exception as e:
+				print("[SerienRecorder] Error while writing to filte log [%s]" % str(e))
+			finally:
+				writeLogFile.close()
 
 	@classmethod
 	def writeTestLog(cls, text):
@@ -61,8 +67,12 @@ class SRLogger:
 			open(SERIENRECORDER_TEST_LOGFILEPATH, 'w').close()
 
 		writeLogFile = open(SERIENRECORDER_TEST_LOGFILEPATH, "a")
-		writeLogFile.write('%s\n' % text)
-		writeLogFile.close()
+		try:
+			writeLogFile.write('%s\n' % text)
+		except Exception as e:
+			print("[SerienRecorder] Error while writing test log [%s]" % str(e))
+		finally:
+			writeLogFile.close()
 
 	@classmethod
 	def checkFileAccess(cls):
@@ -83,7 +93,7 @@ class SRLogger:
 				logFileValid = False
 
 		if not logFileValid:
-			logFile = SERIENRECORDER_LOGFILENAME % SerienRecorder.serienRecMainPath
+			logFile = SERIENRECORDER_LOGFILENAME % os.path.dirname(__file__)
 			Notifications.AddPopup(
 				"Log-Datei kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!" % (
 				config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=10,
@@ -100,11 +110,11 @@ class SRLogger:
 		else:
 			lt = datetime.datetime.now() - datetime.timedelta(days=config.plugins.serienRec.deleteLogFilesOlderThan.value)
 			for filename in os.listdir(config.plugins.serienRec.LogFilePath.value):
-				if (filename.find('SerienRecorder_') == 0) and (int(os.path.getmtime(os.path.join(config.plugins.serienRec.LogFilePath.value, filename))) < int(lt.strftime("%s"))):
-					try:
+				try:
+					if (filename.find('SerienRecorder_') == 0) and (int(os.path.getmtime(os.path.join(config.plugins.serienRec.LogFilePath.value, filename))) < int(lt.strftime("%s"))):
 						os.remove('%s%s' % (config.plugins.serienRec.LogFilePath.value, filename))
-					except:
-						SRLogger.writeLog("Logdatei konnte nicht gelöscht werden: %s" % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
+				except:
+					SRLogger.writeLog("Logdatei konnte nicht gelöscht werden: %s" % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
 
 		open(logFile, 'w').close()
 

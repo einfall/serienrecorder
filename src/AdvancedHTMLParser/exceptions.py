@@ -1,6 +1,10 @@
-# Copyright (c) 2015, 2017 Tim Savannah under LGPLv3. 
-# See LICENSE (https://gnu.org/licenses/lgpl-3.0.txt) for more information.
-#  Exceptions used
+'''
+    Copyright (c) 2015, 2017, 2019 Tim Savannah under LGPLv3. All Rights Reserved.
+
+    See LICENSE (https://gnu.org/licenses/lgpl-3.0.txt) for more information.
+
+    Exceptions used by AdvancedHTMLParser
+'''
 
 __all__ = ('MultipleRootNodeException', 'HTMLValidationException', 'InvalidCloseException', 'MissedCloseException', 'IndexSizeErrorException')
 
@@ -28,11 +32,11 @@ class HTMLValidationException(Exception):
         HTMLValidationException - common baseclass for invalid-HTML validation errors
     '''
     pass
-        
+
 
 class InvalidCloseException(HTMLValidationException):
     '''
-        InvalidCloseException - Raised when a tag is closed that shouldn't be closed.
+        InvalidCloseException - Raised when a tag is closed that shouldn't be closed in validating parser
     '''
 
     def __init__(self, triedToClose, stillOpen):
@@ -44,13 +48,13 @@ class InvalidCloseException(HTMLValidationException):
             message = 'Attempted to close "%s", but it does not match any of the open tags: %s' %(triedToClose, str([x.tagName for x in stillOpen]),)
 
         Exception.__init__(self, message)
-       
+
 
 class MissedCloseException(HTMLValidationException):
     '''
-        MissedCloseException - Raised when a close was missed
+        MissedCloseException - Raised when a close was missed in validating parser
     '''
-    
+
     def __init__(self, triedToClose, stillOpen):
         self.triedToClose = triedToClose
         self.stillOpen = stillOpen
@@ -60,8 +64,31 @@ class MissedCloseException(HTMLValidationException):
         Exception.__init__(self, message)
 
 
+class InvalidAttributeNameException(HTMLValidationException):
+    '''
+        InvalidAttributeNameException - Raised when an invalid attribute name is found when parsing via validating parser
+    '''
+
+    def __init__(self, tagName, badAttributeName, badAttributeValue):
+        '''
+            __init__ - Create this object
+
+                @param tagName <str> - Tag name
+
+                @param badAttributeName <str> - Bad attribute name
+
+                @param badAttributeValue <str> - Bad attribute value
+        '''
+
+        message = 'Parsed a tag %s  which contains an invalid attribute, %s = %s . ( Maybe characters outside quotes in tag? )' % ( \
+            tagName, repr(badAttributeName), repr(badAttributeValue) \
+        )
+
+        Exception.__init__(self, message)
+
+
 class IndexSizeErrorException(ValueError):
-    
+
     def __init__(self, *args, **kwargs):
         if len(args) == 0 and len(kwargs) == 0:
             ValueError.__init__(self, "Index or size is negative or greater than the allowed amount")
