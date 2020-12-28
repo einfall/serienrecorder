@@ -1164,9 +1164,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.longLogFileName: (
 					"Bei 'nein' wird bei jedem Timer-Suchlauf die Log-Datei neu erzeugt.\n"
 					"Bei 'ja' wird NACH jedem Timer-Suchlauf die soeben neu erzeugte Log-Datei in eine Datei kopiert, deren Name das aktuelle Datum und die aktuelle Uhrzeit beinhaltet.\n\n"
-					"Beispiel:\n" + SERIENRECORDER_LONG_LOGFILENAME % (
-						config.plugins.serienRec.LogFilePath.value, str(lt.tm_year), str(lt.tm_mon).zfill(2),
-						str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))),
+					"Beispiel:\n" + os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_LONG_LOGFILENAME % (str(lt.tm_year), str(lt.tm_mon).zfill(2),
+						str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)))),
 			config.plugins.serienRec.deleteLogFilesOlderThan: (
 				"Log-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."),
 			config.plugins.serienRec.writeLog: (
