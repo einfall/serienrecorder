@@ -301,7 +301,7 @@ def autostart(reason, **kwargs):
 			checkForRecordingInstance.initialize(session, False, False)
 
 		if config.plugins.serienRec.autochecktype.value in ("1", "2") and config.plugins.serienRec.timeUpdate.value:
-			print("[SerienRecorder] Auto-Check: AN")
+			print("[SerienRecorder] Auto-Check: ON")
 			startTimer = eTimer()
 			if isDreamOS():
 				startTimerConnection = startTimer.timeout.connect(startAutoCheckTimer)
@@ -309,7 +309,7 @@ def autostart(reason, **kwargs):
 				startTimer.callback.append(startAutoCheckTimer)
 			startTimer.start(60 * 1000, True)
 		else:
-			print("[SerienRecorder] Auto-Check: AUS")
+			print("[SerienRecorder] Auto-Check: OFF")
 
 		# API
 		if config.plugins.serienRec.enableWebinterface.value:

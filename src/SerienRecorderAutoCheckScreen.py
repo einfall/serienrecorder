@@ -183,7 +183,7 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				self.readLogTimer.stop()
 				self.readLogTimer = None
 			print("[SerienRecorder] update log reader stopped.")
-			self['title'].setText("Auto-Check fertig !")
+			self['title'].setText("Timer-Suchlauf abgeschlossen")
 
 			from .SerienRecorderLogWriter import SRLogger
 			logFileHandle = open(SRLogger.getLogFilePath(), "r")

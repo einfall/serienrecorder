@@ -10,8 +10,8 @@ from .SerienRecorderDatabase import SRDatabase
 from .SerienRecorderSeriesServer import SeriesServer
 from .SerienRecorderLogWriter import SRLogger
 
-SERIENRECORDER_TVPLANER_HTML_FILENAME = "%sTV-Planer.html"
-SERIENRECORDER_LONG_TVPLANER_HTML_FILENAME = "%sTV-Planer_%s%s%s%s%s.html"
+SERIENRECORDER_TVPLANER_HTML_FILENAME = "TV-Planer.html"
+SERIENRECORDER_LONG_TVPLANER_HTML_FILENAME = "TV-Planer_%s%s%s%s%s.html"
 
 def getMailSearchString(age, subject):
 	date = datetime.date.today() - datetime.timedelta(age)
@@ -81,7 +81,7 @@ def getEmailData():
 		return None
 
 	try:
-		mail.select(config.plugins.serienRec.imap_mailbox.value, True)
+		mail.select(config.plugins.serienRec.imap_mailbox.value, False)
 
 	except imaplib.IMAP4.error as e:
 		SRLogger.writeLog("TV-Planer: Mailbox ' %s ' nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), True)
@@ -134,7 +134,7 @@ def getEmailData():
 	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value:
 		try:
 			SRLogger.writeLog("Erstelle Backup der TV-Planer E-Mail.\n")
-			htmlFilePath = SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value
+			htmlFilePath = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
 			writeTVPlanerHTML = open(htmlFilePath, "w")
 			writeTVPlanerHTML.write(html)
 			writeTVPlanerHTML.close()
@@ -422,8 +422,8 @@ def imaptest(session):
 	try:
 		def parse_mailbox(data):
 			import re
-			matches = re.match('\((.*?)\)\s"(.*?)"\s"?(.*?)"?$', data)
-			return (matches.group(1), matches.group(2), matches.group(3))
+			matches = re.match('\((.*?)\)\s"?(.*?)"?\s"?(.*?)"?$', data)
+			return matches.group(1), matches.group(2), matches.group(3)
 
 		SRLogger.writeLog("Versuche Postfächer vom E-Mail Server abzurufen...", True)
 		result, data = mail.list('""', '*')
@@ -473,7 +473,7 @@ def imaptest(session):
 
 def resetTVPlanerHTMLBackup():
 	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value:
-		logFile = SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value
+		logFile = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
 
 		if not config.plugins.serienRec.longLogFileName.value:
 			# logFile leeren (renamed to .old)
@@ -493,6 +493,6 @@ def resetTVPlanerHTMLBackup():
 def backupTVPlanerHTML():
 	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value and config.plugins.serienRec.longLogFileName.value:
 		lt = time.localtime()
-		logFile = SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value
-		logFileSave = SERIENRECORDER_LONG_TVPLANER_HTML_FILENAME % (config.plugins.serienRec.LogFilePath.value, str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
+		logFile = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
+		logFileSave = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_LONG_TVPLANER_HTML_FILENAME % (str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)))
 		shutil.copy(logFile, logFileSave)

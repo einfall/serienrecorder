@@ -383,10 +383,13 @@ class serienRecTimer:
 
 				if len(self.konflikt) > 0:
 					if config.plugins.serienRec.showMessageOnConflicts.value:
+						timeout = config.plugins.serienRec.showMessageTimeout.value
+						if config.plugins.serienRec.showMessageTimeout.value == 0:
+							timeout = -1
 						self.messageList.append(("Timerkonflikte beim SerienRecorder Suchlauf:\n\n%s" % self.konflikt,
-						                         MessageBox.TYPE_INFO, -1, self.konflikt))
+						                         MessageBox.TYPE_INFO, timeout, self.konflikt))
 						Notifications.AddPopup("Timerkonflikte beim SerienRecorder Suchlauf:\n\n%s" % self.konflikt,
-						                       MessageBox.TYPE_INFO, timeout=-1, id=self.konflikt)
+						                       MessageBox.TYPE_INFO, timeout=timeout, id=self.konflikt)
 
 			##############################
 			#
@@ -998,10 +1001,13 @@ class serienRecTimer:
 		# Notification event not found
 		if len(self.eventNotFound) > 0:
 			if config.plugins.serienRec.showMessageOnEventNotFound.value:
+				timeout = config.plugins.serienRec.showMessageTimeout.value
+				if config.plugins.serienRec.showMessageTimeout.value == 0:
+					timeout = -1
 				self.messageList.append(("Folgende Sendungen wurden im EPG nicht gefunden:\n\n%s" % self.eventNotFound,
-				                         MessageBox.TYPE_INFO, -1, self.eventNotFound))
+				                         MessageBox.TYPE_INFO, timeout, self.eventNotFound))
 				Notifications.AddPopup("Folgende Sendungen wurden im EPG nicht gefunden:\n\n%s" % self.eventNotFound,
-				                       MessageBox.TYPE_INFO, timeout=-1, id=self.eventNotFound)
+				                       MessageBox.TYPE_INFO, timeout=timeout, id=self.eventNotFound)
 
 	@staticmethod
 	def splitEvent(episode, staffel, title):

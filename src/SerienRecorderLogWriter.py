@@ -9,8 +9,8 @@ from Tools.Directories import fileExists
 
 import os, shutil, datetime, time
 
-SERIENRECORDER_LOGFILENAME = "%sSerienRecorder.log"
-SERIENRECORDER_LONG_LOGFILENAME = "%sSerienRecorder_%s%s%s%s%s.log"
+SERIENRECORDER_LOGFILENAME = "SerienRecorder.log"
+SERIENRECORDER_LONG_LOGFILENAME = "SerienRecorder_%s%s%s%s%s.log"
 SERIENRECORDER_TEST_LOGFILEPATH = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/TestLogs"
 
 class SRLogger:
@@ -19,12 +19,12 @@ class SRLogger:
 
 	@classmethod
 	def writeLog(cls, text, forceWrite=False):
-		logFile = SERIENRECORDER_LOGFILENAME % config.plugins.serienRec.LogFilePath.value
+		logFile = SRLogger.getLogFilePath()
 		if config.plugins.serienRec.writeLog.value or forceWrite:
 			try:
 				open(logFile, 'a').close()
 			except (IOError, OSError):
-				logFile = SERIENRECORDER_LOGFILENAME % os.path.dirname(__file__)
+				logFile = SRLogger.getDefaultLogFilePath()
 				open(logFile, 'a').close()
 
 			writeLogFile = open(logFile, 'a')
@@ -37,12 +37,12 @@ class SRLogger:
 
 	@classmethod
 	def writeLogFilter(cls, logtype, text, forceWrite=False):
-		logFile = SERIENRECORDER_LOGFILENAME % config.plugins.serienRec.LogFilePath.value
+		logFile = SRLogger.getLogFilePath()
 		if config.plugins.serienRec.writeLog.value or forceWrite:
 			try:
 				open(logFile, 'a').close()
 			except (IOError, OSError):
-				logFile = SERIENRECORDER_LOGFILENAME % os.path.dirname(__file__)
+				logFile = SRLogger.getDefaultLogFilePath()
 				open(logFile, 'a').close()
 
 			writeLogFile = open(logFile, 'a')
@@ -87,13 +87,13 @@ class SRLogger:
 
 		if not logFileValid:
 			try:
-				logFile = SERIENRECORDER_LOGFILENAME % config.plugins.serienRec.LogFilePath.value
+				logFile = SRLogger.getLogFilePath()
 				open(logFile, 'a').close()
 			except:
 				logFileValid = False
 
 		if not logFileValid:
-			logFile = SERIENRECORDER_LOGFILENAME % os.path.dirname(__file__)
+			logFile = SRLogger.getDefaultLogFilePath()
 			Notifications.AddPopup(
 				"Log-Datei kann nicht im angegebenen Pfad (%s) erzeugt werden.\n\nEs wird '%s' verwendet!" % (
 				config.plugins.serienRec.LogFilePath.value, logFile), MessageBox.TYPE_INFO, timeout=10,
@@ -101,7 +101,7 @@ class SRLogger:
 
 	@classmethod
 	def reset(cls):
-		logFile = SERIENRECORDER_LOGFILENAME % config.plugins.serienRec.LogFilePath.value
+		logFile = SRLogger.getLogFilePath()
 
 		if not config.plugins.serienRec.longLogFileName.value:
 			# logFile leeren (renamed to .old)
@@ -122,10 +122,15 @@ class SRLogger:
 	def backup(cls):
 		if config.plugins.serienRec.longLogFileName.value:
 			lt = time.localtime()
-			logFile = SERIENRECORDER_LOGFILENAME % config.plugins.serienRec.LogFilePath.value
-			logFileSave = SERIENRECORDER_LONG_LOGFILENAME % (config.plugins.serienRec.LogFilePath.value, str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
+			logFile = SRLogger.getLogFilePath()
+			logFileSave = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_LONG_LOGFILENAME % (str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)))
 			shutil.copy(logFile, logFileSave)
 
 	@classmethod
 	def getLogFilePath(cls):
-		return SERIENRECORDER_LOGFILENAME % config.plugins.serienRec.LogFilePath.value
+		return os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_LOGFILENAME)
+
+	@classmethod
+	def getDefaultLogFilePath(cls):
+		return os.path.join(os.path.dirname(__file__), SERIENRECORDER_LOGFILENAME)
+	

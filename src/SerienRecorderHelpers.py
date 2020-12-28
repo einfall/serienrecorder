@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.2.0-beta'
+SRVERSION = '4.2.1-beta'
 SRDBVERSION = '4.1.0'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
@@ -200,8 +200,10 @@ def createBackup():
 			STBHelpers.saveEnigmaSettingsToFile(BackupPath)
 			for filename in os.listdir(BackupPath):
 				os.chmod(os.path.join(BackupPath, filename), 0o777)
-			if fileExists(SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value):
-				shutil.copy(SERIENRECORDER_TVPLANER_HTML_FILENAME % config.plugins.serienRec.LogFilePath.value, BackupPath)
+
+			htmlFilePath = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
+			if fileExists(htmlFilePath):
+				shutil.copy(htmlFilePath, BackupPath)
 		except Exception as e:
 			SRLogger.writeLog("Backup konnte nicht erstellt werden: " + str(e), True)
 

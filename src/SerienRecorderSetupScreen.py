@@ -183,6 +183,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.showMessageOnConflicts = ConfigYesNo(default=True)
 	config.plugins.serienRec.showMessageOnTVPlanerError = ConfigYesNo(default=True)
 	config.plugins.serienRec.showMessageOnEventNotFound = ConfigYesNo(default=False)
+	config.plugins.serienRec.showMessageTimeout = ConfigInteger(0, (0, 60))
 	config.plugins.serienRec.channelUpdateNotification = ConfigSelection(choices=[("0", "Beim Start"), ("1", "Nach dem Timer-Suchlauf")], default="0")
 
 	###############################################################################################################################
@@ -775,8 +776,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if config.plugins.serienRec.tvplaner.value:
 			self.list.append(getConfigListEntry("Meldung bei TV-Planer Fehlern:", config.plugins.serienRec.showMessageOnTVPlanerError))
 		self.list.append(getConfigListEntry("Meldung wenn Sendung im EPG nicht gefunden wurde:", config.plugins.serienRec.showMessageOnEventNotFound))
+		self.list.append(getConfigListEntry("Anzeigedauer für Meldungen:", config.plugins.serienRec.showMessageTimeout))
 		self.list.append(getConfigListEntry("Meldung bei Senderaktualisierungen:", config.plugins.serienRec.channelUpdateNotification))
-
 
 		###############################################################################################################################
 		addSection("LOGGING")
@@ -879,7 +880,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 	def setInfoText(self):
 		from .SerienRecorderLogWriter import SERIENRECORDER_LONG_LOGFILENAME
 		lt = time.localtime()
-
 		self.HilfeTexte = {
 			###############################################################################################################################
 			# SYSTEM
@@ -1148,6 +1148,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' wird für jeden Timer dessen Sendung beim automatischen Timer-Suchlauf nicht mehr im EPG gefunden wurde, eine Nachricht auf dem Bildschirm eingeblendet.\n"
 				"Das könnte darauf hindeuten, dass die Sendung evtl. kurzfristig aus dem Programm genommen wurde.\n"
 				"Diese Nachrichten bleiben solange auf dem Bildschirm, bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
+			config.plugins.serienRec.showMessageTimeout: (
+				"Gibt an wie lange die obigen drei Nachrichten auf dem Bildschirm angezeigt werden.\n\n"
+				"Bei '0' bleiben sie solange auf dem Bildschirm, bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
 			config.plugins.serienRec.channelUpdateNotification: (
 				"Der SerienRecorder zeigt eine Nachricht, wenn sich die Sender bei Wunschliste ändern und die Senderliste im SerienRecorder aktualisiert werden muss.\n\n"
 				"Bei 'Beim Starten' wird bei jedem Start des SerienRecorders nach Aktualisierungen der Sender gesucht und ggf. eine Nachricht angezeigt.\n"
@@ -1202,6 +1205,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' erfolgt die Anzeige der Log-Datei mit Zeilenumbruch, d.h. es werden drei Zeilen pro Eintrag angezeigt.\n"
 				"Bei 'nein' erfolgt die Anzeige der Log-Datei mit einer Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)"),
 		}
+
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
@@ -1379,6 +1383,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.showMessageOnConflicts.save()
 		config.plugins.serienRec.showMessageOnTVPlanerError.save()
 		config.plugins.serienRec.showMessageOnEventNotFound.save()
+		config.plugins.serienRec.showMessageTimeout.save()
 		config.plugins.serienRec.channelUpdateNotification.save()
 
 		###############################################################################################################################

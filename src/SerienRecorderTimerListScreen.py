@@ -600,9 +600,13 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self['title'].setText("Lade Liste aller Timer...")
 
-		from twisted.internet.threads import deferToThread
-		deferToThread(loadAllTimer).addCallback(onLoadAllTimerSuccessful).addErrback(onLoadAllTimerFailed)
-
+		import twisted.python.runtime
+		if twisted.python.runtime.platform.supportsThreads():
+			from twisted.internet.threads import deferToThread
+			deferToThread(loadAllTimer).addCallback(onLoadAllTimerSuccessful).addErrback(onLoadAllTimerFailed)
+		else:
+			allTimers = loadAllTimer()
+			onLoadAllTimerSuccessful(allTimers)
 
 	@staticmethod
 	def buildList(entry):

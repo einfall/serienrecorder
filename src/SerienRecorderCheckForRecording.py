@@ -149,11 +149,11 @@ class serienRecCheckForRecording:
 			refreshTimerConnection = None
 
 		if config.plugins.serienRec.autochecktype.value == "0":
-			SRLogger.writeLog("Auto-Check ist deaktiviert - nur manuelle Timersuche", True)
+			SRLogger.writeLog("Automatischer Timer-Suchlauf ist deaktiviert - nur manuelle Timersuche", True)
 		elif config.plugins.serienRec.autochecktype.value == "1":
-			SRLogger.writeLog("Auto-Check ist aktiviert - er wird zur gewählten Uhrzeit gestartet", True)
+			SRLogger.writeLog("Automatischer Timer-Suchlauf ist aktiviert - er wird zur gewählten Uhrzeit gestartet", True)
 		elif config.plugins.serienRec.autochecktype.value == "2":
-			SRLogger.writeLog("Auto-Check ist aktiviert - er wird nach dem EPGRefresh ausgeführt", True)
+			SRLogger.writeLog("Automatischer Timer-Suchlauf ist aktiviert - er wird nach dem EPGRefresh ausgeführt", True)
 
 		if not self.manuell and config.plugins.serienRec.autochecktype.value == "1" and config.plugins.serienRec.timeUpdate.value:
 			deltatime = self.getNextAutoCheckTimer(lt)
@@ -163,9 +163,9 @@ class serienRecCheckForRecording:
 			else:
 				refreshTimer.callback.append(self.startCheck)
 			refreshTimer.start(((deltatime * 60) + random.randint(0, int(config.plugins.serienRec.maxDelayForAutocheck.value) * 60)) * 1000, True)
-			print("[SerienRecorder] Auto-Check Uhrzeit-Timer gestartet.")
+			print("[SerienRecorder] Timer-Suchlauf Uhrzeit-Timer gestartet.")
 			print("[SerienRecorder] Verbleibende Zeit: %s Stunden" % (TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value)))))
-			SRLogger.writeLog("Verbleibende Zeit bis zum nächsten Auto-Check: %s Stunden\n" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+			SRLogger.writeLog("Verbleibende Zeit bis zum nächsten automatischen Timer-Suchlauf: %s Stunden\n" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if self.manuell:
 			print("[SerienRecorder] checkRecTimer manuell.")
@@ -242,18 +242,18 @@ class serienRecCheckForRecording:
 			return
 
 		if not self.database.hasMarkers() and not config.plugins.serienRec.tvplaner.value:
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s '---------" % self.uhrzeit, True)
+			SRLogger.writeLog("\n---------' Timer-Suchlauf gestartet am %s '---------" % self.uhrzeit, True)
 			print("[SerienRecorder] check: Tabelle SerienMarker leer.")
-			SRLogger.writeLog("Es sind keine Serien-Marker vorhanden - Auto-Check kann nicht ausgeführt werden.", True)
-			SRLogger.writeLog("---------' Auto-Check beendet '---------", True)
+			SRLogger.writeLog("Es sind keine Serien-Marker vorhanden - Timer-Suchlauf kann nicht ausgeführt werden.", True)
+			SRLogger.writeLog("---------' Timer-Suchlauf beendet '---------", True)
 			self.askForDSB()
 			return
 
 		if not self.database.hasChannels():
-			SRLogger.writeLog("\n---------' Starte Auto-Check um %s '---------" % self.uhrzeit, True)
+			SRLogger.writeLog("\n---------' Timer-Suchlauf gestartet am %s '---------" % self.uhrzeit, True)
 			print("[SerienRecorder] check: Tabelle Channels leer.")
-			SRLogger.writeLog("Es wurden keine Sender zugeordnet - Auto-Check kann nicht ausgeführt werden.", True)
-			SRLogger.writeLog("---------' Auto-Check beendet '---------", True)
+			SRLogger.writeLog("Es wurden keine Sender zugeordnet - Timer-Suchlauf kann nicht ausgeführt werden.", True)
+			SRLogger.writeLog("---------' Timer-Suchlauf beendet '---------", True)
 			self.askForDSB()
 			return
 
@@ -265,7 +265,7 @@ class serienRecCheckForRecording:
 				refreshTimerConnection = None
 
 			print("[SerienRecorder] Auto-Check Timer stop.")
-			SRLogger.writeLog("Auto-Check stop.", True)
+			SRLogger.writeLog("Automatischer Timer-Suchlauf Uhrzeit-Timer angehalten.", True)
 
 		self.speedStartTime = time.time()
 		print("[SerienRecorder] Stopwatch Start: " + str(self.speedStartTime))
@@ -280,7 +280,7 @@ class serienRecCheckForRecording:
 
 			print("[SerienRecorder] Auto-Check Uhrzeit-Timer gestartet.")
 			print("[SerienRecorder] Verbleibende Zeit: %s Stunden" % (TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value)))))
-			SRLogger.writeLog("Auto-Check Uhrzeit-Timer gestartet.", True)
+			SRLogger.writeLog("Automatischer Timer-Suchlauf Uhrzeit-Timer gestartet.", True)
 			SRLogger.writeLog("Verbleibende Zeit: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if config.plugins.serienRec.AutoBackup.value == "before":
@@ -303,8 +303,8 @@ class serienRecCheckForRecording:
 		else:
 			check_type += "auto"
 
-		print("---------' Starte Auto-Check am %s (%s) '---------" % (self.uhrzeit, check_type))
-		SRLogger.writeLog("\n---------' Starte Auto-Check am %s (%s) '---------\n" % (self.uhrzeit, check_type), True)
+		print("---------' Timer-Suchlauf gestartet am %s (%s) '---------" % (self.uhrzeit, check_type))
+		SRLogger.writeLog("\n---------' Timer-Suchlauf gestartet am %s (%s) '---------\n" % (self.uhrzeit, check_type), True)
 
 		# BOX-INFO ###########################################################################################################
 		if config.plugins.serienRec.writeLogVersion.value:
@@ -348,8 +348,8 @@ class serienRecCheckForRecording:
 			# Statistik
 			self.speedEndTime = time.time()
 			speedTime = (self.speedEndTime - self.speedStartTime)
-			SRLogger.writeLog("---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.) '---------" % speedTime, True)
-			print("[SerienRecorder] ---------' Auto-Check beendet ( Ausführungsdauer: %3.2f Sek.) '---------" % speedTime)
+			SRLogger.writeLog("---------' Timer-Suchlauf beendet ( Ausführungsdauer: %3.2f Sek.) '---------" % speedTime, True)
+			print("[SerienRecorder] ---------' Timer-Suchlauf beendet ( Ausführungsdauer: %3.2f Sek.) '---------" % speedTime)
 
 			SRLogger.backup()
 			from .SerienRecorderTVPlaner import backupTVPlanerHTML
@@ -437,11 +437,15 @@ class serienRecCheckForRecording:
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(time.time())
 			config.plugins.serienRec.tvplaner_last_full_check.save()
 			configfile.save()
-			if config.plugins.serienRec.tvplaner.value:
-				self.messageList.append(("Beim Abrufen der TV-Planer E-Mail ist ein Fehler aufgetreten - es wurde ein voller Suchlauf durchgeführt.\nWeitere Informationen wurden ins Log geschrieben.",
-				                         MessageBox.TYPE_INFO, -1, "tvplaner-error"))
-				Notifications.AddPopup("Beim Abrufen der TV-Planer E-Mail ist ein Fehler aufgetreten - es wurde ein voller Suchlauf durchgeführt.\nWeitere Informationen wurden ins Log geschrieben.",
-				                       MessageBox.TYPE_INFO, timeout=-1, id="tvplaner-error")
+			if config.plugins.serienRec.tvplaner.value and (not self.manuell and self.tvplaner_manuell):
+				if config.plugins.serienRec.showMessageOnTVPlanerError.value:
+					timeout = config.plugins.serienRec.showMessageTimeout.value
+					if config.plugins.serienRec.showMessageTimeout.value == 0:
+						timeout = -1
+					self.messageList.append(("Beim Abrufen der TV-Planer E-Mail ist ein Fehler aufgetreten - es wurde ein voller Suchlauf durchgeführt.\nWeitere Informationen wurden ins Log geschrieben.",
+					                         MessageBox.TYPE_INFO, timeout, "tvplaner-error"))
+					Notifications.AddPopup("Beim Abrufen der TV-Planer E-Mail ist ein Fehler aufgetreten - es wurde ein voller Suchlauf durchgeführt.\nWeitere Informationen wurden ins Log geschrieben.",
+					                       MessageBox.TYPE_INFO, timeout=timeout, id="tvplaner-error")
 				fullCheck = "- keine TV-Planer Daten - voller Suchlauf"
 			else:
 				fullCheck = "- voller Suchlauf"
@@ -652,8 +656,8 @@ class serienRecCheckForRecording:
 		if countTimerFromWishlist > 0:
 			SRLogger.writeLog("%s Timer vom Merkzettel wurde(n) erstellt!" % str(countTimerFromWishlist), True)
 			print("[SerienRecorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(countTimerFromWishlist))
-		SRLogger.writeLog("---------' Auto-Check beendet (Ausführungsdauer: %3.2f Sek.) '---------" % speedTime, True)
-		print("[SerienRecorder] ---------' Auto-Check beendet (Ausführungsdauer: %3.2f Sek.) '---------" % speedTime)
+		SRLogger.writeLog("---------' Timer-Suchlauf beendet (Ausführungsdauer: %3.2f Sek.) '---------" % speedTime, True)
+		print("[SerienRecorder] ---------' Timer-Suchlauf beendet (Ausführungsdauer: %3.2f Sek.) '---------" % speedTime)
 
 		if not self.manuell:
 			if config.plugins.serienRec.showNotification.value == "1":
@@ -708,12 +712,12 @@ class serienRecCheckForRecording:
 		if config.plugins.serienRec.autochecktype.value == "1":
 			lt = time.localtime()
 			deltatime = self.getNextAutoCheckTimer(lt)
-			SRLogger.writeLog("\nVerbleibende Zeit bis zum nächsten Auto-Check: %s Stunden\n" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
+			SRLogger.writeLog("\nVerbleibende Zeit bis zum nächsten automatischen Timer-Suchlauf: %s Stunden\n" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 			if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_full_check.value:
 				autoCheckDays = ((int(config.plugins.serienRec.tvplaner_last_full_check.value) + (int(config.plugins.serienRec.checkfordays.value) - 1) * 86400) - int(time.time())) / 86400
 				if autoCheckDays < 0:
 					autoCheckDays = 0
-				SRLogger.writeLog("Verbleibende Zeit bis zum nächsten vollen Auto-Check: %d Tage" % autoCheckDays, True)
+				SRLogger.writeLog("Verbleibende Zeit bis zum nächsten vollen Timer-Suchlauf: %d Tage" % autoCheckDays, True)
 
 		self.tempDB = None
 		self.database = None

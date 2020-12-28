@@ -71,14 +71,24 @@ class checkGitHubUpdate:
 				downloadFileSize = 5 * 1024
 				for asset in latestRelease['assets']:
 					updateURL = toStr(asset['browser_download_url'])
-					if isDreamOS() and updateURL.endswith(".deb"):
-						downloadURL = updateURL
-						downloadFileSize = int(asset['size'] / 1024)
-						break
-					if not isDreamOS() and updateURL.endswith('.ipk'):
-						downloadURL = updateURL
-						downloadFileSize = int(asset['size'] / 1024)
-						break
+					if PY2:
+						if isDreamOS() and updateURL.endswith(".deb"):
+							downloadURL = updateURL
+							downloadFileSize = int(asset['size'] / 1024)
+							break
+						if not isDreamOS() and updateURL.endswith('.ipk'):
+							downloadURL = updateURL
+							downloadFileSize = int(asset['size'] / 1024)
+							break
+					else:
+						if isDreamOS() and updateURL.endswith(".deb3"):
+							downloadURL = updateURL
+							downloadFileSize = int(asset['size'] / 1024)
+							break
+						if not isDreamOS() and updateURL.endswith('.ipk3'):
+							downloadURL = updateURL
+							downloadFileSize = int(asset['size'] / 1024)
+							break
 
 				if downloadURL:
 					return updateName, updateInfo, downloadURL, downloadFileSize
