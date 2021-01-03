@@ -133,4 +133,3 @@ class SRLogger:
 	@classmethod
 	def getDefaultLogFilePath(cls):
 		return os.path.join(os.path.dirname(__file__), SERIENRECORDER_LOGFILENAME)
-	

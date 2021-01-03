@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.2.1-beta'
+SRVERSION = '4.2.2-beta'
 SRDBVERSION = '4.1.0'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
@@ -397,6 +397,7 @@ class STBHelpers:
 					if playable:
 						serien_chlist.append((servicename, serviceref))
 		else:
+			print("[SerienRecorder] Get channels for bouquet %s" % BouquetName)
 			for bouquet in tvbouquets:
 				if bouquet[1] == BouquetName:
 					bouquetlist = cls.getServiceList(bouquet[0])
@@ -532,7 +533,7 @@ class STBHelpers:
 
 	@classmethod
 	def saveEnigmaSettingsToFile(cls, path):
-		writeConfFile = open("%sConfig.backup" % path, "w")
+		writeConfFile = open("%s/Config.backup" % path, "w")
 		readSettings = open("/etc/enigma2/settings", "r")
 		for rawData in readSettings.readlines():
 			data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)

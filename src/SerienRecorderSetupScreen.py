@@ -122,7 +122,9 @@ def ReadConfigFile():
 	config.plugins.serienRec.selectBouquets = ConfigYesNo(default=False)
 
 	boxBouquets = STBHelpers.getTVBouquets()
-	choices = [(x, x) for x in boxBouquets]
+	# boxBouquets = [('1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "userbouquet.favourites.tv" ORDER BY bouquet', 'FTA TV D Astra'), ('1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "userbouquet.dbe2.tv" ORDER BY bouquet', 'Sky Entertain'),...]
+	# get name only
+	choices = [(x[1], x[1]) for x in boxBouquets]
 	if len(choices) > 0:
 		config.plugins.serienRec.MainBouquet = ConfigSelection(choices=choices, default=choices[0][0])
 	else:

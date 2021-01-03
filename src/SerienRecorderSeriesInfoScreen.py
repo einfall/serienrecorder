@@ -70,7 +70,7 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		InitSkin(self)
 
 		self['info'].show()
-		self['title'].setText("Serien Beschreibung: %s" % self.serien_name)
+		self['title'].setText("Serienbeschreibung: %s" % self.serien_name)
 
 		if config.plugins.serienRec.showCover.value:
 			self['cover'].show()
