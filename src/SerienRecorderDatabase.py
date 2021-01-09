@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pickle, shutil, sqlite3, time
 
-from .SerienRecorderHelpers import getChangedSeriesNames
+from .SerienRecorderHelpers import getChangedSeriesNames, PY3
 from .SerienRecorderLogWriter import SRLogger
 
 class SRDatabase:
@@ -706,7 +706,7 @@ class SRDatabase:
 		cur.close()
 		return result
 
-	def getUpdateFromEPG(self, fsID):
+	def getUpdateFromEPG(self, fsID, default):
 		result = True
 		cur = self._srDBConn.cursor()
 		cur.execute("SELECT updateFromEPG FROM SerienMarker WHERE fsID=?", [fsID])
@@ -715,7 +715,7 @@ class SRDatabase:
 			(result,) = row
 		cur.close()
 		if result is None:
-			result = True
+			result = default
 		return bool(result)
 
 	def getSpecialsAllowed(self, wlID):

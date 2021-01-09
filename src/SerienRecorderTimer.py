@@ -700,7 +700,7 @@ class serienRecTimer:
 
 		# try to get eventID (eit) from epgCache
 		eit = 0
-		if config.plugins.serienRec.eventid.value and self.database.getUpdateFromEPG(serien_fsid):
+		if self.database.getUpdateFromEPG(serien_fsid, config.plugins.serienRec.eventid.value):
 			print("[SerienRecorder] Update data from EPG")
 			eit, start_unixtime, end_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, serien_name, epgSeriesName, stbRef)
 
@@ -928,7 +928,7 @@ class serienRecTimer:
 				new_serien_title = serien_title
 				new_serien_time = 0
 				new_serien_time_str = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(new_serien_time)))
-				updateFromEPG = self.database.getUpdateFromEPG(serien_fsid)
+				updateFromEPG = self.database.getUpdateFromEPG(serien_fsid, config.plugins.serienRec.eventid.value)
 
 			title = "%s - S%sE%s - %s" % (new_serien_name, str(new_staffel).zfill(2), str(new_episode).zfill(2), new_serien_title)
 
@@ -962,7 +962,7 @@ class serienRecTimer:
 					for event_entry in event_matches:
 						eit = int(event_entry[1])
 
-						if config.plugins.serienRec.eventid.value and updateFromEPG:
+						if updateFromEPG:
 							start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
 							end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
 						else:

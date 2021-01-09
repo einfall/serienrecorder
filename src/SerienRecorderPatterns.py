@@ -38,4 +38,11 @@ def readTimerPatterns():
 		finally:
 			if f is not None:
 				f.close()
+	else:
+		with open(path, "w") as write_file:
+			header = [
+				[" SerienRecorder ", " Liste der Timernamen/-beschreibungen Muster in JSON Notation ", " Unterstuetzte Schluesselwoerter: serie, staffel, episode, titel ", " Muster als printf (es ist nur 's' erlaubt) ", " Anzeigename in den Einstellungen "]
+			]
+			json.dump([header, default_timer_patterns], write_file, ensure_ascii=False, indent=4)
+
 	return patterns or default_timer_patterns

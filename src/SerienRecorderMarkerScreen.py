@@ -607,6 +607,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				print("[SerienRecorder] Serien-Marker Tabelle leer.")
 				return
 			else:
+				self.selected_serien_wlid = None
 				serien_name = self['menu_list'].getCurrent()[0][1]
 				serien_info = self['menu_list'].getCurrent()[0][12]
 				if config.plugins.serienRec.confirmOnDelete.value:

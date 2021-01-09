@@ -279,13 +279,18 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			serien_channel = self['menu_list'].getCurrent()[0][6]
 			serien_eit = self['menu_list'].getCurrent()[0][8]
 			serien_fsid = self['menu_list'].getCurrent()[0][10]
-			self.removeTimer(serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
+			self.removeTimer(self.database, serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
+			self.changesMade = True
+			self.readTimer(False)
+			self['title'].instance.setForegroundColor(parseColor("red"))
+			self['title'].setText("Timer '- %s -' gelöscht." % serien_name)
 		else:
 			return
 
-	def removeTimer(self, serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, serien_eit=0, batchMode=False):
+	@staticmethod
+	def removeTimer(database, serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, serien_eit=0):
 
-		markerType = self.database.getMarkerType(serien_fsid)
+		markerType = database.getMarkerType(serien_fsid)
 		if markerType is None:
 			markerType = 1
 		else:
@@ -301,15 +306,9 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			print("[SerienRecorder] enigma2 Timer removed.")
 
-		self.database.removeTimer(serien_fsid, staffel, episode, None, serien_time, serien_channel)
+		database.removeTimer(serien_fsid, staffel, episode, None, serien_time, serien_channel)
 		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 		SRLogger.writeLogFilter("timerDebug", "Timer gelöscht: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, serien_title))
-
-		if not batchMode:
-			self.changesMade = True
-			self.readTimer(False)
-			self['title'].instance.setForegroundColor(parseColor("red"))
-			self['title'].setText("Timer '- %s -' gelöscht." % serien_name)
 
 	def keyRed(self):
 		if self['menu_list'].getCurrent() is None:
@@ -328,12 +327,16 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		#print(self['menu_list'].getCurrent()[0])
 
 		if config.plugins.serienRec.confirmOnDelete.value:
-			self.session.openWithCallback(self.callDeleteSelectedTimer, MessageBox, "Soll '%s - S%sE%s - %s' wirklich gelöscht werden?" %
+			self.session.openWithCallback(self.callDeleteSelectedTimer, MessageBox, "Soll der Timer für '%s - S%sE%s - %s' wirklich gelöscht werden?" %
 			                              (serien_name, str(staffel).zfill(2), str(episode).zfill(2),
 			                              re.sub("\Adump\Z", "(Manuell hinzugefügt !!)", serien_title)),
 			                              MessageBox.TYPE_YESNO, default=False)
 		else:
-			self.removeTimer(serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
+			self.removeTimer(self.database, serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
+			self.changesMade = True
+			self.readTimer(False)
+			self['title'].instance.setForegroundColor(parseColor("red"))
+			self['title'].setText("Timer '- %s -' gelöscht." % serien_name)
 
 	def keyYellow(self):
 		if self.filter:
@@ -346,19 +349,19 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyBlue(self):
 		if config.plugins.serienRec.confirmOnDelete.value:
-			self.session.openWithCallback(self.removeNewTimerFromDB, MessageBox,
+			self.session.openWithCallback(self.removeRemainingTimerFromDB, MessageBox,
 			                              "Sollen wirklich alle noch ausstehenden Timer von der Box und aus der Datenbank gelöscht werden?",
 			                              MessageBox.TYPE_YESNO, default=False)
 		else:
-			self.removeNewTimerFromDB(True)
+			self.removeRemainingTimerFromDB(True)
 
-	def removeNewTimerFromDB(self, answer):
+	def removeRemainingTimerFromDB(self, answer):
 		if answer:
 			current_time = int(time.time())
 			timers = self.database.getAllTimer(current_time)
 			for timer in timers:
 				(row_id, serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
-				self.removeTimer(serie, serien_fsid, staffel, episode, title, start_time, webChannel, eit, True)
+				self.removeTimer(self.database, serie, serien_fsid, staffel, episode, title, start_time, webChannel, eit)
 
 			self.changesMade = True
 			self.readTimer(False)
@@ -493,9 +496,9 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_green'].setText("Speichern")
 		self['text_ok'].setText("Neuer Eintrag")
 		if config.plugins.serienRec.addedListSorted.value:
-			self['text_yellow'].setText("unsortierte Liste")
+			self['text_yellow'].setText("Chronologisch")
 		else:
-			self['text_yellow'].setText("Sortieren")
+			self['text_yellow'].setText("Alphabetisch")
 		self.num_bt_text[1][0] = buttonText_na
 
 		super(self.__class__, self).startDisplayTimer()
@@ -703,11 +706,11 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.modus == "menu_list" and len(self.addedlist_tmp) != 0:
 			if config.plugins.serienRec.addedListSorted.value:
 				self.addedlist_tmp = self.addedlist[:]
-				self['text_yellow'].setText("Sortieren")
+				self['text_yellow'].setText("Alphabetisch")
 				config.plugins.serienRec.addedListSorted.setValue(False)
 			else:
 				self.addedlist_tmp.sort(key=lambda x: (x[2].lower(), x[3].lower(), x[4].lower()))
-				self['text_yellow'].setText("unsortierte Liste")
+				self['text_yellow'].setText("Chronologisch")
 				config.plugins.serienRec.addedListSorted.setValue(True)
 			config.plugins.serienRec.addedListSorted.save()
 			configfile.save()

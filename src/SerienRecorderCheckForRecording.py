@@ -10,7 +10,7 @@ from Tools import Notifications
 from enigma import getDesktop, eTimer
 from Screens.MessageBox import MessageBox
 
-from .SerienRecorderHelpers import STBHelpers, TimeHelpers, isDreamOS, createBackup, getDirname, toStr, PY2
+from .SerienRecorderHelpers import SRAPIVERSION, STBHelpers, TimeHelpers, isDreamOS, createBackup, getDirname, toStr, PY2
 from .SerienRecorder import serienRecDataBaseFilePath, getCover, initDB
 from .SerienRecorderSeriesServer import SeriesServer
 from .SerienRecorderDatabase import SRDatabase, SRTempDatabase
@@ -308,15 +308,20 @@ class serienRecCheckForRecording:
 
 		# BOX-INFO ###########################################################################################################
 		if config.plugins.serienRec.writeLogVersion.value:
-			SRLogger.writeLog("Box-Typ: %s\nImage: %s" % (STBHelpers.getSTBType(), STBHelpers.getImageVersionString()), True)
-			SRLogger.writeLog("SR Version: %s\nDatenbank Schema Version: %s" % (config.plugins.serienRec.showversion.value, str(self.database.getVersion())), True)
+			SRLogger.writeLog("Box-Typ: %s" % STBHelpers.getSTBType(), True)
+			SRLogger.writeLog("Image: %s" % STBHelpers.getImageVersionString(), True)
 			pos = config.skin.primary_skin.value.rfind('/')
 			if pos != -1:
 				skin = config.skin.primary_skin.value[:pos]
 			else:
 				skin = "Default Skin"
-			SRLogger.writeLog("Box Skin: %s" % skin, True)
-			SRLogger.writeLog("Skin Auflösung: %s x %s" % (str(getDesktop(0).size().width()), str(getDesktop(0).size().height())), True)
+			SRLogger.writeLog("Box-Skin: %s (%s x %s)\n" % (skin, str(getDesktop(0).size().width()), str(getDesktop(0).size().height())), True)
+
+			SRLogger.writeLog("SerienRecorder Version: %s" % config.plugins.serienRec.showversion.value, True)
+			SRLogger.writeLog("Datenbank Schema Version: %s" % str(self.database.getVersion()), True)
+			if config.plugins.serienRec.enableWebinterface.value:
+				SRLogger.writeLog("Schnittstellen Version: %s" % SRAPIVERSION, True)
+			SRLogger.writeLog("SerienRecorder Box ID: %s" % str(config.plugins.serienRec.BoxID.value), True)
 
 		# LOG-SETTINGS ###########################################################################################################
 		sMsg = "\nDEBUG Filter: "
@@ -527,7 +532,9 @@ class serienRecCheckForRecording:
 					else:
 						SRLogger.writeLog("' %s ' - Dieser Serien-Marker ist deaktiviert - es werden keine Timer angelegt." % serienTitle, True)
 
-				# SRLogger.writeLog("Active threads: %d" % threading.active_count(), True)
+					if -2 in SerieStaffel:
+						SRLogger.writeLog("' %s ' - Dieser Serien-Marker steht auf manuell - es werden keine Timer automatisch angelegt." % serienTitle, True)
+
 				# Create the threads
 				for i in range(4):
 					worker = downloadTransmissionsThread(i, jobQueue, resultQueue)
@@ -599,6 +606,9 @@ class serienRecCheckForRecording:
 					jobQueue.put((markerChannels, SerieUrl, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType, limitedChannels))
 				else:
 					SRLogger.writeLog("' %s ' - Dieser Serien-Marker ist deaktiviert - es werden keine Timer angelegt." % serienTitle, True)
+
+				if -2 in SerieStaffel:
+					SRLogger.writeLog("' %s ' - Für diesen Serien-Marker sind die Staffeln auf 'manuell' gestellt - es werden keine Timer automatisch angelegt." % serienTitle, True)
 
 			# Create the threads
 			for i in range(4):
@@ -850,7 +860,7 @@ class serienRecCheckForRecording:
 						SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Staffel nicht erlaubt → ' %s ' → ' %s '" % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
 				continue
 
-			updateFromEPG = self.database.getUpdateFromEPG(serien_wlid)
+			updateFromEPG = self.database.getUpdateFromEPG(serien_fsid, config.plugins.serienRec.eventid.value)
 
 			(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
 			self.tempDB.addTransmission([(current_time, future_time, serien_name, serien_wlid, serien_fsid, markerType, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, start_unixtime, end_unixtime, altstbChannel, altstbRef, dirname, AnzahlAufnahmen,

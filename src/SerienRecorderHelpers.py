@@ -20,8 +20,10 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.2.2-beta'
+SRVERSION = '4.2.3'
 SRDBVERSION = '4.1.0'
+SRAPIVERSION = '2.0'
+SRWEBAPPVERSION = '0.7'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 PY2 = sys.version_info[0] == 2
@@ -195,8 +197,8 @@ def createBackup():
 				shutil.copy("/etc/enigma2/timers.xml", BackupPath)
 			if fileExists("/etc/enigma2/timers_vps.xml"):
 				shutil.copy("/etc/enigma2/timers_vps.xml", BackupPath)
-			if fileExists("%s/Config.backup" % serienRecMainPath):
-				shutil.copy("%s/Config.backup" % serienRecMainPath, BackupPath)
+			if fileExists(os.path.join(serienRecMainPath, "Config.backup")):
+				shutil.copy(os.path.join(serienRecMainPath, "Config.backup"), BackupPath)
 			STBHelpers.saveEnigmaSettingsToFile(BackupPath)
 			for filename in os.listdir(BackupPath):
 				os.chmod(os.path.join(BackupPath, filename), 0o777)
@@ -533,7 +535,7 @@ class STBHelpers:
 
 	@classmethod
 	def saveEnigmaSettingsToFile(cls, path):
-		writeConfFile = open("%s/Config.backup" % path, "w")
+		writeConfFile = open(os.path.join(path, "Config.backup"), "w")
 		readSettings = open("/etc/enigma2/settings", "r")
 		for rawData in readSettings.readlines():
 			data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)

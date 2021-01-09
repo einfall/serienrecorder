@@ -81,10 +81,15 @@ def getEmailData():
 		return None
 
 	try:
-		mail.select(config.plugins.serienRec.imap_mailbox.value, False)
+		result, data = mail.select(config.plugins.serienRec.imap_mailbox.value, False)
+		if result != 'OK':
+			SRLogger.writeLog("TV-Planer: Mailbox ' %s ' nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(result)))
+			mail.logout()
+			return None
 
 	except imaplib.IMAP4.error as e:
 		SRLogger.writeLog("TV-Planer: Mailbox ' %s ' nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), True)
+		mail.logout()
 		return None
 
 	searchstr = getMailSearchString(config.plugins.serienRec.imap_mail_age.value, config.plugins.serienRec.imap_mail_subject.value)
@@ -93,16 +98,19 @@ def getEmailData():
 		if result != 'OK':
 			SRLogger.writeLog("TV-Planer: Fehler bei der Suche nach TV-Planer E-Mails", True)
 			SRLogger.writeLog("TV-Planer: %s" % data, True)
+			mail.logout()
 			return None
 
 	except imaplib.IMAP4.error as e:
 		SRLogger.writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen [%s]" % (str(config.plugins.serienRec.imap_mail_age.value), str(e)), True)
 		SRLogger.writeLog("TV-Planer: %s" % searchstr, True)
+		mail.logout()
 		return None
 
 	if len(data[0]) == 0:
 		SRLogger.writeLog("TV-Planer: Keine TV-Planer Nachricht in den letzten %s Tagen" % str(config.plugins.serienRec.imap_mail_age.value), True)
 		SRLogger.writeLog("TV-Planer: %s" % searchstr, True)
+		mail.logout()
 		return None
 
 	# get the latest email
@@ -442,11 +450,16 @@ def imaptest(session):
 	try:
 		SRLogger.writeLog("IMAP Check: Versuche Postfach [%s] auszuwählen..." % str(config.plugins.serienRec.imap_mailbox.value))
 
-		mail.select(config.plugins.serienRec.imap_mailbox.value, True)
+		result, data = mail.select(config.plugins.serienRec.imap_mailbox.value, True)
+		if result != 'OK':
+			session.open(MessageBox, "Postfach [%s] nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(result)), MessageBox.TYPE_INFO, timeout=10)
+			SRLogger.writeLog("IMAP Check: Postfach %s nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(result)), True)
+			mail.logout()
+			return None
 
 	except imaplib.IMAP4.error as e:
-		session.open(MessageBox, "Postfach [%r] nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), MessageBox.TYPE_INFO, timeout=10)
-		SRLogger.writeLog("IMAP Check: Mailbox %r nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), True)
+		session.open(MessageBox, "Postfach [%s] nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), MessageBox.TYPE_INFO, timeout=10)
+		SRLogger.writeLog("IMAP Check: Postfach %s nicht gefunden [%s]" % (config.plugins.serienRec.imap_mailbox.value, str(e)), True)
 		mail.logout()
 		return None
 

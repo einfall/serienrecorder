@@ -13,7 +13,7 @@ from Tools.Directories import fileExists
 import time, shutil, os, re, random
 
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, setSkinProperties, SelectSkin
-from .SerienRecorderHelpers import encrypt, STBHelpers, isDreamOS, SRVERSION, SRDBVERSION
+from .SerienRecorderHelpers import encrypt, STBHelpers, isDreamOS, SRVERSION, SRDBVERSION, SRAPIVERSION
 from .SerienRecorder import setDataBaseFilePath, getDataBaseFilePath
 
 def CheckChoices(choices, default):
@@ -1133,7 +1133,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' erfolgt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem endgültigen Löschen von Serienmarkern oder Timern."),
 			config.plugins.serienRec.enableWebinterface: (
 				"Bei 'ja' wird das Webinterface des SerienRecorder aktiviert, sodass über den Webbrowser von einem beliebigen Computer/Tablet/Smartphone auf den SerienRecorder zugegriffen werden kann.\n\n"
-				"Die Box muss neu gestartet werden, damit diese Änderung wirksam wird."),
+				"Die Box muss neu gestartet werden, damit diese Änderung wirksam wird.\n\n"
+				"Schnittstellen Version: " + SRAPIVERSION),
 
 			###############################################################################################################################
 			# MELDUNGEN
