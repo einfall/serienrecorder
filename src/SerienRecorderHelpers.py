@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.2.3'
+SRVERSION = '4.2.4-beta'
 SRDBVERSION = '4.1.0'
 SRAPIVERSION = '2.0'
 SRWEBAPPVERSION = '0.7'

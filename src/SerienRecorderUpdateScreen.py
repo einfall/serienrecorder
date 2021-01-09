@@ -16,7 +16,7 @@ from Components.ProgressBar import ProgressBar
 from enigma import getDesktop, eTimer, eConsoleAppContainer
 from twisted.web.client import getPage, downloadPage
 
-from .SerienRecorderHelpers import isDreamOS, toStr, PY2
+from .SerienRecorderHelpers import isDreamOS, toStr, toBinary, PY2
 
 import Screens.Standby
 import os
@@ -215,14 +215,14 @@ class checkGitHubUpdateScreen(Screen):
 
 			if fileExists(self.filePath):
 				os.remove(self.filePath)
-			downloadPage(self.downloadURL, self.filePath).addCallback(self.downloadFinished).addErrback(self.downloadError)
+			downloadPage(toBinary(self.downloadURL), self.filePath).addCallback(self.downloadFinished).addErrback(self.downloadError)
 
 	def keyCancel(self):
 		self.close()
 
 	def cmdData(self, data):
 		#print data
-		self['srlog'].setText(data)
+		self['srlog'].setText(toStr(data))
 
 	def updateProgressBar(self):
 		if self.downloadDone:

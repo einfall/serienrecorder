@@ -486,26 +486,27 @@ def imaptest(session):
 
 def resetTVPlanerHTMLBackup():
 	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value:
-		logFile = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
+		backup_filepath = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
 
 		if not config.plugins.serienRec.longLogFileName.value:
 			# logFile leeren (renamed to .old)
-			if fileExists(logFile):
-				shutil.move(logFile, "%s.old" % logFile)
+			if fileExists(backup_filepath):
+				shutil.move(backup_filepath, "%s.old" % backup_filepath)
 		else:
 			lt = datetime.datetime.now() - datetime.timedelta(days=config.plugins.serienRec.deleteLogFilesOlderThan.value)
 			for filename in os.listdir(config.plugins.serienRec.LogFilePath.value):
-				if (filename.find('TV-Planer_') == 0) and (int(os.path.getmtime(os.path.join(config.plugins.serienRec.LogFilePath.value, filename))) < int(lt.strftime("%s"))):
+				long_backup_filepath = os.path.join(config.plugins.serienRec.LogFilePath.value, filename)
+				if (filename.find('TV-Planer_') == 0) and (int(os.path.getmtime(long_backup_filepath)) < int(lt.strftime("%s"))):
 					try:
-						os.remove('%s%s' % (config.plugins.serienRec.LogFilePath.value, filename))
+						os.remove(long_backup_filepath)
 					except:
-						SRLogger.writeLog("TV-Planer HTML Backup konnte nicht gelöscht werden: %s" % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
+						SRLogger.writeLog("TV-Planer HTML Backup konnte nicht gelöscht werden: %s" % long_backup_filepath, True)
 
-		open(logFile, 'w').close()
+		open(backup_filepath, 'w').close()
 
 def backupTVPlanerHTML():
 	if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_backupHTML.value and config.plugins.serienRec.longLogFileName.value:
 		lt = time.localtime()
-		logFile = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
-		logFileSave = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_LONG_TVPLANER_HTML_FILENAME % (str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)))
-		shutil.copy(logFile, logFileSave)
+		backup_filepath = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
+		long_backup_filepath = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_LONG_TVPLANER_HTML_FILENAME % (str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)))
+		shutil.copy(backup_filepath, long_backup_filepath)
