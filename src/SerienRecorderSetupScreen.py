@@ -1152,7 +1152,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Das könnte darauf hindeuten, dass die Sendung evtl. kurzfristig aus dem Programm genommen wurde.\n"
 				"Diese Nachrichten bleiben solange auf dem Bildschirm, bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
 			config.plugins.serienRec.showMessageTimeout: (
-				"Gibt an wie lange die obigen drei Nachrichten auf dem Bildschirm angezeigt werden.\n\n"
+				"Gibt an wie lange die obigen Nachrichten (Timerkonflikte, TV-Planer Fehler und Sendung im EPG nicht gefunden) auf dem Bildschirm angezeigt werden.\n\n"
 				"Bei '0' bleiben sie solange auf dem Bildschirm, bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
 			config.plugins.serienRec.channelUpdateNotification: (
 				"Der SerienRecorder zeigt eine Nachricht, wenn sich die Sender bei Wunschliste ändern und die Senderliste im SerienRecorder aktualisiert werden muss.\n\n"

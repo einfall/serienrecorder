@@ -422,7 +422,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				if len(epgSeriesName) == 0 or epgSeriesName == serien_name:
 					epgSeriesName = ""
 
-				if config.plugins.serienRec.eventid.value and database.getUpdateFromEPG(fsid):
+				if config.plugins.serienRec.eventid.value and database.getUpdateFromEPG(fsid, config.plugins.serienRec.eventid.value):
 
 					eit, start_unixtime_eit, end_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(start_unixtime,
 					                                                                              end_unixtime,
@@ -456,7 +456,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					if len(epgSeriesName) == 0 or epgSeriesName == serien_name:
 						epgSeriesName = ""
 
-					if config.plugins.serienRec.eventid.value and database.getUpdateFromEPG(fsid):
+					if config.plugins.serienRec.eventid.value and database.getUpdateFromEPG(fsid, config.plugins.serienRec.eventid.value):
 						alt_eit, alt_start_unixtime_eit, alt_end_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(
 							start_unixtime, end_unixtime, margin_before, serien_name, epgSeriesName, timer_altstbRef)
 					else:

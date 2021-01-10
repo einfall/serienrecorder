@@ -101,30 +101,31 @@ class SRLogger:
 
 	@classmethod
 	def reset(cls):
-		logFile = SRLogger.getLogFilePath()
+		log_filepath = SRLogger.getLogFilePath()
 
 		if not config.plugins.serienRec.longLogFileName.value:
 			# logFile leeren (renamed to .old)
-			if fileExists(logFile):
-				shutil.move(logFile,"%s.old" % logFile)
+			if fileExists(log_filepath):
+				shutil.move(log_filepath,"%s.old" % log_filepath)
 		else:
 			lt = datetime.datetime.now() - datetime.timedelta(days=config.plugins.serienRec.deleteLogFilesOlderThan.value)
 			for filename in os.listdir(config.plugins.serienRec.LogFilePath.value):
+				long_logfile_filepath = os.path.join(config.plugins.serienRec.LogFilePath.value, filename)
 				try:
-					if (filename.find('SerienRecorder_') == 0) and (int(os.path.getmtime(os.path.join(config.plugins.serienRec.LogFilePath.value, filename))) < int(lt.strftime("%s"))):
-						os.remove('%s%s' % (config.plugins.serienRec.LogFilePath.value, filename))
+					if (filename.find('SerienRecorder_') == 0) and (int(os.path.getmtime(long_logfile_filepath)) < int(lt.strftime("%s"))):
+						os.remove(long_logfile_filepath)
 				except:
-					SRLogger.writeLog("Logdatei konnte nicht gelöscht werden: %s" % os.path.join(config.plugins.serienRec.LogFilePath.value, filename), True)
+					SRLogger.writeLog("Logdatei konnte nicht gelöscht werden: %s" % long_logfile_filepath, True)
 
-		open(logFile, 'w').close()
+		open(log_filepath, 'w').close()
 
 	@classmethod
 	def backup(cls):
 		if config.plugins.serienRec.longLogFileName.value:
 			lt = time.localtime()
-			logFile = SRLogger.getLogFilePath()
-			logFileSave = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_LONG_LOGFILENAME % (str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)))
-			shutil.copy(logFile, logFileSave)
+			log_filepath = SRLogger.getLogFilePath()
+			long_log_filepath = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_LONG_LOGFILENAME % (str(lt.tm_year), str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2)))
+			shutil.copy(log_filepath, long_log_filepath)
 
 	@classmethod
 	def getLogFilePath(cls):
