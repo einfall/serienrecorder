@@ -485,10 +485,11 @@ class STBHelpers:
 	def countEpisodeOnHDD(cls, dirname, seasonEpisodeString, serien_name, stopAfterFirstHit = False, title = None):
 		count = 0
 		if fileExists(dirname):
+			serien_name = doReplaces(serien_name)
 			if title is None:
-				searchString = '(%s\s){1}(%s(?:\s.*|\.)){1}(ts|mkv|avi|mp4|divx|xvid|mpg|mov)$' % (re.escape(serien_name), re.escape(seasonEpisodeString))
+				searchString = '(%s){1}(\s|-)+(%s(?:\s.*|\.)){1}(ts|mkv|avi|mp4|divx|xvid|mpg|mov)$' % (re.escape(serien_name), re.escape(seasonEpisodeString))
 			else:
-				searchString = '(%s\s){1}(%s(?:\s.*|\.)){1}(%s\.){1}(ts|mkv|avi|mp4|divx|xvid|mpg|mov)$' % (re.escape(serien_name), re.escape(seasonEpisodeString), re.escape(title))
+				searchString = '(%s){1}(\s|-)+(%s(?:\s.*|\.)){1}(%s\.){1}(ts|mkv|avi|mp4|divx|xvid|mpg|mov)$' % (re.escape(serien_name), re.escape(seasonEpisodeString), re.escape(title))
 			filenames = os.listdir(dirname)
 			for filename in filenames:
 				if re.search(searchString, filename):
