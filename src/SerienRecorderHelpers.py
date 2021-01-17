@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.2.5'
+SRVERSION = '4.2.6-beta'
 SRDBVERSION = '4.1.0'
 SRAPIVERSION = '2.0'
 SRWEBAPPVERSION = '0.7'
@@ -486,12 +486,12 @@ class STBHelpers:
 		count = 0
 		if fileExists(dirname):
 			if title is None:
-				searchString = '%s\s.*?%s\s.*?\.(ts|mkv|avi|mp4|divx|xvid|mpg|mov)\Z' % (re.escape(serien_name), re.escape(seasonEpisodeString))
+				searchString = '(%s\s){1}(%s(?:\s.*|\.)){1}(ts|mkv|avi|mp4|divx|xvid|mpg|mov)$' % (re.escape(serien_name), re.escape(seasonEpisodeString))
 			else:
-				searchString = '%s\s.*?%s\s.*?%s\s.*?\.(ts|mkv|avi|mp4|divx|xvid|mpg|mov)\Z' % (re.escape(serien_name), re.escape(seasonEpisodeString), re.escape(title))
-			dirs = os.listdir(dirname)
-			for dir in dirs:
-				if re.search(searchString, dir):
+				searchString = '(%s\s){1}(%s(?:\s.*|\.)){1}(%s\.){1}(ts|mkv|avi|mp4|divx|xvid|mpg|mov)$' % (re.escape(serien_name), re.escape(seasonEpisodeString), re.escape(title))
+			filenames = os.listdir(dirname)
+			for filename in filenames:
+				if re.search(searchString, filename):
 					count += 1
 					if stopAfterFirstHit:
 						break
