@@ -585,11 +585,15 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		self.showChannels()
 
 	def setMenuKeyText(self):
-		status = self['list'].getCurrent()[0][3]
-		if int(status) == 0:
-			self['text_red'].setText("Ein/Löschen")
+		if self['list'].getCurrent() is None:
+			print("[SerienRecorder] Sender Tabelle leer.")
+			return
 		else:
-			self['text_red'].setText("Aus/Löschen")
+			status = self['list'].getCurrent()[0][3]
+			if int(status) == 0:
+				self['text_red'].setText("Ein/Löschen")
+			else:
+				self['text_red'].setText("Aus/Löschen")
 
 	def keyLeft(self):
 		self[self.modus].pageUp()
