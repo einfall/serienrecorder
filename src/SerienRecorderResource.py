@@ -33,6 +33,7 @@ def getApiList():
 	childs.append( ('boxchannels', ApiGetBoxChannelsResource() ) )
 	childs.append( ('changechannelstatus', ApiChangeChannelStatusResource() ) )
 	childs.append( ('setchannel', ApiSetChannelResource() ) )
+	childs.append( ('removeallchannels', ApiRemoveAllChannelsResource() ) )
 	#childs.append( ('webchannels', ApiWebChannelsResource() ) )
 	#childs.append( ('searchevents', ApiSearchEventsResource() ) )
 	childs.append( ('timer', ApiGetTimerResource() ) )
@@ -44,6 +45,8 @@ def getApiList():
 	childs.append( ('autocheck', ApiExecuteAutoCheckResource() ) )
 	childs.append( ('log', ApiGetLogResource() ) )
 	childs.append( ('info', ApiGetInfoResource() ) )
+	childs.append( ('checkforupdate', ApiCheckForUpdateResource() ) )
+	childs.append( ('installupdate', ApiInstallUpdateResource() ) )
 	return ( root, childs )
 
 def addWebInterface():
@@ -179,8 +182,6 @@ class ApiGetCoverResource(ApiImageResource):
 			try:
 				posterURL = SeriesServer().doGetCoverURL(0, fsID)
 				if posterURL:
-					#from twisted.web.client import downloadPage
-					#downloadPage(posterURL, cover_file_path).addCallback(ApiGetCoverResource.returnFilename, cover_file_path)
 					import requests
 					response = requests.get(posterURL)
 					if response.status_code == 200:
@@ -942,24 +943,35 @@ class ApiSetChannelResource(ApiBaseResource):
 	def render_POST(self, req):
 		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiSetChannel")
-		#print(data)
 
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
 		database = SRDatabase(serienRecDataBaseFilePath)
 
 		channels = []
-		if data['useBouquets']:
-			if data['mainChannel'] != "" or data['altChannel'] != "":
-				channels.append((data['mainChannel'], data['mainChannelRef'], data['altChannel'], data['altChannelRef'], 1, data['webChannel'].lower()))
+		for channel in data['channels']:
+			if data['useBouquets']:
+				if channel['mainChannel'] != "" or channel['altChannel'] != "":
+					channels.append((channel['mainChannel'], channel['mainChannelRef'], channel['altChannel'], channel['altChannelRef'], 1, channel['webChannel'].lower()))
+				else:
+					channels.append((channel['mainChannel'], channel['mainChannelRef'], channel['altChannel'], channel['altChannelRef'], 0, channel['webChannel'].lower()))
 			else:
-				channels.append((data['mainChannel'], data['mainChannelRef'], data['altChannel'], data['altChannelRef'], 0, data['webChannel'].lower()))
-		else:
-			if data['mainChannel'] != "":
-				channels.append((data['mainChannel'], data['mainChannelRef'], 1, data['webChannel'].lower()))
-			else:
-				channels.append((data['mainChannel'], data['mainChannelRef'], 0, data['webChannel'].lower()))
+				if channel['mainChannel'] != "":
+					channels.append((channel['mainChannel'], channel['mainChannelRef'], 1, channel['webChannel'].lower()))
+				else:
+					channels.append((channel['mainChannel'], channel['mainChannelRef'], 0, channel['webChannel'].lower()))
 		database.updateChannels(channels, data['useBouquets'])
+		return self.returnResult(req, True, True)
+
+class ApiRemoveAllChannelsResource(ApiBaseResource):
+	def render_POST(self, req):
+		print("[SerienRecorder] ApiRemoveAllChannels")
+
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		database = SRDatabase(serienRecDataBaseFilePath)
+		database.removeAllChannels()
+
 		return self.returnResult(req, True, True)
 
 class ApiGetTimerResource(ApiBaseResource):
@@ -1167,4 +1179,19 @@ class ApiGetInfoResource(ApiBaseResource):
 			'channelListeUpToDate': bool(channelListUpToDate)
 		}
 		return self.returnResult(req, True, data)
+
+class ApiCheckForUpdateResource(ApiBaseResource):
+	def render_GET(self, req):
+
+		from .SerienRecorderUpdateScreen import checkGitHubUpdate
+		webapp_assets = checkGitHubUpdate.checkForWebinterfaceUpdate()
+		return self.returnResult(req, True, webapp_assets)
+
+class ApiInstallUpdateResource(ApiBaseResource):
+	def render_POST(self, req):
+		data = json.loads(req.content.getvalue())
+
+		from .SerienRecorderUpdateScreen import checkGitHubUpdate
+		successful = checkGitHubUpdate.installWebinterfaceUpdate(data['url'])
+		return self.returnResult(req, True, successful)
 

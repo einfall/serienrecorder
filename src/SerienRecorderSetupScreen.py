@@ -176,6 +176,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.max_season = ConfigInteger(30, (1, 999))
 	config.plugins.serienRec.openMarkerScreen = ConfigYesNo(default=True)
 	config.plugins.serienRec.confirmOnDelete = ConfigYesNo(default=True)
+	config.plugins.serienRec.alphaSortBoxChannels = ConfigYesNo(default=False)
 	config.plugins.serienRec.enableWebinterface = ConfigYesNo(default=False)
 
 	###############################################################################################################################
@@ -768,6 +769,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Anzahl der wählbaren Staffeln im Menü Serien-Marker:", config.plugins.serienRec.max_season))
 		self.list.append(getConfigListEntry("Öffne Marker-Ansicht nach Hinzufügen neuer Marker:", config.plugins.serienRec.openMarkerScreen))
 		self.list.append(getConfigListEntry("Vor Löschen in Serien-Marker und Timer-Liste Benutzer fragen:", config.plugins.serienRec.confirmOnDelete))
+		self.list.append(getConfigListEntry("Box-Sender bei der Senderzuordnung alphabetisch sortieren:", config.plugins.serienRec.alphaSortBoxChannels))
 		if os.path.isdir("%s/web-data" % os.path.dirname(__file__)):
 			self.list.append(getConfigListEntry("SerienRecorder Webinterface aktivieren:", config.plugins.serienRec.enableWebinterface))
 
@@ -1131,6 +1133,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können."),
 			config.plugins.serienRec.confirmOnDelete: (
 				"Bei 'ja' erfolgt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem endgültigen Löschen von Serienmarkern oder Timern."),
+			config.plugins.serienRec.alphaSortBoxChannels: (
+				"Bei 'ja' wird die Liste der Box-Sender bei der Zuweisung in der Senderzuordnungsansicht alphabetisch sortiert, ansonsten ist die Liste in der festgelegten Reihenfolge des Bouquets sortiert."),
 			config.plugins.serienRec.enableWebinterface: (
 				"Bei 'ja' wird das Webinterface des SerienRecorder aktiviert, sodass über den Webbrowser von einem beliebigen Computer/Tablet/Smartphone auf den SerienRecorder zugegriffen werden kann.\n\n"
 				"Die Box muss neu gestartet werden, damit diese Änderung wirksam wird.\n\n"
@@ -1376,6 +1380,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.max_season.save()
 		config.plugins.serienRec.openMarkerScreen.save()
 		config.plugins.serienRec.confirmOnDelete.save()
+		config.plugins.serienRec.alphaSortBoxChannels.save()
 		config.plugins.serienRec.enableWebinterface.save()
 
 		###############################################################################################################################

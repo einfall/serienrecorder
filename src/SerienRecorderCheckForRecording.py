@@ -136,7 +136,7 @@ class serienRecCheckForRecording:
 		SRLogger.checkFileAccess()
 
 		lt = time.localtime()
-		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
+		self.uhrzeit = time.strftime("%a, %d.%m.%Y - %H:%M:%S", lt)
 		SRLogger.writeLog("\n---------' %s '---------" % self.uhrzeit, True)
 
 		global refreshTimer
@@ -224,7 +224,7 @@ class serienRecCheckForRecording:
 		print("[SerienRecorder] Starting check")
 
 		lt = time.localtime()
-		self.uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
+		self.uhrzeit = time.strftime("%a, %d.%m.%Y - %H:%M:%S", lt)
 
 		global refreshTimer
 		global refreshTimerConnection
@@ -407,15 +407,18 @@ class serienRecCheckForRecording:
 
 		webChannels = self.database.getActiveChannels()
 		SRLogger.writeLog("\nAnzahl aktiver Websender: %d" % len(webChannels), True)
-		SRLogger.writeLog("Eingestellte EPG Suchgrenzen: ± %d Minuten" % config.plugins.serienRec.epgTimeSpan.value, True)
+		epgTimeSpan = "Deaktiviert"
+		if config.plugins.serienRec.eventid.value:
+			epgTimeSpan = "± %d Minuten" % config.plugins.serienRec.epgTimeSpan.value
+		SRLogger.writeLog("Eingestellte EPG Suchgrenzen: %s" % epgTimeSpan, True)
 
 		# get reference times
 		current_time = int(time.time())
 		future_time = int(config.plugins.serienRec.checkfordays.value) * 86400
 		future_time += int(current_time)
-		search_start = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(current_time)))
-		search_end = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(future_time)))
-		search_rerun_end = time.strftime("%d.%m.%Y - %H:%M", time.localtime(future_time + (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400))
+		search_start = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(current_time)))
+		search_end = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(future_time)))
+		search_rerun_end = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(future_time + (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400))
 		SRLogger.writeLog("Berücksichtige Ausstrahlungstermine zwischen %s und %s" % (search_start, search_end), True)
 		SRLogger.writeLog("Berücksichtige Wiederholungen zwischen %s und %s" % (search_start, search_rerun_end), True)
 
@@ -436,7 +439,7 @@ class serienRecCheckForRecording:
 				SRLogger.writeLog("TV-Planer Verarbeitung fehlgeschlagen!", True)
 				print("[SerienRecorder] TV-Planer exception!")
 				self.emailData = None
-		print("[SerienRecorder] lastFullCheckTime %s" % time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(config.plugins.serienRec.tvplaner_last_full_check.value))))
+		print("[SerienRecorder] lastFullCheckTime %s" % time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(config.plugins.serienRec.tvplaner_last_full_check.value))))
 		if self.emailData is None:
 			self.markers = self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value)
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(time.time())

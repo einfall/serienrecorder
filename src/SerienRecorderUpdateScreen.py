@@ -16,10 +16,10 @@ from Components.ProgressBar import ProgressBar
 from enigma import getDesktop, eTimer, eConsoleAppContainer
 from twisted.web.client import getPage, downloadPage
 
-from .SerienRecorderHelpers import isDreamOS, toStr, toBinary, PY2
+from .SerienRecorderHelpers import isDreamOS, toStr, toBinary, PY2, SRAPIVERSION
 
 import Screens.Standby
-import os
+import os, ssl
 
 try:
 	import simplejson as json
@@ -30,9 +30,76 @@ class checkGitHubUpdate:
 	def __init__(self, session):
 		self.session = session
 
-	def checkForUpdate(self):
+	@staticmethod
+	def getLastestReleaseData():
+		if hasattr(ssl, '_create_unverified_context'):
+			ssl._create_default_https_context = ssl._create_unverified_context
 
-		import ssl
+		if PY2:
+			import httplib
+		else:
+			import http.client as httplib
+
+		conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
+		conn.request(url="/repos/einfall/serienrecorder/releases/latest", method="GET", headers={
+			'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)', })
+		rawData = conn.getresponse()
+		return json.load(rawData)
+
+	###################################################################################
+	# SerienRecorder Webinterface Update
+	###################################################################################
+
+	@staticmethod
+	def checkForWebinterfaceUpdate():
+		if ssl.OPENSSL_VERSION_NUMBER < 268439552:
+			return
+
+		latestRelease = checkGitHubUpdate.getLastestReleaseData()
+		webapp_assets = []
+		for asset in latestRelease['assets']:
+			if asset['name'].lower().startswith('serienrecorder-webinterface'):
+				name_parts = asset['name'].split('_')
+				version = name_parts[1][:-4]
+				version_parts = version.split('-')
+				api_version = version_parts[0]
+				webapp_version = version_parts[1]
+				if api_version == SRAPIVERSION:
+					webapp_assets.append((api_version, webapp_version, asset['browser_download_url'], int(asset['size'] / 1024)))
+
+		return webapp_assets
+
+	@staticmethod
+	def installWebinterfaceUpdate(downloadURL):
+		filePath = "/tmp/%s" % downloadURL.split('/')[-1]
+		if fileExists(filePath):
+			os.remove(filePath)
+
+		import requests
+		response = requests.get(downloadURL)
+		if response.status_code == 200:
+			with open(filePath, 'wb') as f:
+				f.write(response.content)
+
+			targetFilePath = os.path.join(os.path.dirname(__file__), "web-data")
+			if fileExists(filePath):
+				if os.path.exists(targetFilePath):
+					import shutil
+					shutil.rmtree(targetFilePath)
+
+				import zipfile
+				zip = zipfile.ZipFile(filePath)
+				zip.extractall(os.path.dirname(__file__))
+				os.remove(filePath)
+			return True
+		else:
+			return False
+
+	###################################################################################
+	# SerienRecorder Update
+	###################################################################################
+
+	def checkForUpdate(self):
 		if ssl.OPENSSL_VERSION_NUMBER < 268439552:
 			Notifications.AddPopup("Leider ist die Suche nach SerienRecorder Updates auf dieser Box technisch nicht möglich - die automatische Plugin-Update Funktion wird deaktiviert!", MessageBox.TYPE_INFO, timeout=0)
 			config.plugins.serienRec.Autoupdate.value = False
@@ -41,19 +108,7 @@ class checkGitHubUpdate:
 			return
 
 		def checkReleases():
-			if hasattr(ssl, '_create_unverified_context'):
-				ssl._create_default_https_context = ssl._create_unverified_context
-
-			if PY2:
-				import httplib
-			else:
-				import http.client as httplib
-
-			conn = httplib.HTTPSConnection("api.github.com", timeout=10, port=443)
-			conn.request(url="/repos/einfall/serienrecorder/releases/latest", method="GET", headers={
-				'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',})
-			rawData = conn.getresponse()
-			latestRelease = json.load(rawData)
+			latestRelease = checkGitHubUpdate.getLastestReleaseData()
 			#latestRelease = data[0]
 			latestVersion = latestRelease['tag_name'][1:]
 

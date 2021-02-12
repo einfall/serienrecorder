@@ -20,10 +20,10 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.2.7-beta'
+SRVERSION = '4.2.8-beta'
 SRDBVERSION = '4.1.0'
-SRAPIVERSION = '2.0'
-SRWEBAPPVERSION = '0.7'
+SRAPIVERSION = '2.1'
+SRWEBAPPVERSION = '0.8'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 PY2 = sys.version_info[0] == 2
@@ -409,6 +409,10 @@ class STBHelpers:
 							serien_chlist.append((servicename, serviceref))
 					break
 		print("[SerienRecorder] Number of channels found: %d" % len(serien_chlist))
+
+		if config.plugins.serienRec.alphaSortBoxChannels.value:
+			serien_chlist.sort(key=lambda x: x[0])
+
 		return serien_chlist
 
 	@classmethod

@@ -319,10 +319,9 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		if self.enable_toTime.value:
 			self.list.append(getConfigListEntry("      Späteste Zeit für Timer:", self.toTime))
 
-		if config.plugins.serienRec.eventid.value:
-			self.list.append(getConfigListEntry("Aktiviere abweichende Timeraktualisierung aus dem EPG:", self.enable_updateFromEPG))
-			if self.enable_updateFromEPG.value:
-				self.list.append(getConfigListEntry("      Versuche Timer aus dem EPG zu aktualisieren:", self.updateFromEPG))
+		self.list.append(getConfigListEntry("Aktiviere abweichende Timeraktualisierung aus dem EPG:", self.enable_updateFromEPG))
+		if self.enable_updateFromEPG.value:
+			self.list.append(getConfigListEntry("      Versuche Timer aus dem EPG zu aktualisieren:", self.updateFromEPG))
 
 		if config.plugins.serienRec.tvplaner.value:
 			self.list.append(getConfigListEntry("Aktiviere abweichende Timererstellung nur aus der TV-Planer E-Mail:", self.enable_skipSeriesServer))

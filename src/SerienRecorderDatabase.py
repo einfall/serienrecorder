@@ -1078,8 +1078,15 @@ class SRDatabase:
 				count_primary_bouquet += count
 			elif secondary_bouquet > 0:
 				count_secondary_bouquet += count
+
+		if title is None:
+			cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE webChannel='' AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND TimerAktiviert=1", (fsID, str(season).lower(), str(episode).lower()))
+		else:
+			cur.execute("SELECT COUNT(*) FROM AngelegteTimer WHERE webChannel='' AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND TimerAktiviert=1", (fsID, str(season).lower(), str(episode).lower(), title.lower()))
+		(count_manually,) = cur.fetchone()
 		cur.close()
-		return count_primary_bouquet, count_secondary_bouquet
+
+		return count_manually, count_primary_bouquet, count_secondary_bouquet
 
 	def getNumberOfTimers(self, fsID, season, episode, title=None, searchOnlyActiveTimers=False):
 		cur = self._srDBConn.cursor()
