@@ -68,34 +68,7 @@
                     <img src="images/globale-einstellungen.png" alt="Die globalen Einstellungen im Überblick" align="center">
                     <p><small>Die globalen Einstellungen </small></p>
                 </div>
-<!-- Dies wurde wieder entfernt	!!!!			
-
-				<p>Mittlerweile hat sich das Aussehen des SerienRecoder Menüs etwas geändert.
-				<br>Die einzelnen Abschnitte ( System, Auto-Check etc.) sind in "Sektionen" eingeteilt und können mit hilfe der <span class="label label-default">Channel <span class="glyphicon glyphicon-arrow-up">&nbsp;<span class="glyphicon glyphicon-arrow-down"></span></span></span> bzw. <span class="label label-default">Bouquet <span class="glyphicon glyphicon-arrow-up">&nbsp;<span class="glyphicon glyphicon-arrow-down"></span></span></span> Tasten direkt angesteuert werden. Man sieht auch sofort, wie viel Abschnitte (1/6) es insgesamt sind. (siehe <strong>Bild 01</strong>)
-				<br>Wenn ein Abschnitt mehr Optionen hat, als auf eine Seite passen, dann bekommt die erste Zahl noch eine Erweiterung (2.1/6). (siehe <strong>Bild 02</strong>)
-				</p>
-				
-				<div class="alert alert-danger">
-                    <strong>WICHTIG: </strong> Zur Zeit gibt es noch ein "Problem" mit dem "neuen" Menü. Wenn man eine Option ändert, springt der Cursor ans Ende des Menüs, aber die Änderung sollte gemacht worden sein. Danach kann man aber nach belieben alles ändern, ohne das er weiterhin "woanders hinspringt".
-            </div>
-				
-				<br><br>
-				<p><strong>Bild 01</strong> (Aussehen abhängig vom verwendeten Skin)</p>
-                <div class="thumbnail with-caption">
-                    <img src="images/menü-sek-01.png" alt="Das Menü in Sektionen" align="center">
-                    <p><small>Das Menü in Sektionen </small></p>
-                </div>
-				
-				<p><strong>Bild 02</strong> (Aussehen abhängig vom verwendeten Skin)</p>
-                <div class="thumbnail with-caption">
-                    <img src="images/menü-sek-02.png" alt="Das Menü in Sektionen" align="center">
-                    <p><small>Das Menü in Sektionen </small></p>
-                </div>
-				
-           
 			
-			</div>
--->			
 			
 <!-- Die Farbtasten -->			
 			
@@ -165,20 +138,14 @@
                             normalerweise sind neue Serien-Marker immer für alle Boxen aktiviert.
                         </p>
                     </li>
-                    <li>
-                        <strong>Umfang der Einstellungen:</strong>
-                        <p>
-                            Ändert den Umfang der Einstellungen zwischen <strong>einfach</strong> und <strong>Experte</strong>,
-                            in der Experten Einstellung sind alle Optionen sichtbar, ansonsten nur die wichtigsten.
-                        </p>
-                    </li>
+                    
                     <li>
                         <strong>Speicherort der Aufnahmen:</strong>
                         <p>Setzt den Speicherort für Aufnahmen. Alle Aufnahmen die durch den SerienRecorder programmiert werden, landen in dem eingestellten Verzeichnis.</p>
                         <div class="bs-callout bs-callout-info">Diese Option kann für jeden Serien-Marker aber auch individuell geändert werden.
 						<br/>Allerdings greifen in diesem Fall die globalen Einstellungen für Serien-/Staffelverzeichis nicht mehr.
 						</div>
-						<div class="bs-callout bs-callout-info">Wenn man den globalen Speicherort im SerienRecorder ändert, dann werden beim nächsten Auto-Check alle neuen Timer mit dem neuen Verzeichnis erstellt und alle bestehenden, aber nicht abgearbeitete Timer geändert.
+						<div class="bs-callout bs-callout-info">Wenn man den globalen Speicherort im SerienRecorder ändert, dann werden beim nächsten Timer-Suchlauf alle neuen Timer mit dem neuen Verzeichnis erstellt und alle bestehenden, aber nicht abgearbeitete Timer geändert.
 						Die neuen Verzeichnisse werden aber erst mit Anlegen eines Timers erstellt.
 						Ein Verzeichniswechsel ist also kein Problem. 
 						</div>
@@ -272,17 +239,17 @@
                 </ul>
             </div>
 			
-<!-- Auto-Check -->
+<!-- Timer-Suchlauf / Auto-Check -->
 			<span id="autocheck" class="anchor"></span>
             
-			<h2 class="sub-header">Auto-Check</h2>
+			<h2 class="sub-header">Timer-Suchlauf</h2>
             <div class="row">
                 <ul>
                     <li>
-                        <strong>Automatischen Suchlauf ausführen:</strong>
+                        <strong>Automatischen Timer-Suchlauf ausführen:</strong>
                         <p>
-                            Legt fest wann der automatische Suchlauf (Auto-Check) durchgeführt werden soll.
-                            Als Auto-Check wird die Hauptfunktion des SerienRecorders bezeichnet.
+                            Legt fest wann der automatische Timer-Suchlauf (Auto-Check) durchgeführt werden soll.
+                            Als Timer-Suchlauf wird die Hauptfunktion des SerienRecorders bezeichnet.
                             Es handelt sich dabei um das Suchen von Ausstrahlungsterminen, und das Anlegen von Timern für die einzelnen Serien-Folgen (bzw. auch Filme) automatisch im Hintergrund.
                             Zu diesem Zeitpunkt wird eine Internetverbindung benötigt um die Informationen vom SerienServer abrufen zu können.
                         </p>
@@ -290,16 +257,16 @@
                             <li>
                                 <i><u>Manuell:</u></i>
                                 <p>Es wird kein automatischer Suchlauf durchgeführt, der Benutzer muss den Suchlauf manuell über die <kbd>EPG</kbd> Taste starten.
-								<br>Ist die <a href="tv-planer-mail.htm"><strong><u>"Wunschliste TV-Planer E-Mail"</u></strong></a> Funktion aktiviert, dann wird mit <kbd>EPG</kbd> ein Hinweisfenster (Messagebox) geöffnet, wo man auswählen muss ob der Auto-Check nur die Mail verarbeiten soll oder aber ein Voller Auto-Check über alle aktiven Serien gemacht werden soll. Es gibt bei den Messageboxen leider nur Ja/Nein - dann ist <kbd>Exit</kbd> automatisch immer „Nein“, das lässt sich nicht ändern.
+								<br>Ist die <a href="tv-planer-mail.htm"><strong><u>"Wunschliste TV-Planer E-Mail"</u></strong></a> Funktion aktiviert, dann wird mit <kbd>EPG</kbd> ein Hinweisfenster (Messagebox) geöffnet, wo man auswählen muss ob der Timer-Suchlauf nur die Mail verarbeiten soll oder aber ein Voller Timer-Suchlauf über alle aktiven Serien gemacht werden soll. Es gibt bei den Messageboxen leider nur Ja/Nein - dann ist <kbd>Exit</kbd> automatisch immer „Nein“, das lässt sich nicht ändern.
 								</p>
                             </li>
                             <li>
                                 <i><u>zur gewählten Uhrzeit:</u></i>
-                                <p>Der automatische Suchlauf wird täglich zur eingestellten Uhrzeit durchgeführt.</p>
+                                <p>Der automatische Timer-Suchlauf wird täglich zur eingestellten Uhrzeit durchgeführt.</p>
                                 <ul>
                                     <li>
-                                        <strong>Uhrzeit für automatischen Suchlauf:</strong>
-                                        <p>Uhrzeit angeben, zu der, der Auto-Check durchgeführt werden soll.</p>
+                                        <strong>Uhrzeit für automatischen Timer-Suchlauf:</strong>
+                                        <p>Uhrzeit angeben, zu der, der Timer-Suchlauf durchgeführt werden soll.</p>
                                         <div class="bs-callout bs-callout-danger">Es hat sich gezeigt, das diese nicht zwischen 0:00-6:00 Uhr liegen sollte, da es in dieser Zeit durch Datenaktualisierungen der Server zu Problemen beim abrufen der Daten für die Timererstellung kommen kann.
                                         <br/>Man sollte also möglichst eine andere Uhrzeit einstellen, um Verbindungsfehler zu vermeiden.
                                         </div>
@@ -307,10 +274,10 @@
                                 </ul>
                                 <ul>
                                     <li>
-                                        <strong>Maximale Verzögerung für den automatischen Suchlauf (Min.):</strong>
+                                        <strong>Maximale Verzögerung für den automatischen Timer-Suchlauf (Min.):</strong>
                                         <p>Um die Belastung des SerienServers zu verringern, kann hier ein Zeitraum in Minuten angegeben werden,
-                                            in dem der SerienRecorder, ausgehend von der unter "Uhrzeit für automatischen Suchlauf" eingestellten Zeit, den Suchlauf durchführt.
-                                            <br/>D.h. der Suchlauf findet irgendwann zwischen der unter "Uhrzeit für automatischen Suchlauf" eingestellten Zeit + Verzögerung statt, damit nicht alle, die 6:00 Uhr eingestellt haben, auch punkt 6:00 Uhr den Auto-Check starten.
+                                            in dem der SerienRecorder, ausgehend von der unter "Uhrzeit für automatischen Timer-Suchlauf" eingestellten Zeit, den Suchlauf durchführt.
+                                            <br>D.h. der Suchlauf findet irgendwann zwischen der unter "Uhrzeit für automatischen Timer-Suchlauf" eingestellten Zeit + Verzögerung statt, damit nicht alle, die 6:00 Uhr eingestellt haben, auch punkt 6:00 Uhr den Timer-Suchlauf starten.
                                         </p>
                                     </li>
                                 </ul>
@@ -319,63 +286,15 @@
 								<div class="bs-callout bs-callout-info">Die Auswahl "nach EPGRefresh" ist nicht bei allen Boxen verfügbar/sichtbar. </div>
                                 <div class="bs-callout bs-callout-danger">Damit diese Funktion genutzt werden kann, muss zwingend das EPGRefresh Plugin ab Version 2.1.1 installiert sein. Z.B. für VU+ Receiver gibt es eine solche Version nicht, daher ist diese Option auf VU's nicht sichtbar.</div>
 								<p>Einige Benutzer verwenden das EPGRefresh Plugin, um das EPG der Box aktuell zu halten.
-                                    Mit dieser Option hat man die Möglichkeit, im Anschluss an den EPGRefresh, den automatischen Suchlauf starten zu lassen.
+                                    Mit dieser Option hat man die Möglichkeit, im Anschluss an den EPGRefresh, den automatischen Timer-Suchlauf starten zu lassen.
                                 </p>
                                 
                             </li>
                         </ol>
                         
                     </li>
-                    <span id="tv-planer-mail" class="anchor"></span>
-					<li>
-                        <strong>Wunschliste TV-Planer E-Mail nutzen:</strong>
-						<p>Wird diese Option mit <strong>Ja</strong> aktiviert, dann werden weitere Optionen sichtbar.
-						</p>
-						<ul>
-						<li><strong>IMAP Server:</strong>
-						</li>
-						<li><strong>IMAP Server SSL:</strong>
-						</li>
-						<li><strong>IMAP Server Port:</strong>
-						</li>
-						<li><strong>IMAP Login:</strong>
-						</li>
-						<li><strong>IMAP Passwort:</strong>
-						</li>
-						<li><strong>IMAP Mailbox:</strong>
-						</li>
-						<li><strong>IMAP Einstellungen testen:</strong>
-						</li>
-						<li><strong>TV-Planer Subject:</strong>
-						</li>
-						<li><strong>maximales Alter der E-Mail (Tage):</strong>
-						</li>
-						<li><strong>Voller Suchlauf mindestens einmal im Erstellungszeitraum:</strong>
-						</li>
-						<li><strong>Timer nur aus der TV-Planer E-Mail anlegen:</strong>
-						</li>
-						<li><strong>Timer für Serien anlegen:</strong>
-							<ul>
-							<li><strong>Neue TV-Planer Serien nur auf dieser Box aktivieren:</strong>
-							</li>
-							</ul>
-						</li>
-						<li><strong>Timer für Filme anlegen:</strong>
-							<ul>
-							<li><strong>Neue TV-Planer Filme nur auf dieser Box aktivieren:</strong>
-							</li>
-							<li><strong>Speicherort für Filme:</strong>
-							</li>
-							<li><strong>Unterverzeichnis für jeden Film:</strong>
-							</li>
-							</ul>
-						</li>
-						</ul>
-						<br>
-						<p>In dem separaten Artikel <a href="tv-planer-mail.htm"><strong>Die TV-Planer Mail von Wunschliste.de</strong></a> werden die obigen Optionen genauer beschrieben und erläutert.
-						</p>
-					</li>	
-						<br>
+					<br>		
+
 					<li>
                         <strong>Timer für X Tage erstellen:</strong>
                         <p>
@@ -428,6 +347,19 @@
                             zu aktualisieren. Dabei wird die Sendung im EPG gesucht und die Start-/Endzeit wird aktualisiert. Zusätzlich werden die aktuellen
                             Daten von Wunschliste.de verwendet den Timer zu korrigieren. Es wird z.B. der Titel und die Beschreibung geändert oder die Start-/Endzeit angepasst.
                         </p>
+						<ul>
+                            <li>
+                                <strong>EPG Suchgrenzen in Minuten:</strong>
+                                <p>
+                                    Legt fest, wie viele Minuten der SR von der eigentlichen Startzeit davor und dahinter eine ggf. geänderte Startzeit eines Timer sucht. Das Maximum ist 30 min.
+									<br>
+									<div class="bs-callout bs-callout-danger">Die Minuten der Suchgrenzen sollten aber immer KLEINER sein, als eine Serienfolge LANG ist, sonst kann es zu Problemen mit Aktualisierung dieser Episoden kommen.
+									<br>Wenn man also z.B. Kinderserien mit ca. 20 min pro Episode timern möchte, dann sollten die Suchgrenzen auf ca. 10-15 Minuten eingestellt sein/werden. Sollte es bei solchen Serien vom Sender öfters größere Verschiebungen/Programmänderungen geben, dann sollte man die Aktualisierung aus dem EPG für diese Serie individuell deaktivieren und statt dessen den Vor-/Nachlauf größer einstellen.
+									</div>
+									<br>
+                                </p>
+                            </li>
+                        </ul>
                     </li>
 										
 					<span id="immer-aufnehmen" class="anchor"></span>
@@ -474,15 +406,15 @@
                     <li>
                         <strong>Aus Deep-StandBy aufwecken:</strong>
                         <p>
-                            Legt fest, ob die Box für einen automatischen Suchlauf aus dem Deep-StandBy (DSB) aufwachen darf.
+                            Legt fest, ob die Box für einen automatischen Timer-Suchlauf aus dem Deep-StandBy (DSB) aufwachen darf.
 							<div class="bs-callout bs-callout-info">Eine Box wird meist, wenn sie durch Plugins aus dem DSB aufgeweckt wird, im Standby ihren Dienst verrichten, was für den SerienRecoder kein Problem darstellt.
 							</div>
                         </p>
                     </li>
                     <li>
-                        <strong>Aktion nach dem automatischen Suchlauf:</strong>
+                        <strong>Aktion nach dem automatischen Timer-Suchlauf:</strong>
                         <p>
-                        Legt fest was nach dem automatischen Suchlauf passieren soll.
+                        Legt fest was nach dem automatischen Timer-Suchlauf passieren soll.
                         </p>
                         <ol type="a">
                             <li>
@@ -508,6 +440,65 @@
                         </ul>
                     </li>
                 </ul>
+            </div>
+			
+<!-- TV-Planer E-Mail -->
+
+					
+                    <span id="tv-planer-mail" class="anchor"></span>
+			<h2 class="sub-header">TV-Planer E-Mail</h2>		
+			<div class="row">
+                <ul>		
+					<li>
+                        <strong>Wunschliste TV-Planer E-Mail nutzen:</strong>
+						<p>Wird diese Option mit <strong>Ja</strong> aktiviert, dann werden weitere Optionen sichtbar.
+						</p>
+						<ul>
+						<li><strong>IMAP Server:</strong>
+						</li>
+						<li><strong>IMAP Server SSL:</strong>
+						</li>
+						<li><strong>IMAP Server Port:</strong>
+						</li>
+						<li><strong>IMAP Login:</strong>
+						</li>
+						<li><strong>IMAP Passwort:</strong>
+						</li>
+						<li><strong>IMAP Mailbox:</strong>
+						</li>
+						<li><strong>IMAP Einstellungen testen:</strong>
+						</li>
+						<li><strong>TV-Planer Subject:</strong>
+						</li>
+						<li><strong>maximales Alter der E-Mail (Tage):</strong>
+						</li>
+						<li><strong>Voller Timer-Suchlauf mindestens einmal im Erstellungszeitraum:</strong>
+						</li>
+						<li><strong>Timer nur aus der TV-Planer E-Mail anlegen:</strong>
+						</li>
+						<li><strong>Timer für Serien anlegen:</strong>
+							<ul>
+							<li><strong>Neue TV-Planer Serien nur auf dieser Box aktivieren:</strong>
+							</li>
+							</ul>
+						</li>
+						<li><strong>Timer für Filme anlegen:</strong>
+							<ul>
+							<li><strong>Neue TV-Planer Filme nur auf dieser Box aktivieren:</strong>
+							</li>
+							<li><strong>Speicherort für Filme:</strong>
+							</li>
+							<li><strong>Unterverzeichnis für jeden Film:</strong>
+							</li>
+							</ul>
+						</li>
+						</ul>
+						<br>
+						<p>In dem separaten Artikel <a href="tv-planer-mail.htm"><strong>Die TV-Planer Mail von Wunschliste.de</strong></a> werden die obigen Optionen genauer beschrieben und erläutert.
+						</p>
+					</li>	
+						<br>
+			    </ul>
             </div>
 			
 <!-- Timer -->
@@ -578,26 +569,72 @@
                     <li>
                         <strong>Timername:</strong>
                         <p>
-                            Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Die Beschreibung enthält immer die Staffel und Episoden Informationen.
+                            Es können verschiedene Kombinationen aus Serienname, Episodenname und Staffel/Episoden-Bezeichnung ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme. Es gibt 15 verschiedene voreingestellte Varianten, aus denen man wählen kann, zusätzlich kann man noch über eine "Text"-Datei eigene Varianten hinzufügen.
+							<br>Hier ein paar Beispielvarianten:
                         </p>
 						<ol type="a">
                             <li>
-                                <i>(Serienname) - SnnEmm - (Episodentitel) </i>
+                                <i>(Serienname) - S01E01 - (Episodenname) </i>
+                            </li>
+							<li>
+                                <i>(Serienname) S01E01 (Episodenname) </i>
                             </li>
 							<li>
                                 <i>(Serienname)</i>
                             </li>
 							<li>
-                                <i>SnnEmm - (Episodentitel)</i>
+                                <i>S01E01 - (Episodenname)</i>
                             </li>
 							
 							<li>
-                                <i>(Serienname) - SnnEmm</i>
+                                <i>(Serienname) - S01E01</i>
                             </li> 
 														
 						</ol>
+						<br><br>
+						<p>Um eigene Timernamen einzugeben, muss man die Datei <strong>"SerienRecorder.timer-pattern.json"</strong>, welche sich unter <strong>"/etc/enigma2/"</strong> befindet, editieren/bearbeiten.
+						</p>
+						<ul>
+							<li>Das ändern der Datei funktioniert mit jedem Editor, man darf halt nur nichts falsch machen bzw. irgendwelche wichtigen Zeichen vergessen. Am besten kopiert man sich eine Zeile, fügt die an "passender" Stelle wieder ein und ändert daran dann.
+							<br>
+						
+								<table class="keys table table-bordered">
+									<tr class="active"> 
+										<td> Die linke Seite ist der Programmcode und die rechte Seite ist für die Anzeige in den Einstellungen.
+											<br><br>["{serie:s} - S{staffel:s}E{episode:s} - {titel:s}"  &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;   , "Serienname - S01E01 - Episodenname"],
+										</td> 
+									</tr>
+								</table>
+								<strong>Möchte man z.B. anstatt der Bindestriche lieber Pluszeichen, ist das schnell gemacht.</strong>
+								<br>
+								<table class="keys table table-bordered">
+									<tr class="active"> 
+										<td> ["{serie:s} - S{staffel:s}E{episode:s} - {titel:s}"  &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;   , "Serienname - S01E01 - Episodenname"],
+											<br>["{serie:s} + S{staffel:s}E{episode:s} + {titel:s}"  &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;   , "Serienname + S01E01 + Episodenname"],
+										</td> 
+									</tr>
+								</table>
+								<strong>Wenn man es ganz individuell haben möchte, betrifft die Anzeige im SR:</strong>
+								<br>
+								<table class="keys table table-bordered">
+									<tr class="active"> 
+										<td> ["{serie:s} - S{staffel:s}E{episode:s} - {titel:s}"  &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;   , "Serienname - S01E01 - Episodenname"],
+											<br>["{serie:s} + S{staffel:s}E{episode:s} + {titel:s}"  &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;   , "Meine eigene Serien Beschriftung"],
+										</td> 
+									</tr>
+								</table>
+							</li>
+						</ul>
                         <div class="bs-callout bs-callout-info">Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '&lt;Serienname&gt;' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden.</div>
                     </li>
+					<br>
+					<li>
+                        <strong>Timerbeschreibung:</strong>
+                        <p>Hierbei gilt das Selbe wie für die Namensgebung des Timernamen (oben), denn sie beziehen den aus der selben Datei <strong>"SerienRecorder.timer-pattern.json"</strong>.
+						<br>Die Anzeige der Timerbeschreibung ist vom Skin und den Einstellungen im System abhängig, ob und wo diese angezeigt wird.
+						<br>Wenn man die Timerbeschreibung im SR ändert, werden nicht nur alle nachfolgend erstellten Timer so benannt, sondern beim nächsten Timer-Suchlauf werden auch alle noch ausstehenden Timer daraufhin aktualisiert.
+						</p>
+					</li>	
                     <li>
                         <strong>Manuelle Timer immer erstellen:</strong>
                         <p>
@@ -660,6 +697,13 @@
                                     Bei "ja" wird versucht den Timer für den alternativen Sender anzulegen, falls es zu einem Konflikt gekommen ist.
                                 </p>
                             </li>
+							<li>
+                                <strong>Standard Bouquet bevorzugen:</strong>
+                                <p>
+                                    Wenn diese Option aktiviert ist und die Episode auf einem Sender des Standard Bouquets ausgestrahlt wird, legt der SerienRecorder auch dann noch Timer an, wenn für diese Episode bereits ein Timer auf einem Sender des alternativen Bouquets angelegt wurde.
+									<br>Dadurch kann man z.B. eine Episode noch einmal werbefrei aufnehmen, dazu müssen allerdings dann die werbefreien Sender dem Standard Bouquet zugeordnet werden und die anderen dem alternativen Bouquet.
+                                </p>
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -681,12 +725,12 @@
                         </p>
                     </li>
                     <li>
-                        <strong>Zeige ob die Episode als Aufnahme auf der HDD ist:</strong>
+                        <strong>Sucht eine Episode als Aufnahme auf der HDD:</strong>
                         <p>
                             In einigen Ansichten werden die Episoden mit einem Festplatten Symbol gekennzeichnet, wenn sie sich bereits auf der Festplatte befinden.<br/>
                             Ist diese Option auf NEIN gesetzt, wird dieses Symbol nicht angezeigt und es wird auch nicht auf der Festplatte nach der Aufnahme gesucht.
                         </p>
-						<ul><div class="bs-callout bs-callout-danger">Diese Option muß aktiviert sein, wenn der SR keine Episoden timern soll, die er schon auf der Festplatte (HDD, NAS) findet. Dies kann allerdings den AC verlängern und evtl. die Leistung der Box beeinträchtigen, da der/die Ordner durchsucht werden müssen.
+						<ul><div class="bs-callout bs-callout-danger">Diese Option muß aktiviert sein, wenn der SR keine Episoden timern soll, die er schon auf der Festplatte (HDD, NAS) findet. Dies kann allerdings den Timer-Suchlauf verlängern und evtl. die Leistung der Box beeinträchtigen, da der/die Ordner durchsucht werden müssen. Es werden nur das Hauptaufnahme-Verzeichnis (meist /media/hdd/movie/) und andere, die vom SR genutzt werden, falls vom SR Verzeichnisse angelegt werden. Es werden nicht sämtliche, angeschlossenen Medien durchsucht.
 						<br> Es werden folgende Dateiendungen verarbeitet:<strong> ts | mkv | avi | mp4 | divx | xvid | mpg | mov </strong>. Natürlich ist auch eine "korrekte" und SR-Kompatible Schreibweise der zu durchsuchenden Aufnahmen dazu nötig.
                                         </div>
 						</ul>				
@@ -694,11 +738,11 @@
                 </ul>
             </div>
 			
-<!-- GUI -->			
+<!-- Benutzeroberfläche -->			
 			
             <span id="gui" class="anchor"></span>
 			
-            <h2 class="sub-header">GUI</h2>
+            <h2 class="sub-header">Benutzeroberfläche</h2>
             <div class="row">
                 <ul>
                     <li>
@@ -718,8 +762,19 @@
 							
 							</ol>
                         </ul>
-                        <br>
+                        <br><p>Man kann auch eigene Skins im SR nutzen, diese müssen dann nur in das "Skin-Verzeichnis" zu den anderen hinein kopiert werden und werden dann nach einem Neustart des SR zur Auswahl angezeigt.
+						<br>Nutzt man einen Skin-Part des Box Skins, dann muss meistens die Einstellung <strong>Skinpart</strong> gewählt werden, aber das sollte in dem betreffenden Thread im Forum dabei stehen, falls es mal Probleme dabei gibt.
+						<br>Die meisten SR eigenen Skins sind in HD-Auflösung gemacht, bei den FHD Skins steht es im Namen dabei.
+						</p>
+						<br>
 						<ul>
+							<li>
+                                <strong>Werden bei diesem Skin immer alle Tasten angezeigt:</strong>
+                                <p>Bei manchen Skins, wie z.B. beim <strong>SerienRecoder1</strong>, werden nicht alle Tasten angezeigt, sondern nur z.B. die Tasten 0-4. Nach eingestellter Wechselzeit (siehe unten) werden dann die Tasten 5-9 usw. angezeigt. Dies spart u.a. Platz für andere Elemente.
+                                    
+                                </p>
+                                
+                            </li>
                             <li>
                                 <strong>Wechselzeit der Tastenanzeige (Sek.):</strong>
                                 <p>
@@ -802,7 +857,7 @@
                                 <strong>Zeige Cover:</strong>
                                 <p>
                                    Bei "JA", werden beim Scrollen durch die verschiedenen Listen die Cover der Serien heruntergeladen und angezeigt, was beim Ersten mal die Bedienung des SR teilweise zäh bzw. hakelig erscheinen läßt. Sind für die Serien die Cover vorhanden, geht das Scrollen wieder flüssig, außer dort, wo keine Cover gefunden werden konnten. Dort wird jedesmal versucht, ein Cover nachzuladen, weshalb es sinnvoll ist, die Folgende Option zu aktivieren.
-								   <br>Wenn dies auf "NEIN" steht, werden beim Auto-Check die Cover für die verarbeiteten Marker heruntergeladen, aber im SR nicht angezeigt. Die Cover werden aber dann in der Filmliste (Movielist) angezeigt.
+								   <br>Wenn dies auf "NEIN" steht, werden beim Timer-Suchlauf die Cover für die verarbeiteten Marker heruntergeladen, aber im SR nicht angezeigt. Die Cover werden aber dann in der Filmliste (Movielist) angezeigt.
                                 </p>
                             </li>
 							<li>
@@ -897,8 +952,45 @@
                             Mit dieser Option kann eingestellt werden, wie viele Staffeln dort angezeigt werden.
                         </p>
                     </li>
+                    
+                                        
                     <li>
-                        <strong>Benachrichtigung beim Suchlauf:</strong>
+                        <strong>Öffne Marker-Ansicht nach Hinzufügen neuer Marker:</strong>
+                        <p>
+                            Ist die Option gesetzt, wird nach dem Hinzufügen eines neuen Markers automatisch die Serien-Marker Ansicht geöffnet und der neue Marker selektiert.
+                        </p>
+                    </li>
+					<li>
+                        <strong>Vor löschen in Serien-Marker und Timer-Liste Benutzer fragen:</strong>
+                        <p>
+                            Bei "Ja" erfolgt eine Sicherheitsabfrage, ob wirklich gelöscht werden soll.
+                        </p>
+                    </li>
+					<li>
+                        <strong>Box-Sender bei der Senderzuordnung alphabetisch sortieren:</strong>
+                        <p>
+                            Bei "Ja" erfolgt die Anzeige in alphabetischer Reihenfolge, ansonsten so, wie es auf der Box auch ist.
+                        </p>
+                    </li>
+					<li>
+                        <strong>SerienRecorder Webinterface aktivieren:</strong>
+                        <p>
+                            Bei "Ja" wird das Webinterface des SerienRecorders aktiviert, sodass man über einen Webbrowser auf einige Funktionen des SR zugreifen kann.
+							<br>Das SR Webinterface befindet sich gerade noch im Aufbau, näheres dazu findet man im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/142111-serienrecorder-webinterface-0-8-0-12-02-2021/&postID=2071152#post2071152" target="_blank"><strong>VTI-Forum</strong></a>.
+							
+                        </p>
+                    </li>
+                </ul>
+            </div>
+
+<!-- Meldungen -->
+			
+			<span id="meldungen" class="anchor"></span>
+			
+            <h2 class="sub-header">Meldungen</h2>
+            <div class="row">
+                <ul><li>
+                        <strong>Meldung beim Timer-Suchlauf:</strong>
                         <p>
                             Es kann ausgewählt werden ob und wie nach dem Suchlauf eine Benachrichtigung auf dem Bildschirm angezeigt werden soll.
                         </p>
@@ -907,47 +999,61 @@
                                 <i><u>keine:</u></i>
                                 <p>Zeigt keine Benachrichtigung beim Suchlauf an.</p>
                             </li>
-                            <li>
-                                <i><u>bei Suchlauf-Start:</u></i>
-                                <p>Zeigt an, dass der Suchlauf jetzt startet.</p>
-                            </li>
                             <li><i><u>bei Suchlauf-Ende:</u></i>
-                                <p>Zeigt eine Zusammenfassung (Statistik) nach erfolgreichem Suchlauf an.</p>
+                                <p>Zeigt ein Hinweisfenster, das der Suchlauf beendet wurde.</p>
                             </li>
-                            <li><i><u>bei Suchlauf-Start und Ende:</u></i>
-                                <p>Zeigt sowohl beim Start wie auch beim Ende eine Benachrichtigung an.</p>
+                            <li><i><u>Statistik bei Suchlauf-Ende:</u></i>
+                                <p>Zeigt eine Zusammenfassung (Statistik) nach erfolgreichem Suchlauf an.</p>
                             </li>
                         </ol>
                     </li>
                     <li>
-                        <strong>Benachrichtigung bei Timerkonflikten:</strong>
+                        <strong>Meldung bei Timerkonflikten:</strong>
                         <p>
                             Kommt es beim Anlegen von Timern zu Konflikten, wird eine Benachrichtung angezeigt, wenn diese Option gesetzt ist.<br/>
-                            Diese Nachricht bleibt so lange auf dem Bildschirm bis sie von Benutzer bestätigt wird.
+                            <br>Diese Nachricht bleibt so lange auf dem Bildschirm bis sie von Benutzer quittiert/bestätigt wird.
                         </p>
                     </li>
-                    <li>
-                        <strong>Screens bei Änderungen sofort aktualisieren:</strong>
+				
+				
+					<li>
+                        <strong>Meldung bei TV-Planer Fehlern:</strong>
                         <p>
-                            Ist die Option gesetzt, wird die Ansicht bei Änderungen von z.B. Serien-Markern sofort aktualisiert und nicht erst dann, wenn die Ansicht erneut geöffnet wird.<br/>
-                            Dies kann bei langsamen Boxen oder Internetverbindungen zu Problemen führen.
+                            Bei "Ja" wird ein Hinweisfenster eingeblendet, das beim Abrufen der Mail ein Fehler aufgetreten ist.
+							<br>Diese Nachricht bleibt so lange auf dem Bildschirm bis sie von Benutzer quittiert/bestätigt wird.
                         </p>
                     </li>
-                    
-                    <li>
-                        <strong>Öffne Marker-Ansicht nach Hinzufügen neuer Marker:</strong>
+					<li>
+                        <strong>Meldung, wenn Sendung im EPG nicht gefunden wurde:</strong>
                         <p>
-                            Ist die Option gesetzt, wird nach dem Hinzufügen eines neuen Markers automatisch die Serien-Marker Ansicht geöffnet und der neue Marker selektiert.
+                            Bei "Ja" wird für jeden Timer, der NICHT im EPG gefunden wurde, eine Nachricht eingeblendet. Dabei ist es egal, ob der Timer wegen fehlender EPG Daten oder weil die Sendung nicht ausgestrahlt wird, nicht gefunden wurde. Daher kann diese Meldung darauf hindeuten, das die Sendung kurzfristig aus dem Programm genommen wurde.
+							<br>Diese Nachricht bleibt so lange auf dem Bildschirm bis sie von Benutzer quittiert/bestätigt wird.
                         </p>
                     </li>
-                </ul>
-            </div>
+					<li>
+                        <strong>Anzeigedauer für Meldungen:</strong>
+                        <p>
+                            Gibt an, wieviel Sekunden die obigen Hinweisfenster für Meldungen angezeigt werden. Natürlich nur für die, welche NICHT quittiert werden müssen.
+							<br>Bei Anzeigedauer auf "0" müssen alle Hinweisfenster quittiert werden.
+                        </p>
+                    </li>
+					<li>
+                        <strong>Meldung bei Senderaktualisierungen:</strong>
+                        <p>
+                            Der SerienRecoder zeigt an, wenn die Senderliste bei Wunschliste sich geändert hat und diese dann auf im SerienRecoder aktualisiert werden sollte.
+							<br>Hierüber kann entschieden werden, ob das Hinweisfenster beim Start des Serienrecorders oder nach jedem Timer-Suchlauf angezeigt werden soll.
+							<br>Diese Nachricht bleibt so lange auf dem Bildschirm bis sie von Benutzer quittiert/bestätigt wird.
+                        </p>
+                    </li>
+				
+				</ul>
+            </div>	
 			
-<!-- Log -->			
+<!-- Logging -->			
 			
             <span id="log" class="anchor"></span>
 			
-            <h2 class="sub-header">Log</h2>
+            <h2 class="sub-header">Logging</h2>
             <div class="row">
                 <div class="bs-callout bs-callout-info">Die nachfolgenden Optionen dienen zur Fehlersuche und eigenen Kontrolle, falls es "Unstimmigkeiten" bei der Timererstellung gibt.</div>
 				<p>In der Log-Datei wird alles protokolliert, was der SR macht. Die Log-Datei befindet sich idR im Plugin Verzeichnis auf der Box unter <strong>"/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/"</strong> und ist eine reine Text-Datei. Sie kann im SR mit der Taste <kbd>0</kbd> aufgerufen werden.
@@ -983,7 +1089,7 @@
                     </li>
 					<ul>
 						<li>
-							<strong>DEBUG LOG - STB Informationen:</strong>
+							<strong>DEBUG LOG - Box Informationen:</strong>
 						</li>
 						<li>
 							<strong>DEBUG LOG - Senderliste:</strong>
@@ -1012,7 +1118,7 @@
 					</ul>	
 					<br>
 					<li>
-						<strong>DEBUG LOG - Scroll zum Ende:</strong>
+						<strong>DEBUG LOG - Ans Ende Springen:</strong>
 						<p>Diese Option bewirkt, das bei Anzeige des Logs im SR direkt ans Ende gescrollt wird, wo man dann sofort sehen kann, wie viele Timer erstellt wurden.
 						</p>
 					</li>

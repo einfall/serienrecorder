@@ -76,7 +76,7 @@
                    <strong>Und genau diese Fragen werden im Folgenden beantwortet.</strong>
 				</p>
 				<br><br>
-				<p>Die <strong>TV-Planer Mail</strong> wird in den <a href="einstellungen.htm#tv-planer-mail"><strong><u>Globalen Einstellungen</u></strong></a> unter <strong>Auto-Check</strong> aktiviert und dort werden dann auch die nötigen Einstellungen, die für den SR nötig sind, vorgenommen. Aber auch andere Dinge müssen "erledigt" werden, wie z.B. ein Account bei Wunschliste.
+				<p>Die <strong>TV-Planer Mail</strong> wird in den <a href="einstellungen.htm#tv-planer-mail"><strong><u>Globalen Einstellungen</u></strong></a> unter <strong>Timer-Suchlauf</strong> aktiviert und dort werden dann auch die nötigen Einstellungen, die für den SR nötig sind, vorgenommen. Aber auch andere Dinge müssen "erledigt" werden, wie z.B. ein Account bei Wunschliste.
 				</p>
 				<br>
 				
@@ -100,10 +100,10 @@
 				<p><u>Das <strong>"Warum?"</strong> bzw. das <strong>"Wozu?"</strong> ist nicht ganz "unwichtig".</u></p>
 				<ul>
 				<p>
-				Die TV-Planer Mail (TVPM) hat mehrere "Vorzüge". Als wichtigsten Grund "dafür" wäre zu nennen, das dadurch die Datenmengen, die der SerienServer zu verarbeiten hat, erheblich verringert werden. Wenn viele User die TVPM nicht nutzen und all diese gleichzeitig einen vollen Auto-Check machen, kann unter Umständen der SerienServer überlastet werden. Mithilfe der TVPM werden bei einem Auto-Check immer nur die Serien verarbeitet, welche für den jeweiligen Tag in der TVPM enthalten sind. Es werden dadurch z.B. anstatt 60-90 Serien, nur 2-7 Serien pro User bei einem Auto-Check verarbeitet.
+				Die TV-Planer Mail (TVPM) hat mehrere "Vorzüge". Als wichtigsten Grund "dafür" wäre zu nennen, das dadurch die Datenmengen, die der SerienServer zu verarbeiten hat, erheblich verringert werden. Wenn viele User die TVPM nicht nutzen und all diese gleichzeitig einen vollen Timer-Suchlauf machen, kann unter Umständen der SerienServer überlastet werden. Mithilfe der TVPM werden bei einem Timer-Suchlauf immer nur die Serien verarbeitet, welche für den jeweiligen Tag in der TVPM enthalten sind. Es werden dadurch z.B. anstatt 60-90 Serien, nur 2-7 Serien pro User bei einem Timer-Suchlauf verarbeitet.
 				</p>
 				<p>Des Weiteren dient die TVPM als "Ausfallsicherheit", falls der SerienServer mal ausfällt.
-				<br>Sollte der SerienServer mal ausfallen bzw. für eine Weile nicht erreichbar sein und Eure Box macht einen Auto-Check, dann können keine Timer erstellt werden. Ist aber die TVPM aktiviert, werden in einem solchen Fall trotzdem Timer erstellt, und zwar anhand der Sendetermin-Daten aus der Mail. Es werden dann zwar nur Timer für den einen Tag erstellt und nicht für eine Zeitspanne von Tagen (wie im SR eingestellt), aber immerhin werden Timer erstellt. 
+				<br>Sollte der SerienServer mal ausfallen bzw. für eine Weile nicht erreichbar sein und Eure Box macht einen Timer-Suchlauf, dann können keine Timer erstellt werden. Ist aber die TVPM aktiviert, werden in einem solchen Fall trotzdem Timer erstellt, und zwar anhand der Sendetermin-Daten aus der Mail. Es werden dann zwar nur Timer für den einen Tag erstellt und nicht für eine Zeitspanne von Tagen (wie im SR eingestellt), aber immerhin werden Timer erstellt. 
 				<br>Auch wenn für eine Serie, die in der Mail drin steht, keine Sendetermine auf dem SerienServer gefunden werden, sollten anhand der Sendetermin-Daten aus der Mail Timer erstellt werden.
 				</p>
 				<p>Über die TVPM lassen sich auch Serien-Marker zum SerienRecorder (SR) hinzufügen. Dazu die Serie auf der Wunschliste Website zu "Eurer" Wunschliste hinzufügen und beim nächsten Mal, wenn diese Serie ausgestrahlt wird und deshalb in der Mail auftaucht, wird der Marker erstellt und sofort ein Timer erstellt. Der Serien-Marker wird hierbei allerdings nur mit den Standard-Einstellungen erstellt. Möchte man Sender und/oder Staffeln begrenzen oder einen anderen Speicherort angeben, muss man das dann manuell im SR erledigen.
@@ -204,9 +204,9 @@
 				</ul>
 				
 				<br>
-				<div class="alert alert-info" role="alert"> <strong>Hinweis:</strong> Die Einstellung auf der Wunschliste-Seite <strong>"Vorlauf: (in Tagen)"</strong> bezieht sich immer nur auf <strong>EINEN</strong> Tag. Dies ist nicht weiter schlimm, denn es wird ja tägl. ein Auto-Check gemacht und zudem schont es immens den Datenverkehr des Serien-Servers. 
+				<div class="alert alert-info" role="alert"> <strong>Hinweis:</strong> Die Einstellung auf der Wunschliste-Seite <strong>"Vorlauf: (in Tagen)"</strong> bezieht sich immer nur auf <strong>EINEN</strong> Tag. Dies ist nicht weiter schlimm, denn es wird ja tägl. ein Timer-Suchlauf gemacht und zudem schont es immens den Datenverkehr des Serien-Servers. 
 				<br>Das heißt, wenn der Vorlauf auf Beispielsweise "3" steht, und die Mail an einem Montag kommt, sind dort nur die Sendetermine für Donnerstag drin und <strong><u>nicht</u></strong> für den Bereich von 3 Tagen (Di, Mi und Do).
-				<br>Der Auto-Check des SerienRecorders wiederum berücksichtig aber nachwievor seinen eingestellten Bereich <strong>"Timer für X Tage erstellen:"</strong>, weshalb trotzdem bei z.B. tägl. Serien für alle Sendetermine in dem Bereich von "x Tagen" Timer erstellt werden.
+				<br>Der Timer-Suchlauf des SerienRecorders wiederum berücksichtig aber nachwievor seinen eingestellten Bereich <strong>"Timer für X Tage erstellen:"</strong>, weshalb trotzdem bei z.B. tägl. Serien für alle Sendetermine in dem Bereich von "x Tagen" Timer erstellt werden.
 				</div>
 				
 				<p>Die obigen Einstellungen müssen gemacht werden, alles andere kann man natürlich auch "abonnieren".
@@ -230,7 +230,11 @@
 				</p>
 				<br>
 				<p>Im Prinzip sollte jeder IMAP E-Mail Account funktionieren. In dieser Anleitung werden 2 Anbieter als Beispiel aufgeführt. Bei anderen wird es ähnlich sein, aber dazu dann bitte bei dem jeweiligen Anbieter in den Details zum IMAP Account nachlesen.
-				<br>Wie die "Mailboxen" für den Empfang von E-Mails heißen, kann man mit dem SerienRecorder abfragen, wenn alle anderen Daten im SR eingetragen sind. Dazu in den <a href="einstellungen.htm#config-backup"><strong><u>Globalen Einstellungen</u></strong></a> unter AUTO-CHECK bei <strong>"IMAP Einstellungen testen:"</strong> . Danach sollte eine Benachrichtigung über einen erfolgreichen Abruf angezeigt werden, sofern die Daten richtig eingegeben wurden. Das Ergebnis wird dann im SR-Log gespeichert und kann mittels Taste <kbd>0</kbd> in vielen Ansichten abgerufen werden. In unseren Beispielen heißt es beide male <strong>"INBOX"</strong>.
+				<br>Wie die "Mailboxen" für den Empfang von E-Mails heißen, kann man mit dem SerienRecorder abfragen, wenn alle anderen Daten im SR eingetragen sind. Dazu in den <a href="einstellungen.htm#config-backup"><strong><u>Globalen Einstellungen</u></strong></a> unter Timer-Suchlauf bei <strong>"IMAP Einstellungen testen:"</strong> . Danach sollte eine Benachrichtigung über einen erfolgreichen Abruf angezeigt werden, sofern die Daten richtig eingegeben wurden. Das Ergebnis wird dann im SR-Log gespeichert und kann mittels Taste <kbd>0</kbd> in vielen Ansichten abgerufen werden. In unseren Beispielen heißt es beide male <strong>"INBOX"</strong>.
+				
+				<br>
+				<div class="bs-callout bs-callout-info">Beim IMAP Test wird auch der Benutzername und das Passwort im Log ausgegeben (jedes zweite Zeichen durch ein * ersetzt). Damit kann man dann, bei Problemen, zumindest auch die Anzahl der eingegebenen Zeichen abzählen.
+						</div>
 				</p>
 				
 				<br><br>
@@ -350,8 +354,8 @@
 				</ul>
 				
 				<br><br>
-				<p>Falls jemand den Auto-Check im SerienRecorder immer am Tag nach dem Empfang der E-Mail macht, muss das <strong>Maximale Alter der E-Mail (Tage):</strong> auf <strong>"1"</strong> gestellt werden. Grundsätzlich wird aber immer nur <strong>EINE</strong> Mail verarbeitet, und zwar die Aktuellste.
-				<br>In den <a href="einstellungen.htm#config-backup"><strong><u>Globalen Einstellungen</u></strong></a> unter AUTO-CHECK bei <strong>"IMAP Einstellungen testen:"</strong> kann ein Test durchgeführt werden, dessen Ergebnis wieder in der SR Log Datei zu finden ist. Dort stehen dann ganz unten, alle Mailboxen des E-Mail Accounts sowie ein kleiner Hinweis ganz unten „IMAP Check OK: (1)“. Die 1 steht für die Anzahl der gefundenen TV-Planer E-Mails von Wunschliste.de, die innerhalb von <strong>Maximales Alter der E-Mail (Tage):</strong> gefunden wurden. Steht das <strong>Maximale Alter der E-Mail (Tage):</strong> auf <strong>"3"</strong> und es ist an den Tagen jeweils eine E-Mail eingetroffen, würde dort stehen: „IMAP Check OK: (4)“.
+				<p>Falls jemand den Timer-Suchlauf im SerienRecorder immer am Tag nach dem Empfang der E-Mail macht, muss das <strong>Maximale Alter der E-Mail (Tage):</strong> auf <strong>"1"</strong> gestellt werden. Grundsätzlich wird aber immer nur <strong>EINE</strong> Mail verarbeitet, und zwar die Aktuellste.
+				<br>In den <a href="einstellungen.htm#config-backup"><strong><u>Globalen Einstellungen</u></strong></a> unter Timer-Suchlauf bei <strong>"IMAP Einstellungen testen:"</strong> kann ein Test durchgeführt werden, dessen Ergebnis wieder in der SR Log Datei zu finden ist. Dort stehen dann ganz unten, alle Mailboxen des E-Mail Accounts sowie ein kleiner Hinweis ganz unten „IMAP Check OK: (1)“. Die 1 steht für die Anzahl der gefundenen TV-Planer E-Mails von Wunschliste.de, die innerhalb von <strong>Maximales Alter der E-Mail (Tage):</strong> gefunden wurden. Steht das <strong>Maximale Alter der E-Mail (Tage):</strong> auf <strong>"3"</strong> und es ist an den Tagen jeweils eine E-Mail eingetroffen, würde dort stehen: „IMAP Check OK: (4)“.
 				</p>
 				<p>Die Optionen <strong>"Serien timern:"</strong> und <strong>"Filme timern:"</strong> sind dafür gedacht, wenn jemand mehrere Boxen hat, auf denen der SR läuft, die aber alle auf <strong>EINE</strong> Datenbank zugreifen. Hierüber kann man dann z.B. festlegen, das auf einer Box "nur" Filme getimert werden und "keine" Serien.
 				</p>
@@ -367,7 +371,7 @@
 				<p>Hier noch mal der Hinweis, das es wünschenswert ist, das (fast) jeder die <strong>TV-Planer Mail (TVPM)</strong> nutzen sollte, im Hinblick auf die Datenmengen die der SerienServer zu bewältigen hat (wie oben schon erwähnt).
 				<br>Dazu ist es natürlich wichtig, das man <strong>ALLE seine Serien</strong> auf Wunschliste.de einpflegt.
 				</p>
-				<p>Zur Sicherheit sollte man auch die Option <strong>"Voller Suchlauf mindestens einmal im Erstellungszeitraum"</strong> aktivieren, damit einmal in der Zeitspanne <strong>"Timer für x Tage erstellen"</strong> ein voller Auto-Check über alle Serien gemacht wird. So wird dann sichergestellt, das einmal innerhalb der <strong>"x Tage"</strong> die Sendetermine für alle aktiven Serien abgerufen werden, falls eine Serie oder ein Sendetermin <u>nicht</u> in der Mail auftaucht.
+				<p>Zur Sicherheit sollte man auch die Option <strong>"Voller Suchlauf mindestens einmal im Erstellungszeitraum"</strong> aktivieren, damit einmal in der Zeitspanne <strong>"Timer für x Tage erstellen"</strong> ein voller Timer-Suchlauf über alle Serien gemacht wird. So wird dann sichergestellt, das einmal innerhalb der <strong>"x Tage"</strong> die Sendetermine für alle aktiven Serien abgerufen werden, falls eine Serie oder ein Sendetermin <u>nicht</u> in der Mail auftaucht.
 				</p>
 				<p>Auch wenn man auf Wunschliste bereits gesehene Staffeln oder Episoden markieren kann, werden diese Einstellungen nicht in den Serienmarker übertragen, denn diese Informationen sind in der E-Mail nicht enthalten. Diese Einstellungen müssen weiterhin direkt im SerienRecorder vorgenommen werden.
 				<br>Anders sieht es natürlich aus, wenn man die Option <strong>"Timer nur aus der TV-Planer E-Mail anlegen"</strong> aktiviert. Dies ist für diejenigen interessant, die ihre Serien komplett bei Wunschliste verwalten wollen, also auch dort markieren welche Episoden sie bereits gesehen/aufgezeichnet haben. Diese Funktion <strong>"Timer nur aus der TV-Planer E-Mail anlegen"</strong> sorgt dafür, dass der Suchlauf auf dem SerienServer übersprungen wird und nur die Timer erstellt werden, die in der TV-Planer E-Mail vorhanden sind. Es werden nach wie vor Serien-Marker angelegt und auch ALLE Einstellungen im SR beachtet.
@@ -379,19 +383,19 @@
 				<br>Im Setup des Serienrecorders gibt es die Möglichkeit, neue Serien oder Filme nur auf einer bestimmten Box timern zu lassen. Hierzu kann man im Setup <strong>„Neue TV-Planer Serien/Filme nur auf dieser Box aktivieren“</strong> einstellen. Voraussetzung ist die Zuweisung von verschiedenen Box IDs auf den einzelnen Boxen im Setup des Serienrecorders, sowie einer Datenbank auf einem Netzlaufwerk oder dgl., auf die jede Box zugreifen kann. Will man verschiedene Serien oder Filme auf mehreren Boxen verteilt aufnehmen sind mehrere Wunschliste Accounts mit verschiedenen E-Mail Accounts erforderlich.
 				</p>
 				<p>Die TVPM wird von WL für jeden User individuell meist immer zur gleichen Zeit verschickt, mit einem Zeitfenster von ca. zwei Stunden.
-				<br>Kommt die Erste Mail z.B. gegen 9:00 Uhr, dann werden die nächsten idR zwischen 8:00 - 10:00 Uhr immer eintreffen. Dies sollte man beachten, wenn man die Zeit für den Auto-Check einstellt und auch bei der Option <strong>Maximales Alter der E-Mail (Tage):</strong>.
-				<br>Manchmal (aber eher selten) kann es auch passieren, das die Mail mit "Verspätung" eintrifft, so ca. 3 Stunden später. Dies liegt dann idR an "Wartungsarbeiten" auf der WL Webseite, was aber nicht tragisch ist, wenn man die Option <strong>"Voller Suchlauf mindestens einmal im Erstellungszeitraum"</strong> aktiviert hat. Denn dadurch wird gewährleistet, das auch bei einer nicht verarbeiteten Mail durch den SR, immer mal ein voller Auto-Check über alle aktiven Serien gemacht wird.
+				<br>Kommt die Erste Mail z.B. gegen 9:00 Uhr, dann werden die nächsten idR zwischen 8:00 - 10:00 Uhr immer eintreffen. Dies sollte man beachten, wenn man die Zeit für den Timer-Suchlauf einstellt und auch bei der Option <strong>Maximales Alter der E-Mail (Tage):</strong>.
+				<br>Manchmal (aber eher selten) kann es auch passieren, das die Mail mit "Verspätung" eintrifft, so ca. 3 Stunden später. Dies liegt dann idR an "Wartungsarbeiten" auf der WL Webseite, was aber nicht tragisch ist, wenn man die Option <strong>"Voller Suchlauf mindestens einmal im Erstellungszeitraum"</strong> aktiviert hat. Denn dadurch wird gewährleistet, das auch bei einer nicht verarbeiteten Mail durch den SR, immer mal ein voller Timer-Suchlauf über alle aktiven Serien gemacht wird.
 				<br><br>Die Mail von WUNSCHLISTE wird ab und an vom Inhalt her geändert, d.h. es wird z.B. Werbung mit eingebracht, neue Features hinzugefügt oder der Aufbau geändert. Dann hat der SR schon mal "Probleme" die Mail zu verarbeiten. Normalerweise startet der SR dann einen vollen Suchlauf über alle aktiven Serien, weshalb es kaum "verluste gibt, außer wenn jemand gerade in dieser Mail einen Marker hinzufügen lassen wollte. Im Falle der Werbung konnte dies bereits gefixt werden und diese stört nicht mehr.
 				<br>Sollte der SR mal wirklich die Mail nicht verarbeiten, dann BITTE im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765" target="_blank"><strong>VTI-Forum</strong></a> melden bzw. nachsehen, ob es schon gemeldet wurde.
 				</p>
-				<p>Sollte an einem Tag keine Mail eintreffen, sollte man sich vergewissern, das auch Episoden von seinen Serien, an dem Tag für die Mail, vorhanden sein sollten. Wenn ja, dann könnte ein Fehler bei WL vorliegen. In diesem Fall kann man im Forum nachsehen oder aber nachfragen, falls dies noch nicht erörtert wurde. Oder aber man wartet noch einen Tag und macht stattdessen einen manuellen Auto-Check mit <kbd>EPG</kbd>.
+				<p>Sollte an einem Tag keine Mail eintreffen, sollte man sich vergewissern, das auch Episoden von seinen Serien, an dem Tag für die Mail, vorhanden sein sollten. Wenn ja, dann könnte ein Fehler bei WL vorliegen. In diesem Fall kann man im Forum nachsehen oder aber nachfragen, falls dies noch nicht erörtert wurde. Oder aber man wartet noch einen Tag und macht stattdessen einen manuellen Timer-Suchlauf mit <kbd>EPG</kbd>.
 				</p>
 				<br><br>
 				<p class="lead">
                    <strong>Fehlersuche</strong>
 				</p>
-				<p>Für die Fehlersuche direkt nach dem Einrichten, gibt es den <strong>IMAP-Test</strong>, der in den <a href="einstellungen.htm#config-backup"><strong><u>Globalen Einstellungen</u></strong></a> unter AUTO-CHECK bei <strong>"IMAP Einstellungen testen:"</strong> (siehe auch weiter oben) gestartet werden kann.
-				<br>Sollte es beim Verarbeiten der Mail Probleme geben, kann man in den <a href="einstellungen.htm#log"><strong>Globalen Einstellungen</strong></a> unter LOG aktivieren, das der HTML-Teil der Mail beim Auto-Check gespeichert wird. Der Speicherort ist gleich dem der Log-Dateien und die *.html wird auch mit ins Backup des SR übernommen. Da alles nur kleine Dateien sind, wäre es nicht verkehrt, dies zu aktivieren. 
+				<p>Für die Fehlersuche direkt nach dem Einrichten, gibt es den <strong>IMAP-Test</strong>, der in den <a href="einstellungen.htm#config-backup"><strong><u>Globalen Einstellungen</u></strong></a> unter Timer-Suchlauf bei <strong>"IMAP Einstellungen testen:"</strong> (siehe auch weiter oben) gestartet werden kann.
+				<br>Sollte es beim Verarbeiten der Mail Probleme geben, kann man in den <a href="einstellungen.htm#log"><strong>Globalen Einstellungen</strong></a> unter LOG aktivieren, das der HTML-Teil der Mail beim Timer-Suchlauf gespeichert wird. Der Speicherort ist gleich dem der Log-Dateien und die *.html wird auch mit ins Backup des SR übernommen. Da alles nur kleine Dateien sind, wäre es nicht verkehrt, dies zu aktivieren. 
 				<br>Diese *.html kann dann im Fall der Fälle im Forum angehängt oder aber bei bedarf per PN jemand zugeschickt werden.
 				</p>
 				<br><br><br><br>

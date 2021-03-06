@@ -115,6 +115,8 @@
                     <img src="images/neu.png"> Das <strong>Neu-Symbol</strong> zeigt an, das es sich bei dieser Episode um die Erste Folge der Ersten Staffel (S01E01) handelt. Dies muss allerdings nicht bedeuten, das es sich dabei immer um eine Erstausstrahlung handelt, da die meisten Serien ja auch wiederholt werden.
                 </ul>
 				</p>
+				<div class="bs-callout bs-callout-info">Die Daten für die Planer/Top30 Ansicht werden nicht bei jedem Aufruf der Ansicht neu vom Server geladen, sondern auf der Box zwischengespeichert. Die Cache Dateien für die Planer/Top 30 Daten wird jetzt nicht mehr unter "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/tmp" abgelegt, sondern im Ordner "/var/cache/serienrecorder".
+						</div>
             </div>
 			<br><br>
 			
@@ -124,7 +126,7 @@
 			
             <h4 class="sub-header"><kbd class="green">Sender zuordnen</kbd></h4>
             <div class="row">
-				<p>Die Senderzuordnung dient dazu, die eigenen Sender <strong>(STB-Sender)</strong> den Sendernamen von Wunschliste <strong>(Wunschliste)</strong> zuzuordnen. Dies ist notwendig, da manche Sender auf Wunschliste.de (WL) einen, teilweise nur leicht, anderen Namen tragen, als der auf Eurer Box (z.B. ntv (WL) --- n-tv (STB)). 
+				<p>Die Senderzuordnung dient dazu, die eigenen Sender <strong>(Box-Sender)</strong> den Sendernamen von Wunschliste <strong>(Wunschliste)</strong> zuzuordnen. Dies ist notwendig, da manche Sender auf Wunschliste.de (WL) einen, teilweise nur leicht, anderen Namen tragen, als der auf Eurer Box (z.B. ntv (WL) --- n-tv (Box)). 
 				</p>
 				<p>Alles weitere zur Senderzuordnung wird auf einer eigenen Seite bereitgestellt, mit dem Namen <a href="senderzuordnung.htm"><strong>Senderzuordnung</strong></a>. </p>
 				
@@ -190,8 +192,8 @@
 				</tr>
 				<tr class="success"> 
 					<td><kbd>EPG/INFO</kbd></td> 
-					<td>Auto-Check starten / wenn WL-Mail aktiviert, dann Auswahl Mit Mail oder voller Auto-Check</td> 
-					<td><a href="index.htm#autocheck"><strong><u>Auto-Check</u></strong></a></td> 
+					<td>Timer-Suchlauf starten / wenn WL-Mail aktiviert, dann Auswahl Mit Mail oder voller Timer-Suchlauf</td> 
+					<td><a href="index.htm#autocheck"><strong><u>Timer-Suchlauf</u></strong></a></td> 
 				</tr>
 				<tr> 
 					<td><kbd>lang EPG/INFO</kbd></td> 
