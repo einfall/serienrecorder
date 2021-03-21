@@ -149,6 +149,12 @@
 						Die neuen Verzeichnisse werden aber erst mit Anlegen eines Timers erstellt.
 						Ein Verzeichniswechsel ist also kein Problem. 
 						</div>
+                        <div class="alert alert-danger">
+							<strong>WICHTIG: </strong> 
+							<br> Das Anlegen eines Ordners ist im Serienrecorder <strong>Grundlegend</strong> geändert worden, seit der <span class="redfont">Release-Version 4.3.0</span>.
+							<br>Vorher durfte man NICHT in den Ordner reingehen, <strong>jetzt</strong> muss man in den Ordner reingehen, in dem ein Verzeichnis erstellt werden soll, wie es eigentlich auch richtig und "intuitiv" ist.
+						
+                        </div>
                     </li>
 					<span id="s+s-verzeichnis-anlegen" class="anchor"></span>
                     <li>
@@ -751,13 +757,16 @@
                 <ul>
                     <li>
                         <strong>Skin:</strong>
-                        <p>
-                            Das Aussehen des SerienRecorders kann über Skins angepasst werden, damit es dem "Aussehen" der Box entspricht. Bei manchen Skins ist der SR direkt im Skin integriert und bei anderen muß man sich einen Skin-Part installieren und aktivieren. Näheres zu Skin-Parts BItte in den jeweiligen Bereichen im Forum informieren.
+                        <p>Der Serienrecorder verfügt selbst schon über ein paar eigene Skins, in <strong>HD-</strong> als auch in <strong>FHD-</strong>Auflösung.
+                            <br><br> Zudem kann das Aussehen des SerienRecorders über die Box-Skins angepasst werden, damit es dem "Aussehen" der Box entspricht. Bei manchen Skins ist der SR direkt im Skin integriert und bei anderen muß man sich einen Skin-Part installieren und aktivieren. Näheres zu Skin-Parts BItte in den jeweiligen Bereichen im Forum informieren.
+                            
                         </p>
-						<ul><p><strong>Die einzelnen Optionen sind:</strong></p>
+						<ul><p><strong>Die einzelnen Optionen sind u.a.:</strong></p>
                             <ol type="a">
 							<li><u>SerienRecoder1</u></li>
+                            <li><u>SerienRecoder1 FHD</u></li>
 							<li><u>SerienRecoder2</u></li>
+                            <li><u>SerienRecoder2 FHD</u></li>
 							<li><u>AtileHD</u></li>
 							<li><u>StyleFHD</u></li>
 							<li><u>Black Box</u></li>
@@ -770,6 +779,8 @@
 						<br>Nutzt man einen Skin-Part des Box Skins, dann muss meistens die Einstellung <strong>Skinpart</strong> gewählt werden, aber das sollte in dem betreffenden Thread im Forum dabei stehen, falls es mal Probleme dabei gibt.
 						<br>Die meisten SR eigenen Skins sind in HD-Auflösung gemacht, bei den FHD Skins steht es im Namen dabei.
 						</p>
+                        <div class="bs-callout bs-callout-danger">Sollte auf der Box ein HD-Skin aktiviert sein, können die SR-Skins mit einem <strong>FHD</strong>  im Namen nicht ausgewählt werden.
+						</div>
 						<br>
 						<ul>
 							<li>
@@ -976,11 +987,16 @@
                             Bei "Ja" erfolgt die Anzeige in alphabetischer Reihenfolge, ansonsten so, wie es auf der Box auch ist.
                         </p>
                     </li>
-					<li>
+                   	<li>
                         <strong>SerienRecorder Webinterface aktivieren:</strong>
                         <p>
-                            Bei "Ja" wird das Webinterface des SerienRecorders aktiviert, sodass man über einen Webbrowser auf einige Funktionen des SR zugreifen kann.
+                            Bei "Ja" wird das Webinterface des SerienRecorders aktiviert, sodass man über einen Webbrowser auf einige Funktionen des SR zugreifen kann. Mehr dazu gibt es im <a href="webinterface.htm"><strong><u>SR Webinterface</u></strong></a> Artikel.
 							<br>Das SR Webinterface befindet sich gerade noch im Aufbau, näheres dazu findet man im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/142111-serienrecorder-webinterface-0-8-0-12-02-2021/&postID=2071152#post2071152" target="_blank"><strong>VTI-Forum</strong></a>.
+                            <br>Wenn das <strong>Serienrecorder Webinterface</strong> zum ersten Mal aktiviert wird und der "web-data" Ordner auf der Box nicht existiert, wird abgefragt, ob das Webinterface installiert werden soll. Damit wird dann auch "sichergestellt", das man die richtige Version bzw. die richtige API-Version installiert. Zudem muss man dadurch nicht mehr selbst manuell tätig Werden.
+                            <br>Nach der Installation des Webinterface durch den SR das <kbd class="green">Speichern</kbd> nicht vergessen.
+                            <div class="bs-callout bs-callout-info">Ist das Webinterface einmal installiert, werden alle weiteren Updates dafür über das Webinterface selbst installiert.
+                            </div>
+                            
 							
                         </p>
                     </li>
