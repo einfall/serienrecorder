@@ -65,8 +65,7 @@ class serienRecFileListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.skin = None
 		InitSkin(self)
 
-		self['menu_list'] = FileList(self.initDir, inhibitMounts=False, inhibitDirs=False, showMountpoints=False,
-		                             showFiles=False)
+		self['menu_list'] = FileList(self.initDir, inhibitMounts=False, inhibitDirs=False, showMountpoints=False, showFiles=False)
 		self['menu_list'].show()
 		self['title'].hide()
 		self['path'].show()
@@ -111,21 +110,26 @@ class serienRecFileListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.close(None)
 
 	def keyRed(self):
-		try:
-			os.rmdir(self['menu_list'].getSelection()[0])
-		except:
-			self.session.open(MessageBox,
-			                  "Das Verzeichnis %s konnte nicht gelöscht werden." % self['menu_list'].getSelection()[0],
-			                  MessageBox.TYPE_INFO, timeout=5)
-			pass
-		self.updateFile()
+		currentDirectory = self['menu_list'].getSelection()[0]
+		self.session.openWithCallback(self.confirmDeleteCallback, MessageBox, "Das Verzeichnis '%s' wirklich löschen?" % currentDirectory, MessageBox.TYPE_YESNO, default=False)
+
+	def confirmDeleteCallback(self, answer):
+		if answer:
+			directoryToBeDeleted = self['menu_list'].getSelection()[0]
+			try:
+				os.rmdir(directoryToBeDeleted)
+				self['menu_list'].refresh()
+				self.updateFile()
+			except OSError as error:
+				print("Das Verzeichnis '%s' konnte nicht gelöscht werden. %s" % (directoryToBeDeleted, str(error)))
+				self.session.open(MessageBox, "Das Verzeichnis %s konnte nicht gelöscht werden.\n\n%s" % (directoryToBeDeleted, error), MessageBox.TYPE_INFO, timeout=10)
 
 	def keyGreen(self):
-		directory = self['menu_list'].getSelection()[0]
-		if directory.endswith("/"):
-			self.fullpath = self['menu_list'].getSelection()[0]
+		currentDirectory = self['menu_list'].getCurrentDirectory()
+		if currentDirectory.endswith("/"):
+			self.fullpath = currentDirectory
 		else:
-			self.fullpath = "%s/" % self['menu_list'].getSelection()[0]
+			self.fullpath = "%s/" % currentDirectory
 
 		if self.fullpath == config.plugins.serienRec.savetopath.value:
 			self.fullpath = ""
@@ -136,18 +140,18 @@ class serienRecFileListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.close(self.fullpath)
 
 	def keyBlue(self):
-		self.session.openWithCallback(self.wSearch, NTIVirtualKeyBoard, title="Verzeichnis-Name eingeben:",
-		                              text=self.seriesNames)
+		self.session.openWithCallback(self.newFolderNameCallback, NTIVirtualKeyBoard, title="Verzeichnisname eingeben:", text=self.seriesNames)
 
-	def wSearch(self, Path_name):
-		if Path_name:
-			Path_name = "%s%s/" % (self['menu_list'].getSelection()[0], Path_name)
-			print(Path_name)
-			if not os.path.exists(Path_name):
+	def newFolderNameCallback(self, path_name):
+		if path_name:
+			path_name = "%s/%s/" % (self['menu_list'].getCurrentDirectory(), path_name)
+			print(path_name)
+			if not os.path.exists(path_name):
 				try:
-					os.makedirs(Path_name)
+					os.makedirs(path_name)
 				except:
 					pass
+		self['menu_list'].refresh()
 		self.updateFile()
 
 	def keyUp(self):
@@ -172,8 +176,8 @@ class serienRecFileListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self.updateFile()
 
 	def updateFile(self):
-		currFolder = self['menu_list'].getSelection()[0]
-		self['path'].setText("Auswahl:\n%s" % currFolder)
+		currentFolder = self['menu_list'].getCurrentDirectory()
+		self['path'].setText("Auswahl:\n%s" % currentFolder)
 
 	def __onClose(self):
 		self.stopDisplayTimer()

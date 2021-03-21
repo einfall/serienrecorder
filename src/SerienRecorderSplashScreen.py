@@ -17,10 +17,14 @@ class ShowSplashScreen(Screen):
 	imageWidth = 406
 	imageHeigt = 240
 	imagePath = "/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/splashscreen.png"
-	versionPosX = 135
-	versionPosY = 50
+	versionPosX = 130
+	versionPosY = 55
 	versionHeight = 30
 	versionFontSize = 18
+	copyrightPosX = 10
+	copyrightPosY = 95
+	copyrightHeight = 30
+	copyrightFontSize = 14
 	if DESKTOP_WIDTH > 1280:
 		factor = 1.5
 		screenWidth *= factor
@@ -32,19 +36,27 @@ class ShowSplashScreen(Screen):
 		versionPosY *= factor
 		versionHeight *= factor
 		versionFontSize *= factor
+		copyrightPosX *= factor
+		copyrightPosY *= factor
+		copyrightHeight *= factor
+		copyrightFontSize *= factor
 
 	skin = """
 		<screen name="SerienRecorderSplash" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20" flags="wfNoBorder">
-			<widget name="srlog" position="%d,%d" size="%d,%d" font="Regular;%d" valign="center" halign="left" foregroundColor="#FFFFFF" transparent="1" zPosition="5"/>
+			<widget name="version" position="%d,%d" size="%d,%d" font="Regular;%d" valign="center" halign="left" foregroundColor="#FFFFFF" transparent="1" zPosition="5"/>
+			<widget name="copyright" position="%d,%d" size="%d,%d" font="Regular;%d" valign="center" halign="left" foregroundColor="#FFFFFF" transparent="1" zPosition="5"/>
 			<ePixmap pixmap="%s" position="5,5" zPosition="1" size="%d,%d" alphatest="on" />
-		</screen>""" % ((DESKTOP_WIDTH - screenWidth) / 2, (DESKTOP_HEIGHT - screenHeight) / 2, screenWidth, screenHeight, "SerienRecorder Splashscreen", versionPosX, versionPosY, screenWidth, versionHeight, versionFontSize, imagePath, imageWidth, imageHeigt)
+		</screen>""" % ((DESKTOP_WIDTH - screenWidth) / 2, (DESKTOP_HEIGHT - screenHeight) / 2, screenWidth, screenHeight, "SerienRecorder Splashscreen",
+	                    versionPosX, versionPosY, screenWidth, versionHeight, versionFontSize,
+	                    copyrightPosX, copyrightPosY, screenWidth, copyrightHeight, copyrightFontSize,
+	                    imagePath, imageWidth, imageHeigt)
 
-	def __init__(self, session, version):
+	def __init__(self, session):
 		self.session = session
-		self.version = version
 		Screen.__init__(self, session)
 
-		self['srlog'] = Label()
+		self['version'] = Label()
+		self['copyright'] = Label()
 
 		self["actions"] = ActionMap(["SerienRecorderActions",], {
 			"ok"    : self.keyExit,
@@ -54,11 +66,12 @@ class ShowSplashScreen(Screen):
 		self.onLayoutFinish.append(self.__onLayoutFinished)
 
 	def __onLayoutFinished(self):
-		sl = self['srlog']
-		sl.instance.setZPosition(5)
+		self['version'].instance.setZPosition(5)
+		self['copyright'].instance.setZPosition(5)
 
-		text = "Version %s" % self.version
-		self['srlog'].setText(text)
+		from .SerienRecorderHelpers import SRVERSION
+		self['version'].setText("Version %s" % SRVERSION)
+		self['copyright'].setText("©2014-21 einfall, w22754, egn und MacDisein")
 
 	def keyExit(self):
 		self.close()

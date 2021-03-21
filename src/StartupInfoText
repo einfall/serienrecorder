@@ -39,74 +39,57 @@ langer Tastendruck:
 Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
-CHANGELOG 4.2.3
+CHANGELOG 4.3.0
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste.
 Cover, Episodenliste, Serien-/Episodeninformationen stammen von TheTVDB.
 
 Neue Funktionen:
 
-- Unterstützung für Images mit Python 3 (siehe Anmerkungen 1)
-- Bestätigungsdialog vor dem manuellen Timer-Suchlauf (siehe Anmerkung 2)
-- Neue Option „Meldung bei Senderaktualisierungen“ (Beim Start bzw. Nach dem Auto-Check) (siehe Anmerkung 4)
-- Neue Option "Meldung bei TV-Planer Fehler" (siehe Anmerkung 6)
-- Neue Option "Meldung wenn Sendung im EPG nicht gefunden wurde" (siehe Anmerkung 7)
-- Neue Option "Standard Bouquet bevorzugen" (siehe Anmerkung 8 )
-- Neue Option „Timerbeschreibung“ bzw. Änderungen bei "Timername" (siehe Anmerkung 9)
+- Neue Option "Box-Sender bei der Senderzuordnung alphabetisch sortieren" im Bereich "Benutzeroberfläche" (siehe Anmerkung 1)
+- Neue Option "Kein Backup bei manuellem Timer-Suchlauf" (siehe Anmerkung 2)
+- Das SerienRecorder Webinterface kann jetzt aus dem Einstellungen heraus installiert werden (siehe Anmerkung 3)
+- Es gibt jetzt die beiden Standard SerienRecorder Skins (1 und 2) jeweils auch als FHD Versionen - Danke an @Marti_win7 (siehe Anmerkung 4)
 
 Änderungen:
 
-- AdvancedHTMLParser von Version 8.1.4 auf 9.0.1 aktualisiert
-- Transparenz für die Spaltenüberschriften in der Senderzuordnung aktiviert (Skinabhängig)
-- Ladeintensive Ansichten werden jetzt in einem eigenen Thread geladen (Imageabhängig)
-- Einstellungen Ansicht überarbeitet und teilweise neu strukturiert (siehe Anmerkungen 5)
-- Option „Umfang der Einstellungen“ entfernt, es werden jetzt immer alle Einstellungsoptionen angezeigt
-- In der Planer/Top 30 Ansicht muss das Anlegen eines Serien-Markers jetzt bestätigt werden
-- IMAP Test überarbeitet (siehe Anmerkung 3)
-- Option „Screens bei Änderungen sofort aktualisieren“ aus den Einstellungen entfernt
-- Die Cache Dateien für die Planer/Top 30 Daten wird jetzt nicht mehr unter /usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/tmp abgelegt, sondern im Ordner /var/cache/serienrecorder.
-- "Benachrichtigung beim Suchlauf" umbenannt in "Meldung beim Timer-Suchlauf"
-- Die Auswahl "Bei Suchlauf-Start" der Option "Benachrichtigung beim Suchlauf" wurde entfernt, weil sie nicht richtig funktioniert hat
-- "Benachrichtigung bei Timerkonflikten" umbenannt in "Meldung bei Timerkonflikten"
-- Bereich "Auto-Check" umbenannt in "Timer-Suchlauf"
-- Bereich "GUI" umbenannt in "Benutzeroberfläche"
-- Bereich "Log" umbenannt in "Logging"
-- "Scroll zum Ende" umbenannt in "Ans Ende springen"
-- Der Begriff "STB" (Set-Top-Box) wurde jetzt konsequent in allen Meldungen und der Benutzeroberfläche in "Box" umbenannt.
-- Der Begriff "Auto-Check" wurde jetzt konsequent in allen Meldungen und der Benutzeroberfläche in "Timer-Suchlauf" umbenannt.
-- Der Wert für die eingestellten EPG-Suchgrenzen wird jetzt im Log ausgegeben
-- Ausgabe des verwendeten Box Skins im Log
-- Erkennung des Boxtyps verbessert
-- Logeinträge überarbeitet
+- Regulärer Ausdruck für die Aufnahmeerkennung verändert. (siehe Anmerkung 5)
+- Die Option "Standard Bouquet bevorzugen" berücksichtigt jetzt auch manuell angelegte Einträge in der Timer-Liste.
+- Für Datumsangaben im Log wird jetzt auch der Wochentag ausgegeben.
+- Die Option "Versuche Timer aus dem EPG zu aktualisieren" kann jetzt für einen Serien-Marker aktiviert werden, wenn sie global deaktiviert wurde.
+- Im Log wird jetzt ausgegeben, wenn die Option "Versuche Timer aus dem EPG zu aktualisieren" global deaktiviert wurde.
+- Wenn ein neuer Serien-Marker hinzugefügt wird, lädt der SerienRecorder jetzt immer das Cover neu aus dem Internet.
+- Verzeichnisauswahl komplett überarbeitet (siehe Anmerkung 6)
+- Skins mit "FHD" im Namen können nicht mehr ausgewählt werden, wenn auf der Box ein HD Skin aktiv ist.
 
 Bugfixes:
 
-- Bouquet-Auswahl in den Einstellungen auch denn sichtbar, wenn man nur ein Bouquet auf der Box hat
-- Kann die Logdatei nicht angelegt werden, kommt es nicht mehr zum Absturz
-- In der Serien-/Staffelstart Ansicht wird jetzt die erste Zeile selektiert, wenn der Filter (gelbe Taste) umgeschaltet wird.
-- In manchen Situationen wurden Timer falsch korrigiert, wenn der Timer für einem Sender des alternativen Bouquets erstellt wurde.
-- Für eine Staffel "00" auf dem Merkzettel konnte später kein Timer angelegt werden.
-- Korrektes Verhalten bei der Benutzung der ChoiceBox in den Einstellungen (siehe Anmerkung 10)
-- Option "Timer nur aus der TV-Planer E-Mail anlegen" korrigiert (siehe Anmerkung 11)
-- Einstellungen für "abweichende Timeraktualisierung aus dem EPG" am Marker wurde beim ersten Aktualisieren nicht berücksichtigt
+- Absturz beim Aufrufen der Senderzuordnung bei leerer Liste ist behoben.
+- Kein Absturz mehr bei manueller Timererstellung wenn die Option "Standard Bouquet bevorzugen" aktiviert ist.
+- Die Option "Standard Bouquet bevorzugen" wurde auch berücksichtigt, wenn man nur ein Bouquet nutzt - das ist jetzt korrigiert.
+- Die Option "Versuche Timer aus dem EPG zu aktualisieren" wurde überarbeitet (siehe Anmerkung 7)
+- In seltenen Fällen kam es zu einem Absturz in den globalen Einstellungen, das ist jetzt behoben.
 
 Anmerkungen:
 
-1. Der SerienRecorder ist jetzt Python 3 kompatibel, dafür musste ziemlich viel Code angepasst werden.
-WICHTIG: IMAP Benutzername und Passwort müssen technisch bedingt anders verschlüsselt gespeichert werden, sollte auf ein Image mit Python 3 gewechselt werden, bitte beides neu eingeben.
-2. Bisher wurde der manuelle Timer-Suchlauf, wenn man die TV-Planer Option nicht aktiv hatte, sofort ausgeführt, jetzt muss das Starten des manuellen Timer-Suchlaufs immer bestätigt werden.
-3. Beim IMAP Test wird jetzt auch der Benutzername und das Passwort im Log ausgegeben (jedes zweite Zeichen durch * ersetzt). Außerdem wurden die Namen der Postfächer bisher nicht ganz richtig angezeigt, das ist jetzt auch korrigiert. Ab jetzt wird auch jeder Schritt protokolliert.
-4. Es kann jetzt über eine Option in den Einstellungen entschieden werden, wann die Meldung über "Senderaktualisierungen auf dem SerienServer" angezeigt werden soll, bisher wurde die Meldung immer beim Start des SerienRecorders gezeigt, jetzt kann sie auch nach dem Timer-Suchlauf angezeigt werden.
-5. Neue Bereiche für "Meldungen" und "TV-Planer E-Mail"
-6. Diese Benachrichtigung wird angezeigt, wenn beim Abrufen oder Verarbeiten der TV-Planer E-Mail ein Fehler passiert ist (z.B. falscher Login).
-So bemerkt man Fehler bei der TV-Planer E-Mail direkt und muss nicht erst ins Log schauen
-7. Diese Benachrichtigung wird angezeigt, wenn beim Aktualisieren von Timern die Sendung nicht im EPG gefunden wurde, das könnte ein Zeichen dafür sein, dass die Sendung u.U. kurzfristig aus dem Programm genommen wurde.
-8. Wenn diese Option aktiviert ist und die Sendung auf einem Sender des Standard Bouquets ausgestrahlt wird, legt der SerienRecorder auch dann noch Timer an, wenn für diese Sendung bereits ein Timer auf einem Sender des alternativen Bouquets angelegt wurde.
-Dadurch kann man z.B. eine Sendung noch einmal werbefrei aufnehmen, dazu müssen alle werbefreien Sender dem Standard Bouquet zugeordnet werden und die anderen dem alternativen Bouquet.
-9. Der Timername und neu auch die Timerbeschreibung können jetzt frei konfiguriert werden, dazu gibt es unter /etc/enigma2/ die Datei "SerienRecorder.timer-pattern.json".
-Darin können Muster definiert werden, um einen beliebigen Timernamen oder -beschreibung bilden zu können. Die bisherigen Timernamen Optionen und weitere sind bereits voreingestellt. So können jetzt z.B. Timernamen ohne Bindestriche gebildet werden.
-10. Im VTI Image gibt es die Möglichkeit bei Auswahloptionen mit der OK Taste die sog. ChoiceBox zu öffnen und dort den Wert aus einer Liste auszuwählen. Dies hat dazu geführt, dass zwar der Wert korrekt übernommen wurde, aber evtl. vorhandene Unteroptionen dann in den Einstellungen nicht ein- bzw. ausgeblendet wurden. Ein Beispiel dafür war z.B. bei der Auswahl des Suchlauf Typs - wo bei "zur gewählten Uhrzeit" eigentlich die Uhrzeit Unteroption hätte eingeblendet werden müssen.
-11. Bisher konnte die Option "Timer nur aus der TV-Planer E-Mail anlegen" wenn sie global aktiviert war, nicht für bestimmte Serien-Marker deaktiviert werden. Umgekehrt ging es aber schon (global deaktiviert aber für bestimmte Marker aktiviert) - das ist jetzt korrigiert.
+1. Bisher war die Liste der Box-Sender bei der Senderzuordnung in der Reihenfolge sortiert wie die Sender im Bouquet sortiert waren.
+Jetzt kann man über die Option in den globalen Einstellungen auf eine alphabetische Sortierung umschalten.
+Diese Einstellung wirkt sich dann auch auf die Senderzuordnung im SerienRecorder Webinterface aus.
+
+2. Man kann jetzt über die Option "Backup bei manuellem Timer-Suchlauf" entscheiden, ob bei einem manuellen Timer-Suchlauf ein Backup der Datenbank, Einstellungen etc. gemacht werden soll oder nicht.
+
+3. Die Option "SerienRecorder Webinterface aktivieren" ist jetzt immer sichtbar, wenn sie zum ersten Mal aktiviert wird, und der web-data Ordner ist nicht vorhanden, wird gefragt ob das SerienRecorder Webinterface heruntergeladen und installiert werden soll.
+
+4. Marti_win7 war so nett und hat die beiden Standard SerienRecorder Skins für FHD Auflösung angepasst. Damit gib es jetzt endlich auch passende Skins wenn auf der Box ein FHD Skin aktiv hat.
+
+5. Es gab in der letzten Releaseversion eine Änderung am regulären Ausdruck der Aufnahmen anhand des Dateinamens auf der Festplatte gefunden hatte.
+Diese Änderung hatte allerdings zur Folge, dass jetzt deutlich weniger Aufnahmen erkannt wurden - ich habe den Ausdruck jetzt noch einmal überarbeitet und hoffe, dass es jetzt besser funktioniert.
+
+6. Die Verzeichnisauswahl im SerienRecorder war nicht wirklich intuitiv. Es hat gezeigt, dass sie von Anfang an falsch programmiert war. Ich habe das Verhalten jetzt korrigiert, sodass sich die Verzeichnisauswahl jetzt so verhält wie man es erwarten würde.
+Man muss jetzt in den Ordner wechseln um ihn auszuwählen oder einen neuen Unterordner anzulegen. Vor dem Löschen gibt es jetzt eine Warnung und des im Fehlerfall ein Grund angezeigt.
+
+7. Auch wenn die Option "Versuche Timer aus dem EPG zu aktualisieren" deaktiviert war, wurden Timer aus dem EPG aktualisiert.
+Das wurde jetzt korrigiert, die Timer werden aber trotzdem noch durch geänderte Daten bei Wunschliste korrigiert.
 
 Viel Spaß mit dem SerienRecorder!
 

@@ -243,7 +243,7 @@ class serienRecCheckForRecording:
 
 		if not self.database.hasMarkers() and not config.plugins.serienRec.tvplaner.value:
 			SRLogger.writeLog("\n---------' Timer-Suchlauf gestartet am %s '---------" % self.uhrzeit, True)
-			print("[SerienRecorder] check: Tabelle SerienMarker leer.")
+			print("[SerienRecorder] check: Tabelle Serien-Marker leer.")
 			SRLogger.writeLog("Es sind keine Serien-Marker vorhanden - Timer-Suchlauf kann nicht ausgeführt werden.", True)
 			SRLogger.writeLog("---------' Timer-Suchlauf beendet '---------", True)
 			self.askForDSB()
@@ -284,7 +284,7 @@ class serienRecCheckForRecording:
 			SRLogger.writeLog("Verbleibende Zeit: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if config.plugins.serienRec.AutoBackup.value == "before":
-			createBackup()
+			createBackup(self.manuell)
 
 		SRLogger.reset()
 		from .SerienRecorderTVPlaner import resetTVPlanerHTMLBackup
@@ -363,7 +363,7 @@ class serienRecCheckForRecording:
 			self.autoCheckFinished = True
 
 			if config.plugins.serienRec.AutoBackup.value == "after":
-				createBackup()
+				createBackup(self.manuell)
 
 			# in den deep-standby fahren.
 			self.askForDSB()
@@ -579,7 +579,7 @@ class serienRecCheckForRecording:
 		#
 		# Now every time the regular SerienRecorder autocheck runs, received
 		# TV-Planer emails will be used to program timers, even no marker
-		# has been created by SerienMarker before. The marker is created automatically,
+		# has been created by Serien-Marker before. The marker is created automatically,
 		# except for the correct url.
 		#
 		if config.plugins.serienRec.tvplaner.value and self.emailData is not None:
@@ -713,7 +713,7 @@ class serienRecCheckForRecording:
 				configfile.save()
 
 		if config.plugins.serienRec.AutoBackup.value == "after":
-			createBackup()
+			createBackup(self.manuell)
 
 		SRLogger.backup()
 		from .SerienRecorderTVPlaner import backupTVPlanerHTML
@@ -747,7 +747,7 @@ class serienRecCheckForRecording:
 		print("[SerienRecorder] processTransmissions: %r [%d]" % (toStr(serien_name), len(data)))
 
 		if len(data) == 0 and limitedChannels:
-			SRLogger.writeLogFilter("channels", "Für ' %s ' wurden keine Ausstrahlungstermine gefunden, die Sender sind am Marker eingeschränkt." % serien_name)
+			SRLogger.writeLogFilter("channels", "' %s ' Es wurden keine Ausstrahlungstermine gefunden, die Sender sind am Marker eingeschränkt." % serien_name)
 
 		(fromTime, toTime) = self.database.getTimeSpan(serien_wlid, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
 		if self.noOfRecords < AnzahlAufnahmen:

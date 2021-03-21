@@ -24,15 +24,15 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 
 		self["actions"] = ActionMap(["SerienRecorderActions"], dict(cancel=self.exit, ok=self.exit), -1)
 
-		self.info =("SerienRecorder for Enigma2 (Version %s)\n"
-		            "(c) 2014-2021 by einfall, w22754, MacDisein and egn\n"
+		self.info =("SerienRecorder für enigma2 (Version %s)\n"
+		            "(c) 2014-2021 by einfall, w22754, egn und MacDisein\n"
 					"\n"
 					"For more info:\n"
 					"https://tinyurl.com/yblfjmhr\n"
 					"\n"
-					"If you like this plugin and want to support us, please donate to:\n"
-					"@einfall: send PN for Amazon-Wishlist,\n"
-		            "@MacDisein: PayPal to macdisein@gmx.de\n\n"
+					"Wenn das Plugin gefällt, würden wir uns über eine Spende freuen:\n"
+					"@einfall: Ein PN schicken für den Amazon Wunschzettel,\n"
+		            "@MacDisein: PayPal an macdisein@gmx.de\n\n"
 		            "Mit Unterstützung und Genehmigung zur Verwendung der Daten von\n"
 		            "Wunschliste.de - http://www.wunschliste.de") % config.plugins.serienRec.showversion.value
 

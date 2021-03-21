@@ -215,6 +215,10 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if serienRecSearchResultScreen.createMarker(serien_wlid, serien_name, serien_info, serien_fsid):
 			self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 			self['title'].instance.setForegroundColor(parseColor("green"))
+
+			from .SerienRecorder import getCover
+			getCover(self, serien_name, serien_wlid, serien_fsid, False, True)
+
 			if config.plugins.serienRec.openMarkerScreen.value:
 				self.close(str(serien_wlid))
 		else:

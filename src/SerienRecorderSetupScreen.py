@@ -23,6 +23,11 @@ def CheckChoices(choices, default):
 
 	return choices[0][0]
 
+__C_JUSTPLAY__ = 0
+__C_ZAPBEFORERECORD__ = 1
+__C_JUSTREMIND__ = 2
+
+
 def ReadConfigFile():
 	try:
 		default_before = int(config.recording.margin_before.value)
@@ -40,6 +45,10 @@ def ReadConfigFile():
 
 	config.plugins.serienRec = ConfigSubsection()
 
+	config.plugins.serienRec.justplay = ConfigYesNo(default=False)
+	config.plugins.serienRec.justremind = ConfigYesNo(default=False)
+	config.plugins.serienRec.zapbeforerecord = ConfigYesNo(default=False)
+
 	###############################################################################################################################
 	# SYSTEM
 	###############################################################################################################################
@@ -54,6 +63,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.Autoupdate = ConfigYesNo(default=True)
 	config.plugins.serienRec.databasePath = ConfigText(default="/etc/enigma2/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.AutoBackup = ConfigSelection(choices=[("0", "Nein"), ("before", "Vor dem Timer-Suchlauf"), ("after", "Nach dem Timer-Suchlauf")], default="before")
+	config.plugins.serienRec.backupAtManualCheck = ConfigYesNo(default=True)
 	config.plugins.serienRec.BackupPath = ConfigText(default="/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(5, (5, 999))
 
@@ -109,6 +119,22 @@ def ReadConfigFile():
 	###############################################################################################################################
 	# TIMER
 	###############################################################################################################################
+
+	kindOfTimer_default = 0
+	if config.plugins.serienRec.zapbeforerecord.value:
+		kindOfTimer_default |= (1 << __C_ZAPBEFORERECORD__)
+		config.plugins.serienRec.justplay.value = False
+		config.plugins.serienRec.justremind.value = False
+	elif config.plugins.serienRec.justplay.value:
+		kindOfTimer_default |= (1 << __C_JUSTPLAY__)
+		config.plugins.serienRec.justremind.value = False
+		config.plugins.serienRec.zapbeforerecord.value = False
+	elif config.plugins.serienRec.justremind.value:
+		kindOfTimer_default |= (1 << __C_JUSTREMIND__)
+		config.plugins.serienRec.justplay.value = False
+		config.plugins.serienRec.zapbeforerecord.value = False
+	config.plugins.serienRec.kindOfTimer = NoSave(ConfigSelection(choices=[("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default=str(kindOfTimer_default)))
+
 	config.plugins.serienRec.afterEvent = ConfigSelection(choices=[("0", "Nichts"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen"), ("3", "Automatisch")], default="3")
 	config.plugins.serienRec.margin_before = ConfigInteger(default_before, (0, 99))
 	config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0, 99))
@@ -145,20 +171,27 @@ def ReadConfigFile():
 	###############################################################################################################################
 	# BENUTZEROBERFLÄCHE
 	###############################################################################################################################
-	skins = [("Skinpart", "Skinpart"), ("", "SerienRecorder 1"), ("Skin2", "SerienRecorder 2"),
+	skins = [("Skinpart", "Skinpart"), ("", "SerienRecorder 1"), ("Skin1 FHD", "SerienRecorder 1 FHD"),
+	         ("Skin2", "SerienRecorder 2"), ("Skin2 FHD", "SerienRecorder 2 FHD"),
 	         ("AtileHD", "AtileHD"), ("StyleFHD", "StyleFHD"), ("Black Box", "Black Box")]
 	try:
 		t = list(os.walk("%s/skins" % os.path.dirname(__file__)))
 		for x in t[0][1]:
-			if x not in ("Skin2", "AtileHD", "StyleFHD", "Black Box"):
+			if x not in ("Skin1 FHD", "Skin2", "Skin2 FHD", "AtileHD", "StyleFHD", "Black Box"):
 				skins.append((x, x))
 	except:
 		pass
 
+	from enigma import getDesktop
+	DESKTOP_WIDTH = getDesktop(0).size().width()
+	if DESKTOP_WIDTH <= 1280:
+		# Remove FHD skins because of box skin is HD only
+		skins = [x for x in skins if "FHD" not in x[0]]
+
 	config.plugins.serienRec.SkinType = ConfigSelection(choices=skins, default="")
 	config.plugins.serienRec.showAllButtons = ConfigYesNo(default=False)
 	config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1, 60))
-	config.plugins.serienRec.firstscreen = ConfigSelection(choices=[("0", "SerienPlaner"), ("1", "SerienMarker")], default="0")
+	config.plugins.serienRec.firstscreen = ConfigSelection(choices=[("0", "Serien-Planer"), ("1", "Serien-Marker")], default="0")
 	config.plugins.serienRec.showPicons = ConfigSelection(choices=[("0", "Nein"), ("1", "Ja, über ServiceRef"), ("2", "Ja, über Name")], default="1")
 	config.plugins.serienRec.piconPath = ConfigText(default="/usr/share/enigma2/picon/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.downloadCover = ConfigYesNo(default=False)
@@ -211,12 +244,7 @@ def ReadConfigFile():
 	###############################################################################################################################
 
 	config.plugins.serienRec.tvplaner_last_full_check = ConfigInteger(0)
-
-	config.plugins.serienRec.justplay = ConfigYesNo(default=False)
-	config.plugins.serienRec.justremind = ConfigYesNo(default=False)
-	config.plugins.serienRec.zapbeforerecord = ConfigYesNo(default=False)
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default=False)
-
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default=True)
 	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default=True)
 
@@ -241,6 +269,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.tvplaner_create_marker = NoSave(ConfigYesNo(default=True))
 	config.plugins.serienRec.updateInterval = NoSave(ConfigInteger(24, (0, 24)))
 
+	# CORRECT DEFAULTS
 	if config.plugins.serienRec.screenplaner.value > 2:
 		config.plugins.serienRec.screenplaner.value = 1
 	config.plugins.serienRec.screenplaner.save()
@@ -252,6 +281,10 @@ def ReadConfigFile():
 	if config.plugins.serienRec.epgTimeSpan.value > 30:
 		config.plugins.serienRec.epgTimeSpan.value = 30
 	config.plugins.serienRec.epgTimeSpan.save()
+
+	if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is False:
+		config.plugins.serienRec.enableWebinterface.value = False
+	config.plugins.serienRec.enableWebinterface.save()
 
 	configfile.save()
 
@@ -321,30 +354,12 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.setupModified = False
 		self.SkinType = config.plugins.serienRec.SkinType.value
 
-		self.__C_JUSTPLAY__ = 0
-		self.__C_ZAPBEFORERECORD__ = 1
-		self.__C_JUSTREMIND__ = 2
-
-		kindOfTimer_default = 0
-		if config.plugins.serienRec.zapbeforerecord.value:
-			kindOfTimer_default |= (1 << self.__C_ZAPBEFORERECORD__)
-			config.plugins.serienRec.justplay.value = False
-			config.plugins.serienRec.justremind.value = False
-		elif config.plugins.serienRec.justplay.value:
-			kindOfTimer_default |= (1 << self.__C_JUSTPLAY__)
-			config.plugins.serienRec.justremind.value = False
-			config.plugins.serienRec.zapbeforerecord.value = False
-		elif config.plugins.serienRec.justremind.value:
-			kindOfTimer_default |= (1 << self.__C_JUSTREMIND__)
-			config.plugins.serienRec.justplay.value = False
-			config.plugins.serienRec.zapbeforerecord.value = False
-		self.kindOfTimer = ConfigSelection(choices = [("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default=str(kindOfTimer_default))
-
 		config.plugins.serienRec.AutoBackup.addNotifier(self.onChangeConfigSelection, initial_call=False)
 		config.plugins.serienRec.autochecktype.addNotifier(self.onChangeConfigSelection, initial_call=False)
 		config.plugins.serienRec.showPicons.addNotifier(self.onChangeConfigSelection, initial_call=False)
 		config.plugins.serienRec.splitEventTimer.addNotifier(self.onChangeConfigSelection, initial_call=False)
 		config.plugins.serienRec.SkinType.addNotifier(self.onChangeConfigSelection, initial_call=False)
+		config.plugins.serienRec.enableWebinterface.addNotifier(self.onEnableWebinterface, initial_call=False)
 
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
@@ -528,6 +543,37 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if selection is not None:
 			self.changedEntry()
 
+	def onEnableWebinterface(self, selection):
+		if selection and selection.value:
+			# Webinterface enabled
+			if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is False:
+				# Webinterface not installed
+				self.session.openWithCallback(self.installWebinterfaceCallback, MessageBox, "Das SerienRecorder Webinterface ist noch nicht installiert, soll es heruntergeladen und installiert werden?", MessageBox.TYPE_YESNO, default=False)
+
+	def installWebinterfaceCallback(self, answer):
+		if answer:
+			successful = False
+			error = ''
+			targetFilePath = os.path.join(os.path.dirname(__file__), "web-data")
+
+			try:
+				from .SerienRecorderUpdateScreen import checkGitHubUpdate
+				webapp_assets = checkGitHubUpdate.checkForWebinterfaceUpdate()
+				for webapp_asset in webapp_assets:
+					(api_version, webapp_version, url, size) = webapp_asset
+					if api_version == SRAPIVERSION:
+						os.makedirs(targetFilePath)
+						successful = checkGitHubUpdate.installWebinterfaceUpdate(url)
+						break
+			except Exception as e:
+				error = ' [%s]' % str(e)
+
+			if successful:
+				self.session.open(MessageBox, "Das SerienRecorder Webinterface wurde erfolgreich installiert.", MessageBox.TYPE_INFO, timeout=5)
+			else:
+				os.rmdir(targetFilePath)
+				self.session.open(MessageBox, "Das SerienRecorder Webinterface konnte nicht installiert werden%s." % error, MessageBox.TYPE_INFO, timeout=5)
+
 	def bouquetPlus(self):
 		if isDreamOS():
 			self["config"].jumpToPreviousSection()
@@ -643,6 +689,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Speicherort der Datenbank:", config.plugins.serienRec.databasePath))
 		self.list.append(getConfigListEntry("Erstelle Backup:", config.plugins.serienRec.AutoBackup))
 		if config.plugins.serienRec.AutoBackup.value != "0":
+			self.list.append(getConfigListEntry("    Backup bei manuellem Timer-Suchlauf:", config.plugins.serienRec.backupAtManualCheck))
 			self.list.append(getConfigListEntry("    Speicherort für Backup:", config.plugins.serienRec.BackupPath))
 			self.list.append(getConfigListEntry("    Backup-Dateien löschen die älter als x Tage sind:", config.plugins.serienRec.deleteBackupFilesOlderThan))
 
@@ -700,7 +747,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 		###############################################################################################################################
 		addSection("TIMER")
-		self.list.append(getConfigListEntry("Timer-Art:", self.kindOfTimer))
+		self.list.append(getConfigListEntry("Timer-Art:", config.plugins.serienRec.kindOfTimer))
 		self.list.append(getConfigListEntry("Nach dem Event:", config.plugins.serienRec.afterEvent))
 		self.list.append(getConfigListEntry("Timervorlauf (in Min.):", config.plugins.serienRec.margin_before))
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
@@ -711,12 +758,10 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if config.plugins.serienRec.splitEventTimer.value == "2":
 			self.list.append(getConfigListEntry("    Einzelepisoden als 'bereits getimert' markieren:", config.plugins.serienRec.addSingleTimersForEvent))
 
-		print("[SerienRecorder] Number of TV bouquets = " + str(len(self.tvbouquets)))
 		if len(self.tvbouquets) == 0:
 			config.plugins.serienRec.selectBouquets.value = False
 		else:
 			for bouquet in self.tvbouquets:
-				print(bouquet)
 				self.bouquetList.append((bouquet[1], bouquet[1]))
 
 			defaultAlternativeBouquetIndex = 1 if len(self.tvbouquets) > 1 else 0
@@ -733,15 +778,15 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		###############################################################################################################################
 		addSection("OPTIMIERUNGEN")
 		self.list.append(getConfigListEntry("Intensive Suche nach angelegten Timern:", config.plugins.serienRec.intensiveTimersuche))
-		self.list.append(getConfigListEntry("Sucht eine Episode als Aufnahme auf der HDD:", config.plugins.serienRec.sucheAufnahme))
+		self.list.append(getConfigListEntry("Episode als Aufnahme auf der HDD suchen:", config.plugins.serienRec.sucheAufnahme))
 
 		###############################################################################################################################
 		addSection("BENUTZEROBERFLÄCHE")
 		self.list.append(getConfigListEntry("Skin:", config.plugins.serienRec.SkinType))
 
-		if config.plugins.serienRec.SkinType.value not in ("", "Skin2", "AtileHD", "StyleFHD", "Black Box"):
-			self.list.append(getConfigListEntry("    werden bei diesem Skin immer ALLE Tasten angezeigt:", config.plugins.serienRec.showAllButtons))
-		elif config.plugins.serienRec.SkinType.value in ("", "AtileHD"):
+		if config.plugins.serienRec.SkinType.value not in ("", "Skin1 FHD", "Skin2 FHD", "Skin2", "AtileHD", "StyleFHD", "Black Box"):
+			self.list.append(getConfigListEntry("    Werden bei diesem Skin immer ALLE Tasten angezeigt:", config.plugins.serienRec.showAllButtons))
+		elif config.plugins.serienRec.SkinType.value in ("", "Skin1 FHD", "AtileHD"):
 			config.plugins.serienRec.showAllButtons.value = False
 		else:
 			config.plugins.serienRec.showAllButtons.value = True
@@ -770,8 +815,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Öffne Marker-Ansicht nach Hinzufügen neuer Marker:", config.plugins.serienRec.openMarkerScreen))
 		self.list.append(getConfigListEntry("Vor Löschen in Serien-Marker und Timer-Liste Benutzer fragen:", config.plugins.serienRec.confirmOnDelete))
 		self.list.append(getConfigListEntry("Box-Sender bei der Senderzuordnung alphabetisch sortieren:", config.plugins.serienRec.alphaSortBoxChannels))
-		if os.path.isdir("%s/web-data" % os.path.dirname(__file__)):
-			self.list.append(getConfigListEntry("SerienRecorder Webinterface aktivieren:", config.plugins.serienRec.enableWebinterface))
+		self.list.append(getConfigListEntry("SerienRecorder Webinterface aktivieren:", config.plugins.serienRec.enableWebinterface))
 
 		###############################################################################################################################
 		addSection("MELDUNGEN")
@@ -882,6 +926,12 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				self.changedEntry()
 
 	def setInfoText(self):
+		def messageTimeout():
+			if config.plugins.serienRec.showMessageTimeout.value == 0:
+				return "bis zur Bestätigung"
+			else:
+				return "%d Sekunden" % config.plugins.serienRec.showMessageTimeout.value
+
 		from .SerienRecorderLogWriter import SERIENRECORDER_LONG_LOGFILENAME
 		lt = time.localtime()
 		self.HilfeTexte = {
@@ -918,6 +968,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 					"Bei 'nach dem Timer-Suchlauf' wird das Backup nach dem Timer-Suchlauf erstellt. Bei 'nein' wird kein Backup erstellt (nicht empfohlen)." % (
 						config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2),
 						str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))),
+			config.plugins.serienRec.backupAtManualCheck: (
+				"Bei 'ja' wird bei einem manuellen Timer-Suchlauf ein Backup erstellt."),
 			config.plugins.serienRec.BackupPath: (
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert werden."),
 			config.plugins.serienRec.deleteBackupFilesOlderThan: (
@@ -1025,7 +1077,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			###############################################################################################################################
 			# TIMER
 			###############################################################################################################################
-			self.kindOfTimer: ("Es kann ausgewählt werden, wie Timer angelegt werden. Die Auswahlmöglichkeiten sind:\n"
+			config.plugins.serienRec.kindOfTimer: ("Es kann ausgewählt werden, wie Timer angelegt werden. Die Auswahlmöglichkeiten sind:\n"
 			                   "  - 'aufnehmen': Ein 'normaler' Timer wird erstellt\n"
 			                   "  - 'umschalten': Es wird ein Timer erstellt, bei dem nur auf den aufzunehmenden Sender umgeschaltet wird. Es erfolgt KEINE Aufnahme\n"
 			                   "  - 'umschalten und aufnehmen': Es wird ein Timer erstellt, bei dem vor der Aufnahme auf den aufzunehmenden Sender umgeschaltet wird\n"
@@ -1136,7 +1188,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.alphaSortBoxChannels: (
 				"Bei 'ja' wird die Liste der Box-Sender bei der Zuweisung in der Senderzuordnungsansicht alphabetisch sortiert, ansonsten ist die Liste in der festgelegten Reihenfolge des Bouquets sortiert."),
 			config.plugins.serienRec.enableWebinterface: (
-				"Bei 'ja' wird das Webinterface des SerienRecorder aktiviert, sodass über den Webbrowser von einem beliebigen Computer/Tablet/Smartphone auf den SerienRecorder zugegriffen werden kann.\n\n"
+				"Bei 'ja' wird das Webinterface des SerienRecorder aktiviert, sodass über den Webbrowser, von einem beliebigen Computer/Tablet/Smartphone, auf den SerienRecorder zugegriffen werden kann.\n\n"
 				"Die Box muss neu gestartet werden, damit diese Änderung wirksam wird.\n\n"
 				"Schnittstellen Version: " + SRAPIVERSION),
 
@@ -1147,14 +1199,14 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Je nach Einstellung wird eine Nachricht auf dem Bildschirm eingeblendet, sobald der automatische Timer-Suchlauf endet."),
 			config.plugins.serienRec.showMessageOnConflicts: (
 				"Bei 'ja' wird für jeden Timer, der beim automatische Timer-Suchlauf wegen eines Konflikts nicht angelegt werden konnte, eine Nachricht auf dem Bildschirm eingeblendet.\n"
-				"Diese Nachrichten bleiben solange auf dem Bildschirm, bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
+				"Diese Nachrichten wird %s auf dem Bildschirm angezeigt" % messageTimeout()),
 			config.plugins.serienRec.showMessageOnTVPlanerError: (
 				"Bei 'ja' wird eine Nachricht auf dem Bildschirm eingeblendet, wenn beim Abrufen der TV-Planer E-Mail ein Fehler aufgetreten ist.\n"
-				"Diese Nachrichten bleiben solange auf dem Bildschirm, bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
+				"Diese Nachrichten wird %s auf dem Bildschirm angezeigt" % messageTimeout()),
 			config.plugins.serienRec.showMessageOnEventNotFound: (
 				"Bei 'ja' wird für jeden Timer dessen Sendung beim automatischen Timer-Suchlauf nicht mehr im EPG gefunden wurde, eine Nachricht auf dem Bildschirm eingeblendet.\n"
 				"Das könnte darauf hindeuten, dass die Sendung evtl. kurzfristig aus dem Programm genommen wurde.\n"
-				"Diese Nachrichten bleiben solange auf dem Bildschirm, bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
+				"Diese Nachrichten wird %s auf dem Bildschirm angezeigt" % messageTimeout()),
 			config.plugins.serienRec.showMessageTimeout: (
 				"Gibt an wie lange die obigen Nachrichten (Timerkonflikte, TV-Planer Fehler und Sendung im EPG nicht gefunden) auf dem Bildschirm angezeigt werden.\n\n"
 				"Bei '0' bleiben sie solange auf dem Bildschirm, bis sie vom Benutzer quittiert (zur Kenntnis genommen) werden."),
@@ -1272,6 +1324,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.Autoupdate.save()
 		config.plugins.serienRec.databasePath.save()
 		config.plugins.serienRec.AutoBackup.save()
+		config.plugins.serienRec.backupAtManualCheck.save()
 		config.plugins.serienRec.BackupPath.save()
 		config.plugins.serienRec.deleteBackupFilesOlderThan.save()
 
@@ -1381,6 +1434,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.openMarkerScreen.save()
 		config.plugins.serienRec.confirmOnDelete.save()
 		config.plugins.serienRec.alphaSortBoxChannels.save()
+		if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is False:
+			config.plugins.serienRec.enableWebinterface.value = False
 		config.plugins.serienRec.enableWebinterface.save()
 
 		###############################################################################################################################
@@ -1415,12 +1470,12 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		###############################################################################################################################
 
 		config.plugins.serienRec.timeUpdate.save()
-		config.plugins.serienRec.justplay.value = bool(int(self.kindOfTimer.value) & (1 << self.__C_JUSTPLAY__))
+		config.plugins.serienRec.justplay.value = bool(int(config.plugins.serienRec.kindOfTimer.value) & (1 << __C_JUSTPLAY__))
 		config.plugins.serienRec.justplay.save()
-		config.plugins.serienRec.justremind.value = bool(int(self.kindOfTimer.value) & (1 << self.__C_JUSTREMIND__))
+		config.plugins.serienRec.justremind.value = bool(int(config.plugins.serienRec.kindOfTimer.value) & (1 << __C_JUSTREMIND__))
 		config.plugins.serienRec.justremind.save()
 		config.plugins.serienRec.zapbeforerecord.value = bool(
-			int(self.kindOfTimer.value) & (1 << self.__C_ZAPBEFORERECORD__))
+			int(config.plugins.serienRec.kindOfTimer.value) & (1 << __C_ZAPBEFORERECORD__))
 		config.plugins.serienRec.zapbeforerecord.save()
 
 		# Save obsolete config setting here to remove it from file

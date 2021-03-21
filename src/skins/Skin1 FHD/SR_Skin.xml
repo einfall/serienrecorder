@@ -1,0 +1,75 @@
+﻿<screen name="SerienRecorder3.0" position="center,center" size="1920,1080" title="Serien Recorder">
+    <!--Serienrecorder1 FHD Skin -->
+    <ePixmap position="0,0" size="1920,1080" zPosition="-1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/bg.png" />
+    
+	<widget name="title" position="50,80" size="1260,68" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular; 40" valign="center" halign="left" />
+    <widget name="headline" position="50,10" size="1260,60" foregroundColor="red" backgroundColor="#26181d20" transparent="1" font="Regular; 40" valign="center" halign="center" />
+    <widget name="version" position="1350,10" size="550,60" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular; 40" valign="center" halign="right" />
+    <widget source="global.CurrentTime" render="Label" position="1311,75" size="589,60" font="Regular; 34" valign="center" halign="right" backgroundColor="#26181d20" transparent="1">
+      <convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
+    </widget>
+	
+    <eLabel position="1381,171" zPosition="3" size="495,280" backgroundColor="transparent" />
+    <widget name="video" position="1387,175" size="490,275" zPosition="-8" />
+   
+    <widget name="config" position="15,200" size="1335,740" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_big.png" />
+    <widget name="menu_list" position="15,190" size="1335,750" foregroundColor="yellow" foregroundColorSelected="yellow" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_big.png" />
+    <widget name="log" position="15,170" size="1885,740" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="15" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_big.png" />
+    
+	<widget name="popup_bg" position="125,250" size="805,670" backgroundColor="#00000000" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/popup_bg.png" transparent="1" zPosition="4" />
+    <widget name="popup_list" position="125,250" size="770,670" backgroundColor="#181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_small.png" />
+    <widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/no_cover.png" position="1360,462" size="540,480" zPosition="12" transparent="1" alphatest="blend" />
+    
+	<widget name="bt_red" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/red_round.png" position="15,975" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_red" position="65,979" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_green" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/green_round.png" position="375,975" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_green" position="425,979" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_ok" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_ok.png" position="775,975" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_ok" position="825,979" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_yellow" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/yellow_round.png" position="1175,975" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_yellow" position="1225,979" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_blue" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/blue_round.png" position="1575,975" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_blue" position="1625,979" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_0" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_0.png" position="15,1028" zPosition="3" size="45,45" alphatest="on" />
+    <widget name="bt_5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_5.png" position="15,1028" zPosition="2" size="45,45" alphatest="on" />
+    <widget name="bt_exit" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_exit.png" position="15,1028" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_0" position="65,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_5" position="65,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_exit" position="65,1035" size="300,36" zPosition="1" font="Regular; 26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_1" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_1.png" position="370,1028" zPosition="3" size="45,45" alphatest="on" />
+    <widget name="bt_6" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_6.png" position="370,1028" zPosition="2" size="45,45" alphatest="on" />
+    <widget name="bt_text" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_text.png" position="370,1028" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_1" position="425,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_6" position="425,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_text" position="425,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_2.png" position="775,1028" zPosition="3" size="45,45" alphatest="on" />
+    <widget name="bt_7" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_7.png" position="775,1028" zPosition="2" size="45,45" alphatest="on" />
+    <widget name="bt_epg" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_epg.png" position="775,1028" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_2" position="825,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_7" position="825,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_epg" position="825,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_3" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_3.png" position="1175,1028" zPosition="3" size="45,45" alphatest="on" />
+    <widget name="bt_8" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_8.png" position="1175,1028" zPosition="2" size="45,45" alphatest="on" />
+    <widget name="bt_info" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_help.png" position="1175,1028" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_3" position="1225,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_8" position="1225,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_info" position="1225,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="bt_4" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_4.png" position="1575,1028" zPosition="3" size="45,45" alphatest="on" />
+    <widget name="bt_9" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_9.png" position="1575,1028" zPosition="2" size="45,45" alphatest="on" />
+    <widget name="bt_menu" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/key_menu.png" position="1575,1028" zPosition="1" size="45,45" alphatest="on" />
+    <widget name="text_4" position="1625,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_9" position="1625,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    <widget name="text_menu" position="1625,1035" size="300,36" zPosition="1" font="Regular;26" halign="left" backgroundColor="#26181d20" transparent="1" />
+    
+	<widget name="Web_Channel" position="90,165" size="270,40" font="Regular; 30" backgroundColor="#26181d20" foregroundColor="#000090e6" transparent="1" />
+    <widget name="STB_Channel" position="541,165" size="270,40" font="Regular; 30" backgroundColor="#26181d20" foregroundColor="#000090e6" transparent="1" />
+    <widget name="alt_STB_Channel" position="940,165" size="270,40" font="Regular; 30" backgroundColor="#26181d20" foregroundColor="#000090e6" transparent="1" />
+    
+	<widget name="list" position="15,200" size="1335,740" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_small.png" />
+    <widget name="popup_list2" position="160,250" size="770,670" backgroundColor="#181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="6" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_small.png" />
+    <widget name="config_information" position="1360,460" zPosition="3" size="540,480" backgroundColor="transparent" />
+    <widget name="config_information_text" position="1360,460" size="540,480" backgroundColor="#00000000" transparent="0" halign="left" zPosition="5" font="Regular; 22" />
+    <widget name="info" position="15,230" size="1335,720" font="Regular; 32" backgroundColor="#00000000" transparent="1" zPosition="1" />
+    <widget name="path" position="50,80" size="1260,68" foregroundColor="#00ffffff" backgroundColor="#26181d20" transparent="1" font="Regular; 30" valign="center" halign="left" />
+    <!--Serienrecorder1 FHD Skin-->
+  </screen>

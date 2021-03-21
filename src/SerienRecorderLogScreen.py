@@ -75,7 +75,7 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 		self['video'].hide()
 		self['cover'].hide()
 
-		self['title'].setText("Lese LogFile: (%s)" % SRLogger.getLogFilePath())
+		self['title'].setText("Lese Logdatei: (%s)" % SRLogger.getLogFilePath())
 
 		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_red'].show()
@@ -107,7 +107,7 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 					logliste.append(zeile)
 			readLog.close()
 			self['title'].hide()
-			self['path'].setText("LogFile:\n(%s)" % logFilePath)
+			self['path'].setText("Logdatei:\n(%s)" % logFilePath)
 			self['path'].show()
 			self.chooseMenuList.setList(list(map(self.buildList, logliste)))
 			if config.plugins.serienRec.logScrollLast.value:

@@ -25,7 +25,7 @@ class downloadPlannerData(threading.Thread):
 			from .SerienRecorderSeriesServer import SeriesServer
 			self.plannerData = SeriesServer().doGetPlannerData(self.daypage, self.webChannels)
 		except:
-			SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner-Daten [%s]\n" % str(self.daypage), True)
+			SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der Serien-Planer Daten [%s]\n" % str(self.daypage), True)
 
 	def getData(self):
 		return self.daypage, self.plannerData
@@ -40,7 +40,7 @@ class serienRecSeriesPlanner:
 		webChannels = self.database.getActiveChannels()
 		markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
 
-		SRLogger.writeLog("\nLaden der SerienPlaner-Daten gestartet ...", True)
+		SRLogger.writeLog("\nLaden der Serien-Planer Daten gestartet ...", True)
 
 		downloadPlannerDataResults = []
 		plannerCacheSize = 2
@@ -58,8 +58,8 @@ class serienRecSeriesPlanner:
 				(daypage, plannerData) = plannerDataThread.getData()
 				self.processPlannerData(plannerData, markers, daypage)
 		except:
-			SRLogger.writeLog("Fehler beim Abrufen oder Verarbeiten der SerienPlaner-Daten")
-		SRLogger.writeLog("... Laden der SerienPlaner-Daten beendet\n", True)
+			SRLogger.writeLog("Fehler beim Abrufen oder Verarbeiten der Serien-Planer Daten")
+		SRLogger.writeLog("... Laden der Serien-Planer Daten beendet\n", True)
 
 	def processPlannerData(self, data, markers, daypage):
 		if not data or len(data) == 0:

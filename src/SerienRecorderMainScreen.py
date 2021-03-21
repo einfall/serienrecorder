@@ -18,7 +18,7 @@ from skin import parseColor
 from .SerienRecorder import serienRecDataBaseFilePath
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, updateMenuKeys, InitSkin, skinFactor
 from .SerienRecorderSeriesServer import SeriesServer
-from .SerienRecorderHelpers import PiconLoader, TimeHelpers, STBHelpers, PicLoader, getDirname, toStr
+from .SerienRecorderHelpers import PiconLoader, PicLoader, toStr, SRAPIVERSION
 from .SerienRecorderDatabase import SRDatabase
 from .SerienRecorderLogWriter import SRLogger
 from .SerienRecorderSeriesPlanner import serienRecSeriesPlanner
@@ -124,7 +124,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def showSplashScreen(self):
 		from .SerienRecorderSplashScreen import ShowSplashScreen
-		self.session.openWithCallback(self.checkForUpdate, ShowSplashScreen, config.plugins.serienRec.showversion.value)
+		self.session.openWithCallback(self.checkForUpdate, ShowSplashScreen)
 
 	def checkForUpdate(self):
 		if config.plugins.serienRec.Autoupdate.value:
@@ -341,7 +341,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				else:
 					self.processTopThirty(cache[key], True)
 			except:
-				SRLogger.writeLog("Fehler beim Lesen und Verarbeiten der SerienPlaner bzw. Top30 Daten aus dem Cache.\n", True)
+				SRLogger.writeLog("Fehler beim Lesen und Verarbeiten der Serien-Planer bzw. Top30 Daten aus dem Cache.\n", True)
 		else:
 			self['title'].setText("Lade Infos vom Web...")
 			webChannels = self.database.getActiveChannels()
@@ -360,7 +360,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 					self.processTopThirty(result, False)
 
 			def onCacheDataFailed():
-				SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der SerienPlaner bzw. Top30 Daten vom SerienServer.\n", True)
+				SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der Serien-Planer bzw. Top30 Daten vom SerienServer.\n", True)
 
 			import twisted.python.runtime
 			if twisted.python.runtime.platform.supportsThreads():
@@ -375,7 +375,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def processPlanerData(self, data, useCache=False):
 		if not data or len(data) == 0:
-			self['title'].setText("Fehler beim Abrufen der SerienPlaner-Daten")
+			self['title'].setText("Fehler beim Abrufen der Serien-Planer Daten")
 			return
 		if useCache:
 			(headDate, self.daylist) = data
@@ -407,7 +407,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def processTopThirty(self, data, useCache=False):
 		if not data or len(data) == 0:
-			self['title'].setText("Fehler beim Abrufen der SerienPlaner-Daten")
+			self['title'].setText("Fehler beim Abrufen der Serien-Planer Daten")
 			return
 		if useCache:
 			(headDate, self.daylist) = data
@@ -548,6 +548,10 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
 				self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 				self['title'].instance.setForegroundColor(parseColor("green"))
+
+				from .SerienRecorder import getCover
+				getCover(self, serien_name, serien_wlid, serien_fsid, False, True)
+
 				if config.plugins.serienRec.openMarkerScreen.value:
 					from .SerienRecorderMarkerScreen import serienRecMarker
 					self.session.open(serienRecMarker, serien_wlid)

@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.2.8-beta'
+SRVERSION = '4.3.0'
 SRDBVERSION = '4.1.0'
 SRAPIVERSION = '2.1'
 SRWEBAPPVERSION = '0.8'
@@ -156,7 +156,9 @@ def getChangedSeriesNames(markers):
 			continue
 	return result
 
-def createBackup():
+def createBackup(isManualAutoCheck):
+	if not config.plugins.serienRec.backupAtManualCheck.value and isManualAutoCheck:
+		return
 	print("[SerienRecorder] Creating backup...")
 
 	from .SerienRecorderLogWriter import SRLogger

@@ -279,6 +279,9 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
 				self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 
+				from .SerienRecorder import getCover
+				getCover(self, serien_name, serien_wlid, serien_fsid, False, True)
+
 			if config.plugins.serienRec.openMarkerScreen.value:
 				from .SerienRecorderMarkerScreen import serienRecMarker
 				self.session.open(serienRecMarker, serien_wlid)

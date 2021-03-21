@@ -548,12 +548,12 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					(primary_bouquet_active, secondary_bouquet_active) = database.isBouquetActive(sender)
 					if str(episode).isdigit():
 						if int(episode) == 0:
-							(count_primary_bouquet, count_secondary_bouquet) = database.getNumberOfTimersByBouquet(fsid, str(staffel), str(episode), title)
+							(count_manually, count_primary_bouquet, count_secondary_bouquet) = database.getNumberOfTimersByBouquet(fsid, str(staffel), str(episode), title)
 						else:
-							(count_primary_bouquet, count_secondary_bouquet) = database.getNumberOfTimersByBouquet(fsid, str(staffel), str(episode))
+							(count_manually, count_primary_bouquet, count_secondary_bouquet) = database.getNumberOfTimersByBouquet(fsid, str(staffel), str(episode))
 					else:
-						(count_primary_bouquet, count_secondary_bouquet) = database.getNumberOfTimersByBouquet(fsid, str(staffel), str(episode))
-					if count_primary_bouquet >= NoOfRecords or (secondary_bouquet_active and count_secondary_bouquet >= NoOfRecords) or (primary_bouquet_active and count_primary_bouquet >= NoOfRecords):
+						(count_manually, count_primary_bouquet, count_secondary_bouquet) = database.getNumberOfTimersByBouquet(fsid, str(staffel), str(episode))
+					if count_manually >= NoOfRecords or (count_primary_bouquet >= NoOfRecords or (secondary_bouquet_active and count_secondary_bouquet >= NoOfRecords) or (primary_bouquet_active and count_primary_bouquet >= NoOfRecords)):
 						timerExists = True
 				else:
 					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
