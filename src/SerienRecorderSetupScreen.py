@@ -323,7 +323,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.num_bt_text = ()
 		self.tvplaner_full_check = None
 		self.checkfordays = None
-		self.tvbouquets = STBHelpers.getTVBouquets()
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"	: (self.keyOK, "Fenster für Verzeichnisauswahl öffnen"),
@@ -758,13 +757,14 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if config.plugins.serienRec.splitEventTimer.value == "2":
 			self.list.append(getConfigListEntry("    Einzelepisoden als 'bereits getimert' markieren:", config.plugins.serienRec.addSingleTimersForEvent))
 
-		if len(self.tvbouquets) == 0:
+		boxBouquets = STBHelpers.getTVBouquets()
+		if len(boxBouquets) == 0:
 			config.plugins.serienRec.selectBouquets.value = False
 		else:
-			for bouquet in self.tvbouquets:
+			for bouquet in boxBouquets:
 				self.bouquetList.append((bouquet[1], bouquet[1]))
 
-			defaultAlternativeBouquetIndex = 1 if len(self.tvbouquets) > 1 else 0
+			defaultAlternativeBouquetIndex = 1 if len(boxBouquets) > 1 else 0
 			config.plugins.serienRec.MainBouquet.setChoices(choices=self.bouquetList, default=self.bouquetList[0][0])
 			config.plugins.serienRec.AlternativeBouquet.setChoices(choices=self.bouquetList, default=self.bouquetList[defaultAlternativeBouquetIndex][0])
 

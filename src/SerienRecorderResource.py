@@ -434,7 +434,7 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 		data = {}
 		marker_id = req.args.get(toBinary("markerid"), None)
 		if marker_id:
-			from .SerienRecorderHelpers import isVTI
+			from .SerienRecorderHelpers import hasAutoAdjust
 			from .SerienRecorderDatabase import SRDatabase
 			from .SerienRecorder import serienRecDataBaseFilePath, VPSPluginAvailable
 			database = SRDatabase(serienRecDataBaseFilePath)
@@ -601,7 +601,7 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 					'value': skipSeriesServer
 				},
 				'autoAdjust': {
-					'available': isVTI(),
+					'available': hasAutoAdjust(),
 					'enabled': enable_autoAdjust,
 					'value': autoAdjust
 				}

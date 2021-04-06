@@ -22,7 +22,7 @@ else:
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, InitSkin, setMenuTexts, buttonText_na
 from .SerienRecorder import serienRecDataBaseFilePath
 
-from .SerienRecorderHelpers import isVTI, PY2
+from .SerienRecorderHelpers import hasAutoAdjust, PY2
 from .SerienRecorderDatabase import SRDatabase
 
 # Tageditor
@@ -337,7 +337,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 					self.list.append(
 						getConfigListEntry("            Sicherheitsmodus aktivieren:", self.enable_vps_savemode))
 
-		if isVTI():
+		if hasAutoAdjust():
 			self.list.append(getConfigListEntry("Aktiviere abweichende Aufnahmezeitenanpassung aus den EPG Daten:", self.enable_autoAdjust))
 			if self.enable_autoAdjust.value:
 				self.list.append(getConfigListEntry("      Aufnahmezeiten automatisch an EPG Daten anpassen:", self.autoAdjust))

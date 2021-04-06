@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.3.0'
+SRVERSION = '4.3.1-beta'
 SRDBVERSION = '4.1.0'
 SRAPIVERSION = '2.1'
 SRWEBAPPVERSION = '0.8'
@@ -66,16 +66,16 @@ def isDreamOS():
 		isDreamboxOS = True
 	return isDreamboxOS
 
-def isVTI():
+def hasAutoAdjust():
 	try:
-		from enigma import getVTiVersionString
-		imageversion = getVTiVersionString()
-		print("[SerienRecorder] VTI version: " + imageversion)
-	except ImportError:
-		isVTIImage = False
-	else:
-		isVTIImage = True
-	return isVTIImage
+		from RecordTimer import RecordTimerEntry
+		from ServiceReference import ServiceReference
+		timer = RecordTimerEntry(ServiceReference("1:0:1:0:0:0:0:0:0:0"), 0, 0, '', '', 0)
+		if hasattr(timer, "autoadjust"):
+			return True
+	except:
+		pass
+	return False
 
 def base64_encode(bytes_or_str):
 	import base64

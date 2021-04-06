@@ -478,7 +478,7 @@ class serienRecCheckForRecording:
 			while True:
 				if config.plugins.serienRec.tvplaner.value and config.plugins.serienRec.tvplaner_skipSerienServer.value:
 					# Skip serien server processing
-					SRLogger.writeLog("\nGemäß der globalen Einstellungen werden Timer nur aus den Terminen der TV-Planer E-Mail angelegt.\n", True)
+					SRLogger.writeLog("\nGemäß den globalen Einstellungen werden Timer nur aus den Terminen der TV-Planer E-Mail angelegt.\n", True)
 
 				global transmissionFailed
 				transmissionFailed = False
@@ -893,8 +893,8 @@ class serienRecCheckForRecording:
 					for each in self.messageList:
 						Notifications.RemovePopup(each[3])
 
-					print("[SerienRecorder] gehe in Deep-Standby")
-					SRLogger.writeLog("gehe in Deep-Standby")
+					print("[SerienRecorder] Going into Deep-Standby")
+					SRLogger.writeLog("Gehe in den Deep-Standby")
 					if Screens.Standby.inStandby:
 						# from RecordTimer import RecordTimerEntry
 						# RecordTimerEntry.TryQuitMainloop()
@@ -902,12 +902,13 @@ class serienRecCheckForRecording:
 					else:
 						Notifications.AddNotificationWithID("Shutdown", Screens.Standby.TryQuitMainloop, 1)
 				else:
-					print("[SerienRecorder] Eine laufende Aufnahme verhindert den Deep-Standby")
+					print("[SerienRecorder] A running recording prevents Deep-Standby")
 					SRLogger.writeLog("Eine laufende Aufnahme verhindert den Deep-Standby")
 			else:
-				print("[SerienRecorder] gehe in Standby")
-				SRLogger.writeLog("gehe in Standby")
-				Notifications.AddNotification(Screens.Standby.Standby)
+				if not Screens.Standby.inStandby:
+					print("[SerienRecorder] Going into standby")
+					SRLogger.writeLog("Gehe in den Standby")
+					Notifications.AddNotification(Screens.Standby.Standby)
 
 	def checkSender(self, channel):
 		if channel.lower() in self.senderListe:

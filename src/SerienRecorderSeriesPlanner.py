@@ -133,7 +133,7 @@ class serienRecSeriesPlanner:
 			daylist[0].append((regional, paytv, neu, prime, transmissionTime, serien_name, sender, staffel,
 			                   episode, title, aufnahme, serieAdded, bereits_vorhanden, serien_wlid, serien_fsid, serien_info))
 
-		print("[SerienRecorder] Es wurden %s Serie(n) gefunden" % len(daylist[0]))
+		print("[SerienRecorder] Found %s series for page %s" % (len(daylist[0]), str(daypage)))
 
 		if headDate:
 			d = headDate[0].split(',')

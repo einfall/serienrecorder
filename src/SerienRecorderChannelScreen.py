@@ -16,7 +16,7 @@ from skin import parseColor
 import os
 
 from .SerienRecorderSeriesServer import SeriesServer
-from .SerienRecorderHelpers import STBHelpers, isVTI, toStr
+from .SerienRecorderHelpers import STBHelpers, hasAutoAdjust, toStr
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, InitSkin, skinFactor, updateMenuKeys, setMenuTexts
 from .SerienRecorderLogWriter import SRLogger
 
@@ -267,7 +267,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 					if not newWebChannels:
 						SRLogger.writeLog("Die SerienRecorder Senderliste ist aktuell, es wurden keine neuen Sender bei Wunschliste gefunden.")
-						self.session.open(MessageBox, "Die SerienRecorder Senderliste ist aktuell,\nes wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
+						self.session.open(MessageBox, "Es wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
 						self.showChannels()
 					else:
 						newChannelsMessage = "Folgende Sender wurden neu bei Wunschliste gefunden:\n" + "\n".join(newWebChannels)
@@ -786,7 +786,7 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 			if self.enable_vps.value:
 				self.list.append(getConfigListEntry("      Sicherheitsmodus aktivieren:", self.enable_vps_savemode))
 
-		if isVTI():
+		if hasAutoAdjust():
 			self.list.append(getConfigListEntry("Aufnahmezeitenanpassung aus den EPG Daten für diesen Sender aktivieren:", self.enable_autoAdjust))
 			if self.enable_autoAdjust.value:
 				self.list.append(getConfigListEntry("      Aufnahmezeiten automatisch an EPG Daten anpassen:", self.autoAdjust))

@@ -217,7 +217,7 @@ class serienRecTimer:
 					# Startzeit
 					updateStartTime = False
 					start_unixtime_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
-					print("[SerienRecorder] Start: [%s (%s) / %s (%s)]" % (timer_begin_str, str(timer.begin), start_unixtime_str, str(start_unixtime)))
+					print("[SerienRecorder] Start: [%s (%s)] / %s (%s)" % (timer_begin_str, str(timer.begin), start_unixtime_str, str(start_unixtime)))
 					if start_unixtime and timer.begin != start_unixtime and abs(start_unixtime - timer.begin) > 30:
 						timer.begin = start_unixtime
 						timer.end = end_unixtime
@@ -232,7 +232,7 @@ class serienRecTimer:
 					old_end = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(timer.end)))
 					timer_end_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
 					end_unixtime_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
-					print("[SerienRecorder] End: [%s (%s) / %s (%s)]" % (timer_end_str, str(timer.end), end_unixtime_str, str(end_unixtime)))
+					print("[SerienRecorder] End: [%s (%s)] / %s (%s)" % (timer_end_str, str(timer.end), end_unixtime_str, str(end_unixtime)))
 					if end_unixtime and timer.end != end_unixtime and abs(end_unixtime - timer.end) > 30:
 						timer.begin = start_unixtime
 						timer.end = end_unixtime
@@ -927,8 +927,8 @@ class serienRecTimer:
 				new_serien_time = 0
 				new_serien_endtime = 0
 				new_serien_time_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(new_serien_time)))
-				updateFromEPG = self.database.getUpdateFromEPG(serien_fsid, config.plugins.serienRec.eventid.value)
 
+			updateFromEPG = self.database.getUpdateFromEPG(serien_fsid, config.plugins.serienRec.eventid.value)
 			title = "%s - S%sE%s - %s" % (new_serien_name, str(new_staffel).zfill(2), str(new_episode).zfill(2), new_serien_title)
 
 			(dirname, dirname_serie) = getDirname(self.database, new_serien_name, serien_fsid, new_staffel)
@@ -980,25 +980,25 @@ class serienRecTimer:
 			# Call update timer
 			print("[SerienRecorder] Try to modify enigma2 timer: %s [%d]" % (title, serien_time))
 
-			if (str(new_staffel) == 'S' or str(new_staffel) == '0') and (str(new_episode) == '0' or str(new_episode) == '00'):
-				print("[SerienRecorder] Not able to update time")
+			# if (str(new_staffel) == 'S' or str(new_staffel) == '0') and (str(new_episode) == '0' or str(new_episode) == '00'):
+			# 	print("[SerienRecorder] Not able to update time")
+			# 	SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+			# 	SRLogger.writeLog("   Timer ohne Staffel und Episode (S00E00) kann nicht aktualisiert werden @ %s" % channelName, True)
+			# else:
+			# get VPS settings for channel
+			vpsSettings = self.database.getVPS(serien_fsid, webChannel)
+
+			try:
+				# suche in aktivierten Timern
+				self.update(recordHandler.timer_list + recordHandler.processed_timers, eit, end_unixtime, new_episode,
+				            new_serien_title, serien_name, serien_fsid, serien_time,
+				            new_staffel, start_unixtime, stbRef, title,
+				            dirname, vpsSettings, markerType)
+
+			except Exception as e:
+				print("[SerienRecorder] Modifying enigma2 timer failed: %s [%d] (%s)" % (title, serien_time, str(e)))
 				SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
-				SRLogger.writeLog("   Timer ohne Staffel und Episode (S00E00) kann nicht aktualisiert werden @ %s" % channelName, True)
-			else:
-				# get VPS settings for channel
-				vpsSettings = self.database.getVPS(serien_fsid, webChannel)
-
-				try:
-					# suche in aktivierten Timern
-					self.update(recordHandler.timer_list + recordHandler.processed_timers, eit, end_unixtime, new_episode,
-					            new_serien_title, serien_name, serien_fsid, serien_time,
-					            new_staffel, start_unixtime, stbRef, title,
-					            dirname, vpsSettings, markerType)
-
-				except:
-					print("[SerienRecorder] Modifying enigma2 timer failed: %s [%d]" % (title, serien_time))
-					SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
-					SRLogger.writeLog("   Timeraktualisierung fehlgeschlagen @ %s" % channelName, True)
+				SRLogger.writeLog("   Timeraktualisierung fehlgeschlagen @ %s" % channelName, True)
 
 		# Notification event not found
 		if len(self.eventNotFound) > 0:
@@ -1122,7 +1122,7 @@ class serienRecBoxTimer:
 
 	@staticmethod
 	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, autoAdjust, logentries=None):
-		from .SerienRecorderHelpers import isVTI
+		from .SerienRecorderHelpers import hasAutoAdjust
 		recordHandler = NavigationInstance.instance.RecordTimer
 		try:
 			try:
@@ -1159,7 +1159,7 @@ class serienRecBoxTimer:
 
 			timer.repeated = 0
 			try:
-				if isVTI() and autoAdjust is not None:
+				if hasAutoAdjust() and autoAdjust is not None:
 					print("[SerienRecorder] Current autoAdjust for timer [%s]: %s" % (name, str(timer.autoadjust)))
 					print("[SerienRecorder] autoAdjust is: %s" % str(autoAdjust))
 					timer.autoadjust = autoAdjust
@@ -1178,6 +1178,10 @@ class serienRecBoxTimer:
 			if SerienRecorder.VPSPluginAvailable and eit != 0:
 				timer.vpsplugin_enabled = vpsSettings[0]
 				timer.vpsplugin_overwrite = timer.vpsplugin_enabled and (not vpsSettings[1])
+
+			if SerienRecorder.VPSPluginAvailable and vpsSettings[0] and eit == 0:
+				print("[SerienRecorder] Failed to set VPS for timer [%s] - missing event ID" % name)
+				SRLogger.writeLogFilter("timerDebug", "Event ID ist 0 - VPS kann nicht am Timer gesetzt werden: ' %s ' - %s" % (name, dirname))
 
 			if logentries:
 				timer.log_entries = logentries

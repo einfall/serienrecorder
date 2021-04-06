@@ -155,8 +155,8 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			if result[0]:
 				if config.plugins.serienRec.timeUpdate.value:
-					from .SerienRecorderCheckForRecording import checkFromRecordingSingleton
-					checkFromRecordingSingleton.initialize(self.session, False, False)
+					from .SerienRecorderCheckForRecording import checkForRecordingInstance
+					checkForRecordingInstance.initialize(self.session, False, False)
 
 			if result[1]:
 				self.searchEvents()

@@ -147,13 +147,16 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 	def resultsEpisodes(self, data):
 		self.maxPages = 1
 		self.episodes_list_cache[self.page] = []
+
 		for episode in data["episodes"]:
 			if "title" in episode:
 				title = toStr(episode["title"])
 			else:
 				title = "-"
+
+			activeTimer = self.isTimerAdded(episode["season"], episode["episode"], episode["title"])
 			self.episodes_list_cache[self.page].append(
-				[episode["season"], episode["episode"], episode["id"], title])
+				[episode["season"], episode["episode"], episode["id"], title, activeTimer])
 
 		self.chooseMenuList.setList(list(map(self.buildList_episodes, self.episodes_list_cache[self.page])))
 		self.numberOfEpisodes = data["numEpisodes"]
@@ -173,8 +176,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 				print("[SerienRecorder] downloadEpisodes")
 				return SeriesServer().doGetEpisodes(int(self.serien_wlid), int(self.page))
 
-			def onDownloadEpisodesSuccessful(result):
-				self.resultsEpisodes(result)
+			def onDownloadEpisodesSuccessful(episodes):
+				self.resultsEpisodes(episodes)
 				self['title'].setText("%s Episoden für ' %s ' gefunden." % (self.numberOfEpisodes, self.serien_name))
 
 			def onDownloadEpisodesFailed():
@@ -196,30 +199,49 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self['headline'].show()
 
 	def buildList_episodes(self, entry):
-		(season, episode, info_id, title) = entry
+		(season, episode, info_id, title, activeTimer) = entry
 
 		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
 
 		serienRecMainPath = os.path.dirname(__file__)
-		imageMinus = "%s/images/red_dot.png" % serienRecMainPath
-		imagePlus = "%s/images/green_dot.png" % serienRecMainPath
 		imageNone = "%s/images/black.png" % serienRecMainPath
 
+		# imageMinus = "%s/images/red_dot.png" % serienRecMainPath
+		# imagePlus = "%s/images/green_dot.png" % serienRecMainPath
+		imageMinus = "%s/images/minus.png" % serienRecMainPath
+		imagePlus = "%s/images/plus.png" % serienRecMainPath
+		imageTimer = "%s/images/timer.png" % serienRecMainPath
+
+		leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imagePlus))
 		middleImage = imageNone
 
-		leftImage = imageMinus
-		if len(self.addedEpisodes) > 0 and self.isAlreadyAdded(season, episode, title):
-			leftImage = imagePlus
+		# leftImage = imageMinus
+		# if len(self.addedEpisodes) > 0 and self.isAlreadyAdded(season, episode, title):
+		# 	leftImage = imagePlus
+		#
+		# color = parseColor('yellow').argb()
+		# if not str(season).isdigit():
+		# 	color = parseColor('red').argb()
+		# if activeTimer:
+		# 	leftImage = imageTimer
 
-		color = parseColor('yellow').argb()
-		if not str(season).isdigit():
+		color = parseColor('green').argb()
+		if len(self.addedEpisodes) > 0 and self.isAlreadyAdded(season, episode, title):
 			color = parseColor('red').argb()
+			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imageMinus))
+		if activeTimer:
+			color = parseColor('blue').argb()
+			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 1, 3 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer))
+			#middleImage = imageTimer
+
+		foregroundColor = parseColor('foreground').argb()
 
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 8 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 140 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % seasonEpisodeString, color),
-			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 150 * skinFactor, 17 * skinFactor, 22 * skinFactor, 48 * skinFactor, loadPNG(middleImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title),
+			#(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
+		    leftImage,
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 140 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % seasonEpisodeString, color, color),
+			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 165 * skinFactor, 3 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(middleImage)),
+			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, foregroundColor, foregroundColor),
 			#(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle, parseColor('yellow').argb()),
 			]
 
@@ -263,6 +285,30 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			for addedEpisode in self.addedEpisodes[:]:
 				if (str(addedEpisode[0]).zfill(2) == str(season).zfill(2)) and (str(addedEpisode[1]).zfill(2) == str(episode).zfill(2)) and (addedEpisode[2] == title):
+					result = True
+					#self.addedEpisodes.remove(addedEpisode)
+					break
+
+		return result
+
+	def isTimerAdded(self, season, episode, title=None):
+		result = False
+		current_time = int(time.time())
+
+		#Title is only relevant if season and episode is 0
+		#this happen when Wunschliste has no episode and season information
+		seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
+		if seasonEpisodeString != "S00E00":
+			title = None
+		if not title:
+			for addedEpisode in self.addedEpisodes[:]:
+				if str(addedEpisode[0]).zfill(2) == str(season).zfill(2) and str(addedEpisode[1]).zfill(2) == str(episode).zfill(2) and addedEpisode[4] >= current_time:
+					result = True
+					#self.addedEpisodes.remove(addedEpisode)
+					break
+		else:
+			for addedEpisode in self.addedEpisodes[:]:
+				if (str(addedEpisode[0]).zfill(2) == str(season).zfill(2)) and (str(addedEpisode[1]).zfill(2) == str(episode).zfill(2)) and (addedEpisode[2] == title) and addedEpisode[4] >= current_time:
 					result = True
 					#self.addedEpisodes.remove(addedEpisode)
 					break
@@ -366,7 +412,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 			self.showPages()
 			self.chooseMenuList.setList(list(map(self.buildList_episodes, [])))
-			self.searchEpisodes()
+			self.loadEpisodes()
 
 	def backPage(self):
 		if self.loading or not self.showEpisodes:
@@ -380,7 +426,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 
 			self.showPages()
 			self.chooseMenuList.setList(list(map(self.buildList_episodes, [])))
-			self.searchEpisodes()
+			self.loadEpisodes()
 
 	def answerStaffel(self, aStaffel):
 		self.aStaffel = aStaffel

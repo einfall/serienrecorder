@@ -191,7 +191,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		return serien_name, serien_wlid, serien_fsid
 
 	def updateMarkers(self):
-		self.session.openWithCallback(self.executeUpdateMarkers, MessageBox, "Sollen die Namen der Serien-Marker aktualisieren werden?", MessageBox.TYPE_YESNO)
+		self.session.openWithCallback(self.executeUpdateMarkers, MessageBox, "Sollen die Namen der Serien-Marker aktualisiert werden?", MessageBox.TYPE_YESNO)
 
 	def executeUpdateMarkers(self, execute):
 		if execute:
