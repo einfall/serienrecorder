@@ -212,7 +212,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		imagePlus = "%s/images/plus.png" % serienRecMainPath
 		imageTimer = "%s/images/timer.png" % serienRecMainPath
 
-		leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imagePlus))
+		leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imageMinus))
 		middleImage = imageNone
 
 		# leftImage = imageMinus
@@ -225,10 +225,10 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		# if activeTimer:
 		# 	leftImage = imageTimer
 
-		color = parseColor('green').argb()
+		color = parseColor('red').argb()
 		if len(self.addedEpisodes) > 0 and self.isAlreadyAdded(season, episode, title):
-			color = parseColor('red').argb()
-			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imageMinus))
+			color = parseColor('green').argb()
+			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imagePlus))
 		if activeTimer:
 			color = parseColor('blue').argb()
 			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 1, 3 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer))
