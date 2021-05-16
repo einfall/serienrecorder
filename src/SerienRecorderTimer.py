@@ -15,6 +15,10 @@ from .SerienRecorderLogWriter import SRLogger
 from .SerienRecorderDatabase import SRDatabase
 from .SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname, PY2
 
+__C_JUSTPLAY__ = 0
+__C_ZAPBEFORERECORD__ = 1
+__C_JUSTREMIND__ = 2
+
 class serienRecTimer:
 	def __init__(self):
 
@@ -27,7 +31,6 @@ class serienRecTimer:
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 		self.tempDB = None
 		self.konflikt = ""
-		self.eventNotFound = ""
 		self.enableDirectoryCreation = False
 		self.channelList = STBHelpers.buildSTBChannelList()
 
@@ -156,6 +159,9 @@ class serienRecTimer:
 						# get autoAdjust for marker
 						autoAdjust = self.database.getAutoAdjust(serien_wlid, webChannel)
 
+						# get kind of timer for marker
+						kindOfTimer = self.database.getKindOfTimer(serien_wlid, config.plugins.serienRec.kindOfTimer.value)
+
 						epgcache = eEPGCache.getInstance()
 						allevents = epgcache.lookupEvent(['IBD', (stbRef, 2, eit, -1)]) or []
 
@@ -169,7 +175,7 @@ class serienRecTimer:
 								end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 								result = serienRecBoxTimer.addTimer(stbRef, str(serien_time), str(end_unixtime),
 								                                    timer_name, timer_description, eit, False, dirname, vpsSettings,
-								                                    tags, autoAdjust, None)
+								                                    tags, autoAdjust, kindOfTimer, None)
 								if result["result"]:
 									self.countTimer += 1
 									if addToDatabase:
@@ -183,10 +189,10 @@ class serienRecTimer:
 				except:
 					pass
 
-	def update(self, timer_list, eit, end_unixtime, new_episode, new_serien_title, new_serien_name, serien_fsid, serien_time, new_staffel, start_unixtime, stbRef, title, dirname, vpsSettings, markerType):
+	def update(self, timer_list, eit, end_unixtime, new_episode, new_serien_title, new_serien_name, serien_fsid, serien_time, new_staffel, start_unixtime, stbRef, title, dirname, vpsSettings, markerType, updateFromEPGFailed):
 		timerUpdated = False
 		timerFound = False
-		print("[SerienRecorder] Iterate timers to update timer: " + title)
+		print("[SerienRecorder] Iterate box timers to update timer: " + title)
 
 		for timer in timer_list:
 			if timer and timer.service_ref:
@@ -194,7 +200,7 @@ class serienRecTimer:
 				serien_time_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
 				timer_begin_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(timer.begin)))
 
-				print("[SerienRecorder] Get timer for update: [%s] [%s / %s] [%s (%s) / %s (%s)]" % (timer.name, str(timer.service_ref).lower(), str(stbRef).lower(), timer_begin_str, str(timer.begin), serien_time_str, str(serien_time)))
+				print("[SerienRecorder] Get box timer for update: [%s] [%s / %s] [%s (%s) / %s (%s)]" % (timer.name, str(timer.service_ref).lower(), str(stbRef).lower(), timer_begin_str, str(timer.begin), serien_time_str, str(serien_time)))
 				if (str(timer.service_ref).lower() == str(stbRef).lower()) and (str(timer.begin) == str(serien_time)):
 					# Timer gefunden, weil auf dem richtigen Sender und Startzeit im Timer entspricht Startzeit in SR DB
 					print("[SerienRecorder] Timer found")
@@ -216,31 +222,33 @@ class serienRecTimer:
 
 					# Startzeit
 					updateStartTime = False
-					start_unixtime_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
-					print("[SerienRecorder] Start: [%s (%s)] / %s (%s)" % (timer_begin_str, str(timer.begin), start_unixtime_str, str(start_unixtime)))
-					if start_unixtime and timer.begin != start_unixtime and abs(start_unixtime - timer.begin) > 30:
-						timer.begin = start_unixtime
-						timer.end = end_unixtime
-						NavigationInstance.instance.RecordTimer.timeChanged(timer)
-						updateStartTime = True
-					else:
-						# Reset start_unixtime to timer start time to keep database and timer in sync if start time changed lesser than 30 seconds
-						start_unixtime = timer.begin
+					if start_unixtime is not None:
+						start_unixtime_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(start_unixtime)))
+						print("[SerienRecorder] Start: [%s (%s)] / %s (%s)" % (timer_begin_str, str(timer.begin), start_unixtime_str, str(start_unixtime)))
+						if start_unixtime and timer.begin != start_unixtime and abs(start_unixtime - timer.begin) > 30:
+							timer.begin = start_unixtime
+							timer.end = end_unixtime
+							NavigationInstance.instance.RecordTimer.timeChanged(timer)
+							updateStartTime = True
+						else:
+							# Reset start_unixtime to timer start time to keep database and timer in sync if start time changed lesser than 30 seconds
+							start_unixtime = timer.begin
 
 					# Endzeit
 					updateEndTime = False
-					old_end = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(timer.end)))
-					timer_end_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
-					end_unixtime_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
-					print("[SerienRecorder] End: [%s (%s)] / %s (%s)" % (timer_end_str, str(timer.end), end_unixtime_str, str(end_unixtime)))
-					if end_unixtime and timer.end != end_unixtime and abs(end_unixtime - timer.end) > 30:
-						timer.begin = start_unixtime
-						timer.end = end_unixtime
-						NavigationInstance.instance.RecordTimer.timeChanged(timer)
-						updateEndTime = True
-					else:
-						# Reset start_unixtime to timer start time to keep database and timer in sync if start time changed lesser than 30 seconds
-						end_unixtime = timer.end
+					old_endTime = timer.end
+					if end_unixtime is not None:
+						timer_end_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
+						end_unixtime_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(end_unixtime)))
+						print("[SerienRecorder] End: [%s (%s)] / %s (%s)" % (timer_end_str, str(timer.end), end_unixtime_str, str(end_unixtime)))
+						if end_unixtime and timer.end != end_unixtime and abs(end_unixtime - timer.end) > 30:
+							timer.begin = start_unixtime
+							timer.end = end_unixtime
+							NavigationInstance.instance.RecordTimer.timeChanged(timer)
+							updateEndTime = True
+						else:
+							# Reset start_unixtime to timer start time to keep database and timer in sync if start time changed lesser than 30 seconds
+							end_unixtime = timer.end
 
 					# Timername
 					updateName = False
@@ -271,10 +279,12 @@ class serienRecTimer:
 						updateDirectory = True
 
 					if updateEIT or updateStartTime or updateName or updateDescription or updateDirectory:
-						SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+						if not updateFromEPGFailed:
+							SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
 						new_start = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(start_unixtime)))
 						old_start = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(serien_time)))
 						new_end = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(end_unixtime)))
+						old_end = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(old_endTime)))
 						if updateStartTime:
 							SRLogger.writeLog("   Startzeit wurde aktualisiert von ' %s ' auf ' %s '" % (old_start, new_start), True)
 							timer.log(0, "[SerienRecorder] Changed timer start from %s to %s" % (old_start, new_start))
@@ -307,7 +317,8 @@ class serienRecTimer:
 		# Timer not found - maybe removed from image timer list
 		if not timerFound:
 			print("[SerienRecorder] Timer not found")
-			SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+			if not updateFromEPGFailed:
+				SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
 			SRLogger.writeLog("   Timer konnte nicht aktualisiert werden, weil er nicht gefunden werden konnte!", True)
 
 		return timerUpdated
@@ -736,6 +747,9 @@ class serienRecTimer:
 		# get autoAdjust for marker
 		autoAdjust = self.database.getAutoAdjust(serien_wlid, webChannel)
 
+		# get kind of timer for marker
+		kindOfTimer = self.database.getKindOfTimer(serien_wlid, config.plugins.serienRec.kindOfTimer.value)
+
 		# install missing covers
 		(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, season)
 		STBHelpers.createDirectory(serien_fsid, markerType, dirname, dirname_serie, True)
@@ -746,7 +760,7 @@ class serienRecTimer:
 			timer_name = self.getTimerName(serien_name, season, episode, title, markerType)
 			timer_description = self.getTimerDescription(serien_name, season, episode, title)
 			result = serienRecBoxTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name,
-			                                    timer_description, eit, False, dirname, vpsSettings, tags, autoAdjust, None)
+			                                    timer_description, eit, False, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
 			# SRLogger.writeLog("%s: %s => %s" % (timer_name, str(start_unixtime), str(end_unixtime)), True)
 			if result["result"]:
 				self.countTimer += 1
@@ -795,7 +809,7 @@ class serienRecTimer:
 
 				result = serienRecBoxTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name,
 				                                    timer_description, eit, True,
-				                                    dirname, vpsSettings, tags, autoAdjust, None)
+				                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
 				if result["result"]:
 					self.countNotActiveTimer += 1
 					# Eintrag in die Datenbank
@@ -883,10 +897,12 @@ class serienRecTimer:
 		return result
 
 	def adjustEPGtimes(self, current_time):
-		SRLogger.writeLog("\n---------' Aktualisiere Timer '---------\n", True)
 		print("[SerienRecorder] --------------- Refresh timer ---------------")
+		SRLogger.writeLog("\n---------' Aktualisiere Timer '---------\n", True)
 		recordHandler = NavigationInstance.instance.RecordTimer
 		#SRLogger.writeLog("<< Suche im EPG anhand der Uhrzeit", True)
+
+		eventsNotFound = ""
 		timers = self.database.getAllTimer(current_time)
 		for timer in timers:
 			try:
@@ -897,6 +913,7 @@ class serienRecTimer:
 			channelName = STBHelpers.getChannelByRef(self.channelList, stbRef)
 			title = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
 			serien_time_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
+			print("[SerienRecorder] =======================================================")
 			print("[SerienRecorder] Update request for timer: %s [%s (%d)] @ %s" % (title, serien_time_str, serien_time, channelName))
 
 			if channelName is None:
@@ -939,6 +956,7 @@ class serienRecTimer:
 			else:
 				start_unixtime = end_unixtime = None
 
+			updateFromEPGFailed = False
 			if updateFromEPG:
 				epgSeriesName = self.database.getMarkerEPGName(serien_fsid)
 				if len(epgSeriesName) == 0 or epgSeriesName == serien_name:
@@ -956,6 +974,8 @@ class serienRecTimer:
 					print("[SerienRecorder] Failed to update timer, not enough EPG data")
 					SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
 					SRLogger.writeLog("   Timer konnte nicht aus dem EPG aktualisiert werden, nicht genügend EPG Daten vorhanden @ %s" % channelName)
+					updateFromEPGFailed = True
+					#continue
 				else:
 					if new_event_matches and len(new_event_matches) > 0 and (not event_matches or (event_matches and len(event_matches) == 0)):
 						# Old event not found but new one with different start time
@@ -963,6 +983,7 @@ class serienRecTimer:
 						SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
 						SRLogger.writeLog("   Die Sendung wurde im EPG nicht gefunden, es wurde aber eine Wiederholung zu einer anderen Zeit gefunden @ %s" % channelName)
 						event_matches = new_event_matches
+						updateFromEPGFailed = True
 
 					if event_matches and len(event_matches) > 0:
 						for event_entry in event_matches:
@@ -974,26 +995,21 @@ class serienRecTimer:
 						print("[SerienRecorder] Failed to update timer, event not found in time range")
 						SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
 						SRLogger.writeLog("   Timer konnte nicht aus dem EPG aktualisiert werden, die Sendung wurde im Zeitfenster nicht gefunden @ %s" % channelName)
-						self.eventNotFound += "%s\n" % title
-						continue
+						eventsNotFound += "%s\n" % title
+						updateFromEPGFailed = True
+						#continue
 
-			# Call update timer
+
 			print("[SerienRecorder] Try to modify enigma2 timer: %s [%d]" % (title, serien_time))
-
-			# if (str(new_staffel) == 'S' or str(new_staffel) == '0') and (str(new_episode) == '0' or str(new_episode) == '00'):
-			# 	print("[SerienRecorder] Not able to update time")
-			# 	SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
-			# 	SRLogger.writeLog("   Timer ohne Staffel und Episode (S00E00) kann nicht aktualisiert werden @ %s" % channelName, True)
-			# else:
-			# get VPS settings for channel
-			vpsSettings = self.database.getVPS(serien_fsid, webChannel)
-
 			try:
-				# suche in aktivierten Timern
+				# get VPS settings for channel
+				vpsSettings = self.database.getVPS(serien_fsid, webChannel)
+
+				# update box timer
 				self.update(recordHandler.timer_list + recordHandler.processed_timers, eit, end_unixtime, new_episode,
 				            new_serien_title, serien_name, serien_fsid, serien_time,
 				            new_staffel, start_unixtime, stbRef, title,
-				            dirname, vpsSettings, markerType)
+				            dirname, vpsSettings, markerType, updateFromEPGFailed)
 
 			except Exception as e:
 				print("[SerienRecorder] Modifying enigma2 timer failed: %s [%d] (%s)" % (title, serien_time, str(e)))
@@ -1001,15 +1017,15 @@ class serienRecTimer:
 				SRLogger.writeLog("   Timeraktualisierung fehlgeschlagen @ %s" % channelName, True)
 
 		# Notification event not found
-		if len(self.eventNotFound) > 0:
+		if len(eventsNotFound) > 0:
 			if config.plugins.serienRec.showMessageOnEventNotFound.value:
 				timeout = config.plugins.serienRec.showMessageTimeout.value
 				if config.plugins.serienRec.showMessageTimeout.value == 0:
 					timeout = -1
-				self.messageList.append(("Folgende Sendungen wurden im EPG nicht gefunden:\n\n%s" % self.eventNotFound,
-				                         MessageBox.TYPE_INFO, timeout, self.eventNotFound))
-				Notifications.AddPopup("Folgende Sendungen wurden im EPG nicht gefunden:\n\n%s" % self.eventNotFound,
-				                       MessageBox.TYPE_INFO, timeout=timeout, id=self.eventNotFound)
+				self.messageList.append(("Folgende Sendungen wurden im EPG nicht gefunden:\n\n%s" % eventsNotFound,
+				                         MessageBox.TYPE_INFO, timeout, eventsNotFound))
+				Notifications.AddPopup("Folgende Sendungen wurden im EPG nicht gefunden:\n\n%s" % eventsNotFound,
+				                       MessageBox.TYPE_INFO, timeout=timeout, id="eventsNotFound")
 
 	@staticmethod
 	def splitEvent(episode, staffel, title):
@@ -1121,9 +1137,14 @@ class serienRecBoxTimer:
 		return removed
 
 	@staticmethod
-	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, autoAdjust, logentries=None):
+	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, logentries=None):
 		from .SerienRecorderHelpers import hasAutoAdjust
 		recordHandler = NavigationInstance.instance.RecordTimer
+
+		justplay = bool(int(kindOfTimer) & (1 << __C_JUSTPLAY__))
+		justremind = bool(int(kindOfTimer) & (1 << __C_JUSTREMIND__))
+		zapbeforerecord = bool(int(kindOfTimer) & (1 << __C_ZAPBEFORERECORD__))
+
 		try:
 			try:
 				timer = RecordTimerEntry(
@@ -1134,9 +1155,9 @@ class serienRecBoxTimer:
 					description,
 					eit,
 					disabled=disabled,
-					justplay=config.plugins.serienRec.justplay.value,
-					zapbeforerecord=config.plugins.serienRec.zapbeforerecord.value,
-					justremind=config.plugins.serienRec.justremind.value,
+					justplay=justplay,
+					zapbeforerecord=zapbeforerecord,
+					justremind=justremind,
 					afterEvent=int(config.plugins.serienRec.afterEvent.value),
 					dirname=dirname)
 			except Exception as e:
@@ -1152,7 +1173,7 @@ class serienRecBoxTimer:
 					description,
 					eit,
 					disabled,
-					config.plugins.serienRec.justplay.value | config.plugins.serienRec.justremind.value,
+					justplay | justremind,
 					afterEvent=int(config.plugins.serienRec.afterEvent.value),
 					dirname=dirname,
 					tags=None)

@@ -39,57 +39,61 @@ langer Tastendruck:
 Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
-CHANGELOG 4.3.0
+CHANGELOG 4.4.0
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste.
 Cover, Episodenliste, Serien-/Episodeninformationen stammen von TheTVDB.
 
 Neue Funktionen:
 
-- Neue Option "Box-Sender bei der Senderzuordnung alphabetisch sortieren" im Bereich "Benutzeroberfläche" (siehe Anmerkung 1)
-- Neue Option "Kein Backup bei manuellem Timer-Suchlauf" (siehe Anmerkung 2)
-- Das SerienRecorder Webinterface kann jetzt aus dem Einstellungen heraus installiert werden (siehe Anmerkung 3)
-- Es gibt jetzt die beiden Standard SerienRecorder Skins (1 und 2) jeweils auch als FHD Versionen - Danke an @Marti_win7 (siehe Anmerkung 4)
+- Erinnerung für das Aktualisieren der Namen von Serien-Markern eingebaut (siehe Anmerkung 1)
+- Die Timer-Art kann jetzt am Serien-Marker überschrieben werden (siehe Anmerkung 2)
+- Manuelle Einträge in die Timer-Liste, über das SerienRecorder Webinterface, werden jetzt in der Timer-Liste mit "Manuell übers Webinterface hinzugefügt !!" gekennzeichnet.
+- Zusätzliche Funktionen im Webinterface eingebaut - dafür wurde die Webinterface API Version auf 2.2 geändert
 
 Änderungen:
 
-- Regulärer Ausdruck für die Aufnahmeerkennung verändert. (siehe Anmerkung 5)
-- Die Option "Standard Bouquet bevorzugen" berücksichtigt jetzt auch manuell angelegte Einträge in der Timer-Liste.
-- Für Datumsangaben im Log wird jetzt auch der Wochentag ausgegeben.
-- Die Option "Versuche Timer aus dem EPG zu aktualisieren" kann jetzt für einen Serien-Marker aktiviert werden, wenn sie global deaktiviert wurde.
-- Im Log wird jetzt ausgegeben, wenn die Option "Versuche Timer aus dem EPG zu aktualisieren" global deaktiviert wurde.
-- Wenn ein neuer Serien-Marker hinzugefügt wird, lädt der SerienRecorder jetzt immer das Cover neu aus dem Internet.
-- Verzeichnisauswahl komplett überarbeitet (siehe Anmerkung 6)
-- Skins mit "FHD" im Namen können nicht mehr ausgewählt werden, wenn auf der Box ein HD Skin aktiv ist.
+- Kein Standby wenn die Box bereits im Standby ist (siehe Anmerkungen 3)
+- Episodenliste (Taste 5) überarbeitet (siehe Anmerkungen 4)
+- Zwei Absturzursachen entschärft
+- Meldungen überarbeitet
+- Timer von Serien mit S00E00 können jetzt auch aus dem EPG aktualisiert werden
+- Wenn einzelne Serien nicht aus dem EPG aktualisiert werden sollten, konnte es in manchen Fehler zu einer Fehlermeldung beim Aktualisieren kommen
+- Im Log wird jetzt auch protokolliert, wann die Box heruntergefahren wird, der bisherige Eintrag beim Starten des Box wurde ebenfalls verändert.
+- Einige Logeinträge und Texte in den Einstellungen wurden aktualisiert
 
 Bugfixes:
 
-- Absturz beim Aufrufen der Senderzuordnung bei leerer Liste ist behoben.
-- Kein Absturz mehr bei manueller Timererstellung wenn die Option "Standard Bouquet bevorzugen" aktiviert ist.
-- Die Option "Standard Bouquet bevorzugen" wurde auch berücksichtigt, wenn man nur ein Bouquet nutzt - das ist jetzt korrigiert.
-- Die Option "Versuche Timer aus dem EPG zu aktualisieren" wurde überarbeitet (siehe Anmerkung 7)
-- In seltenen Fällen kam es zu einem Absturz in den globalen Einstellungen, das ist jetzt behoben.
+- Die Prüfung der Senderliste (Taste 8) hat bisher nur das eingestellte Standardbouquet berücksichtigt, jetzt werden immer alle Bouquets berücksichtigt.
+- Fehler im Skin "HD Border" behoben (Danke an @Marti_win7)
+- Picons wurden in manchen Ansichten und auch im Webinterface nicht dargestellt wenn sie nicht per ServiceRef sondern per Name geladen werden sollten.
 
 Anmerkungen:
 
-1. Bisher war die Liste der Box-Sender bei der Senderzuordnung in der Reihenfolge sortiert wie die Sender im Bouquet sortiert waren.
-Jetzt kann man über die Option in den globalen Einstellungen auf eine alphabetische Sortierung umschalten.
-Diese Einstellung wirkt sich dann auch auf die Senderzuordnung im SerienRecorder Webinterface aus.
+1. Die Informationen eines Serien-Markers (Name, Produktionsjahr usw.) werden nicht automatisch aktualisiert,
+sondern mussten mit der Taste 8 manuell aktualisiert werden, bzw. wurden nur beim Aktualisieren der Datenbank bei einem SerienRecorder Update aktualisiert.
+Jetzt wird beim Öffnen der Serien-Marker Ansicht eine Erinnerung angezeigt, falls die Namen der Serien-Marker länger als 30 Tage nicht aktualisiert wurden.
 
-2. Man kann jetzt über die Option "Backup bei manuellem Timer-Suchlauf" entscheiden, ob bei einem manuellen Timer-Suchlauf ein Backup der Datenbank, Einstellungen etc. gemacht werden soll oder nicht.
+2. Bisher konnte die Timer-Art (Aufnehmen, Umschalten usw.) nur global gesetzt werden, jetzt kann man diese Einstellung bei Bedarf pro Serien-Marker einstellen.
+ACHTUNG: Hinweise zum Update beachten
 
-3. Die Option "SerienRecorder Webinterface aktivieren" ist jetzt immer sichtbar, wenn sie zum ersten Mal aktiviert wird, und der web-data Ordner ist nicht vorhanden, wird gefragt ob das SerienRecorder Webinterface heruntergeladen und installiert werden soll.
+3. Der SerienRecorder schickt die Box nach einem Timer-Suchlauf nicht noch mal in den Standby, wenn sie es bereits ist.
+Somit sollte es jetzt egal sein, ob man die Option Aktion nach dem automatischen Timer-Suchlauf auf Keine oder In Standby gehen eingestellt hat die,
+Box aber beim Timer-Suchlauf bereits im Standby ist.
 
-4. Marti_win7 war so nett und hat die beiden Standard SerienRecorder Skins für FHD Auflösung angepasst. Damit gib es jetzt endlich auch passende Skins wenn auf der Box ein FHD Skin aktiv hat.
+4. Die Episodenliste hatte sich bisher an das Farbschema des SerienRecorders orientiert, also rot (noch nicht in der Datenbank),
+grün (bereits in der Datenbank) oder blau (Timer vorhanden). Stattdessen wurden Symbole (grünes Haken und rotes Kreuz) angezeigt, Timer wurden gar nicht gekennzeichnet.
+Jetzt werden die Staffel-/Episodennummern im bekannten Farbschema eingefärbt und es werden vor jeder Zeile die bekannten Symbole (+, - und Uhr) angezeigt.
+Damit ist jetzt auch in dieser Ansicht ersichtlich für welche Episoden aktuelle Timer vorhanden sind.
 
-5. Es gab in der letzten Releaseversion eine Änderung am regulären Ausdruck der Aufnahmen anhand des Dateinamens auf der Festplatte gefunden hatte.
-Diese Änderung hatte allerdings zur Folge, dass jetzt deutlich weniger Aufnahmen erkannt wurden - ich habe den Ausdruck jetzt noch einmal überarbeitet und hoffe, dass es jetzt besser funktioniert.
+Hinweise zum Update:
 
-6. Die Verzeichnisauswahl im SerienRecorder war nicht wirklich intuitiv. Es hat gezeigt, dass sie von Anfang an falsch programmiert war. Ich habe das Verhalten jetzt korrigiert, sodass sich die Verzeichnisauswahl jetzt so verhält wie man es erwarten würde.
-Man muss jetzt in den Ordner wechseln um ihn auszuwählen oder einen neuen Unterordner anzulegen. Vor dem Löschen gibt es jetzt eine Warnung und des im Fehlerfall ein Grund angezeigt.
+- Mit diesem Update wird die Datenbank auf die Version 4.4.0 aktualisiert, die Datenbank wird beim ersten Start des SerienRecorders nach dem Update automatisch im Hintergrund aktualisiert. Vor dem Update der Datenbank wird automatisch ein Backup angelegt. Bitte unbedingt das Log kontrollieren und prüfen ob das Datenbank Update erfolgreich durchgeführt wurde.
 
-7. Auch wenn die Option "Versuche Timer aus dem EPG zu aktualisieren" deaktiviert war, wurden Timer aus dem EPG aktualisiert.
-Das wurde jetzt korrigiert, die Timer werden aber trotzdem noch durch geänderte Daten bei Wunschliste korrigiert.
+- Es gibt eine grundlegende Änderung wie die Einstellungen für "Timer-Art" gespeichert werden. Bisher wurden, je nach gewählter Einstellung, bis zu drei Konfigurationswerte in die settings Datei gespeichert. Das wurde jetzt vereinfacht, sodass nur noch ein Konfigurationswert abgespeichert werden muss. Das hat aber zur Folge, dass die bisherige globale Einstellung für "Timer-Art" wieder auf den Standard "aufnehmen" zurückgesetzt wurde. Das betrifft die User, die dort eine andere Einstellung als "aufnehmen" eingestellt haben, bitte nach dem Update den Wert für "Timer-Art" in den globalen Einstellungen neu setzen.
+
+- Für das Webinterface werden u.U. zusätzliche Module benötigt, die automatisch beim Installieren des IPK/DEB mit installiert werden, deswegen empfehle ich diese Version über die Auto-Update Funktion des SerienRecorders oder manuell über das IPK/DEB durchzuführen und nicht den GitHubUpdater zu verwenden.
+
 
 Viel Spaß mit dem SerienRecorder!
 

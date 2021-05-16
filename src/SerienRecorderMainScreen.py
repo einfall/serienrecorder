@@ -314,7 +314,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self.readPlanerData(False)
 
 	def readPlanerData(self, clearCache=True):
-		print("[SerienRecorder] readPlanerData - Clear cache =", clearCache)
+		print("[SerienRecorder] readPlanerData - Clear cache = %s" % str(clearCache))
 		if not showMainScreen:
 			self.keyCancel()
 			self.close()

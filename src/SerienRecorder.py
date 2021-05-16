@@ -286,6 +286,7 @@ def getNextWakeup():
 
 def autostart(reason, **kwargs):
 	if reason == 0 and "session" in kwargs:
+		# Boot
 		session = kwargs["session"]
 
 		global startTimer
@@ -293,7 +294,7 @@ def autostart(reason, **kwargs):
 
 		lt = time.localtime()
 		uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
-		SRLogger.writeLog("\nSerienRecorder Start: %s" % uhrzeit, True)
+		SRLogger.writeLog("\nBox wurde gestartet - SerienRecorder wurde geladen: %s" % uhrzeit, True)
 		print("[SerienRecorder] Start: %s" % uhrzeit)
 
 		def startAutoCheckTimer():
@@ -316,5 +317,10 @@ def autostart(reason, **kwargs):
 			from .SerienRecorderResource import addWebInterface
 			addWebInterface()
 
+	elif reason == 1:
+		# Shutdown
+		lt = time.localtime()
+		uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
+		SRLogger.writeLog("\nBox wird heruntergefahren - SerienRecorder wird beendet: %s" % uhrzeit, True)
 
 

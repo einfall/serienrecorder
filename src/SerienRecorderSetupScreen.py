@@ -23,11 +23,6 @@ def CheckChoices(choices, default):
 
 	return choices[0][0]
 
-__C_JUSTPLAY__ = 0
-__C_ZAPBEFORERECORD__ = 1
-__C_JUSTREMIND__ = 2
-
-
 def ReadConfigFile():
 	try:
 		default_before = int(config.recording.margin_before.value)
@@ -44,10 +39,6 @@ def ReadConfigFile():
 	pattern_description_default = CheckChoices(pattern_description_choices, "S{staffel:s}E{episode:s} - {titel:s}")
 
 	config.plugins.serienRec = ConfigSubsection()
-
-	config.plugins.serienRec.justplay = ConfigYesNo(default=False)
-	config.plugins.serienRec.justremind = ConfigYesNo(default=False)
-	config.plugins.serienRec.zapbeforerecord = ConfigYesNo(default=False)
 
 	###############################################################################################################################
 	# SYSTEM
@@ -120,26 +111,10 @@ def ReadConfigFile():
 	# TIMER
 	###############################################################################################################################
 
-	kindOfTimer_default = 0
-	if config.plugins.serienRec.zapbeforerecord.value:
-		kindOfTimer_default |= (1 << __C_ZAPBEFORERECORD__)
-		config.plugins.serienRec.justplay.value = False
-		config.plugins.serienRec.justremind.value = False
-	elif config.plugins.serienRec.justplay.value:
-		kindOfTimer_default |= (1 << __C_JUSTPLAY__)
-		config.plugins.serienRec.justremind.value = False
-		config.plugins.serienRec.zapbeforerecord.value = False
-	elif config.plugins.serienRec.justremind.value:
-		kindOfTimer_default |= (1 << __C_JUSTREMIND__)
-		config.plugins.serienRec.justplay.value = False
-		config.plugins.serienRec.zapbeforerecord.value = False
-	config.plugins.serienRec.kindOfTimer = NoSave(ConfigSelection(choices=[("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default=str(kindOfTimer_default)))
-
+	config.plugins.serienRec.kindOfTimer = ConfigSelection(choices=[("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default="0")
 	config.plugins.serienRec.afterEvent = ConfigSelection(choices=[("0", "Nichts"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen"), ("3", "Automatisch")], default="3")
 	config.plugins.serienRec.margin_before = ConfigInteger(default_before, (0, 99))
 	config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0, 99))
-	#config.plugins.serienRec.TimerName = ConfigSelection(choices=[("0", "<Serienname> - SnnEmm - <Episodentitel>"), ("1", "<Serienname>"), ("2", "SnnEmm - <Episodentitel>"), ("3", "<Serienname> - SnnEmm")], default="0")
-	#config.plugins.serienRec.TimerDescription = ConfigSelection(choices=[("0", "SnnEmm - <Episodentitel>"), ("1", "<Episodentitel>")], default="0")
 	config.plugins.serienRec.TimerName = ConfigSelection(choices=pattern_title_choices, default=pattern_title_default)
 	config.plugins.serienRec.TimerDescription = ConfigSelection(choices=pattern_description_choices, default=pattern_description_default)
 	config.plugins.serienRec.forceManualRecording = ConfigYesNo(default=False)
@@ -268,6 +243,11 @@ def ReadConfigFile():
 	config.plugins.serienRec.setupType = NoSave(ConfigSelection(choices=[("0", "Einfach"), ("1", "Experte")], default="1"))
 	config.plugins.serienRec.tvplaner_create_marker = NoSave(ConfigYesNo(default=True))
 	config.plugins.serienRec.updateInterval = NoSave(ConfigInteger(24, (0, 24)))
+	config.plugins.serienRec.justplay = NoSave(ConfigYesNo(default=False))
+	config.plugins.serienRec.justremind = NoSave(ConfigYesNo(default=False))
+	config.plugins.serienRec.zapbeforerecord = NoSave(ConfigYesNo(default=False))
+
+
 
 	# CORRECT DEFAULTS
 	if config.plugins.serienRec.screenplaner.value > 2:
@@ -987,7 +967,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				str(config.plugins.serienRec.deltime.value[0]).zfill(2),
 				str(config.plugins.serienRec.deltime.value[1]).zfill(2))),
 			config.plugins.serienRec.maxDelayForAutocheck: (
-				"Hier wird die Zeitspanne (in Minuten) eingestellt, innerhalb welcher der automatische Timer-Suchlauf ausgeführt wird. Diese Zeitspanne beginnt zu der oben eingestellten Uhrzeit."),
+				"Die Zeitspanne (in Minuten) um die der automatische Timer-Suchlauf zufällig verzögert wird. Ausgehend von der eingestellten Uhrzeit des automatische Timer-Suchlaufs, "
+				"wird ein zufälliger Wert addiert um den Timer-Suchlauf zeitlich zu entzerren, falls andere SerienRecorder Benutzer die gleiche Uhrzeit eingestellt haben."),
 			config.plugins.serienRec.checkfordays: (
 					"Es werden nur Timer für Folgen erstellt, die innerhalb der nächsten hier eingestellten Anzahl von Tagen ausgestrahlt werden \n"
 					"(also bis %s)." % time.strftime("%d.%m.%Y - %H:%M", time.localtime(
@@ -1152,10 +1133,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Gibt an ob und wie Sender-Logos z.B. in der Serien-Planer Ansichten angezeigt werden sollen."),
 			config.plugins.serienRec.piconPath: (
 				"Wählen Sie das Verzeichnis aus dem die Sender-Logos geladen werden sollen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."),
-			config.plugins.serienRec.downloadCover: ("Bei 'nein' werden keine Cover heruntergeladen und angezeigt.\n"
-			                                         "Bei 'ja' werden Cover heruntergeladen.\n"
-			                                         "  - Wenn 'Zeige Cover' auf 'ja' steht, werden alle Cover heruntergeladen.\n"
-			                                         "  - Wenn 'Zeige Cover' auf 'nein' steht, werden beim Timer-Suchlauf nur Cover der Serien-Marker heruntergeladen."),
+			config.plugins.serienRec.downloadCover: ("Bei 'nein' werden keine Cover heruntergeladen.\n"
+			                                         "Bei 'ja' werden Cover heruntergeladen."),
 			config.plugins.serienRec.coverPath: (
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Cover gespeichert werden."),
 			config.plugins.serienRec.showCover: ("Bei 'nein' werden keine Cover angezeigt."),
@@ -1167,11 +1146,11 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'nein' wird das entsprechende Cover nicht in den Serien- und Staffelordner kopiert. Die anderen Optionen bestimmen den Namen der Datei im Staffelordner.\n"
 				"Im Serienordner werden immer Cover mit dem Namen 'folder.jpg' angelegt. Für den Staffelordner kann der Name ausgewählt werden, da einige Movielist Plugins das Cover unter einem anderen Namen suchen."),
 			config.plugins.serienRec.listFontsize: (
-				"Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."),
+				"Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."),
 			config.plugins.serienRec.markerColumnWidth: (
-				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von Standardbreite kann die Spalte schmaler bzw. breiter machen."),
+				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von der Standardbreite kann die Spalte schmaler bzw. breiter gemacht machen."),
 			config.plugins.serienRec.markerNameInset: (
-				"Mit dieser Einstellung kann der Einzug der Serien-Namen in der Serien-Marker Ansicht angepasst werden. Damit lässt sich eine deutlichere optische Abgrenzung der einzelnen Serien-Marker erreichen."),
+				"Mit dieser Einstellung kann der Einzug der Seriennamen in der Serien-Marker Ansicht angepasst werden. Damit lässt sich eine deutlichere optische Abgrenzung der einzelnen Serien-Marker erreichen."),
 			config.plugins.serienRec.seasonFilter: (
 				"Bei 'ja' werden in der Sendetermine Ansicht nur Termine angezeigt, die der am Marker eingestellten Staffeln entsprechen."),
 			config.plugins.serienRec.timerFilter: (
@@ -1180,11 +1159,11 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			                                      "Bei 'Wunschliste' werden die Serien-Marker so wie bei Wunschliste sortiert, d.h 'der, die, das und the' werden bei der Sortierung nicht berücksichtigt.\n"
 			                                      "Dadurch werden z.B. 'Die Simpsons' unter 'S' einsortiert."),
 			config.plugins.serienRec.max_season: (
-				"Die höchste Staffelnummer, die für Serienmarker in der Staffel-Auswahl gewählt werden kann."),
+				"Die höchste Staffelnummer, die für Serien-Marker in der Staffel-Auswahl gewählt werden kann."),
 			config.plugins.serienRec.openMarkerScreen: (
 				"Bei 'ja' wird nach Anlegen eines neuen Markers die Marker-Anzeige geöffnet, um den neuen Marker bearbeiten zu können."),
 			config.plugins.serienRec.confirmOnDelete: (
-				"Bei 'ja' erfolgt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem endgültigen Löschen von Serienmarkern oder Timern."),
+				"Bei 'ja' erfolgt eine Sicherheitsabfrage ('Soll ... wirklich entfernt werden?') vor dem endgültigen Löschen von Serien-Markern oder Timern."),
 			config.plugins.serienRec.alphaSortBoxChannels: (
 				"Bei 'ja' wird die Liste der Box-Sender bei der Zuweisung in der Senderzuordnungsansicht alphabetisch sortiert, ansonsten ist die Liste in der festgelegten Reihenfolge des Bouquets sortiert."),
 			config.plugins.serienRec.enableWebinterface: (
@@ -1393,11 +1372,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.splitEventTimer.save()
 		config.plugins.serienRec.addSingleTimersForEvent.save()
 		config.plugins.serienRec.selectBouquets.save()
-		# if config.plugins.serienRec.selectBouquets.value:
-		# 	config.plugins.serienRec.bouquetList.value = str(list(zip(*self.bouquetList))[1])
-		# else:
-		# 	config.plugins.serienRec.bouquetList.value = ""
-		#config.plugins.serienRec.bouquetList.save()
 		config.plugins.serienRec.MainBouquet.save()
 		config.plugins.serienRec.AlternativeBouquet.save()
 		config.plugins.serienRec.useAlternativeChannel.save()
@@ -1470,13 +1444,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		###############################################################################################################################
 
 		config.plugins.serienRec.timeUpdate.save()
-		config.plugins.serienRec.justplay.value = bool(int(config.plugins.serienRec.kindOfTimer.value) & (1 << __C_JUSTPLAY__))
-		config.plugins.serienRec.justplay.save()
-		config.plugins.serienRec.justremind.value = bool(int(config.plugins.serienRec.kindOfTimer.value) & (1 << __C_JUSTREMIND__))
-		config.plugins.serienRec.justremind.save()
-		config.plugins.serienRec.zapbeforerecord.value = bool(
-			int(config.plugins.serienRec.kindOfTimer.value) & (1 << __C_ZAPBEFORERECORD__))
-		config.plugins.serienRec.zapbeforerecord.save()
+		config.plugins.serienRec.kindOfTimer.save()
 
 		# Save obsolete config setting here to remove it from file
 		config.plugins.serienRec.dbversion.save()
@@ -1490,6 +1458,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.setupType.save()
 		config.plugins.serienRec.tvplaner_create_marker.save()
 		config.plugins.serienRec.updateInterval.save()
+		config.plugins.serienRec.justplay.save()
+		config.plugins.serienRec.justremind.save()
+		config.plugins.serienRec.zapbeforerecord.save()
 
 		configfile.save()
 

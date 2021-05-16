@@ -26,6 +26,8 @@ def getApiList():
 	childs.append( ('cover', ApiGetCoverResource() ) )
 	childs.append( ('picon', ApiGetPiconResource() ) )
 	childs.append( ('tvdbcover', ApiGetTVDBCoverResource() ) )
+	childs.append( ('tvdbcovers', ApiGetTVDBCoversResource() ) )
+	childs.append( ('settvdbcover', ApiSetTVDBCoverResource()))
 	childs.append( ('transmissions', ApiGetTransmissionsResource() ) )
 	childs.append( ('searchseries', ApiSearchSeriesResource() ) )
 	childs.append( ('activechannels', ApiGetActiveChannelsResource() ) )
@@ -38,6 +40,7 @@ def getApiList():
 	#childs.append( ('searchevents', ApiSearchEventsResource() ) )
 	childs.append( ('timer', ApiGetTimerResource() ) )
 	childs.append( ('markertimer', ApiGetMarkerTimerResource() ) )
+	childs.append( ('addtimers', ApiAddTimersResource() ) )
 	childs.append( ('removetimer', ApiRemoveTimerResource() ) )
 	childs.append( ('removeallremainingtimer', ApiRemoveAllRemainingTimerResource() ) )
 	childs.append( ('createtimer', ApiCreateTimerResource() ) )
@@ -50,10 +53,10 @@ def getApiList():
 	return ( root, childs )
 
 def addWebInterface():
-	useOpenWebIF = False
+	use_openwebif = False
 	if os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/OpenWebif/pluginshook.src"):
-		useOpenWebIF = True
-	print("[SerienRecorder] addWebInterface for OpenWebIF = ", useOpenWebIF)
+		use_openwebif = True
+	print("[SerienRecorder] addWebInterface for OpenWebif = %s" % str(use_openwebif))
 	try:
 		from Plugins.Extensions.WebInterface.WebChilds.Toplevel import addExternalChild
 		from twisted.web import static
@@ -69,29 +72,21 @@ def addWebInterface():
 	if childs:
 		for name, api in childs:
 			root.putChild(toBinary(name), api)
-	if useOpenWebIF:
-		addExternalChild( ("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION) )
-	else:
-		addExternalChild( ("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION, False) )
+	addExternalChild( ("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION, False) )
 	print("[SerienRecorder] addExternalChild for API")
 
 	# webgui
 	root = static.File(util.sibpath(__file__, "web-data"))
-	print("[SerienRecorder] WebUI root path", root)
+	print("[SerienRecorder] WebUI root path: %s" % str(root))
 
-	if os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/WebInterface/web/external.xml"):
-		try:
+	try:
+		if use_openwebif or os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/WebInterface/web/external.xml"):
 			addExternalChild( ("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION, True) )
-		except:
+		else:
 			addExternalChild( ("serienrecorderui", root) )
-	else:
-		addExternalChild( ("serienrecorderui", root) )
-	if useOpenWebIF:
-		try:
-			addExternalChild( ("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION) )
-		except Exception as e:
-			print(str(e))
-			pass
+	except:
+		addExternalChild(("serienrecorderui", root))
+
 	print("[SerienRecorder] addExternalChild for UI")
 
 class ApiBaseResource(resource.Resource):
@@ -110,6 +105,7 @@ class ApiBaseResource(resource.Resource):
 		req.setResponseCode(http.OK)
 		req.setHeader('Content-type', 'application/json')
 		req.setHeader('Access-Control-Allow-Origin', '*')
+		req.setHeader('Cache-Control', 'no-cache')
 		req.setHeader('X-API-Version', SRAPIVERSION)
 		req.setHeader('charset', 'UTF-8')
 
@@ -129,6 +125,7 @@ class ApiImageResource(resource.Resource):
 		print(filepath)
 		req.setResponseCode(http.OK)
 		req.setHeader('Access-Control-Allow-Origin', '*')
+		req.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
 		if filepath.endswith('.jpg'):
 			req.setHeader('Content-type', 'image/jpeg')
 		else:
@@ -205,13 +202,18 @@ class ApiGetCoverResource(ApiImageResource):
 
 class ApiGetPiconResource(ApiImageResource):
 	def render_GET(self, req):
-		stbRef = req.args.get(toBinary("stbref"), None)
+		serviceRef = req.args.get(toBinary("serviceRef"), None)
+		channelName = req.args.get(toBinary("channelName"), None)
+		print("[SerienRecorder] ApiGetPiconResource: [%s] / [%s]" % (toStr(serviceRef[0]), toStr(channelName)))
 
 		piconPath = None
-		if stbRef and config.plugins.serienRec.showPicons.value != "0":
+		if config.plugins.serienRec.showPicons.value != "0":
 			from .SerienRecorderHelpers import PiconLoader
 			# Get picon by reference or by name
-			piconPath = PiconLoader().getPicon(toStr(stbRef[0]))
+			if config.plugins.serienRec.showPicons.value == "1" and serviceRef:
+				piconPath = PiconLoader().getPicon(toStr(serviceRef[0]))
+			elif config.plugins.serienRec.showPicons.value == "2" and channelName:
+				piconPath = PiconLoader().getPicon(toStr(channelName))
 
 		if not piconPath:
 			# Dummy image
@@ -237,6 +239,37 @@ class ApiGetTVDBCoverResource(ApiBaseResource):
 
 		return self.returnResult(req, True, posterURL)
 
+class ApiGetTVDBCoversResource(ApiBaseResource):
+	def render_GET(self, req):
+
+		wl_id = str(req.args["wlid"][0])
+		posterURLs = None
+		if config.plugins.serienRec.downloadCover.value:
+			from .SerienRecorderSeriesServer import SeriesServer
+			try:
+				posterURLs = SeriesServer().getCoverURLs(wl_id)
+			except:
+				posterURLs = None
+
+		return self.returnResult(req, True, posterURLs)
+
+class ApiSetTVDBCoverResource(ApiBaseResource):
+	def render_POST(self, req):
+		data = json.loads(req.content.getvalue())
+		print("[SerienRecorder] ApiSetTVDBCover")
+
+		result = True
+		targetPath = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, data['fsid'])
+
+		import requests
+		response = requests.get(data['url'].encode('utf-8'))
+		if response.status_code == 200:
+			with open(targetPath, 'wb') as f:
+				f.write(response.content)
+		else:
+			result = False
+		return self.returnResult(req, True, result)
+
 class ApiGetMarkersResource(ApiBaseResource):
 	def render_GET(self, req):
 		data = {}
@@ -251,12 +284,12 @@ class ApiGetMarkersResource(ApiBaseResource):
 
 		numberOfDeactivatedSeries, markerList = serienRecMarker.getMarkerList(database)
 		for marker in markerList:
-			(ID, serie, url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info, fsID) = marker
+			(ID, serie, wlID, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info, fsID) = marker
 
 			data['markers'].append( {
 					'id': ID,
 					'name': serie,
-					'wlid': url,
+					'wlid': wlID,
 					'fsid': fsID,
 					'seasons': staffeln.replace('Alle', 'Alle (inkl. Specials)'),
 					'channels': sender,
@@ -267,7 +300,8 @@ class ApiGetMarkersResource(ApiBaseResource):
 					'preferredChannel': preferredChannel,
 					'useAlternativeChannel': bool(useAlternativeChannel),
 					'active': SerieAktiviert,
-					'info': info
+					'info': info,
+					'coverid': int(wlID)
 				} )
 
 		# from SerienRecorder import getMarker
@@ -305,6 +339,8 @@ class ApiCreateMarkerResource(ApiBaseResource):
 		if 'fsid' in data:
 			from .SerienRecorderSearchResultScreen import serienRecSearchResultScreen
 			if serienRecSearchResultScreen.createMarker(data['wlid'], data['name'], data['info'], data['fsid']):
+				from .SerienRecorder import getCover
+				getCover(None, data['name'], data['wlid'], data['fsid'], False, True)
 				result = True
 		return self.returnResult(req, result, None)
 
@@ -440,7 +476,7 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 			database = SRDatabase(serienRecDataBaseFilePath)
 
 			(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-			 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName) = database.getMarkerSettings(toStr(marker_id[0]))
+			 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer) = database.getMarkerSettings(toStr(marker_id[0]))
 
 			if not AufnahmeVerzeichnis:
 				AufnahmeVerzeichnis = ""
@@ -504,6 +540,13 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 			else:
 				updateFromEPG = config.plugins.serienRec.eventid.value
 				enable_updateFromEPG = False
+
+			if str(kindOfTimer).isdigit():
+				kindOfTimer = int(kindOfTimer)
+				enable_kindOfTimer = True
+			else:
+				kindOfTimer = int(config.plugins.serienRec.kindOfTimer.value)
+				enable_kindOfTimer = False
 
 			if str(skipSeriesServer).isdigit():
 				skipSeriesServer = bool(skipSeriesServer)
@@ -595,6 +638,10 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 					'enabled': enable_updateFromEPG,
 					'value': updateFromEPG
 				},
+				'kindOfTimer': {
+					'enabled': enable_kindOfTimer,
+					'value': kindOfTimer
+				},
 				'skipSeriesServer': {
 					'available': config.plugins.serienRec.tvplaner.value,
 					'enabled': enable_skipSeriesServer,
@@ -653,6 +700,11 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 			else:
 				updateFromEPG = data['settings']['updateFromEPG']['value']
 
+			if not data['settings']['kindOfTimer']['enabled']:
+				kindOfTimer = None
+			else:
+				kindOfTimer = data['settings']['kindOfTimer']['value']
+
 			if not data['settings']['skipSeriesServer']['enabled']:
 				skipSeriesServer = None
 			else:
@@ -700,13 +752,13 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 			database.setMarkerSettings(int(data['markerid']),
 			                           (AufnahmeVerzeichnis, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 			                           AufnahmezeitVon, AufnahmezeitBis, int(data['settings']['preferredChannel']), int(data['settings']['useAlternativeChannel']['value']),
-			                           vpsSettings, excludedWeekdays, tags, int(data['settings']['addToDatabase']), updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName))
+			                           vpsSettings, excludedWeekdays, tags, int(data['settings']['addToDatabase']), updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer))
 
 			results = {
 				'recordfolder': AufnahmeVerzeichnis if AufnahmeVerzeichnis else config.plugins.serienRec.savetopath.value,
-				'numberOfRecords': data['settings']['numberOfRecordings']['value'],
-				'leadtime': data['settings']['leadTime']['value'],
-				'followuptime': data['settings']['followupTime']['value'],
+				'numberOfRecords': data['settings']['numberOfRecordings']['value'] if data['settings']['numberOfRecordings']['value'] else config.plugins.serienRec.NoOfRecords,
+				'leadtime': data['settings']['leadTime']['value'] if data['settings']['leadTime']['value'] else config.plugins.serienRec.margin_before,
+				'followuptime': data['settings']['followupTime']['value'] if data['settings']['followupTime']['value'] else config.plugins.serienRec.margin_after,
 				'preferredChannel': int(data['settings']['preferredChannel']),
 				'useAlternativeChannel': bool(data['settings']['useAlternativeChannel']['value'])
 			}
@@ -1001,10 +1053,10 @@ class ApiGetTimerResource(ApiBaseResource):
 
 		timerList = []
 		for timer in timers:
-			(row_id, series, season, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
+			(row_id, series, season, episode, title, start_time, serviceRef, webChannel, eit, activeTimer, serien_fsid) = timer
 			channelName = webChannel
-			if stbRef and channelList:
-				channelName = STBHelpers.getChannelByRef(channelList, stbRef)
+			if serviceRef and channelList:
+				channelName = STBHelpers.getChannelByRef(channelList, serviceRef)
 			timerList.append(
 				{
 					'series': series,
@@ -1012,7 +1064,7 @@ class ApiGetTimerResource(ApiBaseResource):
 					'episode': episode,
 					'title': title,
 					'startTime': start_time,
-					'stbref': stbRef,
+					'serviceRef': serviceRef,
 					'channel': channelName,
 					'webChannel': webChannel,
 					'eit': eit,
@@ -1058,6 +1110,18 @@ class ApiGetMarkerTimerResource(ApiBaseResource):
 
 		return self.returnResult(req, True, timerList)
 
+class ApiAddTimersResource(ApiBaseResource):
+	def render_POST(self, req):
+		data = json.loads(req.content.getvalue())
+		print("[SerienRecorder] ApiAddTimers")
+
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		database = SRDatabase(serienRecDataBaseFilePath)
+
+		database.addToTimerList(data['series'], data['fsid'], data['fromEpisode'], data['toEpisode'], data['season'], "webdump", int(time.time()), "", "", 0, 1)
+		return self.returnResult(req, True, None)
+
 class ApiRemoveTimerResource(ApiBaseResource):
 	def render_POST(self, req):
 		data = json.loads(req.content.getvalue())
@@ -1083,7 +1147,7 @@ class ApiRemoveAllRemainingTimerResource(ApiBaseResource):
 		current_time = int(time.time())
 		timers = database.getAllTimer(current_time)
 		for timer in timers:
-			(row_id, serie, staffel, episode, title, start_time, stbRef, webChannel, eit, activeTimer, serien_fsid) = timer
+			(row_id, serie, staffel, episode, title, start_time, serviceRef, webChannel, eit, activeTimer, serien_fsid) = timer
 			serienRecTimerListScreen.removeTimer(database, serie, serien_fsid, staffel, episode, title, start_time, webChannel, eit)
 
 		return self.returnResult(req, True, None)

@@ -70,7 +70,8 @@ class SRDatabase:
 																			type INTEGER DEFAULT 0,
 																			autoAdjust INTEGER DEFAULT NULL,
 																			fsID TEXT DEFAULT NULL,
-																			epgSeriesName TEXT DEFAULT NULL)''')
+																			epgSeriesName TEXT DEFAULT NULL,
+																			kindOfTimer INTEGER DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -107,6 +108,7 @@ class SRDatabase:
 
 		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('Version', ?)", [version])
 		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('ChannelsLastUpdate', ?)", [int(time.time())])
+		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('MarkersLastUpdate', ?)", [int(time.time())])
 		cur.close()
 
 	def getVersion(self):
@@ -292,6 +294,13 @@ class SRDatabase:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'epgSeriesName' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
 
+		if not self.hasColumn(markerRows, 'kindOfTimer'):
+			try:
+				cur.execute("ALTER TABLE SerienMarker ADD kindOfTimer INTEGER DEFAULT NULL")
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'kindOfTimer' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
 		if not self.updateToWLID():
 			updateSuccessful = False
 
@@ -337,6 +346,12 @@ class SRDatabase:
 		except Exception as e:
 			updateSuccessful = False
 			SRLogger.writeLog("Der Standardwert für die Spalte 'Episode' in der Tabelle 'AngelegteTimer' konnte nicht neu gesetzt werden [%s]." % str(e), True)
+
+		try:
+			cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('MarkersLastUpdate', ?)", [int(time.time())])
+		except Exception as e:
+			updateSuccessful = False
+			SRLogger.writeLog("Der Zeitstempel für die letzte Aktualisierung der Serien-Marker konnte nicht gesetzt werden [%s]." % str(e), True)
 
 		if self.updateSeriesMarker(hasFSIDColumn) is False:
 			updateSuccessful = False
@@ -456,6 +471,7 @@ class SRDatabase:
 						cur.execute("UPDATE Merkzettel SET Serie = ?, fsID = ? WHERE fsID = ?", (val['new_name'], val['new_fsID'], val['old_fsID']))
 						SRLogger.writeLog("Merkzettel Tabelle aktualisiert [%s] (%s): %d" % (val['new_name'], val['new_fsID'], cur.rowcount), True)
 				result.append(val['new_name'])
+			cur.execute("UPDATE OR IGNORE dbInfo SET Value = ? WHERE Key='MarkersLastUpdate'", [int(time.time())])
 			cur.execute("COMMIT")
 		except Exception as e:
 			result = False
@@ -706,6 +722,18 @@ class SRDatabase:
 		cur.close()
 		return result
 
+	def getKindOfTimer(self, wlID, default):
+		result = None
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT kindOfTimer FROM SerienMarker WHERE Url=?", [wlID])
+		row = cur.fetchone()
+		if row:
+			(result,) = row
+		cur.close()
+		if result is None:
+			result = default
+		return result
+
 	def getUpdateFromEPG(self, fsID, default):
 		result = True
 		cur = self._srDBConn.cursor()
@@ -787,17 +815,17 @@ class SRDatabase:
 
 	def getMarkerSettings(self, seriesID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName FROM SerienMarker WHERE ID=?", [seriesID])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer FROM SerienMarker WHERE ID=?", [seriesID])
 		row = cur.fetchone()
 		if not row:
-			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1, 1, None)
+			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1, 1, None, None)
 		cur.close()
 		return row
 
 	def setMarkerSettings(self, seriesID, settings):
 		data = settings + (seriesID, )
 		cur = self._srDBConn.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=?, epgSeriesName=? WHERE ID=?"
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=?, epgSeriesName=?, kindOfTimer=? WHERE ID=?"
 		cur.execute(sql, data)
 		cur.close()
 
@@ -1044,6 +1072,21 @@ class SRDatabase:
 	def removeAllMarkerChannels(self, wlID):
 		cur = self._srDBConn.cursor()
 		cur.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE Url=?)", [wlID])
+		cur.close()
+
+	def getMarkerLastUpdate(self):
+		markerLastUpdated = 0
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT Value FROM dbInfo WHERE Key='MarkersLastUpdate'")
+		row = cur.fetchone()
+		if row:
+			(markerLastUpdated,) = row
+		cur.close()
+		return int(markerLastUpdated)
+
+	def setMarkerLastUpdate(self):
+		cur = self._srDBConn.cursor()
+		cur.execute("UPDATE OR IGNORE dbInfo SET Value = ? WHERE Key='MarkersLastUpdate'", [int(time.time())])
 		cur.close()
 
 	def timerExists(self, channel, fsID, season, episode, startUnixtimeLowBound, startUnixtimeHighBound):

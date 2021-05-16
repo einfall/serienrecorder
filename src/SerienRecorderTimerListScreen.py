@@ -219,7 +219,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			onLoadTimerSuccessful(timers)
 
 	def buildList(self, entry):
-		(serie, staffel, episode, title, start_time, stbRef, webChannel, completed, eit, activeTimer, serien_fsid) = entry
+		(serie, staffel, episode, title, start_time, serviceRef, webChannel, completed, eit, activeTimer, serien_fsid) = entry
 		xtime = ''
 		if start_time > 0:
 			xtime = time.strftime(self.WochenTag[time.localtime(int(start_time)).tm_wday ] +", %d.%m.%Y - %H:%M", time.localtime(int(start_time)))
@@ -233,8 +233,8 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		imageTimer = imageNone
 
 		channelName = webChannel
-		if stbRef:
-			channelName = STBHelpers.getChannelByRef(self.channelList, stbRef)
+		if serviceRef:
+			channelName = STBHelpers.getChannelByRef(self.channelList, serviceRef)
 		
 		if activeTimer:
 			SerieColor = None
@@ -248,9 +248,9 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if not completed:
 			imageTimer = "%s/images/timer.png" % os.path.dirname(__file__)
 
-			if stbRef and config.plugins.serienRec.showPicons.value != "0":
+			if serviceRef and config.plugins.serienRec.showPicons.value != "0":
 				# Get picon by reference or by name
-				piconPath = self.piconLoader.getPicon(stbRef)
+				piconPath = self.piconLoader.getPicon(serviceRef if config.plugins.serienRec.showPicons.value == "1" else channelName)
 				if piconPath:
 					self.picloader = PicLoader(80 * skinFactor, 40 * skinFactor)
 					picon = self.picloader.load(piconPath)
@@ -327,9 +327,10 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		#print(self['menu_list'].getCurrent()[0])
 
 		if config.plugins.serienRec.confirmOnDelete.value:
+			title = re.sub("\Adump\Z", "(Manuell hinzugefügt !!)", serien_title)
+			title = re.sub("\Awebdump\Z", "(Manuell übers Webinterface hinzugefügt !!)", title)
 			self.session.openWithCallback(self.callDeleteSelectedTimer, MessageBox, "Soll der Timer für '%s - S%sE%s - %s' wirklich gelöscht werden?" %
-			                              (serien_name, str(staffel).zfill(2), str(episode).zfill(2),
-			                              re.sub("\Adump\Z", "(Manuell hinzugefügt !!)", serien_title)),
+			                              (serien_name, str(staffel).zfill(2), str(episode).zfill(2), title),
 			                              MessageBox.TYPE_YESNO, default=False)
 		else:
 			self.removeTimer(self.database, serien_name, serien_fsid, staffel, episode, serien_title, serien_time, serien_channel, serien_eit)
@@ -586,7 +587,8 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 				(row_id, Serie, Staffel, Episode, title, start_time, stbRef, webChannel, eit, active, serien_fsid) = timer
 				series.append(Serie)
 				zeile = "%s - S%sE%s - %s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2), title)
-				self.addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), row_id, Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid))
+				zeile = zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)").replace(" - webdump", " - %s" % "(Manuell übers Webinterface hinzugefügt !!)")
+				self.addedlist.append((zeile, row_id, Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid))
 
 			self.addedlist_tmp = self.addedlist[:]
 			number_of_series = len(set(series))

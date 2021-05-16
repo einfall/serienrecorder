@@ -2,6 +2,7 @@
 
 # This file contains the SerienRecoder Marker Screen
 import os
+import time
 
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config
@@ -99,9 +100,12 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.changesMade = False
 		self.loading = True
 		self.selected_serien_wlid = toBeSelect
-		
+
+		self.onShow.append(self.checkLastMarkerUpdate)
+
 		self.onLayoutFinish.append(self.setSkinProperties)
 		self.onLayoutFinish.append(self.readSerienMarker)
+
 		self.onClose.append(self.__onClose)
 
 	def callHelpAction(self, *args):
@@ -190,6 +194,12 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		serien_fsid = self['menu_list'].getCurrent()[0][13]
 		return serien_name, serien_wlid, serien_fsid
 
+	def checkLastMarkerUpdate(self):
+		markerLastUpdate = self.database.getMarkerLastUpdate()
+		if (markerLastUpdate + 30 * 24 * 60 * 60) < int(time.time()):
+			self.onShow.remove(self.checkLastMarkerUpdate)
+			self.session.openWithCallback(self.executeUpdateMarkers, MessageBox, "Die Namen der Serien-Marker wurden vor mehr als 30 Tagen das letzte Mal aktualisiert, sollen sie jetzt aktualisiert werden?", MessageBox.TYPE_YESNO)
+
 	def updateMarkers(self):
 		self.session.openWithCallback(self.executeUpdateMarkers, MessageBox, "Sollen die Namen der Serien-Marker aktualisiert werden?", MessageBox.TYPE_YESNO)
 
@@ -202,6 +212,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				message = "Es wurden %d Serien-Marker aktualisiert.\n\nEine Liste der geänderten Marker wurde ins Log geschrieben." % len(updatedMarkers)
 
 			self.session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=10)
+		else:
+			self.database.setMarkerLastUpdate()
 
 	def changeTVDBID(self):
 		if self.loading:

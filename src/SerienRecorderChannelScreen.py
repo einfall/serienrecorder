@@ -185,10 +185,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def checkChannels(self):
 		channels = self.database.getChannels(True)
-		if config.plugins.serienRec.selectBouquets.value:
-			stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
-		else:
-			stbChannelList = STBHelpers.buildSTBChannelList()
+		stbChannelList = STBHelpers.buildSTBChannelList()
 
 		stbServiceRefs = [x[1] for x in stbChannelList]
 		serviceRefs = [x[2] for x in channels]

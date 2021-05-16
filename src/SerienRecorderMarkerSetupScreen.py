@@ -33,7 +33,6 @@ if PY2:
 else:
 	import pickle
 
-
 class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScreen):
 	def __init__(self, session, serien_name, serien_wlid, serien_id, serien_fsid):
 		serienRecBaseScreen.__init__(self, session)
@@ -75,7 +74,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			setMenuTexts(self)
 
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName) = self.database.getMarkerSettings(self.serien_id)
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer) = self.database.getMarkerSettings(self.serien_id)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -141,6 +140,13 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			self.updateFromEPG = ConfigYesNo(default=config.plugins.serienRec.eventid.value)
 			self.enable_updateFromEPG = ConfigYesNo(default=False)
+
+		if str(kindOfTimer).isdigit():
+			self.kindOfTimer = ConfigSelection(choices=[("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default=str(kindOfTimer))
+			self.enable_kindOfTimer = ConfigYesNo(default=True)
+		else:
+			self.kindOfTimer = ConfigSelection(choices=[("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default=str(config.plugins.serienRec.kindOfTimer.value))
+			self.enable_kindOfTimer = ConfigYesNo(default=False)
 
 		if str(skipSeriesServer).isdigit():
 			self.skipSeriesServer = ConfigYesNo(default=bool(skipSeriesServer))
@@ -322,6 +328,10 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self.list.append(getConfigListEntry("Aktiviere abweichende Timeraktualisierung aus dem EPG:", self.enable_updateFromEPG))
 		if self.enable_updateFromEPG.value:
 			self.list.append(getConfigListEntry("      Versuche Timer aus dem EPG zu aktualisieren:", self.updateFromEPG))
+
+		self.list.append(getConfigListEntry("Aktiviere abweichende Timer-Art:", self.enable_kindOfTimer))
+		if self.enable_kindOfTimer.value:
+			self.list.append(getConfigListEntry("      Timer-Art:", self.kindOfTimer))
 
 		if config.plugins.serienRec.tvplaner.value:
 			self.list.append(getConfigListEntry("Aktiviere abweichende Timererstellung nur aus der TV-Planer E-Mail:", self.enable_skipSeriesServer))
@@ -544,6 +554,16 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.updateFromEPG: ("Bei 'ja' wird für Timer von '%s' versucht diese aus dem EPG zu aktualisieren.\n"
 						  "Bei 'nein' werden die Timer dieser Serie nicht aus dem EPG aktualisiert.\n"
 						  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timeraktualisierung aus dem EPG.") % self.serien_name,
+			self.enable_kindOfTimer: (
+								"Bei 'ja' kann für Timer von '%s' eingestellt werden, welche Art von Timer angelegt werden soll.\n"
+								"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timer-Art.\n"
+								"Bei 'nein' gilt die Einstellung vom globalen Setup.") % self.serien_name,
+			self.kindOfTimer: ("Es kann ausgewählt werden, wie Timer für '%s' angelegt werden. Die Auswahlmöglichkeiten sind:\n"
+			                   "  - 'aufnehmen': Ein 'normaler' Timer wird erstellt\n"
+			                   "  - 'umschalten': Es wird ein Timer erstellt, bei dem nur auf den aufzunehmenden Sender umgeschaltet wird. Es erfolgt KEINE Aufnahme\n"
+			                   "  - 'umschalten und aufnehmen': Es wird ein Timer erstellt, bei dem vor der Aufnahme auf den aufzunehmenden Sender umgeschaltet wird\n"
+			                   "  - 'Erinnerung': Es wird ein Timer erstellt, bei dem lediglich eine Erinnerungs-Nachricht auf dem Bildschirm eingeblendet wird. Es wird weder umgeschaltet, noch erfolgt eine Aufnahme\n"
+							   "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timer-Art.") % self.serien_name,
 			self.enable_skipSeriesServer: (
 								"Bei 'ja' kann für Timer von '%s' eingestellt werden, ob Timer nur aus der TV-Planer E-Mail angelegt werden sollen.\n"
 								"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timererstellung nur aus der TV-Planer E-Mail.\n"
@@ -621,6 +641,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			updateFromEPG = self.updateFromEPG.value
 
+		if not self.enable_kindOfTimer.value:
+			kindOfTimer = None
+		else:
+			kindOfTimer = self.kindOfTimer.value
+
 		if not self.enable_skipSeriesServer.value:
 			skipSeriesServer = None
 		else:
@@ -660,7 +685,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self.database.setMarkerSettings(self.serien_id, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),
-		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust, self.epgSeriesName.value))
+		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust, self.epgSeriesName.value, kindOfTimer))
 
 		self.close(True)
 

@@ -375,7 +375,7 @@ class serienRecCheckForRecording:
 			SRLogger.writeLog("\nPrüfe konfigurierte Aufnahmeverzeichnisse:", True)
 			recordDirectories = self.database.getRecordDirectories(config.plugins.serienRec.savetopath.value)
 			for directory in recordDirectories:
-				SRLogger.writeLog("   %s" % directory, True)
+				SRLogger.writeLog("  ' %s '" % directory, True)
 				os.path.exists(directory)
 		except:
 			SRLogger.writeLog("Es konnten nicht alle Aufnahmeverzeichnisse gefunden werden", True)

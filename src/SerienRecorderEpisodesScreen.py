@@ -251,7 +251,8 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		for timer in self.addedEpisodes:
 			(Staffel, Episode, title, webChannel, start_time) = timer
 			zeile = "%s - S%sE%s - %s" % (self.serien_name, str(Staffel).zfill(2), str(Episode).zfill(2), title)
-			addedlist.append((zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)"), self.serien_name, Staffel, Episode, title, start_time, webChannel))
+			zeile = zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)").replace(" - webdump", " - %s" % "(Manuell übers Webinterface hinzugefügt !!)")
+			addedlist.append((zeile, self.serien_name, Staffel, Episode, title, start_time, webChannel))
 
 		addedlist.sort(key=lambda x: (x[1].lower(), int(x[2]) if x[2].isdigit() else x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower()))
 		return addedlist[:]

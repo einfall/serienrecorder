@@ -396,7 +396,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			(serien_name, sender, start_unixtime, margin_before, margin_after, end_unixtime, label_serie,
 			 staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags,
-			 addToDatabase, autoAdjust, epgSeriesName) = params
+			 addToDatabase, autoAdjust, epgSeriesName, kindOfTimer) = params
 			# check sender
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = database.getChannelInfo(sender, wlid, filterMode)
 
@@ -443,7 +443,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				# versuche timer anzulegen
 				result = serienRecBoxTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
 				                                    timer_name, timer_description, eit,
-				                                    False, dirname, vpsSettings, tags, autoAdjust, None)
+				                                    False, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
 				if result["result"]:
 					timer.addTimerToDB(serien_name, wlid, fsid, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase)
 					activatedTimer += 1
@@ -471,7 +471,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					result = serienRecBoxTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit),
 					                                    str(alt_end_unixtime_eit), timer_name,
 					                                    timer_description, alt_eit, False,
-					                                    dirname, vpsSettings, tags, autoAdjust, None)
+					                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
 					if result["result"]:
 						konflikt = None
 						timer.addTimerToDB(serien_name, wlid, fsid, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit, addToDatabase)
@@ -486,7 +486,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 					result = serienRecBoxTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
 					                                    timer_name, timer_description, eit, True,
-					                                    dirname, vpsSettings, tags, autoAdjust, None)
+					                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
 					if result["result"]:
 						timer.addTimerToDB(serien_name, wlid, fsid, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase, False)
 						deactivatedTimer += 1
@@ -530,6 +530,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				# get autoAdjust for marker
 				autoAdjust = database.getAutoAdjust(wlid, sender)
 
+				# get kind of timer for marker
+				kindOfTimer = database.getKindOfTimer(wlid, config.plugins.serienRec.kindOfTimer.value)
+
 				# get alternative epg series name
 				epgSeriesName = database.getMarkerEPGName(fsid)
 
@@ -541,7 +544,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 				params = (serien_name, sender, start_unixtime, margin_before, margin_after, end_unixtime,
 				          label_serie, staffel, episode, title, dirname, preferredChannel,
-				          bool(useAlternativeChannel), vpsSettings, tags, addToDatabase, autoAdjust, epgSeriesName)
+				          bool(useAlternativeChannel), vpsSettings, tags, addToDatabase, autoAdjust, epgSeriesName, kindOfTimer)
 
 				timerExists = False
 				if config.plugins.serienRec.selectBouquets.value and config.plugins.serienRec.preferMainBouquet.value:
