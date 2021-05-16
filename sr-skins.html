@@ -1,0 +1,605 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+	<head>
+		<meta charset="utf-8">
+		<title>SR Skins</title>
+		
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.0/font/bootstrap-icons.css">
+		<link rel="stylesheet" href="dateien/bootstrap.min.css">
+		<link rel="stylesheet" href="sr-skins-style.css">
+		<link rel="stylesheet" href="dateien/font-awesome.min.css">
+		
+		
+		
+	</head>
+	<body>
+<!-- Sidebar Menü           Zeile  90 -->		
+<!-- Content start          Zeile  210 -->		
+<!-- SerienRecorder Skins   Zeile  220 -->		
+
+
+
+<!--header menu start-->
+<nav id="headercol" class="navbar navbar-expand-xl fixed-top">
+	<div class="container-fluid">
+		<div id="sidebarbtn" class="sidebar-btn">
+			
+		</div>
+		<div class="logo">
+			<a href="#"><img src="images/plugin.png" alt="Logo">
+			</a>
+		</div>
+		<div class="title"><a href="sr-skins.html">Serienrecorder <span>Skins</span></a>
+	  	</div>
+		
+		<div data-toggle="collapse" data-target="#menue" class="navbar-toggler">
+		<span class="navbar-toggler-icon"><i class="fa fa-navicon" style="color:#fff; font-size:28px;"></i></span>
+	  	</div>
+	  	<div id="menue" class="collapse navbar-collapse justify-content-end">
+		<ul class="navbar-nav text-center">
+		
+			
+			  <li class="dropdown mr-5">
+				<div class="nav-link dropdown-toggle" role="button" data-toggle="dropdown">
+				<span class="textfarbe">Weiterführende Links</span>
+				</div>
+				<ul class="dropdown-menu text-center">
+				<li class="nav-item"><a class="nav-link" href="index.html"> Zurück zur SerienRecorder Anleitung</a></li>	
+			  	<li class="nav-item"><a class="nav-link" href="https://www.vuplus-support.org/wbb4/index.php?thread/117977-githubpluginupdater/" target="_blank">GithubPluginUpdater</a></li>
+			  	<li class="nav-item"><a class="nav-link" href="https://www.vuplus-support.org/wbb4/filebase/index.php?entry/202-dcc-dreambox-control-center-e2-v1-50/" target="_blank">DCC</a></li>
+			 	<li class="nav-item"><a class="nav-link" href="https://www.vuplus-support.org/wbb4/index.php?thread/142130-open-webif-aktuell/" target="_blank">OpenWebIf updaten</a></li>
+			 	
+				</ul>
+		  	</li>  
+		
+<!-- Modal / Suche Button start-->
+		<button type="button" class="btn btn-success" data-toggle="modal" data-target="#myModal">
+			Suche...
+		</button>
+<!-- Modal / Suche Button end-->
+		</ul>
+		</div>
+	</div>
+</nav>
+<!--header menu end-->
+
+<!-- Modal / Suche Hinweis-Fenster start-->
+<!--Das Hinweis Fenster muss außerhalb der Navbar liegen, weil es innerhalb der Navbar nicht funktioniert-->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog">
+        <div class="modal-content"> 
+            <div class="modal-header">
+                <h2 class="modal-title bluefont">Hinweis!</h2> 
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body center">
+                Für eine Suche Bitte die Browsereigene Suchfunktion <br> über <kbd>Strg + F</kbd> öffnen.
+			</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss = "modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal / Suche Hinweis-Fenster end-->
+
+
+<!--wrapper start-->  
+<div id="wrappercol" class="wrapper">
+
+<!--sidebar start-->
+			<div class="sidebar">
+				<div class="sidebar-menu" id="farbe">
+					<div class="dd_ausgleich">
+					<!--<p><a href="#" class="button">Serienrecorder Anleitung</a></p>-->
+					</div>
+					
+					<ul class="item" id="test">
+						<li data-toggle="collapse" data-target="#sr-skins">
+							<a href="#start-sr-skins"><span class="fw">Serienrecorder Skins</span> 
+								<i class="dropdownicon fa fa-chevron-down drop-down"></i>
+							</a>
+							</li>
+						<ul class="collapse hintergrund" id="sr-skins">
+							<li class="subsub"><a href="#sr1"><span>Serienrecorder1</span></a></li>
+							<li class="subsub"><a href="#sr1fhd"><span>Serienrecorder1 FHD</span></a></li>
+							<li class="subsub"><a href="#sr2"><span>Serienrecorder2</span></a></li>
+							<li class="subsub"><a href="#sr2fhd"><span>Serienrecorder2 FHD</span></a></li>
+							<li class="subsub"><a href="#atilehd"><span>AtileHD</span></a></li>
+							<li class="subsub"><a href="#stylefhd"><span>StyleFHD</span></a></li>
+							<li class="subsub"><a href="#blackbox"><span>Black Box</span></a></li>
+							<li class="subsub"><a href="#dreamosfhd"><span>DreamOS FHD</span></a></li>
+							<li class="subsub"><a href="#hdborder"><span>HD Border</span></a></li>
+							<li class="subsub"><a href="#skinpart"><span>Skinpart</span></a></li>
+						</ul>
+					</ul>
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#martinsfhd">
+							<span class="fw">Martins FHD VU only</span>
+						</a>
+						</li>
+					</ul>
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#atilehdboxskin">
+							<span class="fw">Atile HD Box Skin</span>
+						</a>
+						</li>
+					</ul>
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#cerx">
+							<span class="fw">Cerx Full HD</span>
+						</a>
+						</li>
+					</ul>
+<!--
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#cerx-mod">
+							<span class="fw">CerxFHD Mod Nightfall</span>
+						</a>
+						</li>
+					</ul>
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#iflat">
+							<span class="fw">iFlatFHD</span>
+						</a>
+						</li>
+					</ul>
+-->					
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#fluid-next">
+							<span class="fw">Fluid Next</span>
+						</a>
+						</li>
+					</ul>
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#linear-fhd">
+							<span class="fw">linearFHD</span>
+						</a>
+						</li>
+					</ul>
+<!--					
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#maggys-full-fhd">
+							<span class="fw">Maggys Full FHD</span>
+						</a>
+						</li>
+					</ul>
+-->					
+					<ul class="item dd_ausgleich" id="test">
+						<li>
+						<a href="#vu-hd-1080p-glass-stil">
+							<span class="fw">VU HD 1080p - Glass Stil</span>
+						</a>
+						</li>
+					</ul>
+					
+					
+										
+					<br><br><br><br>
+				</div>
+			</div>
+<!--sidebar end-->
+
+
+<!--main container start-->
+
+<div class="main-container">
+
+<!-- Mein Text start -->
+		<span id="mein-text" class="anchor"></span>
+				<div class="d-flex justify-content-between">
+		
+				
+					<div class="fehler">Wer Fehler entdeckt, Bitte eine PN (Konversation) an <a href="https://www.vuplus-support.org/wbb4/index.php?user/79460-marti-win7/" target="_blank"><strong>@Marti_win7</strong></a> im VTI-Forum.
+					<br>
+					<span class="text-success">Wer mir eine kleine <strong>Anerkennung</strong> zukommen lassen möchte, 
+					kann dies gerne über <a href="https://www.paypal.com/de/home" target="_blank"><strong>PayPal</strong></a> an  &nbsp; &nbsp; <strong>marti_win7@gmx.de</strong>&nbsp; &nbsp; machen. Ich bedanke mich persönlich per PN bei jedem.</span>
+					
+					
+					</div>
+					
+				<br>
+				
+				</div>
+<!-- Mein Text ende -->			
+
+			<br><br>	
+<!-- Content start -->
+<span id="content" class="anchor"></span>
+<div class="container-fluid">
+	<h1 class="page-header underline-blau-doppelt" style="text-align: center;">SerienRecorder Skins </h1>
+	<p class="lead mt-5">Der Serienrecorder verfügt selbst schon über ein paar eigene Skins, sowohl in <strong>HD-</strong> als auch in <strong>FHD-</strong>Auflösung.
+		<br> Zudem kann das Aussehen des SerienRecorders über den Box-Skin angepasst werden/sein, damit es dem "Aussehen" der Box entspricht. Bei manchen Skins ist der SR direkt im Skin integriert und bei anderen muß/kann man sich einen Skin-Part installieren und/oder aktivieren. Näheres dazu Bitte in den jeweiligen Threads der Skins nachlesen.
+	</p>
+	<p>Diese Seite soll das vielfältige Aussehen des SR`s darstellen. Viele der Skins stellen den SR Bildschirmfüllend dar, um das maximale Platzangebot auszunutzen. Bei manchen geht es darum, möglichst viel Inhalt darzustellen, andere nutzen den Platz, um mit großer Schrift und großen Elementen den SR auch mit schlechteren Augen "vom Sofa" aus bedienen zu können. 
+	<br>Die SerienRecorder eigenen Skins sind natürlich alle aufgeführt, aber von den vielen Box-Skins die es gibt, nur eine Auswahl.
+	<br><br>Man kann natürlich nicht einen Skinpart von einem anderen Box-Skin nutzen, weil einem das Aussehen "besser" gefällt.
+	<br><br>Durch einen Klick auf einen Screenshot werden diese vergrößert, in voller FHD-Auflösung, angezeigt. Beim Firefox-Browser z.B. kann man mit F11 den Vollbildmodus aktivieren/deaktivieren, damit man das Bild dann in voller Größe sehen kann.
+	<br>Die SR eigenen HD-Skins werden auch als Screenshot unter Verwendung eines FHD-Box-Skins dargestellt und werden dadurch relativ "klein" angezeigt, da mittlerweile doch viele einen FHD-Box-Skin nutzen. Falls also jemand eine solche Darstellung hat, sollte/kann er ggf. zu einer FHD-Version wechseln.
+	</p>
+
+<!-- Skin Serienrecorder1 -->	
+<div class="abstand100">
+	<span id="sr1" class="anchor"></span>
+	<h2>Serienrecorder1</h2>
+	<p>
+		Dies ist ein SR eigener Skin und wird in HD-Auflösung dargestellt. Er ist hier <strong>nicht</strong>  Bildschirmfüllend, da der HD-Skin in einem FHD-Box-Skin angezeigt wird. 
+		<br>Die Tasten der unteren Reihe werden wechselnd angezeigt, was standardmäßig alle 10 Sekunden (einstellbar) passiert.
+		<br>Es wird das Mini-TV und Cover der selektierten Serie rechts angezeigt.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/01_sr1.PNG" target="_blank">	
+		<img src="images/skins/01_sr1.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Serienrecorder1 Skin</p>
+		</a>
+	</div>
+	<p>
+		Hier nun der selbe Skin, nur mit einem HD-Box-Skin als Grundlage, wodurch der Skin dann Bildschirmfüllend ist.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/01_sr1_in_hd.PNG" target="_blank">	
+		<img src="images/skins/01_sr1_in_hd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Serienrecorder1 Skin</p>
+		</a>
+	</div>
+	
+</div>
+
+
+<!-- Skin Serienrecorder1 FHD -->
+<div class="abstand100">
+	<span id="sr1fhd" class="anchor"></span>
+	<h2>Serienrecorder1 FHD</h2>
+	<p>
+		Dies ist ein SR eigener Skin und wird in <strong>FHD</strong>-Auflösung dargestellt. Es ist der gleiche wie darüber, nur halt an die FHD-Auflösung angepasst. <br>Er ist Bildschirmfüllend und die Tasten der unteren Reihe werden wechselnd angezeigt, was standardmäßig alle 10 Sekunden (einstellbar) passiert.
+		<br>Es wird das Mini-TV und Cover der selektierten Serie rechts angezeigt.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/01_sr1fhd.PNG" target="_blank">	
+		<img src="images/skins/01_sr1fhd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Serienrecorder1 FHD Skin</p>
+		</a>
+	  </div>
+</div>
+
+<!-- Skin Serienrecorder2 -->	
+<div class="abstand100">
+	<span id="sr2" class="anchor"></span>
+	<h2>Serienrecorder2</h2>
+	<p>
+		Dies ist ein SR eigener Skin und wird in HD-Auflösung dargestellt. Er ist hier <strong>nicht</strong>  Bildschirmfüllend, da der HD-Skin in einem FHD-Box-Skin angezeigt wird. Es werden immer alle Tasten angezeigt und das Cover der selektierten Serie ist rechts.
+		
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/02_sr2.PNG" target="_blank">	
+		<img src="images/skins/02_sr2.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Serienrecorder2 Skin</p>
+		</a>
+	  </div>
+	  <p>
+		Hier nun der selbe Skin, nur mit einem HD-Box-Skin als Grundlage, wodurch der Skin dann Bildschirmfüllend ist.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/02_sr2_in_hd.PNG" target="_blank">	
+		<img src="images/skins/02_sr2_in_hd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Serienrecorder2 Skin</p>
+		</a>
+	</div>  
+</div>
+
+
+<!-- Skin Serienrecorder2 FHD -->
+<div class="abstand100">
+	<span id="sr2fhd" class="anchor"></span>
+	<h2>Serienrecorder2 FHD</h2>
+	<p>
+		Dies ist ein SR eigener Skin und wird in <strong>FHD</strong>-Auflösung dargestellt. Er ist Bildschirmfüllend, es werden immer alle Tasten angezeigt und das Cover der selektierten Serie ist rechts.
+		
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/02_sr2fhd.PNG" target="_blank">	
+		<img src="images/skins/02_sr2fhd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Serienrecorder2 FHD Skin</p>
+		</a>
+	  </div>
+	  <p>
+		  Es gibt von diesem Skin noch eine "Spezial-Ausführung", die ich für einen User angepasst habe. Der wollte anstatt des großen Cover lieber das Mini-TV drin haben, also wurde das Cover in klein oben hingesetzt. Falls bedarf besteht, kann man sich bei mir, <a href="https://www.vuplus-support.org/wbb4/index.php?user/79460-marti-win7/" target="_blank"><strong>@Marti_win7</strong></a> , im VTI-Forum melden, dann schicke ich die Datei.
+	  </p>
+	  <div class="container-fluid skin-img">
+		<a href="images/skins/02_sr2fhd_spezial.PNG" target="_blank">	
+		<img src="images/skins/02_sr2fhd_spezial.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Serienrecorder2 FHD Spezial Skin</p>
+		</a>
+	  </div>
+</div>
+
+<!-- Skin Atile HD -->	
+<div class="abstand100">
+	<span id="atilehd" class="anchor"></span>
+	<h2>Atile HD</h2>
+	<p>
+		Dieser Skin ist an das Aussehen des gleichnamigen Box-Skins angepasst und wird in HD-Auflösung dargestellt. Er ist hier <strong>nicht</strong>  Bildschirmfüllend, da der HD-Skin in einem FHD-Box-Skin angezeigt wird. Die Tasten werden wechselnd angezeigt, was standardmäßig alle 10 Sekunden (einstellbar) passiert.
+		<br>Es wird das Cover der selektierten Serie rechts angezeigt.
+		<br>Die Farbdarstellung kann u.U. von der "wirklichen" abweichen, da der Screenshot nicht mit dem gleichnamigen Box-Skin gemacht wurde.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/03_atilehd.PNG" target="_blank">	
+		<img src="images/skins/03_atilehd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Atile HD Skin</p>
+		</a>
+	</div>
+	<p>
+		Hier nun der selbe Skin, nur mit einem HD-Box-Skin als Grundlage, wodurch der Skin dann Bildschirmfüllend ist.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/03_atilehd_in_hd.PNG" target="_blank">	
+		<img src="images/skins/03_atilehd_in_hd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Atile HD Skin</p>
+		</a>
+	</div> 
+</div>
+
+<!-- Skin Style FHD -->	
+<div class="abstand100">
+	<span id="stylefhd" class="anchor"></span>
+	<h2>Style FHD</h2>
+	<p>
+		Dieser Skin ist an das Aussehen des gleichnamigen Box-Skins angepasst und wird in <strong>FHD</strong>-Auflösung dargestellt. Es werden immer alle Tasten angezeigt und das Cover der selektierten Serie rechts.
+		<br>Die Farbdarstellung kann u.U. von der "wirklichen" abweichen, da der Screenshot nicht mit dem gleichnamigen Box-Skin gemacht wurde.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/04_stylefhd.PNG" target="_blank">	
+		<img src="images/skins/04_stylefhd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Style FHD Skin</p>
+		</a>
+	  </div>
+</div>
+
+<!-- Skin Black Box -->	
+<div class="abstand100">
+	<span id="blackbox" class="anchor"></span>
+	<h2>Black Box</h2>
+	<p>
+		Dieser Skin ist an das Aussehen des gleichnamigen Box-Skins angepasst und wird in HD-Auflösung dargestellt. Er ist hier <strong>nicht</strong>  Bildschirmfüllend, da der HD-Skin in einem FHD-Box-Skin angezeigt wird. Es werden immer alle Tasten links angezeigt.
+		<br>Die Farbdarstellung kann u.U. von der "wirklichen" abweichen, da der Screenshot nicht mit dem gleichnamigen Box-Skin gemacht wurde.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/05_blackbox.PNG" target="_blank">	
+		<img src="images/skins/05_blackbox.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Black Box Skin</p>
+		</a>
+	  </div>
+</div>
+
+<!-- Skin DreamOS FHD -->	
+<div class="abstand100">
+	<span id="dreamosfhd" class="anchor"></span>
+	<h2>DreamOS FHD</h2>
+	<p>
+		Dieser <strong>DreamOS-</strong>Skin ist an das Aussehen des gleichnamigen Box-Skins angepasst und wird in <strong>FHD</strong>-Auflösung dargestellt, funktioniert aber auch unter VTI. Die Tasten werden wechselnd angezeigt, was standardmäßig alle 10 Sekunden (einstellbar) passiert.
+		<br>Es wird das Mini-TV und das Cover der selektierten Serie rechts angezeigt.
+		<br>Die Farbdarstellung kann u.U. von der "wirklichen" abweichen, da der Screenshot nicht mit dem gleichnamigen Box-Skin gemacht wurde.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/06_dreamosfhd.PNG" target="_blank">	
+		<img src="images/skins/06_dreamosfhd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den DreamOS FHD Skin</p>
+		</a>
+	  </div>
+</div>
+
+<!-- Skin HD Border -->	
+<div class="abstand100">
+	<span id="hdborder" class="anchor"></span>
+	<h2>HD Border</h2>
+	<p>
+		Dieser <strong>DreamOS-</strong>Skin ist an das Aussehen des gleichnamigen Box-Skins angepasst und wird in HD-Auflösung dargestellt, funktioniert aber auch unter VTI. Er ist hier <strong>nicht</strong>  Bildschirmfüllend, da der HD-Skin in einem FHD-Box-Skin angezeigt wird. Die Tasten werden wechselnd angezeigt, was standardmäßig alle 10 Sekunden (einstellbar) passiert.
+		<br>Es wird das Mini-TV und das Cover der selektierten Serie rechts angezeigt.
+		<br>Die Farbdarstellung kann u.U. von der "wirklichen" abweichen, da der Screenshot nicht mit dem gleichnamigen Box-Skin gemacht wurde.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/07_hdborder.PNG" target="_blank">	
+		<img src="images/skins/07_hdborder.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den HD Border Skin</p>
+		</a>
+	  </div>
+</div>
+
+<!-- Skinpart-->
+<div class="abstand100">
+	<span id="skinpart" class="anchor"></span>
+	<h2>Skinpart</h2>
+	<p>
+		Dies muss in der Regel ausgewählt werden, wenn der SerienRecorder vom Box-Skin bzw. -Skinpart dargestellt wird. Näheres dazu Bitte in den jeweiligen Threads der Skins nachlesen, denn teilweise muss auch SR1 oder SR2 ausgewählt werden.
+	</p>
+	
+</div>
+
+<!-- Martins FHD VU only-->
+<div class="abstand100">
+	<span id="martinsfhd" class="anchor"></span>
+	<h2>Martins FHD VU only</h2>
+	<p> Dies ist <strong>kein</strong> Box-Skin, sondern "nur" ein SR-Skin und muss nur in das "richtige" SR-Verzeichnis kopiert werden. Er kann aus der <a href="https://www.vuplus-support.org/wbb4/filebase/index.php?entry/1093-serienrecorder-fhd-skin-kein-box-skin/" target="_blank">Database</a>  heruntergeladen werden, worin sich auch eine Installations-Anleitung befindet.
+		<br>In diesem Skin werden immer alle Tasten dargestellt, welche sowohl unten als auch rechts angeordnet sind, damit die Elemente und Schriften "schön Groß" dargestellt werden können. Er wird in <strong>FHD</strong>-Auflösung angezeigt und ist Bildschirmfüllend.
+		<br>Es wird das Cover der selektierten Serie rechts angezeigt.
+		<br>Dieser Skin ist nur auf einigen VU+ Receivern getestet worden, daher "VU only" und auf DreamOS läuft er nicht.
+		<br>
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/08_martinsfhd.PNG" target="_blank">	
+		<img src="images/skins/08_martinsfhd.PNG" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Martins FHD VU only Skin</p>
+		</a>
+	</div>
+</div>
+
+<!-- Atile HD Box Skin-->
+<div class="abstand100">
+	<span id="atilehdboxskin" class="anchor"></span>
+	<h2>Atile HD Box Skin</h2>
+	<p> Dies ist der <strong>Atile HD</strong> Box-Skin.
+		<br>Die Tasten werden wechselnd angezeigt, was standardmäßig alle 10 Sekunden (einstellbar) passiert.
+		<br>Es wird das Cover der selektierten Serie rechts angezeigt.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/AtileHD-SerienPlaner.png" target="_blank">	
+		<img src="images/skins/AtileHD-SerienPlaner.png" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Atile HD Box Skin</p>
+		</a>
+	</div>
+	<p>
+	  Hier noch zusätzlich die Serien-Marker-Ansicht.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/AtileHD-SerienMarker.png" target="_blank">	
+		<img src="images/skins/AtileHD-SerienMarker.png" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Atile HD Box Skin</p>
+		</a>
+	</div>
+</div>
+
+<!-- Cerx Full HD Box Skin-->
+<div class="abstand100">
+	<span id="cerx" class="anchor"></span>
+	<h2>Cerx Full HD</h2>
+	<p> Dies ist der <strong>Cerx Full HD</strong> Box-Skin. 
+		<br>Er wird in <strong>FHD</strong>-Auflösung dargestellt und es werden immer alle Tasten angezeigt
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/Cerx FHD.png" target="_blank">	
+		<img src="images/skins/Cerx FHD.png" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Cerx Full HD Skin</p>
+		</a>
+	</div>
+	
+</div>
+
+<!-- Fluid Next Box Skin-->
+<div class="abstand100">
+	<span id="fluid-next" class="anchor"></span>
+	<h2>Fluid Next</h2>
+	<p> Dies ist der <strong>Fluid Next</strong> Box-Skin. 
+		<br>Er wird in <strong>FHD</strong>-Auflösung dargestellt und es werden immer alle Tasten angezeigt.
+		<br>Es wird das Cover der selektierten Serie rechts angezeigt.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/Fluid Next.png" target="_blank">	
+		<img src="images/skins/Fluid Next.png" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den Fluid Next Skin</p>
+		</a>
+	</div>
+	
+</div>
+
+
+<!-- linearFHD Box Skin-->
+<div class="abstand100">
+	<span id="linear-fhd" class="anchor"></span>
+	<h2>linearFHD</h2>
+	<p> Dies ist der <strong>linearFHD</strong> Box-Skin. 
+		<br>Er wird in <strong>FHD</strong>-Auflösung dargestellt und es werden immer alle Tasten angezeigt.
+		<br>Es wird das Cover der selektierten Serie rechts angezeigt.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/LinearFHD Planer.png" target="_blank">	
+		<img src="images/skins/LinearFHD Planer.png" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den linearFHD Skin</p>
+		</a>
+	</div>
+	<p>
+		Hier noch zusätzlich die Serien-Marker-Ansicht.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/LinearFHD Marker.png" target="_blank">	
+		<img src="images/skins/LinearFHD Marker.png" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den linearFHD Skin</p>
+		</a>
+	</div>
+</div>
+
+<!-- VU HD 1080p Glass Stil Box Skin-->
+<div class="abstand100">
+	<span id="vu-hd-1080p-glass-stil" class="anchor"></span>
+	<h2>VU HD 1080p - Glass Stil</h2>
+	<p> Dies ist der <strong>VU HD 1080p - Glass Stil</strong> Box-Skin. 
+		<br>Er wird in <strong>FHD</strong>-Auflösung dargestellt und es werden immer alle Tasten angezeigt.
+		<br>Es wird das Cover der selektierten Serie rechts angezeigt.
+	</p>
+	<div class="container-fluid skin-img">
+		<a href="images/skins/Glass Stil.png" target="_blank">	
+		<img src="images/skins/Glass Stil.png" alt="Bild konnte nicht geladen werden">
+		<p>Beispiel für den VU HD 1080p - Glass Stil Skin</p>
+		</a>
+	</div>
+	
+</div>
+
+
+
+
+
+
+
+
+
+</div>			
+<!-- Content ende -->
+
+<br><br>
+ <!-- Footer start -->  
+  <div class="d-flex justify-content-center">
+	<div class="mr-5"><a href="#content"><strong>[Seitenanfang]</strong></a></div>
+	
+  </div>
+<!-- Footer ende -->
+<div class="abstand">
+
+</div>
+				
+</div><!--main container end-->
+
+</div> <!--wrapper end   id="wrappercol" class="wrapper"-->
+		
+		<script src="https://unpkg.com/@popperjs/core@2"></script>
+		<script src="dateien/jquery.min.js"></script>
+    	<script src="dateien/bootstrap.min.js"></script>
+		
++
+		
+		<script>
+		
+			$("#test li").click(function(){
+            
+            $("#test .hintergrund").removeClass("hintergrund");
+            $(this).addClass("hintergrund");
+			$("#sr-skins").addClass("hintergrund2");
+			$("#globale-einstellungen").addClass("hintergrund2");
+			$("#serienplaner").addClass("hintergrund2");
+			$("#serienmarker").addClass("hintergrund2");
+			$("#sm-hinzufügen").addClass("hintergrund2");
+			$("#sonstige").addClass("hintergrund2");
+			$("#webinterface").addClass("hintergrund2");
+        	})
+			
+		</script>
+		<script>
+			$(".nav-item").click(function(){
+			  $("#menue").collapse('hide');
+			  $("#menue .bg-primary").removeClass("bg-primary"); 
+			})
+			$(".dropdown").click(function(){
+			  if(!$(this).hasClass("show")) return;
+			   $("#menue li>.bg-primary").removeClass("bg-primary");
+			})
+		</script>
+		
+	</body>
+</html>
