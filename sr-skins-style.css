@@ -113,10 +113,6 @@ body{
   overflow-y: auto;
 }
 
-.wrapper .sidebar .sidebar-menu{
-  /* overflow: hidden; */
-}
-
 .wrapper .sidebar .sidebar-menu .item{
   width: 250px;
   /* overflow: hidden; */
