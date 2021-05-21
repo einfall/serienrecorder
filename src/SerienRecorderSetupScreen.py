@@ -296,7 +296,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.skin = None
-		self.bouquetList = []
 		self.session = session
 		self.list = []
 		self.HilfeTexte = {}
@@ -737,16 +736,17 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if config.plugins.serienRec.splitEventTimer.value == "2":
 			self.list.append(getConfigListEntry("    Einzelepisoden als 'bereits getimert' markieren:", config.plugins.serienRec.addSingleTimersForEvent))
 
+		bouquetList = []
 		boxBouquets = STBHelpers.getTVBouquets()
 		if len(boxBouquets) == 0:
 			config.plugins.serienRec.selectBouquets.value = False
 		else:
 			for bouquet in boxBouquets:
-				self.bouquetList.append((bouquet[1], bouquet[1]))
+				bouquetList.append((bouquet[1], bouquet[1]))
 
 			defaultAlternativeBouquetIndex = 1 if len(boxBouquets) > 1 else 0
-			config.plugins.serienRec.MainBouquet.setChoices(choices=self.bouquetList, default=self.bouquetList[0][0])
-			config.plugins.serienRec.AlternativeBouquet.setChoices(choices=self.bouquetList, default=self.bouquetList[defaultAlternativeBouquetIndex][0])
+			config.plugins.serienRec.MainBouquet.setChoices(choices=bouquetList, default=bouquetList[0][0])
+			config.plugins.serienRec.AlternativeBouquet.setChoices(choices=bouquetList, default=bouquetList[defaultAlternativeBouquetIndex][0])
 
 			self.list.append(getConfigListEntry("Bouquets auswählen:", config.plugins.serienRec.selectBouquets))
 			if config.plugins.serienRec.selectBouquets.value:

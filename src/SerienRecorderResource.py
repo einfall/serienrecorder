@@ -72,8 +72,11 @@ def addWebInterface():
 	if childs:
 		for name, api in childs:
 			root.putChild(toBinary(name), api)
-	addExternalChild( ("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION, False) )
-	print("[SerienRecorder] addExternalChild for API")
+	apiSuccessfulAdded = addExternalChild( ("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION, False) )
+	if apiSuccessfulAdded is not True:
+		apiSuccessfulAdded = addExternalChild(("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION))
+
+	print("[SerienRecorder] addExternalChild for API [%s]" % str(apiSuccessfulAdded))
 
 	# webgui
 	root = static.File(util.sibpath(__file__, "web-data"))
@@ -81,13 +84,15 @@ def addWebInterface():
 
 	try:
 		if use_openwebif or os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/WebInterface/web/external.xml"):
-			addExternalChild( ("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION, True) )
+			uiSuccessfulAdded = addExternalChild( ("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION, True) )
+			if uiSuccessfulAdded is not True:
+				addExternalChild(("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION))
 		else:
-			addExternalChild( ("serienrecorderui", root) )
+			uiSuccessfulAdded = addExternalChild( ("serienrecorderui", root) )
 	except:
-		addExternalChild(("serienrecorderui", root))
+		uiSuccessfulAdded = addExternalChild(("serienrecorderui", root))
 
-	print("[SerienRecorder] addExternalChild for UI")
+	print("[SerienRecorder] addExternalChild for UI [%s]" % str(uiSuccessfulAdded))
 
 class ApiBaseResource(resource.Resource):
 	def render_OPTIONS(self, req):
@@ -202,18 +207,21 @@ class ApiGetCoverResource(ApiImageResource):
 
 class ApiGetPiconResource(ApiImageResource):
 	def render_GET(self, req):
-		serviceRef = req.args.get(toBinary("serviceRef"), None)
-		channelName = req.args.get(toBinary("channelName"), None)
-		print("[SerienRecorder] ApiGetPiconResource: [%s] / [%s]" % (toStr(serviceRef[0]), toStr(channelName)))
+		serviceRef = str(req.args["serviceRef"][0])
+		channelName = str(req.args["channelName"][0])
+
+		#serviceRef = req.args.get(toBinary("serviceRef"), None)
+		#channelName = req.args.get(toBinary("channelName"), None)
+		print("[SerienRecorder] ApiGetPiconResource: [%s] / [%s]" % (serviceRef, channelName))
 
 		piconPath = None
 		if config.plugins.serienRec.showPicons.value != "0":
 			from .SerienRecorderHelpers import PiconLoader
 			# Get picon by reference or by name
 			if config.plugins.serienRec.showPicons.value == "1" and serviceRef:
-				piconPath = PiconLoader().getPicon(toStr(serviceRef[0]))
+				piconPath = PiconLoader().getPicon(serviceRef)
 			elif config.plugins.serienRec.showPicons.value == "2" and channelName:
-				piconPath = PiconLoader().getPicon(toStr(channelName))
+				piconPath = PiconLoader().getPicon(channelName)
 
 		if not piconPath:
 			# Dummy image
