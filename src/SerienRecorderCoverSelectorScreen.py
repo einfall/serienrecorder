@@ -89,7 +89,7 @@ class CoverSelectorScreen(Screen):
 			return True
 
 	def buildList(self, data, cover):
-		self._coverList.append(((cover['id'], cover['count'], cover['rating'], cover['language'], self._tempDir + str(cover['id']) + '.jpg'),))
+		self._coverList.append(((cover['id'], cover['rating'], cover['language'], self._tempDir + str(cover['id']) + '.jpg'),))
 		self['list'].setList(self._coverList)
 
 	def dataError(self, error):
@@ -124,7 +124,7 @@ class CoverSelectorList(GUIComponent, object):
 		self.l.setBuildFunc(self.buildList)
 
 	def buildList(self, entry):
-		(cover_id, count, rating, language, path) = entry
+		(cover_id, rating, language, path) = entry
 		res = [None]
 
 		# First column
@@ -139,9 +139,9 @@ class CoverSelectorList(GUIComponent, object):
 
 		# Second column
 		x, y, w, h = (150, 5, 300, 25)
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, x, y, w, h, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(cover_id)))
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, x, y + 35, w, h, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(language)))
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, x, y + 60, w, h, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Bewertung: %0.1f (%d Stimmen)" % (rating, count)))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, x, y, w, h, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "ID: %s" % str(cover_id)))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, x, y + 35, w, h, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Sprache: %s" % str(language)))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, x, y + 60, w, h, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "Bewertung: %0.1f" % rating))
 		return res
 
 	def getCurrent(self):

@@ -471,7 +471,7 @@ class EditTVDBID:
 		self.tvdb_id = 0
 
 	def changeTVDBID(self):
-		if fileExists("/etc/enigma2/SerienRecorder.tvdb.id"):
+		if self.allowChangeTVDBID():
 			self.tvdb_id = SeriesServer().getTVDBID(self.serien_id)
 			if self.tvdb_id is False:
 				self.session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!", MessageBox.TYPE_ERROR, timeout=5)
@@ -503,3 +503,7 @@ class EditTVDBID:
 			if not SeriesServer().setTVDBID(self.serien_id, tvdb_id):
 				self.session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
 			getCover(self.parent, self.serien_name, self.serien_id, self.serien_fsid, False, True)
+
+	@staticmethod
+	def allowChangeTVDBID():
+		return fileExists("/etc/enigma2/SerienRecorder.tvdb.id")

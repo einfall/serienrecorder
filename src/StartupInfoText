@@ -39,60 +39,52 @@ langer Tastendruck:
 Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
-CHANGELOG 4.4.0
+CHANGELOG 4.4.2
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste.
 Cover, Episodenliste, Serien-/Episodeninformationen stammen von TheTVDB.
 
 Neue Funktionen:
 
-- Erinnerung für das Aktualisieren der Namen von Serien-Markern eingebaut (siehe Anmerkung 1)
-- Die Timer-Art kann jetzt am Serien-Marker überschrieben werden (siehe Anmerkung 2)
-- Manuelle Einträge in die Timer-Liste, über das SerienRecorder Webinterface, werden jetzt in der Timer-Liste mit "Manuell übers Webinterface hinzugefügt !!" gekennzeichnet.
-- Zusätzliche Funktionen im Webinterface eingebaut - dafür wurde die Webinterface API Version auf 2.2 geändert
+- Am Serien-Marker kann jetzt die Option "Immer Timer anlegen, wenn keine Wiederholung gefunden wird" überschrieben werden. (siehe Anmerkung 1)
 
 Änderungen:
 
-- Kein Standby wenn die Box bereits im Standby ist (siehe Anmerkungen 3)
-- Episodenliste (Taste 5) überarbeitet (siehe Anmerkungen 4)
-- Zwei Absturzursachen entschärft
-- Meldungen überarbeitet
-- Timer von Serien mit S00E00 können jetzt auch aus dem EPG aktualisiert werden
-- Wenn einzelne Serien nicht aus dem EPG aktualisiert werden sollten, konnte es in manchen Fehler zu einer Fehlermeldung beim Aktualisieren kommen
-- Im Log wird jetzt auch protokolliert, wann die Box heruntergefahren wird, der bisherige Eintrag beim Starten des Box wurde ebenfalls verändert.
-- Einige Logeinträge und Texte in den Einstellungen wurden aktualisiert
+- Das uralte OpenWebIf aus dem VTI Feed wird wieder unterstützt (siehe Anmerkung 2)
+- Umstellung auf die neue TheTVDB API (v4) (siehe Anmerkungen 3)
+- Kleinere Textänderungen bei den Einstellungen
 
 Bugfixes:
 
-- Die Prüfung der Senderliste (Taste 8) hat bisher nur das eingestellte Standardbouquet berücksichtigt, jetzt werden immer alle Bouquets berücksichtigt.
-- Fehler im Skin "HD Border" behoben (Danke an @Marti_win7)
-- Picons wurden in manchen Ansichten und auch im Webinterface nicht dargestellt wenn sie nicht per ServiceRef sondern per Name geladen werden sollten.
+- Seltener Absturz in den Einstellungen behoben
+- Fehler beim Laden der Picons by name im SerienRecorder Webinterface behoben
 
 Anmerkungen:
 
-1. Die Informationen eines Serien-Markers (Name, Produktionsjahr usw.) werden nicht automatisch aktualisiert,
-sondern mussten mit der Taste 8 manuell aktualisiert werden, bzw. wurden nur beim Aktualisieren der Datenbank bei einem SerienRecorder Update aktualisiert.
-Jetzt wird beim Öffnen der Serien-Marker Ansicht eine Erinnerung angezeigt, falls die Namen der Serien-Marker länger als 30 Tage nicht aktualisiert wurden.
+1. Wenn man am Serien-Marker die Zeiten einschränkt in denen Timer für diese Serie angelegt werden, konnte es vorkommen, dass trotzdem Timer außerhalb dieser Zeiten erstellt wurden.
+Der Grund war die globale Option "Immer Timer anlegen, wenn keine Wiederholung gefunden wird" - wenn es für die Sendung also keine Wiederholung gefunden wurde,
+hat der SerienRecorder trotzdem einen Timer angelegt.
+Jetzt kann man die Option am Serien-Marker abschalten, sodass dann wirklich nur noch Timer, die innerhalb der eingestellten Zeitspanne ausgestrahlt werden, angelegt.
 
-2. Bisher konnte die Timer-Art (Aufnehmen, Umschalten usw.) nur global gesetzt werden, jetzt kann man diese Einstellung bei Bedarf pro Serien-Marker einstellen.
-ACHTUNG: Hinweise zum Update beachten
+2. Mit der letzten Releaseversion konnten Nutzer des uralten OpenWebIf vom VTI Feed das SerienRecorder Webinterface nicht mehr öffnen.
+Der Grund war ein zusätzlicher Parameter beim Initialisieren des SerienRecorder Webinterfaces.
+Dieser musste eingefügt werden, damit das SerienRecorder Webinterface über das Extras Menü in einem neuen Tab statt in einem neuen Fenster geöffnet wird.
+Leider ist das alte OWI nicht mit diesem Parameter kompatibel und wurde deswegen nicht initialisiert.
+Nachdem jetzt eine Änderung im OWI vorgenommen wurde (Version vom 19.05.2021) kann ich im SerienRecorder unterscheiden ob es sich um das alte oder neue OWI handelt
+und das SerienRecorder Webinterface entsprechend initialisieren.
 
-3. Der SerienRecorder schickt die Box nach einem Timer-Suchlauf nicht noch mal in den Standby, wenn sie es bereits ist.
-Somit sollte es jetzt egal sein, ob man die Option Aktion nach dem automatischen Timer-Suchlauf auf Keine oder In Standby gehen eingestellt hat die,
-Box aber beim Timer-Suchlauf bereits im Standby ist.
+3. Im Oktober werden alle alten API Versionen der TheTVDB abgeschaltet und es kann nur noch die kostenpflichtige Version 4 verwendet werden.
+Da der SerienRecorder die TVDB API nicht direkt aufruft, sondern alles über den SerienServer abgewickelt wird, ist die grundsätzliche Umstellung auch dort erfolgt.
+Die Version 4 der TheTVDB API wurde komplett neu entwickelt, deswegen hat sich einiges geändert, sodass auch die Schnittstelle zum SerienRecorder angepasst werden musste.
+Jetzt sollte alle Ansichten die Daten von TheTVDB beziehen wieder korrekt funktionieren.
+Mit der Version 4 der TheTVDB API lassen sich Daten nicht mehr gezielt abrufen.
+Das führt dazu, dass es zwar an manchen Stellen mehr Informationen gibt, sich aber die Ladegeschwindigkeit verschlechtert hat.
+Einzig positive Änderung an der neuen API ist die Tatsache, dass man jetzt die Cover in allen Sprachen abrufen kann und somit jetzt eigentlich für fast jede Serie ein Cover verfügbar ist.
 
-4. Die Episodenliste hatte sich bisher an das Farbschema des SerienRecorders orientiert, also rot (noch nicht in der Datenbank),
-grün (bereits in der Datenbank) oder blau (Timer vorhanden). Stattdessen wurden Symbole (grünes Haken und rotes Kreuz) angezeigt, Timer wurden gar nicht gekennzeichnet.
-Jetzt werden die Staffel-/Episodennummern im bekannten Farbschema eingefärbt und es werden vor jeder Zeile die bekannten Symbole (+, - und Uhr) angezeigt.
-Damit ist jetzt auch in dieser Ansicht ersichtlich für welche Episoden aktuelle Timer vorhanden sind.
 
 Hinweise zum Update:
 
-- Mit diesem Update wird die Datenbank auf die Version 4.4.0 aktualisiert, die Datenbank wird beim ersten Start des SerienRecorders nach dem Update automatisch im Hintergrund aktualisiert. Vor dem Update der Datenbank wird automatisch ein Backup angelegt. Bitte unbedingt das Log kontrollieren und prüfen ob das Datenbank Update erfolgreich durchgeführt wurde.
-
-- Es gibt eine grundlegende Änderung wie die Einstellungen für "Timer-Art" gespeichert werden. Bisher wurden, je nach gewählter Einstellung, bis zu drei Konfigurationswerte in die settings Datei gespeichert. Das wurde jetzt vereinfacht, sodass nur noch ein Konfigurationswert abgespeichert werden muss. Das hat aber zur Folge, dass die bisherige globale Einstellung für "Timer-Art" wieder auf den Standard "aufnehmen" zurückgesetzt wurde. Das betrifft die User, die dort eine andere Einstellung als "aufnehmen" eingestellt haben, bitte nach dem Update den Wert für "Timer-Art" in den globalen Einstellungen neu setzen.
-
-- Für das Webinterface werden u.U. zusätzliche Module benötigt, die automatisch beim Installieren des IPK/DEB mit installiert werden, deswegen empfehle ich diese Version über die Auto-Update Funktion des SerienRecorders oder manuell über das IPK/DEB durchzuführen und nicht den GitHubUpdater zu verwenden.
+- Mit diesem Update wird die Datenbank auf die Version 4.4.2 aktualisiert, die Datenbank wird beim ersten Start des SerienRecorders nach dem Update automatisch im Hintergrund aktualisiert. Vor dem Update der Datenbank wird automatisch ein Backup angelegt. Bitte unbedingt das Log kontrollieren und prüfen ob das Datenbank Update erfolgreich durchgeführt wurde.
 
 
 Viel Spaß mit dem SerienRecorder!

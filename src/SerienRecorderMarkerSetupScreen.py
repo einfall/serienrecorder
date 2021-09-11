@@ -74,7 +74,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			setMenuTexts(self)
 
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer) = self.database.getMarkerSettings(self.serien_id)
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording) = self.database.getMarkerSettings(self.serien_id)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -119,6 +119,13 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.toTime = ConfigClock(default=((config.plugins.serienRec.globalToTime.value[0] * 60) +
 											   config.plugins.serienRec.globalToTime.value[1]) * 60 + time.timezone)
 			self.enable_toTime = ConfigYesNo(default=False)
+
+		if str(forceRecording).isdigit():
+			self.forceRecording = ConfigYesNo(default=bool(forceRecording))
+			self.enable_forceRecording = ConfigYesNo(default=True)
+		else:
+			self.forceRecording = ConfigYesNo(default=config.plugins.serienRec.forceRecording.value)
+			self.enable_forceRecording = ConfigYesNo(default=False)
 
 		if str(vps).isdigit():
 			self.override_vps = ConfigYesNo(default=True)
@@ -324,6 +331,10 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self.list.append(getConfigListEntry("Aktiviere abweichende Späteste Zeit für Timer:", self.enable_toTime))
 		if self.enable_toTime.value:
 			self.list.append(getConfigListEntry("      Späteste Zeit für Timer:", self.toTime))
+
+		self.list.append(getConfigListEntry("Aktiviere abweichende Timererstellung ohne Wiederholung:", self.enable_forceRecording))
+		if self.enable_forceRecording.value:
+			self.list.append(getConfigListEntry("      Immer Timer anlegen, wenn keine Wiederholung gefunden wird:", self.forceRecording))
 
 		self.list.append(getConfigListEntry("Aktiviere abweichende Timeraktualisierung aus dem EPG:", self.enable_updateFromEPG))
 		if self.enable_updateFromEPG.value:
@@ -547,6 +558,14 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 						  "Die erlaubte Zeitspanne endet um %s:%s Uhr.\n"
 						  "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die späteste Zeit für Timer.") % (
 				             self.serien_name, str(self.toTime.value[0]).zfill(2), str(self.toTime.value[1]).zfill(2)),
+			self.enable_forceRecording: (
+				                           "Bei 'ja' kann für Timer von '%s' eingestellt werden, ob immer ein Timer angelegt werden soll, wenn keine Wiederholung gefunden wurde.\n"
+				                           "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung 'Immer Timer anlegen, wenn keine Wiederholung gefunden wird'.\n"
+				                           "Bei 'nein' gilt die Einstellung vom globalen Setup.\n\n"
+			                               "Wurde eine abweichende Zeitspanne für diese Serie eingestellt, macht es oft Sinn die Option 'Immer Timer anlegen, wenn keine Wiederholung gefunden wird' zu deaktivieren.") % self.serien_name,
+			self.forceRecording: ("Bei 'ja' wird für '%s' auch dann ein Timer erstellt, wenn die Episode außerhalb der eingestellten Zeitspanne liegt und keine Wiederholung gefunden wurde.\n"
+			                     "Bei 'nein' werden die Timer dieser Serie nur dann erstellt, wenn die Episoden innerhalb der eingestellten Zeitspanne ausgestrahlt wird.\n"
+			                     "Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für 'Immer Timer anlegen, wenn keine Wiederholung gefunden wird'.") % self.serien_name,
 			self.enable_updateFromEPG: (
 								"Bei 'ja' kann für Timer von '%s' eingestellt werden, ob versucht werden soll diesen aus dem EPG zu aktualisieren.\n"
 								"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Timeraktualisierung aus dem EPG.\n"
@@ -636,6 +655,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		else:
 			AufnahmezeitBis = (self.toTime.value[0] * 60) + self.toTime.value[1]
 
+		if not self.enable_forceRecording.value:
+			forceRecording = None
+		else:
+			forceRecording = self.forceRecording.value
+
 		if not self.enable_updateFromEPG.value:
 			updateFromEPG = None
 		else:
@@ -685,7 +709,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self.database.setMarkerSettings(self.serien_id, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),
-		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust, self.epgSeriesName.value, kindOfTimer))
+		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust, self.epgSeriesName.value, kindOfTimer, forceRecording))
 
 		self.close(True)
 

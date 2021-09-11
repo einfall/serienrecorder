@@ -167,6 +167,7 @@ def initDB():
 	try:
 		database = SRDatabase(serienRecDataBaseFilePath)
 	except:
+		print("[SerienRecorder] Database failed to initialize")
 		SRLogger.writeLog("Fehler beim Initialisieren der Datenbank")
 		print("[SerienRecorder] Fehler beim Initialisieren der Datenbank")
 		Notifications.AddPopup("SerienRecorder Datenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!", MessageBox.TYPE_INFO, timeout=10)
@@ -180,6 +181,7 @@ def initDB():
 
 		isMalformed = database.isMalformed()
 		if isMalformed:
+			print("[SerienRecorder] Database is malformed")
 			SRLogger.writeLog("Die SerienRecorder Datenbank ist beschädigt - der SerienRecorder kann nicht gestartet werden.")
 			Notifications.AddPopup("Die SerienRecorder Datenbank ist beschädigt.\nDer SerienRecorder kann nicht gestartet werden!", MessageBox.TYPE_INFO, timeout=10)
 			dbIncompatible = True
@@ -204,6 +206,7 @@ def initDB():
 		# Database incompatible - do cleanup
 		if dbIncompatible:
 			database.close()
+			print("[SerienRecorder] Database is incompatible")
 			return False
 
 		if not dbVersionMatch:

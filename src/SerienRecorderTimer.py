@@ -520,7 +520,7 @@ class serienRecTimer:
 
 				alreadyExistsCount = 0
 				for idx, entry in enumerate(splitedSeasonEpisodeList):
-					splitedTitle = "dump"
+					splitedTitle = None
 					if useTitles:
 						splitedTitle = splitedTitleList[idx]
 
@@ -567,7 +567,7 @@ class serienRecTimer:
 					SRLogger.writeLogFilter("timeRange", "' %s ' - Sendung (%s) nicht in Zeitspanne [%s]" % (label_serie, timeRangeTransmission, timeRangeConfigured))
 
 					# forced recording activated?
-					if not config.plugins.serienRec.forceRecording.value:
+					if not self.database.getForceRecording(serien_fsid, config.plugins.serienRec.forceRecording.value):
 						continue
 
 					# backup timer data for post processing
@@ -584,7 +584,7 @@ class serienRecTimer:
 				#
 				# Ueberpruefe ob der sendetermin innerhalb der Wartezeit für Wiederholungen liegt
 				#
-				if config.plugins.serienRec.forceRecording.value:
+				if self.database.getForceRecording(serien_fsid, config.plugins.serienRec.forceRecording.value):
 					TimeSpan_time = int(future_time) + (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
 					if int(timer_start_unixtime) > int(TimeSpan_time):
 						# backup timer data for post processing
@@ -777,7 +777,7 @@ class serienRecTimer:
 					if (config.plugins.serienRec.splitEventTimer.value == "1" or (config.plugins.serienRec.splitEventTimer.value == "2" and config.plugins.serienRec.addSingleTimersForEvent.value == "1")) and '/' in str(episode):
 						splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, season, title)
 						for idx, entry in enumerate(splitedSeasonEpisodeList):
-							splitedTitle = "dump"
+							splitedTitle = None
 							if useTitles:
 								splitedTitle = splitedTitleList[idx]
 							alreadyExists = 0
@@ -789,6 +789,10 @@ class serienRecTimer:
 							else:
 								alreadyExists = self.database.getNumberOfTimers(serien_fsid, entry[0], entry[1], splitedTitle, False)
 							if alreadyExists == 0 and addToDatabase:
+								splitedTitle = "dump"
+								if useTitles:
+									splitedTitle = splitedTitleList[idx]
+
 								# Nicht vorhandene Einzelfolgen als bereits aufgenommen markieren
 								self.database.addToTimerList(serien_name, serien_fsid, entry[1], entry[1], entry[0], splitedTitle, int(time.time() - 10), "", "", 0, 1)
 								SRLogger.writeLogFilter("timerDebug", "   Für die Einzelepisode wird kein Timer mehr erstellt: %s S%sE%s - %s" % (serien_name, str(entry[0]).zfill(2), str(entry[1]).zfill(2), splitedTitle))
@@ -857,34 +861,19 @@ class serienRecTimer:
 				SRLogger.writeLogFilter("timerDebug", "   Timer angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
 
 
-	def shouldCreateEventTimer(self, serien_fsid, staffel, episode, title):
-		if self.database.getNumberOfTimers(serien_fsid, staffel, episode, title, False):
+	def shouldCreateEventTimer(self, serien_fsid, season, episode, title):
+		if self.database.getNumberOfTimers(serien_fsid, season, episode, title, False):
 			return False
 
 		result = True
 		if config.plugins.serienRec.splitEventTimer.value != "2" and '/' in str(episode):
 			# Event-Programmierung auflösen → 01/1x02/1x03
-			splitedSeasonEpisodeList = []
-			if 'x' in str(episode):
-				episode = str(staffel) + 'x' + str(episode)
-				seasonEpisodeList = episode.split('/')
-				for seasonEpisode in seasonEpisodeList:
-					splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
-			else:
-				seasonEpisodeList = episode.split('/')
-				for seasonEpisode in seasonEpisodeList:
-					seasonEpisode = str(staffel) + 'x' + str(seasonEpisode)
-					splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
-
-			useTitles = True
-			splitedTitleList = title.split('/')
-			if len(splitedTitleList) != len(splitedSeasonEpisodeList):
-				useTitles = False
+			splitedSeasonEpisodeList, splitedTitleList, useTitles = self.splitEvent(episode, season, title)
 
 			# Möglichst die Einzelfolgen bevorzugen und Event ignorieren
 			alreadyExistsCount = 0
 			for idx,entry in enumerate(splitedSeasonEpisodeList):
-				title = "dump"
+				title = None
 				if useTitles:
 					title = splitedTitleList[idx]
 				alreadyExists = self.database.getNumberOfTimers(serien_fsid, entry[0], entry[1], title, False)
@@ -1043,7 +1032,7 @@ class serienRecTimer:
 				splitedSeasonEpisodeList.append(seasonEpisode.split('x'))
 		useTitles = True
 		splitedTitleList = title.split('/')
-		if len(splitedTitleList) != len(splitedSeasonEpisodeList):
+		if not config.plugins.serienRec.splitEventTimerCompareTitle.value or len(splitedTitleList) != len(splitedSeasonEpisodeList):
 			useTitles = False
 		return splitedSeasonEpisodeList, splitedTitleList, useTitles
 

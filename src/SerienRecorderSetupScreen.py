@@ -119,6 +119,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.TimerDescription = ConfigSelection(choices=pattern_description_choices, default=pattern_description_default)
 	config.plugins.serienRec.forceManualRecording = ConfigYesNo(default=False)
 	config.plugins.serienRec.splitEventTimer = ConfigSelection(choices=[("0", "Nein"), ("1", "Timer anlegen"), ("2", "Einzelepisoden bevorzugen")], default="0")
+	config.plugins.serienRec.splitEventTimerCompareTitle = ConfigYesNo(default=True)
 	config.plugins.serienRec.addSingleTimersForEvent = ConfigSelection(choices=[("0", "Nein"), ("1", "Ja")], default="0")
 	config.plugins.serienRec.selectBouquets = ConfigYesNo(default=False)
 
@@ -668,7 +669,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Erstelle Backup:", config.plugins.serienRec.AutoBackup))
 		if config.plugins.serienRec.AutoBackup.value != "0":
 			self.list.append(getConfigListEntry("    Backup bei manuellem Timer-Suchlauf:", config.plugins.serienRec.backupAtManualCheck))
-			self.list.append(getConfigListEntry("    Speicherort für Backup:", config.plugins.serienRec.BackupPath))
+			self.list.append(getConfigListEntry("    Speicherort der Backups:", config.plugins.serienRec.BackupPath))
 			self.list.append(getConfigListEntry("    Backup-Dateien löschen die älter als x Tage sind:", config.plugins.serienRec.deleteBackupFilesOlderThan))
 
 		###############################################################################################################################
@@ -676,8 +677,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Automatischen Timer-Suchlauf ausführen:", config.plugins.serienRec.autochecktype))
 		if config.plugins.serienRec.autochecktype.value == "1":
 			self.list.append(getConfigListEntry("    Uhrzeit für automatischen Timer-Suchlauf:", config.plugins.serienRec.deltime))
-			self.list.append(getConfigListEntry("    maximale Verzögerung für automatischen Timer-Suchlauf (Min.):", config.plugins.serienRec.maxDelayForAutocheck))
-		self.list.append(getConfigListEntry("Timer für X Tage erstellen:", config.plugins.serienRec.checkfordays))
+			self.list.append(getConfigListEntry("    Maximale Verzögerung für automatischen Timer-Suchlauf (Min.):", config.plugins.serienRec.maxDelayForAutocheck))
+		self.list.append(getConfigListEntry("Timer für x Tage erstellen:", config.plugins.serienRec.checkfordays))
 		self.checkfordays = config.plugins.serienRec.checkfordays.value
 		self.list.append(getConfigListEntry("Früheste Zeit für Timer:", config.plugins.serienRec.globalFromTime))
 		self.list.append(getConfigListEntry("Späteste Zeit für Timer:", config.plugins.serienRec.globalToTime))
@@ -686,11 +687,11 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("    EPG Suchgrenzen in Minuten:", config.plugins.serienRec.epgTimeSpan))
 		self.list.append(getConfigListEntry("Immer Timer anlegen, wenn keine Wiederholung gefunden wird:", config.plugins.serienRec.forceRecording))
 		if config.plugins.serienRec.forceRecording.value:
-			self.list.append(getConfigListEntry("    maximal X Tage auf Wiederholung warten:", config.plugins.serienRec.TimeSpanForRegularTimer))
+			self.list.append(getConfigListEntry("    Maximal x Tage auf Wiederholung warten:", config.plugins.serienRec.TimeSpanForRegularTimer))
 		self.list.append(getConfigListEntry("Anzahl der Aufnahmen pro Episode:", config.plugins.serienRec.NoOfRecords))
 		self.list.append(getConfigListEntry("Anzahl der Tuner für Aufnahmen einschränken:", config.plugins.serienRec.selectNoOfTuners))
 		if config.plugins.serienRec.selectNoOfTuners.value:
-			self.list.append(getConfigListEntry("    maximale Anzahl der zu benutzenden Tuner:", config.plugins.serienRec.tuner))
+			self.list.append(getConfigListEntry("    Maximale Anzahl der zu benutzenden Tuner:", config.plugins.serienRec.tuner))
 		if config.plugins.serienRec.autochecktype.value == "1":
 			self.list.append(getConfigListEntry("Aus Deep-Standby aufwecken:", config.plugins.serienRec.wakeUpDSB))
 		if config.plugins.serienRec.autochecktype.value in ("1", "2"):
@@ -710,7 +711,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("    IMAP Mailbox:", config.plugins.serienRec.imap_mailbox))
 			self.list.append(getConfigListEntry("    IMAP Einstellungen testen:", config.plugins.serienRec.imap_test))
 			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
-			self.list.append(getConfigListEntry("    maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
+			self.list.append(getConfigListEntry("    Maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
 			self.list.append(getConfigListEntry("    Voller Timer-Suchlauf mindestens einmal im Erstellungszeitraum:", config.plugins.serienRec.tvplaner_full_check))
 			self.tvplaner_full_check = config.plugins.serienRec.tvplaner_full_check.value
 			self.list.append(getConfigListEntry("    Timer nur aus der TV-Planer E-Mail anlegen:", config.plugins.serienRec.tvplaner_skipSerienServer))
@@ -733,8 +734,10 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Timerbeschreibung:", config.plugins.serienRec.TimerDescription))
 		self.list.append(getConfigListEntry("Manuelle Timer immer erstellen:", config.plugins.serienRec.forceManualRecording))
 		self.list.append(getConfigListEntry("Event-Programmierungen behandeln:", config.plugins.serienRec.splitEventTimer))
+		if config.plugins.serienRec.splitEventTimer.value != "0":
+			self.list.append(getConfigListEntry("    Episoden-Titel beim Vergleich berücksichtigen:", config.plugins.serienRec.splitEventTimerCompareTitle))
 		if config.plugins.serienRec.splitEventTimer.value == "2":
-			self.list.append(getConfigListEntry("    Einzelepisoden als 'bereits getimert' markieren:", config.plugins.serienRec.addSingleTimersForEvent))
+					self.list.append(getConfigListEntry("    Einzelepisoden als 'bereits getimert' markieren:", config.plugins.serienRec.addSingleTimersForEvent))
 
 		bouquetList = []
 		boxBouquets = STBHelpers.getTVBouquets()
@@ -923,7 +926,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"können einzelne Marker über diese ID für jede Box einzeln aktiviert oder deaktiviert werden. Timer werden dann nur auf den Boxen erstellt, "
 				"für die der Marker aktiviert ist."),
 			config.plugins.serienRec.activateNewOnThisSTBOnly: (
-				"Bei 'ja' werden neue Serien-Marker nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen wenn man mehrere Boxen mit einer Datenbank betreibt."),
+				"Bei 'ja' werden neue Serien-Marker nur für diese Box aktiviert, ansonsten für alle Boxen der Datenbank. Diese Option hat nur dann Auswirkungen, wenn man mehrere Boxen mit einer Datenbank betreibt."),
 			config.plugins.serienRec.savetopath: (
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Serien gespeichert werden."),
 			config.plugins.serienRec.seriensubdir: (
@@ -959,9 +962,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			# TIMER-SUCHLAUF
 			###############################################################################################################################
 			config.plugins.serienRec.autochecktype: (
-				"Bei 'manuell' wird kein automatischer Timer-Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
-				"Bei 'zur gewählten Uhrzeit' wird der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
-				"Bei 'nach EPGRefresh' wird der automatische Timer-Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer) - nicht verfügbar auf VU+ Boxen."),
+				"Bei 'Manuell' wird kein automatischer Timer-Suchlauf durchgeführt, die Suche muss manuell über die INFO/EPG Taste gestartet werden.\n\n"
+				"Bei 'Zur gewählten Uhrzeit' wird der automatische Timer-Suchlauf täglich zur eingestellten Uhrzeit ausgeführt.\n\n"
+				"Bei 'Nach EPGRefresh' wird der automatische Timer-Suchlauf ausgeführt, nachdem der EPGRefresh beendet ist (benötigt EPGRefresh v2.1.1 oder größer) - nicht verfügbar auf VU+ Boxen."),
 			config.plugins.serienRec.deltime: (
 					"Uhrzeit, zu der der automatische Timer-Suchlauf täglich ausgeführt wird (%s:%s Uhr)." % (
 				str(config.plugins.serienRec.deltime.value[0]).zfill(2),
@@ -970,7 +973,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Die Zeitspanne (in Minuten) um die der automatische Timer-Suchlauf zufällig verzögert wird. Ausgehend von der eingestellten Uhrzeit des automatische Timer-Suchlaufs, "
 				"wird ein zufälliger Wert addiert um den Timer-Suchlauf zeitlich zu entzerren, falls andere SerienRecorder Benutzer die gleiche Uhrzeit eingestellt haben."),
 			config.plugins.serienRec.checkfordays: (
-					"Es werden nur Timer für Folgen erstellt, die innerhalb der nächsten hier eingestellten Anzahl von Tagen ausgestrahlt werden \n"
+					"Es werden nur Timer für Episoden erstellt, die innerhalb der nächsten, hier eingestellten, Anzahl von Tagen ausgestrahlt werden \n"
 					"(also bis %s)." % time.strftime("%d.%m.%Y - %H:%M", time.localtime(
 				int(time.time()) + (int(config.plugins.serienRec.checkfordays.value) * 86400)))),
 			config.plugins.serienRec.globalFromTime: ("Die Uhrzeit, ab wann Aufnahmen erlaubt sind.\n"
@@ -992,19 +995,19 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Beispiel: Eine Sendung soll laut Wunschliste um 3:20 Uhr starten, im EPG ist die Startzeit aber 3:28 Uhr, um die Sendung im EPG zu finden wird der Suchzeitraum um den eingestellten Wert "
 				"vergrößert, im Standard wird also von 3:10 Uhr bis 3:30 Uhr gesucht um die Sendung im EPG zu finden."),
 			config.plugins.serienRec.forceRecording: (
-					"Bei 'ja' werden auch Timer für Folgen erstellt, die ausserhalb der erlaubten Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, "
+					"Bei 'ja' werden auch Timer für Episoden erstellt, die außerhalb der erlaubten Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, "
 					"falls KEINE Wiederholung innerhalb der erlaubten Zeitspanne gefunden wird.\n"
-					"Bei 'nein' werden ausschließlich Timer für jene Folgen erstellt, die innerhalb der erlaubten Zeitspanne liegen." % (
+					"Bei 'nein' werden ausschließlich Timer für Episoden erstellt, die innerhalb der erlaubten Zeitspanne liegen." % (
 						str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2),
 						str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2),
 						str(config.plugins.serienRec.globalToTime.value[0]).zfill(2),
 						str(config.plugins.serienRec.globalToTime.value[1]).zfill(2))),
 			config.plugins.serienRec.TimeSpanForRegularTimer: (
 				"Die Anzahl der Tage, die maximal auf eine Wiederholung gewartet wird, die innerhalb der erlaubten Zeitspanne ausgestrahlt wird. "
-				"Wird keine passende Wiederholung gefunden oder eine Wiederholung, die zu weit in der Zukunft liegt, "
-				"wird ein Timer für den frühestmöglichen Termin, auch außerhalb der erlaubten Zeitspanne, erstellt."),
+				"Wird keine passende Wiederholung gefunden oder eine Wiederholung die zu weit in der Zukunft liegt, "
+				"wird ein Timer für den frühestmöglichen Termin erstellt, auch wenn dieser außerhalb der erlaubten Zeitspanne liegt."),
 			config.plugins.serienRec.NoOfRecords: (
-				"Die Anzahl der Aufnahmen, die von einer Folge gemacht werden sollen."),
+				"Die Anzahl der Aufnahmen, die von einer Episode gemacht werden sollen."),
 			config.plugins.serienRec.selectNoOfTuners: (
 				"Bei 'ja' wird die Anzahl der vom SR benutzten Tuner für gleichzeitige Aufnahmen begrenzt.\n"
 				"Bei 'nein' werden alle verfügbaren Tuner für Timer benutzt, die Überprüfung ob noch ein weiterer Timer erzeugt werden kann, übernimmt enigma2."),
@@ -1017,7 +1020,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Hier kann ausgewählt werden, ob die Box nach dem automatischen Timer-Suchlauf in Standby oder Deep-Standby gehen soll."),
 			config.plugins.serienRec.DSBTimeout: (
 				"Bevor die Box in den Deep-Standby fährt, wird für die hier eingestellte Dauer (in Sekunden) eine entsprechende Nachricht auf dem Bildschirm angezeigt. "
-				"Während dieser Zeitspanne hat der Benutzer die Möglichkeit, das Herunterfahren der Box abzubrechen. Nach Ablauf dieser Zeitspanne fährt die Box automatisch in den Deep-Stanby."),
+				"Während dieser Zeitspanne hat der Benutzer die Möglichkeit, das Herunterfahren der Box abzubrechen. Nach Ablauf dieser Zeitspanne fährt die Box automatisch in den Deep-Standby."),
 
 			###############################################################################################################################
 			# E-MAIL
@@ -1028,7 +1031,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' ruft der SerienRecorder beim Timer-Suchlauf, das in den nachfolgenden Optionen festgelegte E-Mail IMAP Konto ab und verarbeitet die Wunschliste TV-Planer E-Mail.\n\n"
 				"Weitere Informationen zur Einrichtung finden sich auch im Handbuch (HELP lang)"),
 			config.plugins.serienRec.imap_server: ("Name des IMAP Servers (z.B. imap.gmx.de)"),
-			config.plugins.serienRec.imap_server_ssl: ("Zugriff über SSL (Port ohne SSL = 143, Port mit SSL = 993"),
+			config.plugins.serienRec.imap_server_ssl: ("Zugriff über SSL (Port ohne SSL = 143, Port mit SSL = 993)"),
 			config.plugins.serienRec.imap_server_port: ("Portnummer für den Zugriff"),
 			config.plugins.serienRec.imap_login: ("Benutzername des IMAP Accounts (z.B. abc@gmx.de)"),
 			config.plugins.serienRec.imap_password: ("Passwort des IMAP Accounts"),
@@ -1091,6 +1094,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Sollten bereits alle Einzelepisoden vorhanden sein, wird für das Event kein Timer angelegt.\n\n"
 				"Bei 'Einzelepisoden bevorzugen' wird versucht Timer für die Einzelepisoden anzulegen. "
 				"Falls das nicht möglich ist, wird ein Timer für das Event erstellt."),
+			config.plugins.serienRec.splitEventTimerCompareTitle: (
+				"Bei 'ja' werden beim Vergleich auch die Episoden-Titel berücksichtigt.\n"
+				"Bei 'nein' werden nur die Staffel- und Episoden-Nummer verglichen."),
 			config.plugins.serienRec.addSingleTimersForEvent: (
 				"Bei 'ja' werden die Einzelepisoden in der Datenbank als 'bereits getimert' markiert, falls ein Timer für das Event angelegt werden muss.\n"
 				"Bei 'nein' werden, wenn ein Timer für das Event angelegt werden musste, ggf. später auch Timer für Einzelepisoden angelegt."),
@@ -1370,6 +1376,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.TimerDescription.save()
 		config.plugins.serienRec.forceManualRecording.save()
 		config.plugins.serienRec.splitEventTimer.save()
+		config.plugins.serienRec.splitEventTimerCompareTitle.save()
 		config.plugins.serienRec.addSingleTimersForEvent.save()
 		config.plugins.serienRec.selectBouquets.save()
 		config.plugins.serienRec.MainBouquet.save()

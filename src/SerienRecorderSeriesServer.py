@@ -123,17 +123,10 @@ class SeriesServer:
 		if 'info' in seriesInfo:
 			infoText += "\n%s" % seriesInfo['info']
 
-		# Fan count
-		if 'fancount' in seriesInfo:
-			infoText += ("\n\nDie Serie hat %s Fans" % seriesInfo['fancount'])
-
 		# Rating
+		infoText += "\n\n"
 		if 'rating' in seriesInfo:
-			infoText += (" und eine Bewertung von %.1f" % float(seriesInfo['rating']))
-
-		# Sex
-		if 'male' in seriesInfo and 'female' in seriesInfo and 'age' in seriesInfo:
-			infoText += ("\nZielgruppe: %s (Männer: %s, Frauen: %s)" % (seriesInfo['age'], seriesInfo['male'], seriesInfo['female']))
+			infoText += ("Die Serie hat eine Bewertung von %.1f" % float(seriesInfo['rating']))
 
 		# Transmission info
 		infoText += "\n\n"
@@ -148,16 +141,17 @@ class SeriesServer:
 		if 'description' in seriesInfo:
 			infoText += toStr(seriesInfo['description'])
 
-		# Upfronts
-		if 'upfronts' in seriesInfo:
-			infoText += "\n\n"
-			glue = '\n'
-			infoText += "%s\n" % toStr(glue.join(seriesInfo['upfronts']))
-
 		# Cast / Crew
 		if 'cast' in seriesInfo:
+			infoText += "\n\n"
 			glue = "\n"
-			infoText += "\n\nCast:\n%s" % toStr(glue.join(seriesInfo['cast']))
+			infoText += "Cast:\n%s" % toStr(glue.join(seriesInfo['cast']))
+
+		if 'crew' in seriesInfo:
+			infoText += "\n\n"
+			glue = "\n"
+			infoText += "Crew:\n%s" % toStr(glue.join(seriesInfo['crew']))
+
 		return infoText
 
 	def getEpisodeInfo(self, seriesID):
@@ -167,18 +161,18 @@ class SeriesServer:
 		except:
 			return infoText
 		if 'season' in episodeInfo and 'episode' in episodeInfo:
-			infoText += "Staffel: %s, Episode: %s\n" % (episodeInfo['season'], episodeInfo['episode'])
+			infoText += "S%sE%s\n" % (episodeInfo['season'].zfill(2), episodeInfo['episode'].zfill(2))
 
 		# Title
 		if 'title' in episodeInfo:
-			infoText += "Titel: %s" % toStr(episodeInfo['title'])
+			infoText += "%s" % toStr(episodeInfo['title'])
 
-		# Rating
-		if 'rating' in episodeInfo and 'ratingCount' in episodeInfo:
+		# Runtime
+		if 'runtime' in episodeInfo:
 			infoText += "\n\n"
-			infoText += "Episodenbewertung: %.1f aus %s Stimmen" % (float(episodeInfo['rating']), episodeInfo['ratingCount'])
+			infoText += "Laufzeit: %s Minuten" % episodeInfo['runtime']
 
-		# Transmissions
+		# First aired
 		infoText += "\n\n"
 		if 'firstAired' in episodeInfo:
 			infoText += "Erstausstrahlung: %s\n" % episodeInfo['firstAired']
@@ -188,16 +182,11 @@ class SeriesServer:
 			infoText += "\n"
 			infoText += "%s\n" % toStr(episodeInfo['description'])
 
-		# Cast / Crew
-		if 'guestStars' in episodeInfo:
-			glue = ", "
-			infoText += "\n\nGaststars:\n%s" % toStr(glue.join(episodeInfo['guestStars']))
-		if 'directors' in episodeInfo:
-			glue = ", "
-			infoText += "\n\nRegie:\n%s" % toStr(glue.join(episodeInfo['writers']))
-		if 'writers' in episodeInfo:
-			glue = ", "
-			infoText += "\n\nDrehbuch:\n%s" % toStr(glue.join(episodeInfo['writers']))
+		# Crew
+		if 'crew' in episodeInfo:
+			infoText += "\n\n"
+			glue = "\n"
+			infoText += "Crew:\n%s" % toStr(glue.join(episodeInfo['crew']))
 
 		return infoText
 

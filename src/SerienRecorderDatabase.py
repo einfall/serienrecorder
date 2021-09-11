@@ -14,9 +14,12 @@ class SRDatabase:
 		self.close()
 
 	def connect(self):
-		self._srDBConn = sqlite3.connect(self._dbfilepath)
-		self._srDBConn.isolation_level = None
-		self._srDBConn.text_factory = lambda x: str(x.decode("utf-8"))
+		try:
+			self._srDBConn = sqlite3.connect(self._dbfilepath)
+			self._srDBConn.isolation_level = None
+			self._srDBConn.text_factory = lambda x: str(x.decode("utf-8"))
+		except Exception as e:
+			print("[SerienRecorder] Unable to connect to database [%s]" % str(e))
 
 	def close(self):
 		if self._srDBConn:
@@ -71,7 +74,8 @@ class SRDatabase:
 																			autoAdjust INTEGER DEFAULT NULL,
 																			fsID TEXT DEFAULT NULL,
 																			epgSeriesName TEXT DEFAULT NULL,
-																			kindOfTimer INTEGER DEFAULT NULL)''')
+																			kindOfTimer INTEGER DEFAULT NULL,
+																			forceRecording INTEGER DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -131,7 +135,7 @@ class SRDatabase:
 		return dbVersion
 
 	def isMalformed(self):
-		malformed = False
+		malformed = True
 		try:
 			cur = self._srDBConn.cursor()
 			cur.execute("PRAGMA quick_check")
@@ -300,6 +304,13 @@ class SRDatabase:
 			except Exception as e:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'kindOfTimer' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'forceRecording'):
+			try:
+				cur.execute("ALTER TABLE SerienMarker ADD forceRecording INTEGER DEFAULT NULL")
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'forceRecording' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
 
 		if not self.updateToWLID():
 			updateSuccessful = False
@@ -746,6 +757,18 @@ class SRDatabase:
 			result = default
 		return bool(result)
 
+	def getForceRecording(self, fsID, default):
+		result = True
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT forceRecording FROM SerienMarker WHERE fsID=?", [fsID])
+		row = cur.fetchone()
+		if row:
+			(result,) = row
+		cur.close()
+		if result is None:
+			result = default
+		return bool(result)
+
 	def getSpecialsAllowed(self, wlID):
 		TimerForSpecials = False
 		cur = self._srDBConn.cursor()
@@ -815,7 +838,7 @@ class SRDatabase:
 
 	def getMarkerSettings(self, seriesID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer FROM SerienMarker WHERE ID=?", [seriesID])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording FROM SerienMarker WHERE ID=?", [seriesID])
 		row = cur.fetchone()
 		if not row:
 			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1, 1, None, None)
@@ -825,7 +848,7 @@ class SRDatabase:
 	def setMarkerSettings(self, seriesID, settings):
 		data = settings + (seriesID, )
 		cur = self._srDBConn.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=?, epgSeriesName=?, kindOfTimer=? WHERE ID=?"
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=?, epgSeriesName=?, kindOfTimer=?, forceRecording=? WHERE ID=?"
 		cur.execute(sql, data)
 		cur.close()
 

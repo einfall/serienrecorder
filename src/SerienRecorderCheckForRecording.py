@@ -754,7 +754,7 @@ class serienRecCheckForRecording:
 			self.noOfRecords = AnzahlAufnahmen
 
 		TimeSpan_time = int(future_time)
-		if config.plugins.serienRec.forceRecording.value:
+		if self.database.getForceRecording(serien_fsid, config.plugins.serienRec.forceRecording.value):
 			TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
 
 		# loop over all transmissions
@@ -774,7 +774,7 @@ class serienRecCheckForRecording:
 			seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
 
-			if not config.plugins.serienRec.forceRecording.value:
+			if not self.database.getForceRecording(serien_fsid, config.plugins.serienRec.forceRecording.value):
 				if (int(fromTime) > 0) or (int(toTime) < (23 * 60) + 59):
 					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
 					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
