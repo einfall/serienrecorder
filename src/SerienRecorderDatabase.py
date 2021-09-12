@@ -1489,7 +1489,7 @@ class SRDatabase:
 
 	def countOrphanTimers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT DISTINCT(Serie) AS name FROM AngelegteTimer WHERE fsID NOT IN (SELECT fsID FROM SerienMarker) AND Staffel != '0' AND Episode != '00'")
+		cur.execute("SELECT DISTINCT(Serie) AS name FROM AngelegteTimer WHERE (fsID NOT IN (SELECT fsID FROM SerienMarker) OR fsID IS NULL) AND Staffel != '0' AND Episode != '00'")
 		rows = cur.fetchall()
 		if len(rows):
 			SRLogger.writeLog("\nFür folgende Serien wurden verwaiste Timereinträge gefunden:", True)
@@ -1501,7 +1501,7 @@ class SRDatabase:
 
 	def removeOrphanTimers(self):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM AngelegteTimer WHERE (fsID NOT IN (SELECT fsID FROM SerienMarker) AND Staffel != '0' AND Episode != '00') OR fsid IS NULL")
+		cur.execute("DELETE FROM AngelegteTimer WHERE (fsID NOT IN (SELECT fsID FROM SerienMarker) OR fsid IS NULL) AND Staffel != '0' AND Episode != '00'")
 		cur.close()
 
 # ----------------------------------------------------------------------------------------------------------------------

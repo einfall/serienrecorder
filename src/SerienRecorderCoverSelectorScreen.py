@@ -104,7 +104,7 @@ class CoverSelectorScreen(Screen):
 
 		selectedRow = self['list'].getCurrent()
 		if selectedRow:
-			sourcePath = selectedRow[4]
+			sourcePath = selectedRow[3]
 			targetPath = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, self._serien_fsid)
 			shutil.copy(sourcePath, targetPath)
 		self.close()
