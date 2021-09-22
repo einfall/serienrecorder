@@ -545,12 +545,14 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 						successful = checkGitHubUpdate.installWebinterfaceUpdate(url)
 						break
 			except Exception as e:
+				print("[SerienRecorder] Failed to install webinterface [%s]" % str(e))
 				error = ' [%s]' % str(e)
 
 			if successful:
 				self.session.open(MessageBox, "Das SerienRecorder Webinterface wurde erfolgreich installiert.", MessageBox.TYPE_INFO, timeout=5)
 			else:
-				os.rmdir(targetFilePath)
+				if os.path.isdir(targetFilePath):
+					os.rmdir(targetFilePath)
 				self.session.open(MessageBox, "Das SerienRecorder Webinterface konnte nicht installiert werden%s." % error, MessageBox.TYPE_INFO, timeout=5)
 
 	def bouquetPlus(self):

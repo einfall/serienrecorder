@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.4.3-beta'
+SRVERSION = '4.4.4-beta'
 SRDBVERSION = '4.4.2'
 SRAPIVERSION = '2.2'
 SRWEBAPPVERSION = '0.9.1'
@@ -262,7 +262,7 @@ def getDirname(database, serien_name, serien_fsid, staffel):
 			if withYear:
 				info = database.getMarkerInfo(serien_fsid)
 				if info:
-					match = re.search("(\d{4})-?(?:\d{4})?$", info)
+					match = re.search("([0-9xX]{4})-?(?:[0-9xX]{4})?$", info)
 					serien_name = "%s (%s)" % (serien_name, match.group(1))
 			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 			dirname_serie = dirname
