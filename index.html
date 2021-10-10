@@ -4562,6 +4562,8 @@
 		</p>
 		<br>
 		<ul>
+			<a href="#fehlermelden"><h4><strong>Welche Angaben sollte ich machen, wenn ich einen Fehler melde</strong></h4></a>
+			<a href="#suchlauffehler"><h4><strong>Der automatische Suchlauf startet nicht</strong></h4></a>
 			<a href="#updatefehler"><h4><strong>Nach einem Update auf eine aktuellere Version funktioniert der SR nicht mehr</strong></h4></a>
 			<a href="#skinfehler-start"><h4><strong>Der Serienrecorder startet "plötzlich" mit dem Skin "Serienrecorder 1"</strong></h4></a>
 			<a href="#einträge-hinzufügen"><h4><strong>Wie kann ich Episoden der Datenbank hinzufügen, damit diese nicht getimert werden?</strong></h4></a>
@@ -4577,9 +4579,67 @@
 			<a href="#alte-betas"><h4><strong>Wie lade ich eine ältere Beta Version von Github herunter?</strong></h4></a>
 			
 		</ul>	
+
+		<br><br><br><br><br>
+		
+		<!-- Fehler im Forum melden -->		
+				<span id="fehlermelden" class="anchor"></span>
+					<p><h4><strong>Welche Angaben sollte ich machen, wenn ich einen Fehler melde</strong></h4></p>
+					<p>Sollte man ein Problem mit einer Serie haben, sollte man diese auch beim Namen nennen, denn dann können andere User ggf. sagen "Bei mir funktioniert es". 
+					<br>Sind das die Ersten Timer für diese Serie oder hat das vorher immer funktioniert.
+					<br>Ein SR-Log von dem Tag, an dem die Serie hätte getimert werden sollen ist immer sinnvoll.
+					<br>Auch, ob man mit oder ohne TV-Planer-Mail den Suchlauf macht.
+					<br>Die Angabe, ob man die Serie irgendwie "eingeschränkt" hat, was Staffeln, Sender, Zeit oder Wochentage angeht kann hilfreich sein.
+					<br>Wenn die Serie zwar getimert, aber nicht aufgenommen wird, ist es idR KEIN Problem des SR, denn der erstellt ja nur die Timer. Für die Aufnahme selbst ist das System zuständig, daher sollte man prüfen, ob es da evtl "Probleme" geben kann. Z.B. NAS oder USB-HDD waren nicht erreichbar.
+					<br> Natürlich sollte die Angabe der genutzten SR Version nicht fehlen und auch die Image-Version kann hilfreich sein.
+					<br>Falls ein Debug-Log vorhanden ist, dann bitte auch die Uhrzeit angeben, wann der Suchlauf startet.
+
+					</p>
 		
 		<br><br><br><br><br>
 		
+<!-- Suchlauf startet nicht -->		
+		<span id="suchlauffehler" class="anchor"></span>
+			<p><h4><strong>Der automatische Suchlauf startet nicht. </strong></h4></p>
+			<p>Obwohl alles "richtig" eingestellt ist, startet der tägliche, automatische Suchlauf nicht.
+			<br>Dies kann mehrere Ursachen haben und es gibt idR auch keine einzelne Lösung dafür, denn so vielfältig die Ursachen sein können, so vielfältig sind auch evtl. die individuellen Lösungen.
+			</p>
+			<br>
+			<div class="alert alert-info rot-links-rechts" role="alert">
+				Grundsätzlich sollte man, egal welches Problem man hat, das SR Log des betreffenden Tages mit anhängen, sofern vorhanden.
+				<br>Dazu ist es natürlich von Vorteil, wenn der SR so eingestellt ist, das die Logs für mindestens 10-14 Tage behalten werden, denn der SR löscht ja alle die älter sind automatisch.
+			</div>
+
+			<p>Wird aber kein Suchlauf gemacht, wird idR auch kein SR-Log erstellt. Dann kann es sehr hilfreich sein, ein Debug-Log (VTI-Debug-Log) mitlaufen zu lassen, zu der Zeit, wenn eigentlich der Suchlauf starten sollte und dieses dann im Beitrag mit anzuhängen.
+			<br>Oft reicht es schon, wenn man die Startzeit des Suchlaufs ändert, es reicht da schon 1 Minute.
+			</p>
+			<p>Es gibt eigentlich nur 2 Situationen, wie der SR (bzw. der Suchlauf) gestartet wird:
+				<ul>
+					<li>Die Box ist aus, befindet sich also im DeepStandBy (DSB)</li>
+					<li>Die Box ist an, egal ob mit oder ohne (Standby) TV Ausgabe </li>
+				</ul>
+			Befindet sich die Box im DSB, muss natürlich im SR eingestellt sein, das der SR die Box aus dem DSB aufwecken darf. Ist die Box grundsätzlich nicht im DSB, wenn der Suchlauf beginnt, sollte man diese Option im "Fehlerfall" deaktivieren.
+			</p>
+			<p><strong> Welche Angaben sind wichtig, wenn ich im Fehlerfall einen Beitrag dazu erstelle?</strong>
+				<ul>
+					<li>Die genutzt SR Version</li>
+					<li>Wird überhaupt kein Suchlauf gemacht oder nur ab und zu nicht</li>
+					<li>Uhrzeit des Suchlaufs</li>
+					<li>Ist die Box zu der Zeit AN oder im DSB</li>
+					<li>Laufen vorher/währenddessen Plugins (z.B. AEL, EPGRefresh), welche die Box aufwecken und der Suchlauf dann stattfindet</li>
+				</ul>
+				<br>
+				Wenn z.B. EPGRefresh um 6:00 Uhr läuft und die Box aufweckt, der SR um 7:00 Uhr laufen soll und deshalb das EPGRefresh die Box nicht runter fährt, kann es zu Problemen kommen. Besser ist dann, das EPGRefresh die Box hoch und runter fährt, dann der SR die Box wieder aufweckt und dann entweder auch wieder runter fährt oder die Box AN bleibt.
+				<br><br>
+				Es ist auch oft Sinnvoll, ein Update des SR zu machen, auch auf Beta-Versionen, da die Beta-Versionen idR genauso stabil laufen, wie Release-Versionen. Ein Update auf eine Beta-Version lässt sich recht einfach und komfortabel mit dem Plugin <strong>GithubPluginUpdater</strong> (Link oben im Dropdown-Menü) bewerkstelligen.
+
+
+			</p>
+
+
+
+
+		<br><br><br><br><br>
 <!-- Nach Update Fehler -->		
 
 		<span id="updatefehler" class="anchor"></span>
