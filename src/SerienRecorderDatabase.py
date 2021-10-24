@@ -1579,10 +1579,10 @@ class SRTempDatabase:
 		cur.execute(sql, transmission[0])
 		cur.close()
 
-	def getTransmissionForTimerUpdate(self, fsID, season, episode, start_time):
+	def getTransmissionForTimerUpdate(self, fsID, season, episode, start_time, webChannel):
 		result = None
 		cur = self._tempDBConn.cursor()
-		cur.execute("SELECT SerieName, wlID, fsID, Staffel, Episode, Title, StartTime, EndTime, updateFromEPG FROM GefundeneFolgen WHERE StartTime>=? AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? ORDER BY StartTime", (start_time, fsID, season.lower(), episode.lower()))
+		cur.execute("SELECT SerieName, wlID, fsID, Staffel, Episode, Title, StartTime, EndTime, updateFromEPG FROM GefundeneFolgen WHERE StartTime>=? AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(webChannel)=? ORDER BY StartTime", (start_time, fsID, season.lower(), episode.lower(), webChannel.lower()))
 		row = cur.fetchone()
 		if row:
 			result = row

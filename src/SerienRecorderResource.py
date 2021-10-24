@@ -7,7 +7,7 @@ from Components.config import config
 
 from Tools.Directories import fileExists
 
-from .SerienRecorderHelpers import SRAPIVERSION, SRWEBAPPVERSION, toBinary, toStr, PY2
+from .SerienRecorderHelpers import decrypt, encrypt, STBHelpers, SRAPIVERSION, SRWEBAPPVERSION, toBinary, toStr, PY2
 
 import json, os, time
 
@@ -23,11 +23,15 @@ def getApiList():
 	childs.append( ('setmarkersettings', ApiSetMarkerSettingsResource() ) )
 	childs.append( ('createmarker', ApiCreateMarkerResource() ) )
 	childs.append( ('deletemarker', ApiDeleteMarkerResource() ) )
+	childs.append( ('settings', ApiGetSettingsResource() ) )
+	childs.append( ('setsettings', ApiSetSettingsResource()))
+	childs.append( ('resetsettings', ApiResetSettingsResource()))
 	childs.append( ('cover', ApiGetCoverResource() ) )
 	childs.append( ('picon', ApiGetPiconResource() ) )
 	childs.append( ('tvdbcover', ApiGetTVDBCoverResource() ) )
 	childs.append( ('tvdbcovers', ApiGetTVDBCoversResource() ) )
 	childs.append( ('settvdbcover', ApiSetTVDBCoverResource()))
+	childs.append( ('settvdbid', ApiSetTVDBIDResource()))
 	childs.append( ('transmissions', ApiGetTransmissionsResource() ) )
 	childs.append( ('searchseries', ApiSearchSeriesResource() ) )
 	childs.append( ('activechannels', ApiGetActiveChannelsResource() ) )
@@ -36,6 +40,7 @@ def getApiList():
 	childs.append( ('changechannelstatus', ApiChangeChannelStatusResource() ) )
 	childs.append( ('setchannel', ApiSetChannelResource() ) )
 	childs.append( ('removeallchannels', ApiRemoveAllChannelsResource() ) )
+	childs.append( ('updatechannels', ApiUpdateChannelsResource() ) )
 	#childs.append( ('webchannels', ApiWebChannelsResource() ) )
 	#childs.append( ('searchevents', ApiSearchEventsResource() ) )
 	childs.append( ('timer', ApiGetTimerResource() ) )
@@ -50,6 +55,7 @@ def getApiList():
 	childs.append( ('info', ApiGetInfoResource() ) )
 	childs.append( ('checkforupdate', ApiCheckForUpdateResource() ) )
 	childs.append( ('installupdate', ApiInstallUpdateResource() ) )
+
 	return ( root, childs )
 
 def addWebInterface():
@@ -107,6 +113,7 @@ class ApiBaseResource(resource.Resource):
 
 	def returnResult(self, req, status, data):
 		print("[SerienRecorder] ApiBaseResource (returnResult)")
+		print("[SerienRecorder] URI: [%s] / Args: [%s] / Content: [%s] " % (toStr(req.uri), req.args, toStr(req.content.getvalue())))
 		req.setResponseCode(http.OK)
 		req.setHeader('Content-type', 'application/json')
 		req.setHeader('Access-Control-Allow-Origin', '*')
@@ -171,10 +178,12 @@ class ApiBackgroundingResource(ApiBaseResource, threading.Thread):
 
 class ApiGetCoverResource(ApiImageResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetCover")
+		print(req.args)
 
-		fsID = req.args.get(toBinary("fsid"), None)
-		if config.plugins.serienRec.showCover.value and fsID:
-			cover_file_path = os.path.join(config.plugins.serienRec.coverPath.value, "%s.jpg" % toStr(fsID[0]))
+		fs_id = toStr(req.args[toBinary("fsid")][0])
+		if config.plugins.serienRec.showCover.value:
+			cover_file_path = os.path.join(config.plugins.serienRec.coverPath.value, "%s.jpg" % fs_id)
 		else:
 			cover_file_path = None
 
@@ -182,7 +191,7 @@ class ApiGetCoverResource(ApiImageResource):
 			# Download cover
 			from .SerienRecorderSeriesServer import SeriesServer
 			try:
-				posterURL = SeriesServer().doGetCoverURL(0, fsID)
+				posterURL = SeriesServer().doGetCoverURL(0, fs_id)
 				if posterURL:
 					import requests
 					response = requests.get(posterURL)
@@ -207,12 +216,11 @@ class ApiGetCoverResource(ApiImageResource):
 
 class ApiGetPiconResource(ApiImageResource):
 	def render_GET(self, req):
-		serviceRef = str(req.args["serviceRef"][0])
-		channelName = str(req.args["channelName"][0])
+		print("[SerienRecorder] ApiGetPicon")
+		print(req.args)
 
-		#serviceRef = req.args.get(toBinary("serviceRef"), None)
-		#channelName = req.args.get(toBinary("channelName"), None)
-		print("[SerienRecorder] ApiGetPiconResource: [%s] / [%s]" % (serviceRef, channelName))
+		serviceRef = toStr(req.args[toBinary("serviceRef")][0])
+		channelName = toStr(req.args[toBinary("channelName")][0])
 
 		piconPath = None
 		if config.plugins.serienRec.showPicons.value != "0":
@@ -235,8 +243,10 @@ class ApiGetPiconResource(ApiImageResource):
 
 class ApiGetTVDBCoverResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetTVDBCover")
+		print(req.args)
 
-		fs_id = str(req.args["fsid"][0])
+		fs_id = toStr(req.args[toBinary("fsid")][0])
 		posterURL = None
 		if config.plugins.serienRec.downloadCover.value:
 			from .SerienRecorderSeriesServer import SeriesServer
@@ -249,22 +259,33 @@ class ApiGetTVDBCoverResource(ApiBaseResource):
 
 class ApiGetTVDBCoversResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetTVDBCovers")
+		print(req.args)
+		wl_id = toStr(req.args[toBinary("wlid")][0])
 
-		wl_id = str(req.args["wlid"][0])
+		from .SerienRecorderSeriesServer import SeriesServer
+
+		data = {}
 		posterURLs = None
 		if config.plugins.serienRec.downloadCover.value:
-			from .SerienRecorderSeriesServer import SeriesServer
 			try:
 				posterURLs = SeriesServer().getCoverURLs(wl_id)
 			except:
 				posterURLs = None
 
-		return self.returnResult(req, True, posterURLs)
+		from .SerienRecorderScreenHelpers import EditTVDBID
+
+		data['urls'] = posterURLs
+		data['tvdbid'] = SeriesServer().getTVDBID(wl_id)
+		data['allowChangeTVDBID'] = EditTVDBID.allowChangeTVDBID()
+
+		return self.returnResult(req, True, data)
 
 class ApiSetTVDBCoverResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiSetTVDBCover")
+		print(req.content.getvalue())
+		data = json.loads(req.content.getvalue())
 
 		result = True
 		targetPath = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, data['fsid'])
@@ -278,10 +299,23 @@ class ApiSetTVDBCoverResource(ApiBaseResource):
 			result = False
 		return self.returnResult(req, True, result)
 
+class ApiSetTVDBIDResource(ApiBaseResource):
+	def render_POST(self, req):
+		print("[SerienRecorder] ApiSetTVDBID")
+		print(req.content.getvalue())
+		data = json.loads(req.content.getvalue())
+
+		from .SerienRecorderSeriesServer import SeriesServer
+		SeriesServer().setTVDBID(data['wlid'], data['tvdbid'])
+
+		return self.returnResult(req, True, True)
+
 class ApiGetMarkersResource(ApiBaseResource):
 	def render_GET(self, req):
-		data = {}
+		print("[SerienRecorder] ApiGetMarkers")
+		print(req.args)
 
+		data = {}
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
 		from .SerienRecorderMarkerScreen import serienRecMarker
@@ -330,20 +364,25 @@ class ApiGetMarkersResource(ApiBaseResource):
 
 class ApiChangeMarkerStatusResource(ApiBaseResource):
 	def render_GET(self, req):
-		result = False
-		wl_id = req.args.get(toBinary("wlid"), None)
-		if wl_id:
-			from .SerienRecorderDatabase import SRDatabase
-			from .SerienRecorder import serienRecDataBaseFilePath
-			database = SRDatabase(serienRecDataBaseFilePath)
-			database.changeMarkerStatus(toStr(wl_id[0]), config.plugins.serienRec.BoxID.value)
-			result = True
+		print("[SerienRecorder] ApiChangeMarkerStatus")
+		print(req.args)
+
+		wl_id = toStr(req.args[toBinary("wlid")][0])
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		database = SRDatabase(serienRecDataBaseFilePath)
+		database.changeMarkerStatus(wl_id, config.plugins.serienRec.BoxID.value)
+		result = True
 		return self.returnResult(req, result, None)
 
 class ApiCreateMarkerResource(ApiBaseResource):
 	def render_POST(self, req):
+		print("[SerienRecorder] ApiCreateMarker")
+		print(req.content.getvalue())
+
 		result = False
 		data = json.loads(req.content.getvalue())
+
 		if 'fsid' in data:
 			from .SerienRecorderSearchResultScreen import serienRecSearchResultScreen
 			if serienRecSearchResultScreen.createMarker(data['wlid'], data['name'], data['info'], data['fsid']):
@@ -354,6 +393,9 @@ class ApiCreateMarkerResource(ApiBaseResource):
 
 class ApiDeleteMarkerResource(ApiBaseResource):
 	def render_POST(self, req):
+		print("[SerienRecorder] ApiDeleteMarker")
+		print(req.content.getvalue())
+
 		result = False
 		data = json.loads(req.content.getvalue())
 		if 'fsid' in data:
@@ -364,9 +406,11 @@ class ApiDeleteMarkerResource(ApiBaseResource):
 
 class ApiSetMarkerChannelsResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiSetMarkerChannels")
-		print(data)
+		print(req.content.getvalue())
+
+		data = json.loads(req.content.getvalue())
+
 		channels = []
 		if 'wlid' in data:
 			from .SerienRecorderDatabase import SRDatabase
@@ -401,30 +445,33 @@ class ApiSetMarkerChannelsResource(ApiBaseResource):
 
 class ApiGetMarkerSeasonSettingsResource(ApiBaseResource):
 	def render_GET(self, req):
-		data = {}
-		wl_id = req.args.get(toBinary("wlid"), None)
-		if wl_id:
-			from .SerienRecorderDatabase import SRDatabase
-			from .SerienRecorder import serienRecDataBaseFilePath
-			database = SRDatabase(serienRecDataBaseFilePath)
-			(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = database.getMarkerSeasonSettings(toStr(wl_id[0]))
-			markerSeasons = database.getAllowedSeasons(ID, allSeasonsFrom)
-			data = {
-				'id' : ID,
-				'allSeasonsFrom' : allSeasonsFrom,
-				'fromEpisode' : fromEpisode,
-				'timerForSpecials' : timerForSpecials,
-				'markerSeasons': markerSeasons,
-				'maxSeasons' : config.plugins.serienRec.max_season.value
-			}
+		print("[SerienRecorder] ApiGetMarkerSeasonSettings")
+		print(req.args)
+
+		wl_id = toStr(req.args[toBinary("wlid")][0])
+
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		database = SRDatabase(serienRecDataBaseFilePath)
+		(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = database.getMarkerSeasonSettings(wl_id)
+		markerSeasons = database.getAllowedSeasons(ID, allSeasonsFrom)
+		data = {
+			'id' : ID,
+			'allSeasonsFrom' : allSeasonsFrom,
+			'fromEpisode' : fromEpisode,
+			'timerForSpecials' : timerForSpecials,
+			'markerSeasons': markerSeasons,
+			'maxSeasons' : config.plugins.serienRec.max_season.value
+		}
 
 		return self.returnResult(req, True, data)
 
 class ApiSetMarkerSeasonSettingsResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiSetMarkerSeasonSettings")
-		print(data)
+		print(req.content.getvalue())
+
+		data = json.loads(req.content.getvalue())
 
 		results = []
 		if 'wlid' in data:
@@ -475,201 +522,214 @@ class ApiSetMarkerSeasonSettingsResource(ApiBaseResource):
 
 class ApiGetMarkerSettingsResource(ApiBaseResource):
 	def render_GET(self, req):
-		data = {}
-		marker_id = req.args.get(toBinary("markerid"), None)
-		if marker_id:
-			from .SerienRecorderHelpers import hasAutoAdjust
-			from .SerienRecorderDatabase import SRDatabase
-			from .SerienRecorder import serienRecDataBaseFilePath, VPSPluginAvailable
-			database = SRDatabase(serienRecDataBaseFilePath)
+		print("[SerienRecorder] ApiGetMarkerSettings")
+		print(req.args)
 
-			(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-			 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer) = database.getMarkerSettings(toStr(marker_id[0]))
+		marker_id = toStr(req.args[toBinary("markerid")][0])
+		from .SerienRecorderHelpers import hasAutoAdjust
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath, VPSPluginAvailable
+		database = SRDatabase(serienRecDataBaseFilePath)
 
-			if not AufnahmeVerzeichnis:
-				AufnahmeVerzeichnis = ""
+		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG,
+		 skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording) = database.getMarkerSettings(marker_id)
 
-			if not epgSeriesName:
-				epgSeriesName = ""
+		if not AufnahmeVerzeichnis:
+			AufnahmeVerzeichnis = ""
 
-			if str(Vorlaufzeit).isdigit():
-				enable_lead_time = True
+		if not epgSeriesName:
+			epgSeriesName = ""
+
+		if str(Vorlaufzeit).isdigit():
+			enable_lead_time = True
+		else:
+			Vorlaufzeit = config.plugins.serienRec.margin_before.value
+			enable_lead_time = False
+
+		if str(Nachlaufzeit).isdigit():
+			enable_followup_time = True
+		else:
+			Nachlaufzeit = config.plugins.serienRec.margin_after.value
+			enable_followup_time = False
+
+		if str(AnzahlWiederholungen).isdigit():
+			enable_NoOfRecords = True
+		else:
+			AnzahlWiederholungen = config.plugins.serienRec.NoOfRecords.value
+			enable_NoOfRecords = False
+
+		if str(AufnahmezeitVon).isdigit():
+			t = time.localtime(int(AufnahmezeitVon) * 60 + time.timezone)
+			AufnahmezeitVon = "%d:%d:00" % (t.tm_hour, t.tm_min)
+			enable_fromTime = True
+		else:
+			t = time.localtime(((config.plugins.serienRec.globalFromTime.value[0] * 60) + config.plugins.serienRec.globalFromTime.value[1]) * 60 + time.timezone)
+			AufnahmezeitVon = "%d:%d:00" % (t.tm_hour, t.tm_min)
+			enable_fromTime = False
+
+		if str(AufnahmezeitBis).isdigit():
+			t = time.localtime(int(AufnahmezeitBis) * 60 + time.timezone)
+			AufnahmezeitBis = "%d:%d:00" % (t.tm_hour, t.tm_min)
+			enable_toTime = True
+		else:
+			t = time.localtime(((config.plugins.serienRec.globalToTime.value[0] * 60) + config.plugins.serienRec.globalToTime.value[1]) * 60 + time.timezone)
+			AufnahmezeitBis = "%d:%d:00" % (t.tm_hour, t.tm_min)
+			enable_toTime = False
+
+		if str(vps).isdigit():
+			override_vps = True
+			enable_vps = bool(vps & 0x1)
+			enable_vps_savemode = bool(vps & 0x2)
+		else:
+			override_vps = False
+			enable_vps = False
+			enable_vps_savemode = False
+
+		if str(addToDatabase).isdigit():
+			addToDatabase = bool(addToDatabase)
+		else:
+			addToDatabase = True
+
+		if str(updateFromEPG).isdigit():
+			updateFromEPG = bool(updateFromEPG)
+			enable_updateFromEPG = True
+		else:
+			updateFromEPG = config.plugins.serienRec.eventid.value
+			enable_updateFromEPG = False
+
+		if str(forceRecording).isdigit():
+			forceRecording = bool(forceRecording)
+			enable_forceRecording = True
+		else:
+			forceRecording = config.plugins.serienRec.forceRecording.value
+			enable_forceRecording = False
+
+		if str(kindOfTimer).isdigit():
+			kindOfTimer = int(kindOfTimer)
+			enable_kindOfTimer = True
+		else:
+			kindOfTimer = int(config.plugins.serienRec.kindOfTimer.value)
+			enable_kindOfTimer = False
+
+		if str(skipSeriesServer).isdigit():
+			skipSeriesServer = bool(skipSeriesServer)
+			enable_skipSeriesServer = True
+		else:
+			skipSeriesServer = config.plugins.serienRec.tvplaner_skipSerienServer.value
+			enable_skipSeriesServer = False
+
+		if str(autoAdjust).isdigit():
+			autoAdjust = bool(autoAdjust)
+			enable_autoAdjust = True
+		else:
+			autoAdjust = False
+			enable_autoAdjust = False
+
+		if str(excludedWeekdays).isdigit():
+			enable_excludedWeekdays = True
+			weekdays = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
+			excludedWeekdaysList = []
+			for i in range(6, -1, -1):
+				if excludedWeekdays >> i & 1:
+					excludedWeekdaysList.append(weekdays[i])
+		else:
+			enable_excludedWeekdays = False
+			excludedWeekdaysList = []
+
+		# tags
+		if tags is None or len(tags) == 0:
+			serienmarker_tags = []
+		else:
+			if PY2:
+				import cPickle as pickle
 			else:
-				Vorlaufzeit = config.plugins.serienRec.margin_before.value
-				enable_lead_time = False
+				import pickle
+			serienmarker_tags = pickle.loads(tags)
 
-			if str(Nachlaufzeit).isdigit():
-				enable_followup_time = True
-			else:
-				Nachlaufzeit = config.plugins.serienRec.margin_after.value
-				enable_followup_time = False
-
-			if str(AnzahlWiederholungen).isdigit():
-				enable_NoOfRecords = True
-			else:
-				AnzahlWiederholungen = config.plugins.serienRec.NoOfRecords.value
-				enable_NoOfRecords = False
-
-			if str(AufnahmezeitVon).isdigit():
-				t = time.localtime(int(AufnahmezeitVon) * 60 + time.timezone)
-				AufnahmezeitVon = "%d:%d:00" % (t.tm_hour, t.tm_min)
-				enable_fromTime = True
-			else:
-				t = time.localtime(((config.plugins.serienRec.globalFromTime.value[0] * 60) + config.plugins.serienRec.globalFromTime.value[1]) * 60 + time.timezone)
-				AufnahmezeitVon = "%d:%d:00" % (t.tm_hour, t.tm_min)
-				enable_fromTime = False
-
-			if str(AufnahmezeitBis).isdigit():
-				t = time.localtime(int(AufnahmezeitBis) * 60 + time.timezone)
-				AufnahmezeitBis = "%d:%d:00" % (t.tm_hour, t.tm_min)
-				enable_toTime = True
-			else:
-				t = time.localtime(((config.plugins.serienRec.globalToTime.value[0] * 60) + config.plugins.serienRec.globalToTime.value[1]) * 60 + time.timezone)
-				AufnahmezeitBis = "%d:%d:00" % (t.tm_hour, t.tm_min)
-				enable_toTime = False
-
-			if str(vps).isdigit():
-				override_vps = True
-				enable_vps = bool(vps & 0x1)
-				enable_vps_savemode = bool(vps & 0x2)
-			else:
-				override_vps = False
-				enable_vps = False
-				enable_vps_savemode = False
-
-			if str(addToDatabase).isdigit():
-				addToDatabase = bool(addToDatabase)
-			else:
-				addToDatabase = True
-
-			if str(updateFromEPG).isdigit():
-				updateFromEPG = bool(updateFromEPG)
-				enable_updateFromEPG = True
-			else:
-				updateFromEPG = config.plugins.serienRec.eventid.value
-				enable_updateFromEPG = False
-
-			if str(kindOfTimer).isdigit():
-				kindOfTimer = int(kindOfTimer)
-				enable_kindOfTimer = True
-			else:
-				kindOfTimer = int(config.plugins.serienRec.kindOfTimer.value)
-				enable_kindOfTimer = False
-
-			if str(skipSeriesServer).isdigit():
-				skipSeriesServer = bool(skipSeriesServer)
-				enable_skipSeriesServer = True
-			else:
-				skipSeriesServer = config.plugins.serienRec.tvplaner_skipSerienServer.value
-				enable_skipSeriesServer = False
-
-			if str(autoAdjust).isdigit():
-				autoAdjust = bool(autoAdjust)
-				enable_autoAdjust = True
-			else:
-				autoAdjust = False
-				enable_autoAdjust = False
-
-			if str(excludedWeekdays).isdigit():
-				enable_excludedWeekdays = True
-				weekdays = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
-				excludedWeekdaysList = []
-				for i in range(6, -1, -1):
-					if excludedWeekdays >> i & 1:
-						excludedWeekdaysList.append(weekdays[i])
-			else:
-				enable_excludedWeekdays = False
-				excludedWeekdaysList = []
-
-			# tags
-			if tags is None or len(tags) == 0:
-				serienmarker_tags = []
-			else:
-				if PY2:
-					import cPickle as pickle
-				else:
-					import pickle
-				serienmarker_tags = pickle.loads(tags)
-
-			data = {
-				'recordDir': {
-					'enabled': len(AufnahmeVerzeichnis) > 0,
-					'value': AufnahmeVerzeichnis
-				},
-				'seasonDir': {
-					'global': config.plugins.serienRec.seasonsubdir.value,
-					'value': Staffelverzeichnis
-				},
-				'epgSeriesName': {
-					'enabled': len(epgSeriesName) > 0,
-					'value': epgSeriesName
-				},
-				'leadTime': {
-					'enabled': enable_lead_time,
-					'value': Vorlaufzeit
-				},
-				'followupTime': {
-					'enabled': enable_followup_time,
-					'value': Nachlaufzeit
-				},
-				'numberOfRecordings': {
-					'enabled': enable_NoOfRecords,
-					'value': AnzahlWiederholungen
-				},
-				'recordFromTime': {
-					'enabled': enable_fromTime,
-					'value': str(AufnahmezeitVon)
-				},
-				'recordToTime': {
-					'enabled': enable_toTime,
-					'value': str(AufnahmezeitBis)
-				},
-				'preferredChannel': preferredChannel,
-				'useAlternativeChannel': {
-					'global': config.plugins.serienRec.useAlternativeChannel.value,
-					'value': useAlternativeChannel
-				},
-				'vps': {
-					'available': VPSPluginAvailable,
-					'enabled': override_vps,
-					'value': enable_vps,
-					'savemode': enable_vps_savemode
-				},
-				'excludedWeekdays': {
-					'enabled': enable_excludedWeekdays,
-					'value': excludedWeekdaysList
-				},
-				'tags': serienmarker_tags,
-				'addToDatabase': addToDatabase,
-				'updateFromEPG': {
-					'available': config.plugins.serienRec.eventid.value,
-					'enabled': enable_updateFromEPG,
-					'value': updateFromEPG
-				},
-				'kindOfTimer': {
-					'enabled': enable_kindOfTimer,
-					'value': kindOfTimer
-				},
-				'skipSeriesServer': {
-					'available': config.plugins.serienRec.tvplaner.value,
-					'enabled': enable_skipSeriesServer,
-					'value': skipSeriesServer
-				},
-				'autoAdjust': {
-					'available': hasAutoAdjust(),
-					'enabled': enable_autoAdjust,
-					'value': autoAdjust
-				}
+		data = {
+			'recordDir': {
+				'enabled': len(AufnahmeVerzeichnis) > 0,
+				'value': AufnahmeVerzeichnis
+			},
+			'seasonDir': {
+				'global': config.plugins.serienRec.seasonsubdir.value,
+				'value': Staffelverzeichnis
+			},
+			'epgSeriesName': {
+				'enabled': len(epgSeriesName) > 0,
+				'value': epgSeriesName
+			},
+			'leadTime': {
+				'enabled': enable_lead_time,
+				'value': Vorlaufzeit
+			},
+			'followupTime': {
+				'enabled': enable_followup_time,
+				'value': Nachlaufzeit
+			},
+			'numberOfRecordings': {
+				'enabled': enable_NoOfRecords,
+				'value': AnzahlWiederholungen
+			},
+			'recordFromTime': {
+				'enabled': enable_fromTime,
+				'value': str(AufnahmezeitVon)
+			},
+			'recordToTime': {
+				'enabled': enable_toTime,
+				'value': str(AufnahmezeitBis)
+			},
+			'preferredChannel': preferredChannel,
+			'useAlternativeChannel': {
+				'global': config.plugins.serienRec.useAlternativeChannel.value,
+				'value': useAlternativeChannel
+			},
+			'vps': {
+				'available': VPSPluginAvailable,
+				'enabled': override_vps,
+				'value': enable_vps,
+				'savemode': enable_vps_savemode
+			},
+			'excludedWeekdays': {
+				'enabled': enable_excludedWeekdays,
+				'value': excludedWeekdaysList
+			},
+			'tags': serienmarker_tags,
+			'addToDatabase': addToDatabase,
+			'updateFromEPG': {
+				'available': config.plugins.serienRec.eventid.value,
+				'enabled': enable_updateFromEPG,
+				'value': updateFromEPG
+			},
+			'kindOfTimer': {
+				'enabled': enable_kindOfTimer,
+				'value': kindOfTimer
+			},
+			'skipSeriesServer': {
+				'available': config.plugins.serienRec.tvplaner.value,
+				'enabled': enable_skipSeriesServer,
+				'value': skipSeriesServer
+			},
+			'autoAdjust': {
+				'available': hasAutoAdjust(),
+				'enabled': enable_autoAdjust,
+				'value': autoAdjust
+			},
+			'forceRecording': {
+				'enabled': enable_forceRecording,
+				'value': forceRecording
 			}
+		}
 
 		return self.returnResult(req, True, data)
 
 class ApiSetMarkerSettingsResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiSetMarkerSettings")
-		print(data)
+		print(req.content.getvalue)
 
+		data = json.loads(req.content.getvalue())
 		results = []
 		if 'markerid' in data:
 			from .SerienRecorderDatabase import SRDatabase
@@ -707,6 +767,11 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 				updateFromEPG = None
 			else:
 				updateFromEPG = data['settings']['updateFromEPG']['value']
+
+			if not data['settings']['forceRecording']['enabled']:
+				forceRecording = None
+			else:
+				forceRecording = data['settings']['forceRecording']['value']
 
 			if not data['settings']['kindOfTimer']['enabled']:
 				kindOfTimer = None
@@ -760,7 +825,7 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 			database.setMarkerSettings(int(data['markerid']),
 			                           (AufnahmeVerzeichnis, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 			                           AufnahmezeitVon, AufnahmezeitBis, int(data['settings']['preferredChannel']), int(data['settings']['useAlternativeChannel']['value']),
-			                           vpsSettings, excludedWeekdays, tags, int(data['settings']['addToDatabase']), updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer))
+			                           vpsSettings, excludedWeekdays, tags, int(data['settings']['addToDatabase']), updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording))
 
 			results = {
 				'recordfolder': AufnahmeVerzeichnis if AufnahmeVerzeichnis else config.plugins.serienRec.savetopath.value,
@@ -773,79 +838,395 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 
 		return self.returnResult(req, True, results)
 
+class ApiGetSettingsResource(ApiBaseResource):
+	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetSettings")
+		print(req.args)
+		try:
+			from Tools.HardwareInfoVu import HardwareInfoVu
+			is_vu_plus = True
+		except:
+			is_vu_plus = False
+
+		from .SerienRecorderPatterns import readTimerPatterns
+		timer_patterns = readTimerPatterns()
+		pattern_title_choices = timer_patterns
+		pattern_description_choices = timer_patterns
+
+		boxBouquets = STBHelpers.getTVBouquets()
+		if len(boxBouquets) == 0:
+			config.plugins.serienRec.selectBouquets.value = False
+
+		from .SerienRecorderSetupScreen import getSRSkins
+		skins = getSRSkins()
+
+		data = {
+			'system' : {
+				'changed' : False,
+				'boxid': config.plugins.serienRec.BoxID.value,
+				'activateNewOnThisSTBOnly': config.plugins.serienRec.activateNewOnThisSTBOnly.value,
+				'savetopath': config.plugins.serienRec.savetopath.value,
+				'seriensubdir': config.plugins.serienRec.seriensubdir.value,
+				'seriensubdirwithyear': config.plugins.serienRec.seriensubdirwithyear.value,
+				'seasonsubdir': config.plugins.serienRec.seasonsubdir.value,
+				'seasonsubdirnumerlength': config.plugins.serienRec.seasonsubdirnumerlength.value,
+				'seasonsubdirfillchar': config.plugins.serienRec.seasonsubdirfillchar.value,
+				'autoupdate': config.plugins.serienRec.Autoupdate.value,
+				'databasePath': config.plugins.serienRec.databasePath.value,
+				'autoBackup': config.plugins.serienRec.AutoBackup.value,
+				'backupAtManualCheck': config.plugins.serienRec.backupAtManualCheck.value,
+				'backupPath': config.plugins.serienRec.BackupPath.value,
+				'deleteBackupFilesOlderThan': config.plugins.serienRec.deleteBackupFilesOlderThan.value,
+			},
+			'autocheck' : {
+				'changed' : False,
+				'isVUPlus' : is_vu_plus,
+				'type' : config.plugins.serienRec.autochecktype.value,
+				'deltime' : "%s:%s" % (str(config.plugins.serienRec.deltime.value[0]).zfill(2), str(config.plugins.serienRec.deltime.value[1]).zfill(2)),
+				'maxDelayForAutoCheck' : config.plugins.serienRec.maxDelayForAutocheck.value,
+				'checkfordays' : config.plugins.serienRec.checkfordays.value,
+				'globalFromTime' : "%s:%s" % (str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2), str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2)),
+				'globalToTime' : "%s:%s" % (str(config.plugins.serienRec.globalToTime.value[0]).zfill(2), str(config.plugins.serienRec.globalToTime.value[1]).zfill(2)),
+				'eventid' : config.plugins.serienRec.eventid.value,
+				'epgTimeSpan': config.plugins.serienRec.epgTimeSpan.value,
+				'forceRecording' : config.plugins.serienRec.forceRecording.value,
+				'timeSpanForRegularTimer' : config.plugins.serienRec.TimeSpanForRegularTimer.value,
+				'noOfRecords' : config.plugins.serienRec.NoOfRecords.value,
+				'selectNoOfTuners': config.plugins.serienRec.selectNoOfTuners.value,
+				'tuner' : config.plugins.serienRec.tuner.value,
+				'wakeUpDSB' : config.plugins.serienRec.wakeUpDSB.value,
+				'afterAutoCheck': config.plugins.serienRec.afterAutocheck.value,
+				'dsbTimeout' : config.plugins.serienRec.DSBTimeout.value,
+			},
+			'tvplaner' : {
+				'changed' : False,
+				'enabled' : config.plugins.serienRec.tvplaner.value,
+				'server' : config.plugins.serienRec.imap_server.value,
+				'ssl' : config.plugins.serienRec.imap_server_ssl.value,
+				'port' : config.plugins.serienRec.imap_server_port.value,
+				'login': decrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login_hidden.value),
+				'password': config.plugins.serienRec.imap_password_hidden.value,
+				'mailbox' : config.plugins.serienRec.imap_mailbox.value,
+				'mailSubject' : config.plugins.serienRec.imap_mail_subject.value,
+				'mailAge' : config.plugins.serienRec.imap_mail_age.value,
+				'fullCheck' : config.plugins.serienRec.tvplaner_full_check.value,
+				'skipSerienServer' : config.plugins.serienRec.tvplaner_skipSerienServer.value,
+				'series' : config.plugins.serienRec.tvplaner_series.value,
+				'seriesActivateSTB' : config.plugins.serienRec.tvplaner_series_activeSTB.value,
+				'movies' : config.plugins.serienRec.tvplaner_movies.value,
+				'moviesActivateSTB' : config.plugins.serienRec.tvplaner_movies_activeSTB.value,
+				'moviesFilepath' : config.plugins.serienRec.tvplaner_movies_filepath.value,
+				'moviesCreateSubdir' : config.plugins.serienRec.tvplaner_movies_createsubdir.value
+			},
+			'timer' : {
+				'changed' : False,
+				'kindOfTimer' : config.plugins.serienRec.kindOfTimer.value,
+				'afterEvent' : config.plugins.serienRec.afterEvent.value,
+				'marginBefore' : config.plugins.serienRec.margin_before.value,
+				'marginAfter' : config.plugins.serienRec.margin_after.value,
+				'timerName' : config.plugins.serienRec.TimerName.value,
+				'timerNameOptions' : pattern_title_choices,
+				'timerDescription' : config.plugins.serienRec.TimerDescription.value,
+				'timerDescriptionOptions' : pattern_description_choices,
+				'forceManualRecording' : config.plugins.serienRec.forceManualRecording.value,
+				'splitEventTimer' : config.plugins.serienRec.splitEventTimer.value,
+				'splitEventTimerCompareTitle' : config.plugins.serienRec.splitEventTimerCompareTitle.value,
+				'addSingleTimerForEvent' : config.plugins.serienRec.addSingleTimersForEvent.value,
+				'selectBouquets' : config.plugins.serienRec.selectBouquets.value,
+				'mainBouquet' : config.plugins.serienRec.MainBouquet.value,
+				'alternativeBouquet' : config.plugins.serienRec.AlternativeBouquet.value,
+				'useAlternativeChannel' : config.plugins.serienRec.useAlternativeChannel.value,
+				'preferMainBouquet' : config.plugins.serienRec.preferMainBouquet.value,
+				'boxBouquets' : [item[1] for item in boxBouquets]
+			},
+			'optimization': {
+				'changed' : False,
+				'intensiveTimerSearch' : config.plugins.serienRec.intensiveTimersuche.value,
+				'searchRecording' : config.plugins.serienRec.sucheAufnahme.value
+			},
+			'gui' : {
+				'changed' : False,
+				'skins' : skins,
+				'skinType' : config.plugins.serienRec.SkinType.value,
+				'showAllButtons' : config.plugins.serienRec.showAllButtons.value,
+				'displayRefreshRate' : config.plugins.serienRec.DisplayRefreshRate.value,
+				'firstScreen' : config.plugins.serienRec.firstscreen.value,
+				'showPicons' : config.plugins.serienRec.showPicons.value,
+				'piconPath' : config.plugins.serienRec.piconPath.value,
+				'downloadCover' : config.plugins.serienRec.downloadCover.value,
+				'coverPath' : config.plugins.serienRec.coverPath.value,
+				'showCover' : config.plugins.serienRec.showCover.value,
+				'createPlaceholderCover' : config.plugins.serienRec.createPlaceholderCover.value,
+				'refreshPlaceholderCover' : config.plugins.serienRec.refreshPlaceholderCover.value,
+				'copyCoverToFolder' : config.plugins.serienRec.copyCoverToFolder.value,
+				'listFontsize' : config.plugins.serienRec.listFontsize.value,
+				'markerColumnWidth' : config.plugins.serienRec.markerColumnWidth.value,
+				'markerNameInset' : config.plugins.serienRec.markerNameInset.value,
+				'seasonFilter' : config.plugins.serienRec.seasonFilter.value,
+				'timerFilter' : config.plugins.serienRec.timerFilter.value,
+				'markerSort' : config.plugins.serienRec.markerSort.value,
+				'maxSeason' : config.plugins.serienRec.max_season.value,
+				'openMarkerScreen' : config.plugins.serienRec.openMarkerScreen.value,
+				'confirmOnDelete' : config.plugins.serienRec.confirmOnDelete.value,
+				'alphaSortBoxChannels' : config.plugins.serienRec.alphaSortBoxChannels.value,
+			},
+			'notification' : {
+				'changed' : False,
+				'showNotification' : config.plugins.serienRec.showNotification.value,
+				'showMessageOnConflicts' : config.plugins.serienRec.showMessageOnConflicts.value,
+				'showMessageOnTVPlanerError' : config.plugins.serienRec.showMessageOnTVPlanerError.value,
+				'showMessageOnEventNotFound' : config.plugins.serienRec.showMessageOnEventNotFound.value,
+				'showMessageTimeout' : config.plugins.serienRec.showMessageTimeout.value,
+				'channelUpdateNotification' : config.plugins.serienRec.channelUpdateNotification.value,
+			},
+			'logging' : {
+				'changed' : False,
+				'logFilePath' : config.plugins.serienRec.LogFilePath.value,
+				'longLogFilename' : config.plugins.serienRec.longLogFileName.value,
+				'deleteLogFilesOlderThan' : config.plugins.serienRec.deleteLogFilesOlderThan.value,
+				'writeLog' : config.plugins.serienRec.writeLog.value,
+				'writeLogVersion' : config.plugins.serienRec.writeLogVersion.value,
+				'writeLogChannels' : config.plugins.serienRec.writeLogChannels.value,
+				'writeLogAllowedEpisodes' : config.plugins.serienRec.writeLogAllowedEpisodes.value,
+				'writeLogAdded' : config.plugins.serienRec.writeLogAdded.value,
+				'writeLogDisk' : config.plugins.serienRec.writeLogDisk.value,
+				'writeLogTimeRange' : config.plugins.serienRec.writeLogTimeRange.value,
+				'writeLogTimeLimit' : config.plugins.serienRec.writeLogTimeLimit.value,
+				'writeLogTimerDebug' : config.plugins.serienRec.writeLogTimerDebug.value,
+				'tvplaner_backupHTML' : config.plugins.serienRec.tvplaner_backupHTML.value,
+				'logScrollLast' : config.plugins.serienRec.logScrollLast.value,
+				'logWrapAround' : config.plugins.serienRec.logWrapAround.value,
+			}
+		}
+
+		return self.returnResult(req, True, data)
+
+class ApiSetSettingsResource(ApiBaseResource):
+	def render_POST(self, req):
+		print("[SerienRecorder] ApiSetSettings")
+		print(req)
+
+		data = json.loads(req.content.getvalue())
+
+		# System
+		if 'system' in data and data['system']['changed']:
+			config.plugins.serienRec.BoxID.value = data['system']['boxid']
+			config.plugins.serienRec.activateNewOnThisSTBOnly.value = data['system']['activateNewOnThisSTBOnly']
+			config.plugins.serienRec.savetopath.value = data['system']['savetopath']
+			config.plugins.serienRec.seriensubdir.value = data['system']['seriensubdir']
+			config.plugins.serienRec.seriensubdirwithyear.value = data['system']['seriensubdirwithyear']
+			config.plugins.serienRec.seasonsubdir.value = data['system']['seasonsubdir']
+			config.plugins.serienRec.seasonsubdirnumerlength.value = data['system']['seasonsubdirnumerlength']
+			config.plugins.serienRec.seasonsubdirfillchar.value = data['system']['seasonsubdirfillchar']
+			config.plugins.serienRec.Autoupdate.value = data['system']['autoupdate']
+			config.plugins.serienRec.databasePath.value = data['system']['databasePath']
+			config.plugins.serienRec.AutoBackup.value = data['system']['autoBackup']
+			config.plugins.serienRec.backupAtManualCheck.value = data['system']['backupAtManualCheck']
+			config.plugins.serienRec.BackupPath.value = data['system']['backupPath']
+			config.plugins.serienRec.deleteBackupFilesOlderThan.value = data['system']['deleteBackupFilesOlderThan']
+
+		if 'autocheck' in data and data['autocheck']['changed']:
+			config.plugins.serienRec.autochecktype.value = data['autocheck']['type']
+			config.plugins.serienRec.deltime.value = data['autocheck']['type'].split(':')
+			config.plugins.serienRec.maxDelayForAutocheck.value = data['autocheck']['maxDelayForAutoCheck']
+			config.plugins.serienRec.checkfordays.value = data['autocheck']['checkfordays']
+			config.plugins.serienRec.globalFromTime.value = data['autocheck']['globalFromTime'].split(':')
+			config.plugins.serienRec.globalToTime.value = data['autocheck']['globalToTime'].split(':')
+			config.plugins.serienRec.eventid.value = data['autocheck']['eventid']
+			config.plugins.serienRec.epgTimeSpan.value = data['autocheck']['epgTimeSpan']
+			config.plugins.serienRec.forceRecording.value = data['autocheck']['forceRecording']
+			config.plugins.serienRec.TimeSpanForRegularTimer.value = data['autocheck']['timeSpanForRegularTimer']
+			config.plugins.serienRec.NoOfRecords.value = data['autocheck']['noOfRecords']
+			config.plugins.serienRec.selectNoOfTuners.value = data['autocheck']['selectNoOfTuners']
+			config.plugins.serienRec.tuner.value = data['autocheck']['tuner']
+			config.plugins.serienRec.wakeUpDSB.value = data['autocheck']['wakeUpDSB']
+			config.plugins.serienRec.afterAutocheck.value = data['autocheck']['afterAutoCheck']
+			config.plugins.serienRec.DSBTimeout.value = data['autocheck']['dsbTimeout']
+
+		if 'tvplaner' in data and data['tvplaner']['changed']:
+			config.plugins.serienRec.tvplaner.value = data['tvplaner']['enabled']
+			config.plugins.serienRec.imap_server.value = data['tvplaner']['server']
+			config.plugins.serienRec.imap_server_ssl.value = data['tvplaner']['ssl']
+			config.plugins.serienRec.imap_server_port.value = data['tvplaner']['port']
+			config.plugins.serienRec.imap_login_hidden.value = encrypt(STBHelpers.getmac("eth0"), data['tvplaner']['login'])
+			config.plugins.serienRec.imap_login.value = "*"
+			if config.plugins.serienRec.imap_password_hidden.value != data['tvplaner']['password']:
+				config.plugins.serienRec.imap_password_hidden.value = encrypt(STBHelpers.getmac("eth0"), data['tvplaner']['password'])
+			config.plugins.serienRec.imap_password.value = "*"
+			config.plugins.serienRec.imap_mailbox.value = data['tvplaner']['mailbox']
+			config.plugins.serienRec.imap_mail_subject.value = data['tvplaner']['mailSubject']
+			config.plugins.serienRec.imap_mail_age.value = data['tvplaner']['mailAge']
+			config.plugins.serienRec.tvplaner_full_check.value = data['tvplaner']['fullCheck']
+			config.plugins.serienRec.tvplaner_skipSerienServer.value = data['tvplaner']['skipSerienServer']
+			config.plugins.serienRec.tvplaner_series.value = data['tvplaner']['series']
+			config.plugins.serienRec.tvplaner_series_activeSTB.value = data['tvplaner']['seriesActiveSTB']
+			config.plugins.serienRec.tvplaner_movies.value = data['tvplaner']['movies']
+			config.plugins.serienRec.tvplaner_movies_activeSTB.value = data['tvplaner']['moviesActiveSTB']
+			config.plugins.serienRec.tvplaner_movies_filepath.value = data['tvplaner']['moviesFilepath']
+			config.plugins.serienRec.tvplaner_movies_createsubdir.value = data['tvplaner']['moviesCreateSubdir']
+
+		if 'timer' in data and data['timer']['changed']:
+			config.plugins.serienRec.kindOfTimer.value = data['timer']['kindOfTimer']
+			config.plugins.serienRec.afterEvent.value = data['timer']['afterEvent']
+			config.plugins.serienRec.margin_before.value = data['timer']['marginBefore']
+			config.plugins.serienRec.margin_after.value = data['timer']['marginAfter']
+			config.plugins.serienRec.TimerName.value = data['timer']['timerName']
+			config.plugins.serienRec.TimerDescription.value = data['timer']['timerDescription']
+			config.plugins.serienRec.forceManualRecording.value = data['timer']['forceManualRecording']
+			config.plugins.serienRec.splitEventTimer.value = data['timer']['splitEventTimer']
+			config.plugins.serienRec.splitEventTimerCompareTitle.value = data['timer']['splitEventTimerCompareTitle']
+			config.plugins.serienRec.addSingleTimersForEvent.value = data['timer']['addSingleTimerForEvent']
+			config.plugins.serienRec.selectBouquets.value = data['timer']['selectBouquets']
+			config.plugins.serienRec.MainBouquet.value = data['timer']['mainBouquet']
+			config.plugins.serienRec.AlternativeBouquet.value = data['timer']['alternativeBouquet']
+			config.plugins.serienRec.useAlternativeChannel.value = data['timer']['useAlternativeChannel']
+			config.plugins.serienRec.preferMainBouquet.value = data['timer']['preferMainBouquet']
+
+		if 'optimization' in data and data['optimization']['changed']:
+			config.plugins.serienRec.intensiveTimersuche.value = data['optimization']['intensiveTimerSearch']
+			config.plugins.serienRec.sucheAufnahme.value = data['optimization']['searchRecording']
+
+		if 'gui' in data and data['gui']['changed']:
+			config.plugins.serienRec.SkinType.value = data['gui']['skinType']
+			config.plugins.serienRec.showAllButtons.value = data['gui']['showAllButtons']
+			config.plugins.serienRec.DisplayRefreshRate.value = data['gui']['displayRefreshRate']
+			config.plugins.serienRec.firstscreen.value = data['gui']['firstScreen']
+			config.plugins.serienRec.showPicons.value = data['gui']['showPicons']
+			config.plugins.serienRec.piconPath.value = data['gui']['piconPath']
+			config.plugins.serienRec.downloadCover.value = data['gui']['downloadCover']
+			config.plugins.serienRec.coverPath.value = data['gui']['coverPath']
+			config.plugins.serienRec.showCover.value = data['gui']['showCover']
+			config.plugins.serienRec.createPlaceholderCover.value = data['gui']['createPlaceholderCover']
+			config.plugins.serienRec.refreshPlaceholderCover.value = data['gui']['refreshPlaceholderCover']
+			config.plugins.serienRec.copyCoverToFolder.value = data['gui']['copyCoverToFolder']
+			config.plugins.serienRec.listFontsize.value = data['gui']['listFontsize']
+			config.plugins.serienRec.markerColumnWidth.value = data['gui']['markerColumnWidth']
+			config.plugins.serienRec.markerNameInset.value = data['gui']['markerNameInset']
+			config.plugins.serienRec.seasonFilter.value = data['gui']['seasonFilter']
+			config.plugins.serienRec.timerFilter.value = data['gui']['timerFilter']
+			config.plugins.serienRec.markerSort.value = data['gui']['markerSort']
+			config.plugins.serienRec.max_season.value = data['gui']['maxSeason']
+			config.plugins.serienRec.openMarkerScreen.value = data['gui']['openMarkerScreen']
+			config.plugins.serienRec.confirmOnDelete.value = data['gui']['confirmOnDelete']
+			config.plugins.serienRec.alphaSortBoxChannels.value = data['gui']['alphaSortBoxChannels']
+
+		if 'notification' in data and data['notification']['changed']:
+			config.plugins.serienRec.showNotification.value = data['notification']['showNotification']
+			config.plugins.serienRec.showMessageOnConflicts.value = data['notification']['showMessageOnConflicts']
+			config.plugins.serienRec.showMessageOnTVPlanerError.value = data['notification']['showMessageOnTVPlanerError']
+			config.plugins.serienRec.showMessageOnEventNotFound.value = data['notification']['showMessageOnEventNotFound']
+			config.plugins.serienRec.showMessageTimeout.value = data['notification']['showMessageTimeout']
+			config.plugins.serienRec.channelUpdateNotification.value = data['notification']['channelUpdateNotification']
+
+		if 'logging' in data and data['logging']['changed']:
+			config.plugins.serienRec.LogFilePath.value = data['logging']['logFilePath']
+			config.plugins.serienRec.longLogFileName.value = data['logging']['longLogFilename']
+			config.plugins.serienRec.deleteLogFilesOlderThan.value = data['logging']['deleteLogFilesOlderThan']
+			config.plugins.serienRec.writeLog.value = data['logging']['writeLog']
+			config.plugins.serienRec.writeLogVersion.value = data['logging']['writeLogVersion']
+			config.plugins.serienRec.writeLogChannels.value = data['logging']['writeLogChannels']
+			config.plugins.serienRec.writeLogAllowedEpisodes.value = data['logging']['writeLogAllowedEpisodes']
+			config.plugins.serienRec.writeLogAdded.value = data['logging']['writeLogAdded']
+			config.plugins.serienRec.writeLogDisk.value = data['logging']['writeLogDisk']
+			config.plugins.serienRec.writeLogTimeRange.value = data['logging']['writeLogTimeRange']
+			config.plugins.serienRec.writeLogTimeLimit.value = data['logging']['writeLogTimeLimit']
+			config.plugins.serienRec.writeLogTimerDebug.value = data['logging']['writeLogTimerDebug']
+			config.plugins.serienRec.tvplaner_backupHTML.value = data['logging']['tvplaner_backupHTML']
+			config.plugins.serienRec.logScrollLast.value = data['logging']['logScrollLast']
+			config.plugins.serienRec.logWrapAround.value = data['logging']['logWrapAround']
+
+		from .SerienRecorderSetupScreen import saveSettings
+		saveSettings()
+
+		DBPathChanged = False
+		from .SerienRecorder import getDataBaseFilePath
+		if getDataBaseFilePath() != "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value:
+			DBPathChanged = True
+
+		return self.returnResult(req, True, DBPathChanged)
+
+class ApiResetSettingsResource(ApiBaseResource):
+	def render_POST(self, req):
+		print("[SerienRecorder] ApiResetSettings")
+
+		from .SerienRecorderSetupScreen import resetSettings
+		resetSettings()
+		return self.returnResult(req, True, True)
+
 class ApiGetTransmissionsResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetTransmissions")
+		print(req.args)
+
 		data = []
-		wl_id = req.args.get(toBinary("wlid"), None)
-		fs_id = req.args.get(toBinary("fsid"), None)
-		filterMode = req.args.get(toBinary("filterMode"), None)
+		wl_id = toStr(req.args[toBinary("wlid")][0])
+		fs_id = toStr(req.args[toBinary("fsid")][0])
+		filterMode = int(req.args[toBinary("filterMode")][0])
 
-		if wl_id:
-			wl_id = toStr(wl_id[0])
-			fs_id = toStr(fs_id[0])
-			filterMode = int(toStr(filterMode[0]))
+		from .SerienRecorderSeriesServer import SeriesServer
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		database = SRDatabase(serienRecDataBaseFilePath)
 
-			from .SerienRecorderSeriesServer import SeriesServer
-			from .SerienRecorderDatabase import SRDatabase
-			from .SerienRecorder import serienRecDataBaseFilePath
-			database = SRDatabase(serienRecDataBaseFilePath)
+		if filterMode == 0:
+			webChannels = []
+		elif filterMode == 1:
+			webChannels = database.getActiveChannels()
+		else:
+			webChannels = database.getMarkerChannels(wl_id)
 
-			if filterMode == 0:
-				webChannels = []
-			elif filterMode == 1:
-				webChannels = database.getActiveChannels()
-			else:
-				webChannels = database.getMarkerChannels(wl_id)
+		try:
+			transmissions = SeriesServer().doGetTransmissions(wl_id, 0, webChannels)
+		except:
+			transmissions = None
 
-			try:
-				transmissions = SeriesServer().doGetTransmissions(wl_id, 0, webChannels)
-			except:
-				transmissions = None
-			
-			if transmissions:
-				from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
+		if transmissions:
+			from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
 
-				addedEpisodes = database.getTimerForSeries(fs_id, False)
-				# TODO: Check for allowed seasons
-				# TODO: Search file on HDD
+			addedEpisodes = database.getTimerForSeries(fs_id, False)
+			# TODO: Check for allowed seasons
+			# TODO: Search file on HDD
 
-				marginList = {}
+			marginList = {}
 
-				for seriesName, channel, startTime, endTime, season, episode, title, status in transmissions:
-					if not channel in marginList:
-						marginList[channel] = database.getMargins(fs_id, channel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
+			for seriesName, channel, startTime, endTime, season, episode, title, status in transmissions:
+				if not channel in marginList:
+					marginList[channel] = database.getMargins(fs_id, channel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
 
-					(margin_before, margin_after) = marginList[channel]
-					start_unixtime = startTime - (int(margin_before) * 60)
+				(margin_before, margin_after) = marginList[channel]
+				start_unixtime = startTime - (int(margin_before) * 60)
 
-					if serienRecSendeTermine.isTimerAdded(addedEpisodes, channel, season, episode, int(start_unixtime), title):
-						addedType = 2
-					elif serienRecSendeTermine.isAlreadyAdded(addedEpisodes, season, episode, title):
-						addedType = 3
-					else:
-						addedType = 0
+				if serienRecSendeTermine.isTimerAdded(addedEpisodes, channel, season, episode, int(start_unixtime), title):
+					addedType = 2
+				elif serienRecSendeTermine.isAlreadyAdded(addedEpisodes, season, episode, title):
+					addedType = 3
+				else:
+					addedType = 0
 
-					data.append({
-						'channel' : channel,
-						'startTime' : startTime,
-						'endTime' : endTime,
-						'season' : season,
-						'episode' : episode,
-						'title' : title,
-						'type' : addedType
-					})
+				data.append({
+					'channel' : channel,
+					'startTime' : startTime,
+					'endTime' : endTime,
+					'season' : season,
+					'episode' : episode,
+					'title' : title,
+					'type' : addedType
+				})
 
 		return self.returnResult(req, True, data)
 
 class ApiSearchSeriesResource(ApiBaseResource):
 	def render_GET(self, req):
-		data = {}
+		print("[SerienRecorder] ApiSearchSeries")
+		print(req.args)
 
-		search_term = req.args.get(toBinary("searchTerm"), None)
-		start = req.args.get(toBinary('start'), None)
-		if search_term:
+		data = {}
+		search_term = toStr(req.args[toBinary("searchTerm")][0])
+		start = int(req.args[toBinary("start")][0])
+
+		if len(search_term) > 0:
 			from .SerienRecorderSearchResultScreen import downloadSearchResults
-			searchResults = downloadSearchResults(toStr(search_term[0]), int(toStr(start[0])))
+			searchResults = downloadSearchResults(search_term, start)
 			searchResults.start()
 			searchResults.join()
 
@@ -870,6 +1251,8 @@ class ApiSearchSeriesResource(ApiBaseResource):
 
 class ApiSearchEventsResource(ApiBackgroundingResource):
 	def renderBackground(self, req):
+		print("[SerienRecorder] ApiSearchEvents")
+		print(req.args)
 		data = [{
 			'serien_name': "serien_name",
 			'sender': "sender",
@@ -909,8 +1292,10 @@ class ApiSearchEventsResource(ApiBackgroundingResource):
 
 class ApiGetActiveChannelsResource(ApiBaseResource):
 	def render_GET(self, req):
-		data = []
+		print("[SerienRecorder] ApiGetActiveChannels")
+		print(req.args)
 
+		data = []
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
 		database = SRDatabase(serienRecDataBaseFilePath)
@@ -934,8 +1319,10 @@ class ApiGetActiveChannelsResource(ApiBaseResource):
 
 class ApiGetChannelsResource(ApiBaseResource):
 	def render_GET(self, req):
-		data = []
+		print("[SerienRecorder] ApiGetChannels")
+		print(req.args)
 
+		data = []
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
 		database = SRDatabase(serienRecDataBaseFilePath)
@@ -960,6 +1347,8 @@ class ApiGetChannelsResource(ApiBaseResource):
 
 class ApiGetBoxChannelsResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetBoxChannels")
+		print(req.args)
 
 		from .SerienRecorderHelpers import STBHelpers
 		if config.plugins.serienRec.selectBouquets.value:
@@ -987,22 +1376,28 @@ class ApiGetBoxChannelsResource(ApiBaseResource):
 
 class ApiChangeChannelStatusResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiChangeChannelStatus")
+		print(req.args)
+
 		success = False
-		webChannel = req.args.get(toBinary("webChannel"), None)
-		if webChannel:
+		webChannel = toStr(req.args[toBinary("webChannel")][0])
+
+		if len(webChannel) > 0:
 			from .SerienRecorderDatabase import SRDatabase
 			from .SerienRecorder import serienRecDataBaseFilePath
 			database = SRDatabase(serienRecDataBaseFilePath)
 
-			database.changeChannelStatus(toStr(webChannel[0]))
+			database.changeChannelStatus(webChannel)
 			success = True
 
 		return self.returnResult(req, True, success)
 
 class ApiSetChannelResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiSetChannel")
+		print(req.content.getvalue())
+
+		data = json.loads(req.content.getvalue())
 
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
@@ -1026,6 +1421,7 @@ class ApiSetChannelResource(ApiBaseResource):
 class ApiRemoveAllChannelsResource(ApiBaseResource):
 	def render_POST(self, req):
 		print("[SerienRecorder] ApiRemoveAllChannels")
+		print(req.content.getvalue())
 
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
@@ -1034,17 +1430,58 @@ class ApiRemoveAllChannelsResource(ApiBaseResource):
 
 		return self.returnResult(req, True, True)
 
+class ApiUpdateChannelsResource(ApiBaseResource):
+	def render_POST(self, req):
+		print("[SerienRecorder] ApiUpdateChannels")
+		print(req.content.getvalue())
+
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		from .SerienRecorderSeriesServer import SeriesServer
+		from .SerienRecorderChannelScreen import serienRecMainChannelEdit
+		webChannelList = SeriesServer().doGetWebChannels()
+		newWebChannels = None
+		removedWebChannels = None
+
+		if webChannelList:
+			from .SerienRecorderLogWriter import SRLogger
+
+			webChannelList.sort(key=lambda x: x.lower())
+			database = SRDatabase(serienRecDataBaseFilePath)
+
+			dbChannels = database.getChannelPairs()
+			(newWebChannels, removedWebChannels) = serienRecMainChannelEdit.getMissingWebChannels(webChannelList, dbChannels)
+
+			# Delete remove channels
+			if removedWebChannels:
+				SRLogger.writeLog("Folgende Sender wurden bei Wunschliste nicht mehr gefunden, die Zuordnung im SerienRecorder wurde gelöscht:\n" + "\n".join(removedWebChannels), True)
+				#self.session.open(MessageBox, "Folgende Sender wurden bei Wunschliste nicht mehr gefunden,\ndie Zuordnung im SerienRecorder wurde gelöscht:\n\n" + "\n".join(removedWebChannels), MessageBox.TYPE_INFO, timeout=10)
+				for webChannel in removedWebChannels:
+					database.removeChannel(webChannel)
+
+			if not newWebChannels:
+				SRLogger.writeLog("Es wurden keine neuen Sender bei Wunschliste gefunden.")
+				#self.session.open(MessageBox, "Es wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
+			else:
+				newChannelsMessage = "Folgende Sender wurden neu bei Wunschliste gefunden:\n" + "\n".join(newWebChannels)
+				SRLogger.writeLog(newChannelsMessage, True)
+				#self.session.open(MessageBox, "Folgende Sender wurden neu bei Wunschliste gefunden,\nsie wurden am Ende der Liste eingefügt:\n\n" + "\n".join(newWebChannels), MessageBox.TYPE_INFO, timeout=10)
+				channels = []
+				for webChannel in newWebChannels:
+					channels.append((webChannel, "", "", 0))
+				database.addChannels(channels)
+
+			#database.removeAllChannels()
+			database.setChannelListLastUpdate()
+
+		return self.returnResult(req, True, { 'new': newWebChannels, 'removed': removedWebChannels})
+
 class ApiGetTimerResource(ApiBaseResource):
 	def render_GET(self, req):
-		from .SerienRecorderDatabase import SRDatabase
-		from .SerienRecorderHelpers import STBHelpers
-		from .SerienRecorder import serienRecDataBaseFilePath
-		database = SRDatabase(serienRecDataBaseFilePath)
+		print("[SerienRecorder] ApiGetTimer")
+		print(req.args)
 
-		remainingOnly = req.args.get(toBinary("remaining"), None)
-		if remainingOnly:
-			remainingOnly = bool(toStr(remainingOnly[0]))
-
+		remainingOnly = bool(req.args[toBinary("remaining")][0])
 		current_time = None
 		channelList = None
 		showPicons = bool(config.plugins.serienRec.showPicons.value)
@@ -1053,6 +1490,11 @@ class ApiGetTimerResource(ApiBaseResource):
 			current_time = int(time.time())
 		else:
 			showPicons = False
+
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorderHelpers import STBHelpers
+		from .SerienRecorder import serienRecDataBaseFilePath
+		database = SRDatabase(serienRecDataBaseFilePath)
 
 		timers = database.getAllTimer(current_time)
 
@@ -1092,15 +1534,17 @@ class ApiGetTimerResource(ApiBaseResource):
 
 class ApiGetMarkerTimerResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetMarkerTimer")
+		print(req.args)
+
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
 		database = SRDatabase(serienRecDataBaseFilePath)
 		timerList = None
 
-		fsID = req.args.get(toBinary("fsid"), None)
-		if fsID:
-			fsID = toStr(fsID[0])
-			timers = database.getTimerForSeries(fsID)
+		fs_id = toStr(req.args[toBinary("fsid")][0])
+		if len(fs_id) > 0:
+			timers = database.getTimerForSeries(fs_id)
 
 			timerList = []
 			for timer in timers:
@@ -1120,8 +1564,10 @@ class ApiGetMarkerTimerResource(ApiBaseResource):
 
 class ApiAddTimersResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiAddTimers")
+		print(req.content.getvalue())
+
+		data = json.loads(req.content.getvalue())
 
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
@@ -1132,8 +1578,10 @@ class ApiAddTimersResource(ApiBaseResource):
 
 class ApiRemoveTimerResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiRemoveTimer")
+		print(req.content.getvalue())
+
+		data = json.loads(req.content.getvalue())
 
 		from .SerienRecorderTimerListScreen import serienRecTimerListScreen
 		from .SerienRecorderDatabase import SRDatabase
@@ -1146,6 +1594,7 @@ class ApiRemoveTimerResource(ApiBaseResource):
 class ApiRemoveAllRemainingTimerResource(ApiBaseResource):
 	def render_POST(self, req):
 		print("[SerienRecorder] ApiRemoveAllRemainingTimer")
+		print(req.content.getvalue())
 
 		from .SerienRecorderTimerListScreen import serienRecTimerListScreen
 		from .SerienRecorderDatabase import SRDatabase
@@ -1162,10 +1611,10 @@ class ApiRemoveAllRemainingTimerResource(ApiBaseResource):
 
 class ApiCreateTimerResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiCreateTimer")
-		print(data)
+		print(req.content.getvalue())
 
+		data = json.loads(req.content.getvalue())
 		transmissions = []
 		for event in data['transmissions']:
 			transmissions.append([data['name'].encode('utf-8'), event['channel'].encode('utf-8'), event['startTime'], event['endTime'], event['season'], event['episode'], event['title'].encode('utf-8'), "1", event['type']])
@@ -1181,21 +1630,24 @@ class ApiCreateTimerResource(ApiBaseResource):
 
 class ApiGetSeriesInfoResource(ApiBaseResource):
 	def render_GET(self, req):
-		wl_id = req.args.get(toBinary("wlid"), None)
-		fs_id = req.args.get(toBinary("fsid"), None)
+		print("[SerienRecorder] ApiGetSeriesInfo")
+		print(req.args)
+
+		wl_id = toStr(req.args[toBinary("wlid")][0])
+		fs_id = toStr(req.args[toBinary("fsid")][0])
 		data = {}
 
-		if wl_id and fs_id:
+		if len(wl_id) > 0 and len(fs_id) > 0:
 			from .SerienRecorderSeriesServer import SeriesServer
 
 			posterURL = None
 			if config.plugins.serienRec.downloadCover.value:
 				try:
-					posterURL = SeriesServer().doGetCoverURL(0, toStr(fs_id[0]))
+					posterURL = SeriesServer().doGetCoverURL(0, fs_id)
 				except:
 					posterURL = None
 
-			seriesInfo = SeriesServer().getSeriesInfo(toStr(wl_id[0]), True)
+			seriesInfo = SeriesServer().getSeriesInfo(wl_id, True)
 
 			data = { 'info': seriesInfo, 'coverURL': posterURL }
 
@@ -1203,9 +1655,10 @@ class ApiGetSeriesInfoResource(ApiBaseResource):
 
 class ApiExecuteAutoCheckResource(ApiBaseResource):
 	def render_POST(self, req):
-		data = json.loads(req.content.getvalue())
 		print("[SerienRecorder] ApiExecuteAutoCheck")
+		print(req.content.getvalue())
 
+		data = json.loads(req.content.getvalue())
 		from .SerienRecorderCheckForRecording import checkForRecordingInstance
 
 		checkForRecordingInstance.setAutoCheckFinished(False)
@@ -1216,8 +1669,10 @@ class ApiExecuteAutoCheckResource(ApiBaseResource):
 
 class ApiGetLogResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetLog")
+		print(req.args)
+
 		data = {}
-		
 		from .SerienRecorderLogWriter import SRLogger
 		logFilePath = SRLogger.getLogFilePath()
 		
@@ -1233,6 +1688,8 @@ class ApiGetLogResource(ApiBaseResource):
 
 class ApiGetInfoResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetInfo")
+		print(req.args)
 
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
@@ -1254,6 +1711,8 @@ class ApiGetInfoResource(ApiBaseResource):
 
 class ApiCheckForUpdateResource(ApiBaseResource):
 	def render_GET(self, req):
+		print("[SerienRecorder] ApiCheckForUpdate")
+		print(req.args)
 
 		from .SerienRecorderUpdateScreen import checkGitHubUpdate
 		webapp_assets = checkGitHubUpdate.checkForWebinterfaceUpdate()
@@ -1261,6 +1720,9 @@ class ApiCheckForUpdateResource(ApiBaseResource):
 
 class ApiInstallUpdateResource(ApiBaseResource):
 	def render_POST(self, req):
+		print("[SerienRecorder] ApiInstallUpdate")
+		print(req.content.getvalue())
+
 		data = json.loads(req.content.getvalue())
 
 		from .SerienRecorderUpdateScreen import checkGitHubUpdate

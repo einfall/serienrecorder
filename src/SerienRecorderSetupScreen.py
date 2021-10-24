@@ -23,6 +23,24 @@ def CheckChoices(choices, default):
 
 	return choices[0][0]
 
+def getSRSkins():
+	skins = [("Skinpart", "Skinpart"), ("", "SerienRecorder 1"), ("Skin1 FHD", "SerienRecorder 1 FHD"),
+	         ("Skin2", "SerienRecorder 2"), ("Skin2 FHD", "SerienRecorder 2 FHD"),
+	         ("AtileHD", "AtileHD"), ("StyleFHD", "StyleFHD"), ("Black Box", "Black Box")]
+	try:
+		t = list(os.walk("%s/skins" % os.path.dirname(__file__)))
+		for x in t[0][1]:
+			if x not in ("Skin1 FHD", "Skin2", "Skin2 FHD", "AtileHD", "StyleFHD", "Black Box"):
+				skins.append((x, x))
+	except:
+		pass
+	from enigma import getDesktop
+	DESKTOP_WIDTH = getDesktop(0).size().width()
+	if DESKTOP_WIDTH <= 1280:
+		# Remove FHD skins because of box skin is HD only
+		skins = [x for x in skins if "FHD" not in x[0]]
+	return skins
+
 def ReadConfigFile():
 	try:
 		default_before = int(config.recording.margin_before.value)
@@ -111,7 +129,7 @@ def ReadConfigFile():
 	# TIMER
 	###############################################################################################################################
 
-	config.plugins.serienRec.kindOfTimer = ConfigSelection(choices=[("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default="0")
+	config.plugins.serienRec.kindOfTimer = ConfigSelection(choices=[("1", "Umschalten"), ("0", "Aufnehmen"), ("2", "Umschalten und aufnehmen"), ("4", "Erinnerung")], default="0")
 	config.plugins.serienRec.afterEvent = ConfigSelection(choices=[("0", "Nichts"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen"), ("3", "Automatisch")], default="3")
 	config.plugins.serienRec.margin_before = ConfigInteger(default_before, (0, 99))
 	config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0, 99))
@@ -147,24 +165,7 @@ def ReadConfigFile():
 	###############################################################################################################################
 	# BENUTZEROBERFLÄCHE
 	###############################################################################################################################
-	skins = [("Skinpart", "Skinpart"), ("", "SerienRecorder 1"), ("Skin1 FHD", "SerienRecorder 1 FHD"),
-	         ("Skin2", "SerienRecorder 2"), ("Skin2 FHD", "SerienRecorder 2 FHD"),
-	         ("AtileHD", "AtileHD"), ("StyleFHD", "StyleFHD"), ("Black Box", "Black Box")]
-	try:
-		t = list(os.walk("%s/skins" % os.path.dirname(__file__)))
-		for x in t[0][1]:
-			if x not in ("Skin1 FHD", "Skin2", "Skin2 FHD", "AtileHD", "StyleFHD", "Black Box"):
-				skins.append((x, x))
-	except:
-		pass
-
-	from enigma import getDesktop
-	DESKTOP_WIDTH = getDesktop(0).size().width()
-	if DESKTOP_WIDTH <= 1280:
-		# Remove FHD skins because of box skin is HD only
-		skins = [x for x in skins if "FHD" not in x[0]]
-
-	config.plugins.serienRec.SkinType = ConfigSelection(choices=skins, default="")
+	config.plugins.serienRec.SkinType = ConfigSelection(choices=getSRSkins(), default="")
 	config.plugins.serienRec.showAllButtons = ConfigYesNo(default=False)
 	config.plugins.serienRec.DisplayRefreshRate = ConfigInteger(10, (1, 60))
 	config.plugins.serienRec.firstscreen = ConfigSelection(choices=[("0", "Serien-Planer"), ("1", "Serien-Marker")], default="0")
@@ -272,6 +273,7 @@ def ReadConfigFile():
 	SelectSkin()
 
 
+
 class ConfigListHC(ConfigList):
 	def __init__(self, list, session=None):
 		ConfigList.__init__(self, list, session=session)
@@ -291,6 +293,230 @@ class ConfigListHC(ConfigList):
 					return
 		self.pageUp()
 
+
+def saveSettings():
+	if config.plugins.serienRec.autochecktype.value == "0":
+		config.plugins.serienRec.timeUpdate.value = False
+	else:
+		config.plugins.serienRec.timeUpdate.value = True
+
+	if not config.plugins.serienRec.selectBouquets.value:
+		config.plugins.serienRec.MainBouquet.value = None
+		config.plugins.serienRec.AlternativeBouquet.value = None
+		config.plugins.serienRec.useAlternativeChannel.value = False
+
+	if not config.plugins.serienRec.seriensubdir.value:
+		config.plugins.serienRec.seasonsubdir.value = False
+
+	if config.plugins.serienRec.autochecktype.value != "1":
+		config.plugins.serienRec.wakeUpDSB.value = False
+
+	if not config.plugins.serienRec.downloadCover.value:
+		config.plugins.serienRec.showCover.value = False
+
+	if config.plugins.serienRec.TimerName.value == "1":
+		config.plugins.serienRec.sucheAufnahme.value = False
+
+	if int(config.plugins.serienRec.checkfordays.value) > int(
+			config.plugins.serienRec.TimeSpanForRegularTimer.value):
+		config.plugins.serienRec.TimeSpanForRegularTimer.value = int(config.plugins.serienRec.checkfordays.value)
+
+	if config.plugins.serienRec.preferMainBouquet.value:
+		config.plugins.serienRec.sucheAufnahme.value = False
+
+	config.plugins.serienRec.savetopath.value = os.path.join(str(config.plugins.serienRec.savetopath.value), '')
+	config.plugins.serienRec.tvplaner_movies_filepath.value = os.path.join(str(config.plugins.serienRec.tvplaner_movies_filepath.value), '')
+	config.plugins.serienRec.LogFilePath.value = os.path.join(str(config.plugins.serienRec.LogFilePath.value), '')
+	config.plugins.serienRec.BackupPath.value = os.path.join(str(config.plugins.serienRec.BackupPath.value), '')
+	config.plugins.serienRec.databasePath.value = os.path.join(str(config.plugins.serienRec.databasePath.value), '')
+	config.plugins.serienRec.coverPath.value = os.path.join(str(config.plugins.serienRec.coverPath.value), '')
+	config.plugins.serienRec.piconPath.value = os.path.join(str(config.plugins.serienRec.piconPath.value), '')
+
+	###############################################################################################################################
+	# SYSTEM
+	###############################################################################################################################
+	config.plugins.serienRec.BoxID.save()
+	config.plugins.serienRec.activateNewOnThisSTBOnly.save()
+	config.plugins.serienRec.savetopath.save()
+	config.plugins.serienRec.seriensubdir.save()
+	config.plugins.serienRec.seriensubdirwithyear.save()
+	config.plugins.serienRec.seasonsubdir.save()
+	config.plugins.serienRec.seasonsubdirnumerlength.save()
+	config.plugins.serienRec.seasonsubdirfillchar.save()
+	config.plugins.serienRec.Autoupdate.save()
+	config.plugins.serienRec.databasePath.save()
+	config.plugins.serienRec.AutoBackup.save()
+	config.plugins.serienRec.backupAtManualCheck.save()
+	config.plugins.serienRec.BackupPath.save()
+	config.plugins.serienRec.deleteBackupFilesOlderThan.save()
+
+	###############################################################################################################################
+	# TIMER-SUCHLAUF
+	###############################################################################################################################
+	config.plugins.serienRec.autochecktype.save()
+	config.plugins.serienRec.deltime.save()
+	config.plugins.serienRec.maxDelayForAutocheck.save()
+	config.plugins.serienRec.checkfordays.save()
+	config.plugins.serienRec.globalFromTime.save()
+	config.plugins.serienRec.globalToTime.save()
+	config.plugins.serienRec.eventid.save()
+	config.plugins.serienRec.epgTimeSpan.save()
+	config.plugins.serienRec.forceRecording.save()
+	config.plugins.serienRec.TimeSpanForRegularTimer.save()
+	config.plugins.serienRec.NoOfRecords.save()
+	config.plugins.serienRec.selectNoOfTuners.save()
+	config.plugins.serienRec.tuner.save()
+	config.plugins.serienRec.wakeUpDSB.save()
+	config.plugins.serienRec.afterAutocheck.save()
+	config.plugins.serienRec.DSBTimeout.save()
+
+	###############################################################################################################################
+	# E-MAIL
+	###############################################################################################################################
+	config.plugins.serienRec.tvplaner.save()
+	config.plugins.serienRec.imap_server.save()
+	config.plugins.serienRec.imap_server_ssl.save()
+	config.plugins.serienRec.imap_server_port.save()
+	if config.plugins.serienRec.imap_login.value != "*":
+		config.plugins.serienRec.imap_login_hidden.value = encrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login.value)
+		config.plugins.serienRec.imap_login.value = "*"
+	config.plugins.serienRec.imap_login.save()
+	config.plugins.serienRec.imap_login_hidden.save()
+	if config.plugins.serienRec.imap_password.value != "*":
+		config.plugins.serienRec.imap_password_hidden.value = encrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_password.value)
+		config.plugins.serienRec.imap_password.value = "*"
+	config.plugins.serienRec.imap_password.save()
+	config.plugins.serienRec.imap_password_hidden.save()
+	config.plugins.serienRec.imap_mailbox.save()
+	config.plugins.serienRec.imap_mail_subject.save()
+	config.plugins.serienRec.imap_mail_age.save()
+	config.plugins.serienRec.tvplaner_full_check.save()
+	config.plugins.serienRec.tvplaner_skipSerienServer.save()
+	config.plugins.serienRec.tvplaner_series.save()
+	config.plugins.serienRec.tvplaner_series_activeSTB.save()
+	config.plugins.serienRec.tvplaner_movies.save()
+	config.plugins.serienRec.tvplaner_movies_activeSTB.save()
+	config.plugins.serienRec.tvplaner_movies_filepath.save()
+	config.plugins.serienRec.tvplaner_movies_createsubdir.save()
+
+	###############################################################################################################################
+	# TIMER
+	###############################################################################################################################
+	config.plugins.serienRec.afterEvent.save()
+	config.plugins.serienRec.margin_before.save()
+	config.plugins.serienRec.margin_after.save()
+	config.plugins.serienRec.TimerName.save()
+	config.plugins.serienRec.TimerDescription.save()
+	config.plugins.serienRec.forceManualRecording.save()
+	config.plugins.serienRec.splitEventTimer.save()
+	config.plugins.serienRec.splitEventTimerCompareTitle.save()
+	config.plugins.serienRec.addSingleTimersForEvent.save()
+	config.plugins.serienRec.selectBouquets.save()
+	config.plugins.serienRec.MainBouquet.save()
+	config.plugins.serienRec.AlternativeBouquet.save()
+	config.plugins.serienRec.useAlternativeChannel.save()
+	config.plugins.serienRec.preferMainBouquet.save()
+
+	###############################################################################################################################
+	# OPTIMIERUNGEN
+	###############################################################################################################################
+	config.plugins.serienRec.intensiveTimersuche.save()
+	config.plugins.serienRec.sucheAufnahme.save()
+
+	###############################################################################################################################
+	# BENUTZEROBERFLÄCHE
+	###############################################################################################################################
+	config.plugins.serienRec.SkinType.save()
+	config.plugins.serienRec.showAllButtons.save()
+	config.plugins.serienRec.DisplayRefreshRate.save()
+	config.plugins.serienRec.firstscreen.save()
+	config.plugins.serienRec.showPicons.save()
+	config.plugins.serienRec.piconPath.save()
+	config.plugins.serienRec.downloadCover.save()
+	config.plugins.serienRec.coverPath.save()
+	config.plugins.serienRec.showCover.save()
+	config.plugins.serienRec.createPlaceholderCover.save()
+	config.plugins.serienRec.refreshPlaceholderCover.save()
+	config.plugins.serienRec.copyCoverToFolder.save()
+	config.plugins.serienRec.listFontsize.save()
+	config.plugins.serienRec.markerColumnWidth.save()
+	config.plugins.serienRec.markerNameInset.save()
+	config.plugins.serienRec.seasonFilter.save()
+	config.plugins.serienRec.timerFilter.save()
+	config.plugins.serienRec.markerSort.save()
+	config.plugins.serienRec.max_season.save()
+	config.plugins.serienRec.openMarkerScreen.save()
+	config.plugins.serienRec.confirmOnDelete.save()
+	config.plugins.serienRec.alphaSortBoxChannels.save()
+	if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is False:
+		config.plugins.serienRec.enableWebinterface.value = False
+	config.plugins.serienRec.enableWebinterface.save()
+
+	###############################################################################################################################
+	# BENACHRICHTIGUNGEN
+	###############################################################################################################################
+	config.plugins.serienRec.showNotification.save()
+	config.plugins.serienRec.showMessageOnConflicts.save()
+	config.plugins.serienRec.showMessageOnTVPlanerError.save()
+	config.plugins.serienRec.showMessageOnEventNotFound.save()
+	config.plugins.serienRec.showMessageTimeout.save()
+	config.plugins.serienRec.channelUpdateNotification.save()
+
+	###############################################################################################################################
+	# LOGGING
+	###############################################################################################################################
+	config.plugins.serienRec.LogFilePath.save()
+	config.plugins.serienRec.longLogFileName.save()
+	config.plugins.serienRec.deleteLogFilesOlderThan.save()
+	config.plugins.serienRec.writeLog.save()
+	config.plugins.serienRec.writeLogVersion.save()
+	config.plugins.serienRec.writeLogChannels.save()
+	config.plugins.serienRec.writeLogAllowedEpisodes.save()
+	config.plugins.serienRec.writeLogAdded.save()
+	config.plugins.serienRec.writeLogDisk.save()
+	config.plugins.serienRec.writeLogTimeRange.save()
+	config.plugins.serienRec.writeLogTimeLimit.save()
+	config.plugins.serienRec.writeLogTimerDebug.save()
+	config.plugins.serienRec.tvplaner_backupHTML.save()
+	config.plugins.serienRec.logScrollLast.save()
+	config.plugins.serienRec.logWrapAround.save()
+
+	###############################################################################################################################
+	config.plugins.serienRec.timeUpdate.save()
+	config.plugins.serienRec.kindOfTimer.save()
+	# Save obsolete config setting here to remove it from file
+	config.plugins.serienRec.dbversion.save()
+	config.plugins.serienRec.bouquetList.save()
+	config.plugins.serienRec.deleteOlderThan.save()
+	config.plugins.serienRec.imap_check_interval.save()
+	config.plugins.serienRec.planerCacheEnabled.save()
+	config.plugins.serienRec.planerCacheSize.save()
+	config.plugins.serienRec.readdatafromfiles.save()
+	config.plugins.serienRec.refreshViews.save()
+	config.plugins.serienRec.setupType.save()
+	config.plugins.serienRec.tvplaner_create_marker.save()
+	config.plugins.serienRec.updateInterval.save()
+	config.plugins.serienRec.justplay.save()
+	config.plugins.serienRec.justremind.save()
+	config.plugins.serienRec.zapbeforerecord.save()
+
+	configfile.save()
+
+
+def resetSettings():
+	writeSettings = open("/etc/enigma2/settings_new", "w")
+	readSettings = open("/etc/enigma2/settings", "r")
+	for rawData in readSettings.readlines():
+		data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
+		if not data:
+			writeSettings.write(rawData)
+	writeSettings.close()
+	readSettings.close()
+	if fileExists("/etc/enigma2/settings_new"):
+		shutil.move("/etc/enigma2/settings_new", "/etc/enigma2/settings")
+	configfile.load()
+	ReadConfigFile()
+
 class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScreen):
 	def __init__(self, session, readConfig=False):
 		serienRecBaseScreen.__init__(self, session)
@@ -306,17 +532,17 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"	: (self.keyOK, "Fenster für Verzeichnisauswahl öffnen"),
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"red": (self.keyRed, "alle Einstellungen auf die Standardwerte zurücksetzen"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"red": (self.keyRed, "Alle Einstellungen auf die Standardwerte zurücksetzen"),
 			"green": (self.save, "Einstellungen speichern und zurück zur vorherigen Ansicht"),
 			"yellow": (self.keyYellow, "Einstellungen in Datei speichern"),
 			"blue": (self.keyBlue, "Einstellungen aus Datei laden"),
-			"up"    : (self.keyUp, "eine Zeile nach oben"),
-			"down"  : (self.keyDown, "eine Zeile nach unten"),
+			"up"    : (self.keyUp, "Eine Zeile nach oben"),
+			"down"  : (self.keyDown, "Eine Zeile nach unten"),
 			"startTeletext" : (self.showAbout, "Über dieses Plugin"),
 			"menu"	: (self.openChannelSetup, "Sender zuordnen"),
-			"nextBouquet":	(self.bouquetPlus, "zur vorherigen Seite blättern"),
-			"prevBouquet":	(self.bouquetMinus, "zur nächsten Seite blättern"),
+			"nextBouquet":	(self.bouquetPlus, "Zur vorherigen Seite blättern"),
+			"prevBouquet":	(self.bouquetMinus, "Zur nächsten Seite blättern"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -375,11 +601,11 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		                    [buttonText_na, buttonText_na, "Hilfe"],
 		                    [buttonText_na, buttonText_na, "Sender zuordnen"])
 
-		self['text_red'].setText("Defaultwerte")
+		self['text_red'].setText("Zurücksetzen")
 		self['text_green'].setText("Speichern")
 		self['text_ok'].setText("Ordner auswählen")
-		self['text_yellow'].setText("in Datei speichern")
-		self['text_blue'].setText("aus Datei laden")
+		self['text_yellow'].setText("In Datei speichern")
+		self['text_blue'].setText("Aus Datei laden")
 
 		super(self.__class__, self).startDisplayTimer()
 
@@ -438,28 +664,13 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self['bt_9'].hide()
 
 	def keyRed(self):
-		self.session.openWithCallback(self.resetSettings, MessageBox, "Wollen Sie die Einstellungen wirklich zurücksetzen?", MessageBox.TYPE_YESNO, default = False)
+		self.session.openWithCallback(self.shouldResetSettings, MessageBox, "Sollen die Einstellungen wirklich zurückgesetzt werden?", MessageBox.TYPE_YESNO, default = False)
 
-	def resetSettings(self, answer=False):
+	def shouldResetSettings(self, answer=False):
 		if answer:
-			writeSettings = open("/etc/enigma2/settings_new", "w")
-			readSettings = open("/etc/enigma2/settings", "r")
-			for rawData in readSettings.readlines():
-				data = re.findall('\Aconfig.plugins.serienRec.(.*?)=(.*?)\Z', rawData.rstrip(), re.S)
-				if not data:
-					writeSettings.write(rawData)
-			writeSettings.close()
-			readSettings.close()
-
-			if fileExists("/etc/enigma2/settings_new"):
-				shutil.move("/etc/enigma2/settings_new", "/etc/enigma2/settings")
-
-			configfile.load()
-			ReadConfigFile()
+			resetSettings()
 			self.changedEntry()
 			self.setupModified = True
-
-	# self.save()
 
 	def keyYellow(self):
 		config.plugins.serienRec.save()
@@ -658,7 +869,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		addSection("SYSTEM", True)
 		self.list.append(getConfigListEntry("ID der Box:", config.plugins.serienRec.BoxID))
 		self.list.append(getConfigListEntry("Neue Serien-Marker nur auf dieser Box aktivieren:", config.plugins.serienRec.activateNewOnThisSTBOnly))
-		self.list.append(getConfigListEntry("Speicherort der Serienaufnahmen:", config.plugins.serienRec.savetopath))
+		self.list.append(getConfigListEntry("Verzeichnis der Serienaufnahmen:", config.plugins.serienRec.savetopath))
 		self.list.append(getConfigListEntry("Serien-Verzeichnis anlegen:", config.plugins.serienRec.seriensubdir))
 		if config.plugins.serienRec.seriensubdir.value:
 			self.list.append(getConfigListEntry("Verzeichnisname mit Produktionsjahr:", config.plugins.serienRec.seriensubdirwithyear))
@@ -667,11 +878,11 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				self.list.append(getConfigListEntry("    Mindestlänge der Staffelnummer im Verzeichnisnamen:", config.plugins.serienRec.seasonsubdirnumerlength))
 				self.list.append(getConfigListEntry("    Füllzeichen für Staffelnummer im Verzeichnisnamen:", config.plugins.serienRec.seasonsubdirfillchar))
 		self.list.append(getConfigListEntry("Automatisches Plugin-Update:", config.plugins.serienRec.Autoupdate))
-		self.list.append(getConfigListEntry("Speicherort der Datenbank:", config.plugins.serienRec.databasePath))
+		self.list.append(getConfigListEntry("Verzeichnis der Datenbank:", config.plugins.serienRec.databasePath))
 		self.list.append(getConfigListEntry("Erstelle Backup:", config.plugins.serienRec.AutoBackup))
 		if config.plugins.serienRec.AutoBackup.value != "0":
 			self.list.append(getConfigListEntry("    Backup bei manuellem Timer-Suchlauf:", config.plugins.serienRec.backupAtManualCheck))
-			self.list.append(getConfigListEntry("    Speicherort der Backups:", config.plugins.serienRec.BackupPath))
+			self.list.append(getConfigListEntry("    Verzeichnis für Backups:", config.plugins.serienRec.BackupPath))
 			self.list.append(getConfigListEntry("    Backup-Dateien löschen die älter als x Tage sind:", config.plugins.serienRec.deleteBackupFilesOlderThan))
 
 		###############################################################################################################################
@@ -679,7 +890,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Automatischen Timer-Suchlauf ausführen:", config.plugins.serienRec.autochecktype))
 		if config.plugins.serienRec.autochecktype.value == "1":
 			self.list.append(getConfigListEntry("    Uhrzeit für automatischen Timer-Suchlauf:", config.plugins.serienRec.deltime))
-			self.list.append(getConfigListEntry("    Maximale Verzögerung für automatischen Timer-Suchlauf (Min.):", config.plugins.serienRec.maxDelayForAutocheck))
+			self.list.append(getConfigListEntry("    Maximale Verzögerung für automatischen Timer-Suchlauf (in Min.):", config.plugins.serienRec.maxDelayForAutocheck))
 		self.list.append(getConfigListEntry("Timer für x Tage erstellen:", config.plugins.serienRec.checkfordays))
 		self.checkfordays = config.plugins.serienRec.checkfordays.value
 		self.list.append(getConfigListEntry("Früheste Zeit für Timer:", config.plugins.serienRec.globalFromTime))
@@ -723,7 +934,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("    Timer für Filme anlegen:", config.plugins.serienRec.tvplaner_movies))
 			if config.plugins.serienRec.tvplaner_movies.value:
 				self.list.append(getConfigListEntry("        Neue TV-Planer Filme nur auf dieser Box aktivieren:", config.plugins.serienRec.tvplaner_movies_activeSTB))
-				self.list.append(getConfigListEntry("        Speicherort für Filme:", config.plugins.serienRec.tvplaner_movies_filepath))
+				self.list.append(getConfigListEntry("        Verzeichnis für Filme:", config.plugins.serienRec.tvplaner_movies_filepath))
 				self.list.append(getConfigListEntry("        Unterverzeichnis für jeden Film:", config.plugins.serienRec.tvplaner_movies_createsubdir))
 
 		###############################################################################################################################
@@ -767,7 +978,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 		###############################################################################################################################
 		addSection("BENUTZEROBERFLÄCHE")
-		self.list.append(getConfigListEntry("Skin:", config.plugins.serienRec.SkinType))
+		self.list.append(getConfigListEntry("SerienRecorder Skin:", config.plugins.serienRec.SkinType))
 
 		if config.plugins.serienRec.SkinType.value not in ("", "Skin1 FHD", "Skin2 FHD", "Skin2", "AtileHD", "StyleFHD", "Black Box"):
 			self.list.append(getConfigListEntry("    Werden bei diesem Skin immer ALLE Tasten angezeigt:", config.plugins.serienRec.showAllButtons))
@@ -776,15 +987,15 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		else:
 			config.plugins.serienRec.showAllButtons.value = True
 		if not config.plugins.serienRec.showAllButtons.value:
-			self.list.append(getConfigListEntry("    Wechselzeit der Tastenanzeige (Sek.):", config.plugins.serienRec.DisplayRefreshRate))
-		self.list.append(getConfigListEntry("Starte Plugin mit:", config.plugins.serienRec.firstscreen))
-		self.list.append(getConfigListEntry("Zeige Picons:", config.plugins.serienRec.showPicons))
+			self.list.append(getConfigListEntry("    Wechselzeit der Tastenanzeige (in Sek.):", config.plugins.serienRec.DisplayRefreshRate))
+		self.list.append(getConfigListEntry("SerienRecorder Start-Ansicht:", config.plugins.serienRec.firstscreen))
+		self.list.append(getConfigListEntry("Picons anzeigen:", config.plugins.serienRec.showPicons))
 		if config.plugins.serienRec.showPicons.value != "0":
 			self.list.append(getConfigListEntry("    Verzeichnis mit Picons:", config.plugins.serienRec.piconPath))
 		self.list.append(getConfigListEntry("Cover herunterladen:", config.plugins.serienRec.downloadCover))
 		if config.plugins.serienRec.downloadCover.value:
-			self.list.append(getConfigListEntry("    Speicherort der Cover:", config.plugins.serienRec.coverPath))
-			self.list.append(getConfigListEntry("    Zeige Cover:", config.plugins.serienRec.showCover))
+			self.list.append(getConfigListEntry("    Verzeichnis für Cover:", config.plugins.serienRec.coverPath))
+			self.list.append(getConfigListEntry("    Cover anzeigen:", config.plugins.serienRec.showCover))
 			self.list.append(getConfigListEntry("    Platzhalter anlegen wenn Cover nicht vorhanden:", config.plugins.serienRec.createPlaceholderCover))
 			if config.plugins.serienRec.createPlaceholderCover.value:
 				self.list.append(getConfigListEntry("        Platzhalter regelmäßig aktualisieren:", config.plugins.serienRec.refreshPlaceholderCover))
@@ -814,7 +1025,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 		###############################################################################################################################
 		addSection("LOGGING")
-		self.list.append(getConfigListEntry("Speicherort für Log-Datei:", config.plugins.serienRec.LogFilePath))
+		self.list.append(getConfigListEntry("Verzeichnis für Log-Datei:", config.plugins.serienRec.LogFilePath))
 		self.list.append(getConfigListEntry("Log-Dateiname mit Datum/Uhrzeit:", config.plugins.serienRec.longLogFileName))
 		if config.plugins.serienRec.longLogFileName.value:
 			self.list.append(getConfigListEntry("    Log-Dateien löschen die älter als x Tage sind:", config.plugins.serienRec.deleteLogFilesOlderThan))
@@ -829,8 +1040,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("DEBUG LOG - Timer Debugging:", config.plugins.serienRec.writeLogTimerDebug))
 		if config.plugins.serienRec.tvplaner.value:
 			self.list.append(getConfigListEntry("Backup von TV-Planer E-Mail erstellen:", config.plugins.serienRec.tvplaner_backupHTML))
-		self.list.append(getConfigListEntry("DEBUG LOG - Ans Ende springen:", config.plugins.serienRec.logScrollLast))
-		self.list.append(getConfigListEntry("DEBUG LOG - Anzeige mit Zeilenumbruch:", config.plugins.serienRec.logWrapAround))
+		self.list.append(getConfigListEntry("Ans Ende des Logs springen:", config.plugins.serienRec.logScrollLast))
+		self.list.append(getConfigListEntry("Log-Anzeige mit Zeilenumbruch:", config.plugins.serienRec.logWrapAround))
 
 	def changedEntry(self, dummy=False):
 		self.createConfigList()
@@ -917,8 +1128,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			else:
 				return "%d Sekunden" % config.plugins.serienRec.showMessageTimeout.value
 
-		from .SerienRecorderLogWriter import SERIENRECORDER_LONG_LOGFILENAME
 		lt = time.localtime()
+
+		from .SerienRecorderLogWriter import SERIENRECORDER_LONG_LOGFILENAME
 		self.HilfeTexte = {
 			###############################################################################################################################
 			# SYSTEM
@@ -1058,26 +1270,26 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.tvplaner_movies_filepath: (
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Aufnahmen von Filmen gespeichert werden."),
 			config.plugins.serienRec.tvplaner_movies_createsubdir: (
-				"Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis für die Aufnahmen erstellt. Bei 'nein' wird kein Filmordner angelegt."),
+				"Bei 'ja' wird für jeden Film ein eigenes Unterverzeichnis für die Aufnahmen erstellt."),
 
 			###############################################################################################################################
 			# TIMER
 			###############################################################################################################################
-			config.plugins.serienRec.kindOfTimer: ("Es kann ausgewählt werden, wie Timer angelegt werden. Die Auswahlmöglichkeiten sind:\n"
-			                   "  - 'aufnehmen': Ein 'normaler' Timer wird erstellt\n"
-			                   "  - 'umschalten': Es wird ein Timer erstellt, bei dem nur auf den aufzunehmenden Sender umgeschaltet wird. Es erfolgt KEINE Aufnahme\n"
-			                   "  - 'umschalten und aufnehmen': Es wird ein Timer erstellt, bei dem vor der Aufnahme auf den aufzunehmenden Sender umgeschaltet wird\n"
+			config.plugins.serienRec.kindOfTimer: ("Es kann ausgewählt werden, welche Art von Timer angelegt werden sollen:\n"
+			                   "  - 'Umschalten': Es wird ein Timer erstellt, bei dem nur auf den aufzunehmenden Sender umgeschaltet wird. Es erfolgt KEINE Aufnahme\n"
+			                   "  - 'Aufnehmen': Ein 'normaler' Timer wird erstellt (Standardwert)\n"
+			                   "  - 'Umschalten und aufnehmen': Es wird ein Timer erstellt, bei dem vor der Aufnahme auf den aufzunehmenden Sender umgeschaltet wird\n"
 			                   "  - 'Erinnerung': Es wird ein Timer erstellt, bei dem lediglich eine Erinnerungs-Nachricht auf dem Bildschirm eingeblendet wird. Es wird weder umgeschaltet, noch erfolgt eine Aufnahme"),
 			config.plugins.serienRec.afterEvent: (
-				"Es kann ausgewählt werden, was nach dem Event passieren soll. Die Auswahlmöglichkeiten sind:\n"
-				"  - 'nichts': Die Box bleibt im aktuellen Zustand.\n"
-				"  - 'in Standby gehen': Die Box geht in den Standby\n"
-				"  - 'in Deep-Standby gehen': Die Box geht in den Deep-Standby\n"
-				"  - 'automatisch': Die Box entscheidet automatisch (Standardwert)"),
+				"Es kann ausgewählt werden, was nach dem Event passieren soll:\n"
+				"  - 'Nichts': Die Box bleibt im aktuellen Zustand\n"
+				"  - 'In Standby gehen': Die Box geht in den Standby\n"
+				"  - 'In Deep-Standby gehen': Die Box geht in den Deep-Standby\n"
+				"  - 'Automatisch': Die Box entscheidet automatisch (Standardwert)"),
 			config.plugins.serienRec.margin_before: ("Die Vorlaufzeit für Aufnahmen in Minuten.\n"
 			                                         "Die Aufnahme startet um die hier eingestellte Anzahl von Minuten vor dem tatsächlichen Beginn der Sendung"),
 			config.plugins.serienRec.margin_after: ("Die Nachlaufzeit für Aufnahmen in Minuten.\n"
-			                                        "Die Aufnahme endet um die hier eingestellte Anzahl von Minuten noch dem tatsächlichen Ende der Sendung"),
+			                                        "Die Aufnahme endet um die hier eingestellte Anzahl von Minuten nach dem tatsächlichen Ende der Sendung"),
 			config.plugins.serienRec.TimerName: (
 				"Es kann ausgewählt werden, wie der Timername gebildet werden soll, dieser Name bestimmt auch den Namen der Aufnahme.\n"
 				"Falls das Plugin 'SerienFilm' verwendet wird, sollte man die Einstellung '<Serienname>' wählen, damit die Episoden korrekt in virtuellen Ordnern zusammengefasst werden."
@@ -1088,7 +1300,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'nein' erfolgt beim manuellen Anlegen von Timern in 'Sendetermine' eine Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen erreicht wurde. "
 				"In diesem Fall wird der Timer NICHT angelegt, und es erfolgt ein entsprechender Eintrag im log.\n"
 				"Bei 'ja' wird beim manuellen Anlegen von Timern in 'Sendetermine' die Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen vorhanden sind, "
-				"ausgeschaltet. D.h. der Timer wird auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht."),
+				"ausgeschaltet. Der Timer wird also auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht."),
 			config.plugins.serienRec.splitEventTimer: (
 				"Bei 'nein' werden Event-Programmierungen (S01E01/1x02/1x03) als eigenständige Sendungen behandelt. "
 				"Ansonsten wird versucht die einzelnen Episoden eines Events erkennen.\n\n"
@@ -1130,7 +1342,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			# BENUTZEROBERFLÄCHE
 			###############################################################################################################################
 			config.plugins.serienRec.SkinType: (
-				"Hier kann das Erscheinungsbild des SR ausgewählt werden."),
+				"Hier kann das Erscheinungsbild des SerienRecorders ausgewählt werden."),
 			config.plugins.serienRec.showAllButtons: (
 				"Hier kann für eigene Skins angegeben werden, ob immer ALLE Options-Tasten angezeigt werden, oder ob die Anzeige wechselt."),
 			config.plugins.serienRec.DisplayRefreshRate: (
@@ -1138,9 +1350,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.firstscreen: (
 				"Beim Start des SerienRecorder startet das Plugin mit dem ausgewählten Screen."),
 			config.plugins.serienRec.showPicons: (
-				"Gibt an ob und wie Sender-Logos z.B. in der Serien-Planer Ansichten angezeigt werden sollen."),
+				"Gibt an ob und wie Sender-Logos z.B. in der Timer-Liste angezeigt werden sollen."),
 			config.plugins.serienRec.piconPath: (
-				"Wählen Sie das Verzeichnis aus dem die Sender-Logos geladen werden sollen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."),
+				"Das Verzeichnis auswählen und/oder erstellen, aus dem die Sender-Logos geladen werden sollen. Der SerienRecorder muss neu gestartet werden damit die Änderung wirksam wird."),
 			config.plugins.serienRec.downloadCover: ("Bei 'nein' werden keine Cover heruntergeladen.\n"
 			                                         "Bei 'ja' werden Cover heruntergeladen."),
 			config.plugins.serienRec.coverPath: (
@@ -1154,7 +1366,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'nein' wird das entsprechende Cover nicht in den Serien- und Staffelordner kopiert. Die anderen Optionen bestimmen den Namen der Datei im Staffelordner.\n"
 				"Im Serienordner werden immer Cover mit dem Namen 'folder.jpg' angelegt. Für den Staffelordner kann der Name ausgewählt werden, da einige Movielist Plugins das Cover unter einem anderen Namen suchen."),
 			config.plugins.serienRec.listFontsize: (
-				"Damit kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. Der SerienRecorder muß neu gestartet werden damit die Änderung wirksam wird."),
+				"Mit dieser Einstellung kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. Der SerienRecorder muss neu gestartet werden damit die Änderung wirksam wird."),
 			config.plugins.serienRec.markerColumnWidth: (
 				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von der Standardbreite kann die Spalte schmaler bzw. breiter gemacht machen."),
 			config.plugins.serienRec.markerNameInset: (
@@ -1230,7 +1442,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.writeLogTimeRange: (
 					"Bei 'ja' erfolgen Einträge in die Log-Datei, wenn die zu timende Folge nicht in der erlaubten Zeitspanne (%s:%s - %s:%s) liegt, "
 					"sowie wenn gemäß der Einstellung 'Immer Timer anlegen, wenn keine Wiederholung gefunden wird' = 'ja' "
-					"ein Timer ausserhalb der erlaubten Zeitspanne angelegt wird." % (
+					"ein Timer außerhalb der erlaubten Zeitspanne angelegt wird." % (
 						str(config.plugins.serienRec.globalFromTime.value[0]).zfill(2),
 						str(config.plugins.serienRec.globalFromTime.value[1]).zfill(2),
 						str(config.plugins.serienRec.globalToTime.value[0]).zfill(2),
@@ -1248,7 +1460,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' wird beim Anzeigen der Log-Datei ans Ende gesprungen, bei 'nein' auf den Anfang."),
 			config.plugins.serienRec.logWrapAround: (
 				"Bei 'ja' erfolgt die Anzeige der Log-Datei mit Zeilenumbruch, d.h. es werden drei Zeilen pro Eintrag angezeigt.\n"
-				"Bei 'nein' erfolgt die Anzeige der Log-Datei mit einer Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichbar!)"),
+				"Bei 'nein' erfolgt die Anzeige der Log-Datei mit einer Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichtbar!)"),
 		}
 
 		try:
@@ -1259,219 +1471,12 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self["config_information_text"].setText(text)
 
 	def save(self):
-		if config.plugins.serienRec.autochecktype.value == "0":
-			config.plugins.serienRec.timeUpdate.value = False
-		else:
-			config.plugins.serienRec.timeUpdate.value = True
+		saveSettings()
 
-		if not config.plugins.serienRec.selectBouquets.value:
-			config.plugins.serienRec.MainBouquet.value = None
-			config.plugins.serienRec.AlternativeBouquet.value = None
-			config.plugins.serienRec.useAlternativeChannel.value = False
-
-		if not config.plugins.serienRec.seriensubdir.value:
-			config.plugins.serienRec.seasonsubdir.value = False
-
-		if config.plugins.serienRec.autochecktype.value != "1":
-			config.plugins.serienRec.wakeUpDSB.value = False
-
-		if not config.plugins.serienRec.downloadCover.value:
-			config.plugins.serienRec.showCover.value = False
-
-		if config.plugins.serienRec.TimerName.value == "1":
-			config.plugins.serienRec.sucheAufnahme.value = False
-
-		if int(config.plugins.serienRec.checkfordays.value) > int(
-				config.plugins.serienRec.TimeSpanForRegularTimer.value):
-			config.plugins.serienRec.TimeSpanForRegularTimer.value = int(config.plugins.serienRec.checkfordays.value)
-
-		if config.plugins.serienRec.preferMainBouquet.value:
-			config.plugins.serienRec.sucheAufnahme.value = False
-
-		config.plugins.serienRec.savetopath.value = os.path.join(str(config.plugins.serienRec.savetopath.value), '')
-		config.plugins.serienRec.tvplaner_movies_filepath.value = os.path.join(str(config.plugins.serienRec.tvplaner_movies_filepath.value), '')
-		config.plugins.serienRec.LogFilePath.value = os.path.join(str(config.plugins.serienRec.LogFilePath.value), '')
-		config.plugins.serienRec.BackupPath.value = os.path.join(str(config.plugins.serienRec.BackupPath.value), '')
-		config.plugins.serienRec.databasePath.value = os.path.join(str(config.plugins.serienRec.databasePath.value), '')
-		config.plugins.serienRec.coverPath.value = os.path.join(str(config.plugins.serienRec.coverPath.value), '')
-		config.plugins.serienRec.piconPath.value = os.path.join(str(config.plugins.serienRec.piconPath.value), '')
-
-
-		###############################################################################################################################
-		# SYSTEM
-		###############################################################################################################################
-		config.plugins.serienRec.BoxID.save()
-		config.plugins.serienRec.activateNewOnThisSTBOnly.save()
-		config.plugins.serienRec.savetopath.save()
-		config.plugins.serienRec.seriensubdir.save()
-		config.plugins.serienRec.seriensubdirwithyear.save()
-		config.plugins.serienRec.seasonsubdir.save()
-		config.plugins.serienRec.seasonsubdirnumerlength.save()
-		config.plugins.serienRec.seasonsubdirfillchar.save()
-		config.plugins.serienRec.Autoupdate.save()
-		config.plugins.serienRec.databasePath.save()
-		config.plugins.serienRec.AutoBackup.save()
-		config.plugins.serienRec.backupAtManualCheck.save()
-		config.plugins.serienRec.BackupPath.save()
-		config.plugins.serienRec.deleteBackupFilesOlderThan.save()
-
-		###############################################################################################################################
-		# TIMER-SUCHLAUF
-		###############################################################################################################################
-		config.plugins.serienRec.autochecktype.save()
-		config.plugins.serienRec.deltime.save()
-		config.plugins.serienRec.maxDelayForAutocheck.save()
-		config.plugins.serienRec.checkfordays.save()
-		config.plugins.serienRec.globalFromTime.save()
-		config.plugins.serienRec.globalToTime.save()
-		config.plugins.serienRec.eventid.save()
-		config.plugins.serienRec.epgTimeSpan.save()
-		config.plugins.serienRec.forceRecording.save()
-		config.plugins.serienRec.TimeSpanForRegularTimer.save()
-		config.plugins.serienRec.NoOfRecords.save()
-		config.plugins.serienRec.selectNoOfTuners.save()
-		config.plugins.serienRec.tuner.save()
-		config.plugins.serienRec.wakeUpDSB.save()
-		config.plugins.serienRec.afterAutocheck.save()
-		config.plugins.serienRec.DSBTimeout.save()
-
-		###############################################################################################################################
-		# E-MAIL
-		###############################################################################################################################
-		config.plugins.serienRec.tvplaner.save()
-		config.plugins.serienRec.imap_server.save()
-		config.plugins.serienRec.imap_server_ssl.save()
-		config.plugins.serienRec.imap_server_port.save()
-		if config.plugins.serienRec.imap_login.value != "*":
-			config.plugins.serienRec.imap_login_hidden.value = encrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_login.value)
-			config.plugins.serienRec.imap_login.value = "*"
-		config.plugins.serienRec.imap_login.save()
-		config.plugins.serienRec.imap_login_hidden.save()
-		if config.plugins.serienRec.imap_password.value != "*":
-			config.plugins.serienRec.imap_password_hidden.value = encrypt(STBHelpers.getmac("eth0"), config.plugins.serienRec.imap_password.value)
-			config.plugins.serienRec.imap_password.value = "*"
-		config.plugins.serienRec.imap_password.save()
-		config.plugins.serienRec.imap_password_hidden.save()
-		config.plugins.serienRec.imap_mailbox.save()
-		config.plugins.serienRec.imap_mail_subject.save()
-		config.plugins.serienRec.imap_mail_age.save()
-		config.plugins.serienRec.tvplaner_full_check.save()
 		if config.plugins.serienRec.tvplaner_full_check.value and (self.tvplaner_full_check != config.plugins.serienRec.tvplaner_full_check.value or self.checkfordays != config.plugins.serienRec.checkfordays.value):
 			print("[SerienRecorder] TV-Planer last full check reseted")
 			config.plugins.serienRec.tvplaner_last_full_check.value = int(0)
 			config.plugins.serienRec.tvplaner_last_full_check.save()
-		config.plugins.serienRec.tvplaner_skipSerienServer.save()
-		config.plugins.serienRec.tvplaner_series.save()
-		config.plugins.serienRec.tvplaner_series_activeSTB.save()
-		config.plugins.serienRec.tvplaner_movies.save()
-		config.plugins.serienRec.tvplaner_movies_activeSTB.save()
-		config.plugins.serienRec.tvplaner_movies_filepath.save()
-		config.plugins.serienRec.tvplaner_movies_createsubdir.save()
-
-		###############################################################################################################################
-		# TIMER
-		###############################################################################################################################
-		config.plugins.serienRec.afterEvent.save()
-		config.plugins.serienRec.margin_before.save()
-		config.plugins.serienRec.margin_after.save()
-		config.plugins.serienRec.TimerName.save()
-		config.plugins.serienRec.TimerDescription.save()
-		config.plugins.serienRec.forceManualRecording.save()
-		config.plugins.serienRec.splitEventTimer.save()
-		config.plugins.serienRec.splitEventTimerCompareTitle.save()
-		config.plugins.serienRec.addSingleTimersForEvent.save()
-		config.plugins.serienRec.selectBouquets.save()
-		config.plugins.serienRec.MainBouquet.save()
-		config.plugins.serienRec.AlternativeBouquet.save()
-		config.plugins.serienRec.useAlternativeChannel.save()
-		config.plugins.serienRec.preferMainBouquet.save()
-
-		###############################################################################################################################
-		# OPTIMIERUNGEN
-		###############################################################################################################################
-		config.plugins.serienRec.intensiveTimersuche.save()
-		config.plugins.serienRec.sucheAufnahme.save()
-
-		###############################################################################################################################
-		# BENUTZEROBERFLÄCHE
-		###############################################################################################################################
-		config.plugins.serienRec.SkinType.save()
-		config.plugins.serienRec.showAllButtons.save()
-		config.plugins.serienRec.DisplayRefreshRate.save()
-		config.plugins.serienRec.firstscreen.save()
-		config.plugins.serienRec.showPicons.save()
-		config.plugins.serienRec.piconPath.save()
-		config.plugins.serienRec.downloadCover.save()
-		config.plugins.serienRec.coverPath.save()
-		config.plugins.serienRec.showCover.save()
-		config.plugins.serienRec.createPlaceholderCover.save()
-		config.plugins.serienRec.refreshPlaceholderCover.save()
-		config.plugins.serienRec.copyCoverToFolder.save()
-		config.plugins.serienRec.listFontsize.save()
-		config.plugins.serienRec.markerColumnWidth.save()
-		config.plugins.serienRec.markerNameInset.save()
-		config.plugins.serienRec.seasonFilter.save()
-		config.plugins.serienRec.timerFilter.save()
-		config.plugins.serienRec.markerSort.save()
-		config.plugins.serienRec.max_season.save()
-		config.plugins.serienRec.openMarkerScreen.save()
-		config.plugins.serienRec.confirmOnDelete.save()
-		config.plugins.serienRec.alphaSortBoxChannels.save()
-		if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is False:
-			config.plugins.serienRec.enableWebinterface.value = False
-		config.plugins.serienRec.enableWebinterface.save()
-
-		###############################################################################################################################
-		# BENACHRICHTIGUNGEN
-		###############################################################################################################################
-		config.plugins.serienRec.showNotification.save()
-		config.plugins.serienRec.showMessageOnConflicts.save()
-		config.plugins.serienRec.showMessageOnTVPlanerError.save()
-		config.plugins.serienRec.showMessageOnEventNotFound.save()
-		config.plugins.serienRec.showMessageTimeout.save()
-		config.plugins.serienRec.channelUpdateNotification.save()
-
-		###############################################################################################################################
-		# LOGGING
-		###############################################################################################################################
-		config.plugins.serienRec.LogFilePath.save()
-		config.plugins.serienRec.longLogFileName.save()
-		config.plugins.serienRec.deleteLogFilesOlderThan.save()
-		config.plugins.serienRec.writeLog.save()
-		config.plugins.serienRec.writeLogVersion.save()
-		config.plugins.serienRec.writeLogChannels.save()
-		config.plugins.serienRec.writeLogAllowedEpisodes.save()
-		config.plugins.serienRec.writeLogAdded.save()
-		config.plugins.serienRec.writeLogDisk.save()
-		config.plugins.serienRec.writeLogTimeRange.save()
-		config.plugins.serienRec.writeLogTimeLimit.save()
-		config.plugins.serienRec.writeLogTimerDebug.save()
-		config.plugins.serienRec.tvplaner_backupHTML.save()
-		config.plugins.serienRec.logScrollLast.save()
-		config.plugins.serienRec.logWrapAround.save()
-
-		###############################################################################################################################
-
-		config.plugins.serienRec.timeUpdate.save()
-		config.plugins.serienRec.kindOfTimer.save()
-
-		# Save obsolete config setting here to remove it from file
-		config.plugins.serienRec.dbversion.save()
-		config.plugins.serienRec.bouquetList.save()
-		config.plugins.serienRec.deleteOlderThan.save()
-		config.plugins.serienRec.imap_check_interval.save()
-		config.plugins.serienRec.planerCacheEnabled.save()
-		config.plugins.serienRec.planerCacheSize.save()
-		config.plugins.serienRec.readdatafromfiles.save()
-		config.plugins.serienRec.refreshViews.save()
-		config.plugins.serienRec.setupType.save()
-		config.plugins.serienRec.tvplaner_create_marker.save()
-		config.plugins.serienRec.updateInterval.save()
-		config.plugins.serienRec.justplay.save()
-		config.plugins.serienRec.justremind.save()
-		config.plugins.serienRec.zapbeforerecord.save()
-
-		configfile.save()
 
 		if self.SkinType != config.plugins.serienRec.SkinType.value:
 			SelectSkin()

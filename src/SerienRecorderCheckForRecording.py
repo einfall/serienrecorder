@@ -7,7 +7,7 @@ import NavigationInstance
 
 from Components.config import config, configfile
 from Tools import Notifications
-from enigma import getDesktop, eTimer
+from enigma import getDesktop, eTimer, quitMainloop
 from Screens.MessageBox import MessageBox
 
 from .SerienRecorderHelpers import SRAPIVERSION, STBHelpers, TimeHelpers, isDreamOS, createBackup, getDirname, toStr, PY2
@@ -898,7 +898,8 @@ class serienRecCheckForRecording:
 					if Screens.Standby.inStandby:
 						# from RecordTimer import RecordTimerEntry
 						# RecordTimerEntry.TryQuitMainloop()
-						self.session.open(Screens.Standby.TryQuitMainloop, 1)
+						#self.session.open(Screens.Standby.TryQuitMainloop, 1)
+						quitMainloop(1)
 					else:
 						Notifications.AddNotificationWithID("Shutdown", Screens.Standby.TryQuitMainloop, 1)
 				else:

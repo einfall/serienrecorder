@@ -918,12 +918,16 @@ class serienRecTimer:
 				markerType = int(markerType)
 
 			(margin_before, margin_after) = self.database.getMargins(serien_fsid, webChannel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
-			db_serien_time = int(serien_time)+(int(margin_before) * 60)
-			transmission = self.tempDB.getTransmissionForTimerUpdate(serien_fsid, staffel, episode, db_serien_time)
+			epg_timespan = int(STBHelpers.getEPGTimeSpan() * 60)
+			# If the transmission starts before the start time set in the timer, the getTransmission query doesn't return this transmission
+			# so we use the configured EPG timespan to make sure the transmission is considered
+			db_serien_time = int(serien_time) + (int(margin_before) * 60) - epg_timespan
+			transmission = self.tempDB.getTransmissionForTimerUpdate(serien_fsid, staffel, episode, db_serien_time, webChannel)
 			if transmission:
 				(new_serien_name, serien_wlid, serien_fsid, new_staffel, new_episode, new_serien_title, new_serien_time, new_serien_endtime, updateFromEPG) = transmission
 				new_serien_time_str = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(new_serien_time)))
-				print("[SerienRecorder] Get transmission from database: %s [%s (%d)]" % (new_serien_title, new_serien_time_str, new_serien_time))
+				title = "%s - S%sE%s - %s" % (new_serien_name, str(new_staffel).zfill(2), str(new_episode).zfill(2), new_serien_title)
+				print("[SerienRecorder] Get transmission from database: %s [%s (%d)]" % (title, new_serien_time_str, new_serien_time))
 			else:
 				print("[SerienRecorder] No transmission found for timer - maybe removed at Wunschliste")
 				new_serien_name = serien_name
@@ -955,7 +959,8 @@ class serienRecTimer:
 				(no_events_found, event_matches) = STBHelpers.getEPGEvent(stbRef, new_serien_name, epgSeriesName, int(serien_time)+(int(margin_before) * 60))
 				new_event_matches = None
 				no_new_events_found = True
-				if serien_time != new_serien_time and new_serien_time != 0:
+				#if serien_time != new_serien_time and new_serien_time != 0:
+				if no_events_found and new_serien_time != 0:
 					print("[SerienRecorder] Transmission not found at [%s (%d)] => try another transmission [%s (%d)]" % (serien_time_str, serien_time, new_serien_time_str, new_serien_time))
 					(no_new_events_found, new_event_matches) = STBHelpers.getEPGEvent(stbRef, new_serien_name, epgSeriesName, int(new_serien_time)+(int(margin_before) * 60))
 

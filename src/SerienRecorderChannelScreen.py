@@ -263,7 +263,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 							self.channelDelete(True)
 
 					if not newWebChannels:
-						SRLogger.writeLog("Die SerienRecorder Senderliste ist aktuell, es wurden keine neuen Sender bei Wunschliste gefunden.")
+						SRLogger.writeLog("Es wurden keine neuen Sender bei Wunschliste gefunden.")
 						self.session.open(MessageBox, "Es wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
 						self.showChannels()
 					else:

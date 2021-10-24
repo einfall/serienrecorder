@@ -264,7 +264,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self.readSerienMarker()
 
 	def getCover(self):
-		if self.loading or self['menu_list'].getCurrent() is None:
+		if self.loading or self.modus == "popup_list" or self['menu_list'].getCurrent() is None:
 			return
 
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
