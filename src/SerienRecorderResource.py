@@ -1027,7 +1027,7 @@ class ApiSetSettingsResource(ApiBaseResource):
 
 		if 'autocheck' in data and data['autocheck']['changed']:
 			config.plugins.serienRec.autochecktype.value = data['autocheck']['type']
-			config.plugins.serienRec.deltime.value = data['autocheck']['type'].split(':')
+			config.plugins.serienRec.deltime.value = data['autocheck']['deltime'].split(':')
 			config.plugins.serienRec.maxDelayForAutocheck.value = data['autocheck']['maxDelayForAutoCheck']
 			config.plugins.serienRec.checkfordays.value = data['autocheck']['checkfordays']
 			config.plugins.serienRec.globalFromTime.value = data['autocheck']['globalFromTime'].split(':')

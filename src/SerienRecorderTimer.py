@@ -278,7 +278,7 @@ class serienRecTimer:
 						timer.dirname = dirname
 						updateDirectory = True
 
-					if updateEIT or updateStartTime or updateName or updateDescription or updateDirectory:
+					if updateEIT or updateStartTime or updateEndTime or updateName or updateDescription or updateDirectory:
 						if not updateFromEPGFailed:
 							SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
 						new_start = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(start_unixtime)))
