@@ -564,7 +564,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.showPicons.addNotifier(self.onChangeConfigSelection, initial_call=False)
 		config.plugins.serienRec.splitEventTimer.addNotifier(self.onChangeConfigSelection, initial_call=False)
 		config.plugins.serienRec.SkinType.addNotifier(self.onChangeConfigSelection, initial_call=False)
-		config.plugins.serienRec.enableWebinterface.addNotifier(self.onEnableWebinterface, initial_call=False)
+		config.plugins.serienRec.enableWebinterface.addNotifier(self.onChangeWebinterfaceSelection, initial_call=False)
 
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
@@ -733,12 +733,18 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if selection is not None:
 			self.changedEntry()
 
-	def onEnableWebinterface(self, selection):
-		if selection and selection.value:
-			# Webinterface enabled
-			if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is False:
-				# Webinterface not installed
-				self.session.openWithCallback(self.installWebinterfaceCallback, MessageBox, "Das SerienRecorder Webinterface ist noch nicht installiert, soll es heruntergeladen und installiert werden?", MessageBox.TYPE_YESNO, default=False)
+	def onChangeWebinterfaceSelection(self, selection):
+		if selection:
+			if selection.value:
+				# Webinterface enabled
+				if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is False:
+					# Webinterface not installed
+					self.session.openWithCallback(self.installWebinterfaceCallback, MessageBox, "Das SerienRecorder Webinterface ist noch nicht installiert, soll es heruntergeladen und installiert werden?", MessageBox.TYPE_YESNO, default=False)
+			else:
+				# Webinterface disabled
+				if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is True:
+					# Webinterface not installed
+					self.session.openWithCallback(self.removeWebinterfaceCallback, MessageBox, "Das SerienRecorder Webinterface ist noch installiert, soll es deinstalliert werden?", MessageBox.TYPE_YESNO, default=True)
 
 	def installWebinterfaceCallback(self, answer):
 		if answer:
@@ -765,6 +771,25 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				if os.path.isdir(targetFilePath):
 					os.rmdir(targetFilePath)
 				self.session.open(MessageBox, "Das SerienRecorder Webinterface konnte nicht installiert werden%s." % error, MessageBox.TYPE_INFO, timeout=5)
+
+	def removeWebinterfaceCallback(self, answer):
+		if answer:
+			successful = False
+			error = ''
+			targetFilePath = os.path.join(os.path.dirname(__file__), "web-data")
+
+			try:
+				if os.path.exists(targetFilePath):
+					import shutil
+					shutil.rmtree(targetFilePath)
+					if not os.path.exists(targetFilePath):
+						successful = True
+			except Exception as e:
+				print("[SerienRecorder] Failed to uninstall webinterface [%s]" % str(e))
+				error = ' [%s]' % str(e)
+
+			if successful:
+				self.session.open(MessageBox, "Das SerienRecorder Webinterface wurde erfolgreich deinstalliert.", MessageBox.TYPE_INFO, timeout=5)
 
 	def bouquetPlus(self):
 		if isDreamOS():
@@ -1363,7 +1388,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.refreshPlaceholderCover: (
 				"Bei 'ja' wird in regelmäßigen Abständen (alle 60 Tage) nach einem Cover für die Serie gesucht um die Platzhalter Datei zu ersetzen."),
 			config.plugins.serienRec.copyCoverToFolder: (
-				"Bei 'nein' wird das entsprechende Cover nicht in den Serien- und Staffelordner kopiert. Die anderen Optionen bestimmen den Namen der Datei im Staffelordner.\n"
+				"Bei 'Nein' wird das entsprechende Cover nicht in den Serien- und Staffelordner kopiert. Die anderen Optionen bestimmen den Namen der Datei im Staffelordner.\n"
 				"Im Serienordner werden immer Cover mit dem Namen 'folder.jpg' angelegt. Für den Staffelordner kann der Name ausgewählt werden, da einige Movielist Plugins das Cover unter einem anderen Namen suchen."),
 			config.plugins.serienRec.listFontsize: (
 				"Mit dieser Einstellung kann bei zu großer oder zu kleiner Schrift eine individuelle Anpassung erfolgen. Der SerienRecorder muss neu gestartet werden damit die Änderung wirksam wird."),

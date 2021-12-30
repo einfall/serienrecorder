@@ -623,15 +623,14 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList_popup(entry):
-		(Serie,Url,info,fsID) = entry
+		(serien_name, serien_wlid, serien_info, serien_fsid) = entry
 		foregroundColor = parseColor('foreground').argb()
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, Serie, foregroundColor),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, info, foregroundColor)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s (%s)" % (serien_name, serien_info), foregroundColor)
 		        ]
 
 	def answerStaffel(self, aStaffel):
-		self.aStaffel = aStaffel
+		self.aStaffel = aStaffel.strip()
 		if self.aStaffel is None or self.aStaffel == "":
 			return
 		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = "von Episode:")
@@ -770,8 +769,14 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		self.close()
 
 	def keyCancel(self):
-		if self.delAdded:
-			self.session.openWithCallback(self.callDeleteMsg, MessageBox, "Sollen die Änderungen gespeichert werden?", MessageBox.TYPE_YESNO, default = True)
-			self.close()
+		if self.modus == "popup_list":
+			self.modus = "menu_list"
+			self['menu_list'].show()
+			self['popup_list'].hide()
+			self['popup_bg'].hide()
 		else:
-			self.close()
+			if self.delAdded:
+				self.session.openWithCallback(self.callDeleteMsg, MessageBox, "Sollen die Änderungen gespeichert werden?", MessageBox.TYPE_YESNO, default = True)
+				self.close()
+			else:
+				self.close()

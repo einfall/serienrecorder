@@ -50,6 +50,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"startTeletext": (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"	: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
+			"2"	: (self.changeTVDBID, "TVDB-ID ändern"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
@@ -79,6 +80,8 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_red'].setText("Abbrechen")
 		self['text_ok'].setText("Marker hinzufügen")
 		self['text_blue'].setText("Suche wiederholen")
+
+		self.num_bt_text[2][0] = "TVDB-ID ändern"
 
 		super(self.__class__, self).startDisplayTimer()
 
@@ -116,13 +119,24 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def updateMenuKeys(self):
 		updateMenuKeys(self)
 
+	def getCurrentSelection(self):
+		serien_name = self['menu_list'].getCurrent()[0][0]
+		serien_info = self['menu_list'].getCurrent()[0][1]
+		serien_wlid = self['menu_list'].getCurrent()[0][2]
+		serien_fsid = self['menu_list'].getCurrent()[0][3]
+		return serien_name, serien_info, serien_wlid, serien_fsid
+
+	def changeTVDBID(self):
+		from .SerienRecorderScreenHelpers import EditTVDBID
+		(serien_name, serien_info, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_wlid, serien_fsid)
+		editTVDBID.changeTVDBID()
+
 	def serieInfo(self):
 		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		serien_name = self['menu_list'].getCurrent()[0][0]
-		serien_wlid = self['menu_list'].getCurrent()[0][2]
-		serien_fsid = self['menu_list'].getCurrent()[0][3]
+		(serien_name, serien_info, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		from .SerienRecorderSeriesInfoScreen import serienRecShowInfo
 		self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
@@ -197,10 +211,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		serien_name = self['menu_list'].getCurrent()[0][0]
-		serien_info = self['menu_list'].getCurrent()[0][1]
-		serien_wlid = self['menu_list'].getCurrent()[0][2]
-		serien_fsid = self['menu_list'].getCurrent()[0][3]
+		(serien_name, serien_info, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		#print(serien_name, serien_info, serien_wlid, serien_fsid)
 
 		if serien_wlid == "":
@@ -265,10 +276,8 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		serien_name = self['menu_list'].getCurrent()[0][0]
-		serien_id = self['menu_list'].getCurrent()[0][2]
-		serien_fsid = self['menu_list'].getCurrent()[0][3]
-		SerienRecorder.getCover(self, serien_name, serien_id, serien_fsid)
+		(serien_name, serien_info, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		SerienRecorder.getCover(self, serien_name, serien_wlid, serien_fsid)
 
 	def __onClose(self):
 		self.stopDisplayTimer()

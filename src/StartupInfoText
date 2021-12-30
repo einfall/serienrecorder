@@ -39,52 +39,34 @@ langer Tastendruck:
 Die Bedienungsanleitung wird im Webbrowser geöffnet.
 
 
-CHANGELOG 4.4.2
+CHANGELOG 4.4.7
 
 Diese Version bezieht die Daten mit freundlicher Genehmigung von Wunschliste.
 Cover, Episodenliste, Serien-/Episodeninformationen stammen von TheTVDB.
 
-Neue Funktionen:
-
-- Am Serien-Marker kann jetzt die Option "Immer Timer anlegen, wenn keine Wiederholung gefunden wird" überschrieben werden. (siehe Anmerkung 1)
-
 Änderungen:
 
-- Das uralte OpenWebIf aus dem VTI Feed wird wieder unterstützt (siehe Anmerkung 2)
-- Umstellung auf die neue TheTVDB API (v4) (siehe Anmerkungen 3)
-- Kleinere Textänderungen bei den Einstellungen
+- Einträge in der Timerliste, für die es keine Fernsehserie ID in der Datenbank gibt, können jetzt korrekt über die Taste 8 in der Timer-Liste bereinigt werden.
+- Optimierungen bei der Suche im EPG (es konnte passieren, dass mehrfach nach der gleichen Sendung gesucht wurde).
+- Cover wird in der Serien-Marker Ansicht nicht ständig neu geladen, wenn man z.B. durch das Staffelauswahl Popup navigiert.
+- Der Knopf Defaultwerte (rot) in den SerienRecorder Einstellungen wurde umbenannt in Zurücksetzen.
 
 Bugfixes:
 
-- Seltener Absturz in den Einstellungen behoben
-- Fehler beim Laden der Picons by name im SerienRecorder Webinterface behoben
+- Absturz beim Auswählen eines Covers in der Cover-Auswahl behoben
+- Seltener Absturz beim Installieren des SerienRecorder Webinterfaces über den Einstellungen Screen behoben
+- Absturz beim Timer-Suchlauf behoben, wenn das Produktionsjahr ein x beinhaltet z.B. D 19XX- (siehe Anmerkung 1)
+- Fehler beim Herunterfahren der Box nach dem Timer-Suchlauf korrigiert, wenn die Box im Standby war.
+- Fehler bei der Timeraktualisierung behoben, es konnte passieren, dass der Timer nicht korrekt aktualisiert wurde, wenn die neue Startzeit früher als die Startzeit im Timer war.
+- Fehler bei der Timeraktualisierung behoben, wenn sich nur die Endzeit geändert hat, wurde der Timer nicht aktualisiert.
+- Rechtschreibfehler und unschöne Formulierungen in der globalen Einstellungen Ansicht wurden korrigiert.
+
 
 Anmerkungen:
 
-1. Wenn man am Serien-Marker die Zeiten einschränkt in denen Timer für diese Serie angelegt werden, konnte es vorkommen, dass trotzdem Timer außerhalb dieser Zeiten erstellt wurden.
-Der Grund war die globale Option "Immer Timer anlegen, wenn keine Wiederholung gefunden wird" - wenn es für die Sendung also keine Wiederholung gefunden wurde,
-hat der SerienRecorder trotzdem einen Timer angelegt.
-Jetzt kann man die Option am Serien-Marker abschalten, sodass dann wirklich nur noch Timer, die innerhalb der eingestellten Zeitspanne ausgestrahlt werden, angelegt.
-
-2. Mit der letzten Releaseversion konnten Nutzer des uralten OpenWebIf vom VTI Feed das SerienRecorder Webinterface nicht mehr öffnen.
-Der Grund war ein zusätzlicher Parameter beim Initialisieren des SerienRecorder Webinterfaces.
-Dieser musste eingefügt werden, damit das SerienRecorder Webinterface über das Extras Menü in einem neuen Tab statt in einem neuen Fenster geöffnet wird.
-Leider ist das alte OWI nicht mit diesem Parameter kompatibel und wurde deswegen nicht initialisiert.
-Nachdem jetzt eine Änderung im OWI vorgenommen wurde (Version vom 19.05.2021) kann ich im SerienRecorder unterscheiden ob es sich um das alte oder neue OWI handelt
-und das SerienRecorder Webinterface entsprechend initialisieren.
-
-3. Im Oktober werden alle alten API Versionen der TheTVDB abgeschaltet und es kann nur noch die kostenpflichtige Version 4 verwendet werden.
-Da der SerienRecorder die TVDB API nicht direkt aufruft, sondern alles über den SerienServer abgewickelt wird, ist die grundsätzliche Umstellung auch dort erfolgt.
-Die Version 4 der TheTVDB API wurde komplett neu entwickelt, deswegen hat sich einiges geändert, sodass auch die Schnittstelle zum SerienRecorder angepasst werden musste.
-Jetzt sollte alle Ansichten die Daten von TheTVDB beziehen wieder korrekt funktionieren.
-Mit der Version 4 der TheTVDB API lassen sich Daten nicht mehr gezielt abrufen.
-Das führt dazu, dass es zwar an manchen Stellen mehr Informationen gibt, sich aber die Ladegeschwindigkeit verschlechtert hat.
-Einzig positive Änderung an der neuen API ist die Tatsache, dass man jetzt die Cover in allen Sprachen abrufen kann und somit jetzt eigentlich für fast jede Serie ein Cover verfügbar ist.
-
-
-Hinweise zum Update:
-
-- Mit diesem Update wird die Datenbank auf die Version 4.4.2 aktualisiert, die Datenbank wird beim ersten Start des SerienRecorders nach dem Update automatisch im Hintergrund aktualisiert. Vor dem Update der Datenbank wird automatisch ein Backup angelegt. Bitte unbedingt das Log kontrollieren und prüfen ob das Datenbank Update erfolgreich durchgeführt wurde.
+1. Es geht z.B. um die Serie Telekolleg Physik die ein etwas merkwürdiges Produktionsjahr D 19XX- hat,
+der SerienRecorder kann jetzt auch mit den beiden XX umgehen.
+Diese Art das Produktionsjahr anzugeben, findet man bei einigen Serien.
 
 
 Viel Spaß mit dem SerienRecorder!

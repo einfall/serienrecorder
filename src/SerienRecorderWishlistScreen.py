@@ -196,8 +196,7 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def buildList_popup(entry):
 		(serien_name, serien_wlid, serien_info, serien_fsid) = entry
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_info)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 5, 0, 560 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s (%s)" % (serien_name, serien_info)),
 		        ]
 
 	def answerStaffel(self, aStaffel):

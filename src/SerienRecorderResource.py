@@ -346,20 +346,6 @@ class ApiGetMarkersResource(ApiBaseResource):
 					'coverid': int(wlID)
 				} )
 
-		# from SerienRecorder import getMarker
-		# results = getMarker()
-		# if results:
-		# 	for marker in results:
-		# 		(serie, url, staffeln, sender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays) = marker
-		# 		data.append( {
-		# 				'serie': serie,
-		# 				'url': url,
-		# 				'staffeln': staffeln,
-		# 				'sender': sender,
-		# 				'AbEpisode': AbEpisode,
-		# 				'AnzahlAufnahmen': AnzahlAufnahmen
-		# 			} )
-		#
 		return self.returnResult( req, True, data )
 
 class ApiChangeMarkerStatusResource(ApiBaseResource):
@@ -649,6 +635,7 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 
 		data = {
 			'recordDir': {
+				'global': config.movielist.videodirs.value,
 				'enabled': len(AufnahmeVerzeichnis) > 0,
 				'value': AufnahmeVerzeichnis
 			},
@@ -877,6 +864,7 @@ class ApiGetSettingsResource(ApiBaseResource):
 				'backupAtManualCheck': config.plugins.serienRec.backupAtManualCheck.value,
 				'backupPath': config.plugins.serienRec.BackupPath.value,
 				'deleteBackupFilesOlderThan': config.plugins.serienRec.deleteBackupFilesOlderThan.value,
+				'videoDirs': config.movielist.videodirs.value,
 			},
 			'autocheck' : {
 				'changed' : False,
@@ -916,7 +904,8 @@ class ApiGetSettingsResource(ApiBaseResource):
 				'movies' : config.plugins.serienRec.tvplaner_movies.value,
 				'moviesActivateSTB' : config.plugins.serienRec.tvplaner_movies_activeSTB.value,
 				'moviesFilepath' : config.plugins.serienRec.tvplaner_movies_filepath.value,
-				'moviesCreateSubdir' : config.plugins.serienRec.tvplaner_movies_createsubdir.value
+				'moviesCreateSubdir' : config.plugins.serienRec.tvplaner_movies_createsubdir.value,
+				'videoDirs': config.movielist.videodirs.value,
 			},
 			'timer' : {
 				'changed' : False,
@@ -1184,24 +1173,9 @@ class ApiGetTransmissionsResource(ApiBaseResource):
 			from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
 
 			addedEpisodes = database.getTimerForSeries(fs_id, False)
-			# TODO: Check for allowed seasons
-			# TODO: Search file on HDD
+			filteredTransmissions = serienRecSendeTermine.getFilteredTransmissions(transmissions, addedEpisodes, database, wl_id, fs_id)
 
-			marginList = {}
-
-			for seriesName, channel, startTime, endTime, season, episode, title, status in transmissions:
-				if not channel in marginList:
-					marginList[channel] = database.getMargins(fs_id, channel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
-
-				(margin_before, margin_after) = marginList[channel]
-				start_unixtime = startTime - (int(margin_before) * 60)
-
-				if serienRecSendeTermine.isTimerAdded(addedEpisodes, channel, season, episode, int(start_unixtime), title):
-					addedType = 2
-				elif serienRecSendeTermine.isAlreadyAdded(addedEpisodes, season, episode, title):
-					addedType = 3
-				else:
-					addedType = 0
+			for seriesName, channel, startTime, endTime, season, episode, title, status, addedType in filteredTransmissions:
 
 				data.append({
 					'channel' : channel,

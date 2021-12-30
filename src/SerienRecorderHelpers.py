@@ -20,10 +20,10 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.4.6-beta'
+SRVERSION = '4.4.7'
 SRDBVERSION = '4.4.2'
-SRAPIVERSION = '2.3'
-SRWEBAPPVERSION = '0.9.2'
+SRAPIVERSION = '2.4'
+SRWEBAPPVERSION = '0.9.4'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 PY2 = sys.version_info[0] == 2
