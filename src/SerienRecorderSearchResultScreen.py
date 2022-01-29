@@ -122,21 +122,22 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def getCurrentSelection(self):
 		serien_name = self['menu_list'].getCurrent()[0][0]
 		serien_info = self['menu_list'].getCurrent()[0][1]
-		serien_wlid = self['menu_list'].getCurrent()[0][2]
-		serien_fsid = self['menu_list'].getCurrent()[0][3]
-		return serien_name, serien_info, serien_wlid, serien_fsid
+		serien_alias = self['menu_list'].getCurrent()[0][2]
+		serien_wlid = self['menu_list'].getCurrent()[0][3]
+		serien_fsid = self['menu_list'].getCurrent()[0][4]
+		return serien_name, serien_info, serien_alias, serien_wlid, serien_fsid
 
 	def changeTVDBID(self):
 		from .SerienRecorderScreenHelpers import EditTVDBID
-		(serien_name, serien_info, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_wlid, serien_fsid)
+		(serien_name, serien_info, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_alias, serien_wlid, serien_fsid)
 		editTVDBID.changeTVDBID()
 
 	def serieInfo(self):
 		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		(serien_name, serien_info, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		(serien_name, serien_info, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		from .SerienRecorderSeriesInfoScreen import serienRecShowInfo
 		self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
@@ -168,8 +169,8 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		resultList = self.serienlist[:]
 
 		if moreResults > 0:
-			resultList.append(("", "", "", ""))
-			resultList.append(("=> Weitere Ergebnisse laden?", str(moreResults), "-1", ""))
+			resultList.append(("", "", "", "", ""))
+			resultList.append(("=> Weitere Ergebnisse laden?", str(moreResults), "", "-1", ""))
 		self.chooseMenuList.setList(list(map(self.buildList, resultList)))
 		self['menu_list'].moveToIndex(startOffset)
 		self.loading = False
@@ -177,7 +178,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		(serien_name, serien_info, serien_wlid, serien_fsid) = entry
+		(serien_name, serien_info, serien_alias, serien_wlid, serien_fsid) = entry
 
 		# weitere Ergebnisse Eintrag
 		if serien_wlid == "-1":
@@ -211,7 +212,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		(serien_name, serien_info, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		(serien_name, serien_info, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		#print(serien_name, serien_info, serien_wlid, serien_fsid)
 
 		if serien_wlid == "":
@@ -276,7 +277,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
-		(serien_name, serien_info, serien_wlid, serien_fsid) = self.getCurrentSelection()
+		(serien_name, serien_info, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		SerienRecorder.getCover(self, serien_name, serien_wlid, serien_fsid)
 
 	def __onClose(self):

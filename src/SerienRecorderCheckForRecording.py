@@ -628,7 +628,7 @@ class serienRecCheckForRecording:
 		self.createTimer()
 		self.checkFinal()
 
-	def createTimer(self, result=True):
+	def createTimer(self):
 		from .SerienRecorderTimer import serienRecTimer
 		timer = serienRecTimer()
 		timer.setTempDB(self.tempDB)
@@ -692,7 +692,6 @@ class serienRecCheckForRecording:
 				if not channelListUpToDate:
 					Notifications.AddPopup("Die Senderliste wurde auf dem Serien-Server aktualisiert.\nSie muss auch im SerienRecorder aktualisiert werden.", MessageBox.TYPE_INFO, timeout=0, id="Senderliste aktualisieren")
 
-		return result
 
 	def checkFinal(self):
 		print("[SerienRecorder] checkFinal")

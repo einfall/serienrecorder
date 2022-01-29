@@ -197,7 +197,7 @@ class SeriesServer:
 		try:
 			searchResults = self.server.sp.cache.searchSeries(searchString, start)
 			for searchResult in searchResults['results']:
-				resultList.append((toStr(searchResult['name']), toStr(searchResult['country_year']), str(searchResult['id']), searchResult['fs_id']))
+				resultList.append((toStr(searchResult['name']), toStr(searchResult['country_year']), toStr(searchResult['subtitle']), str(searchResult['id']), searchResult['fs_id']))
 			if 'more' in searchResults:
 				more = int(searchResults['more'])
 		except:
@@ -246,3 +246,6 @@ class SeriesServer:
 
 	def doGetSeasonBegins(self, webChannels):
 		return self.server.sp.cache.getSeasonBegins(webChannels)
+
+	def doSearchTVDBSeries(self, query):
+		return self.server.sp.cache.tvdbSearchSeries(query)

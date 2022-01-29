@@ -451,7 +451,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				# versuche timer anzulegen
 				result = serienRecBoxTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
 				                                    timer_name, timer_description, eit,
-				                                    False, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
+				                                    False, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, False, None)
 				if result["result"]:
 					timer.addTimerToDB(serien_name, wlid, fsid, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase)
 					activatedTimer += 1
@@ -479,7 +479,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					result = serienRecBoxTimer.addTimer(timer_altstbRef, str(alt_start_unixtime_eit),
 					                                    str(alt_end_unixtime_eit), timer_name,
 					                                    timer_description, alt_eit, False,
-					                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
+					                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, False, None)
 					if result["result"]:
 						konflikt = None
 						timer.addTimerToDB(serien_name, wlid, fsid, staffel, episode, title, str(alt_start_unixtime_eit), timer_altstbRef, webChannel, alt_eit, addToDatabase)
@@ -494,7 +494,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 					result = serienRecBoxTimer.addTimer(timer_stbRef, str(start_unixtime_eit), str(end_unixtime_eit),
 					                                    timer_name, timer_description, eit, True,
-					                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
+					                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, False, None)
 					if result["result"]:
 						timer.addTimerToDB(serien_name, wlid, fsid, staffel, episode, title, str(start_unixtime_eit), timer_stbRef, webChannel, eit, addToDatabase, False)
 						deactivatedTimer += 1

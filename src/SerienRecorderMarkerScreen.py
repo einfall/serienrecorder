@@ -221,7 +221,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 		from .SerienRecorderScreenHelpers import EditTVDBID
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_wlid, serien_fsid)
+		editTVDBID = EditTVDBID(self, self.session, serien_name, None, serien_wlid, serien_fsid)
 		editTVDBID.changeTVDBID()
 
 	def serieInfo(self):

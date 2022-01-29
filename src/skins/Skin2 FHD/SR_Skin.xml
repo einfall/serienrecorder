@@ -1,18 +1,20 @@
 <screen name="SerienRecorder3.0" position="center,center" size="1920,1080" title="Serien Recorder">
     <ePixmap position="-15,0" size="1920,1080" zPosition="-11" transparent="0" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/bg.png" />
-    <widget name="title" font="Regular; 34" position="20,70" size="1360,40" valign="center" halign="center" transparent="1" />
-    <widget name="headline" font="Regular; 30" position="20,115" size="1360,40" valign="center" halign="center" transparent="1" />
-    <widget name="version" position="20,7" size="700,60" foregroundColor="#1e90ff" transparent="1" font="Regular; 40" valign="center" halign="right" />
-    <widget source="global.CurrentTime" render="Label" position="773,7" size="605,60" font="Regular; 32" valign="center" halign="right" backgroundColor="#000000" transparent="1" foregroundColor="#1e90ff">
+    <widget name="title" font="Regular; 34" position="20,70" size="1224,40" valign="center" halign="center" transparent="1" />
+    <widget name="headline" font="Regular; 30" position="20,115" size="1224,40" valign="center" halign="center" transparent="1" />
+    <widget name="version" position="20,7" size="610,60" foregroundColor="#1e90ff" transparent="1" font="Regular; 40" valign="center" halign="right" />
+    <widget source="global.CurrentTime" render="Label" position="633,7" size="605,60" font="Regular; 32" valign="center" halign="right" backgroundColor="#000000" transparent="1" foregroundColor="#1e90ff">
       <convert type="ClockToText">Format:%A, %d.%m.%Y  %H:%M</convert>
     </widget>
-    <widget name="config" position="20,205" size="1360,780" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
-    <widget name="menu_list" position="20,205" size="1360,780" foregroundColor="yellow" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
-    <widget name="log" position="20,205" size="1360,780" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
-    <widget name="popup_bg" position="19,209" size="1424,700" backgroundColor="#000000" transparent="1" zPosition="5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/popup_bg.png" />
-    <widget name="popup_list" position="80,230" size="1200,660" backgroundColor="#181d20" zPosition="12" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_small.png" />
+    <eLabel position="1414,14" zPosition="3" size="495,280" backgroundColor="transparent" />
+    <widget name="video" position="1416,15" size="490,275" zPosition="-8" />
+    <widget name="config" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
+    <widget name="menu_list" position="20,205" size="1360,780" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
+    <widget name="log" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
+    <widget name="popup_bg" position="19,209" size="1388,700" backgroundColor="#000000" transparent="1" zPosition="5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/popup_bg.png" />
+    <widget name="popup_list" position="80,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#181d20" zPosition="12" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_small.png" />
     <widget name="popup_list2" position="120,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#00181d20" zPosition="11" scrollbarMode="showAlways" scrollbarWidth="8" scrollbarSliderBorderWidth="2" scrollbarKeepGapColor="1" scrollbarGap="2" scrollbarSliderForegroundColor="#1e90ff" scrollbarBackgroundPicture="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/scrollbar.png" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_small.png" />
-    <widget name="cover" position="1460,5" size="450,343" transparent="0" alphatest="blend" zPosition="0" />
+    <widget name="cover" position="1244,3" size="166,184" transparent="0" alphatest="blend" zPosition="0" />
     <widget name="Web_Channel" position="85,155" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
     <widget name="STB_Channel" position="535,155" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
     <widget name="alt_STB_Channel" position="1060,155" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
@@ -22,7 +24,7 @@
     <widget name="config_information_text" position="1460,600" size="450,390" zPosition="5" font="Regular; 20" halign="left" transparent="1" />
     <!--widget source="config_information_text" position="923,103" size="304,314" zPosition="5" font="Regular;18" halign="left" transparent="1" render="RunningText" options="movetype=running,startpoint=0,direction=top,steptime=90,repeat=20,startdelay=10000,wrap" /-->
     <widget name="info" position="20,205" size="1360,780" font="Regular; 30" transparent="1" zPosition="1" />
-    <widget name="path" position="20,70" size="1360,60" font="Regular;20" valign="center" halign="left" transparent="1" />
+    <widget name="path" position="20,70" size="1221,60" font="Regular;20" valign="center" halign="left" transparent="1" />
     <!-- Colour Buttons -->
     <eLabel position="20,1060" size="400,10" zPosition="-10" transparent="0" backgroundColor="#20b81c46" />
     <eLabel position="500,1060" size="400,10" zPosition="-10" transparent="0" backgroundColor="#20009f3c" />

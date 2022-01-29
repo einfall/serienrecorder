@@ -1034,7 +1034,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Sortierung der Serien-Marker:", config.plugins.serienRec.markerSort))
 		self.list.append(getConfigListEntry("Anzahl der wählbaren Staffeln im Menü Serien-Marker:", config.plugins.serienRec.max_season))
 		self.list.append(getConfigListEntry("Öffne Marker-Ansicht nach Hinzufügen neuer Marker:", config.plugins.serienRec.openMarkerScreen))
-		self.list.append(getConfigListEntry("Vor Löschen in Serien-Marker und Timer-Liste Benutzer fragen:", config.plugins.serienRec.confirmOnDelete))
+		self.list.append(getConfigListEntry("Löschen von Serien-Markern oder Timern bestätigen:", config.plugins.serienRec.confirmOnDelete))
 		self.list.append(getConfigListEntry("Box-Sender bei der Senderzuordnung alphabetisch sortieren:", config.plugins.serienRec.alphaSortBoxChannels))
 		self.list.append(getConfigListEntry("SerienRecorder Webinterface aktivieren:", config.plugins.serienRec.enableWebinterface))
 

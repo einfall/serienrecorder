@@ -630,34 +630,38 @@ class serienRecModifyAdded(serienRecBaseScreen, Screen, HelpableScreen):
 		        ]
 
 	def answerStaffel(self, aStaffel):
-		self.aStaffel = aStaffel.strip()
-		if self.aStaffel is None or self.aStaffel == "":
+		if not aStaffel:
 			return
+
+		self.aStaffel = aStaffel.strip()
+		if len(self.aStaffel) == 0:
+			return
+
 		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = "von Episode:")
 
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
-		if self.aFromEpisode is None or self.aFromEpisode == "":
+		if not self.aFromEpisode or len(self.aFromEpisode) == 0:
 			return
 		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = "bis Episode:")
 
 	def answerToEpisode(self, aToEpisode):
 		self.aToEpisode = aToEpisode
-		if self.aToEpisode == "":
+		if len(self.aToEpisode) == 0:
 			self.aToEpisode = self.aFromEpisode
 
 		if self.aToEpisode is None: # or self.aFromEpisode is None or self.aStaffel is None:
 			return
-		else:
-			print("[SerienRecorder] Staffel: %s" % self.aStaffel)
-			print("[SerienRecorder] von Episode: %s" % self.aFromEpisode)
-			print("[SerienRecorder] bis Episode: %s" % self.aToEpisode)
 
-			if self.aStaffel.startswith('0') and len(self.aStaffel) > 1:
-				self.aStaffel = self.aStaffel[1:]
+		print("[SerienRecorder] Staffel: %s" % self.aStaffel)
+		print("[SerienRecorder] von Episode: %s" % self.aFromEpisode)
+		print("[SerienRecorder] bis Episode: %s" % self.aToEpisode)
 
-			if self.database.addToTimerList(self.aSerie, self.aSerieFSID, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
-				self.readAdded()
+		if self.aStaffel.startswith('0') and len(self.aStaffel) > 1:
+			self.aStaffel = self.aStaffel[1:]
+
+		if self.database.addToTimerList(self.aSerie, self.aSerieFSID, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
+			self.readAdded()
 
 	def keyOK(self):
 		if self.modus == "menu_list":

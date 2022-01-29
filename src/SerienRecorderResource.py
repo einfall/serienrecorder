@@ -69,36 +69,36 @@ def addWebInterface():
 		from twisted.python import util
 		#from WebChilds.UploadResource import UploadResource
 
+		# webapi
+		(root, childs) = getApiList()
+		if childs:
+			for name, api in childs:
+				root.putChild(toBinary(name), api)
+		apiSuccessfulAdded = addExternalChild(("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION, False))
+		if apiSuccessfulAdded is not True:
+			apiSuccessfulAdded = addExternalChild(("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION))
+
+		print("[SerienRecorder] addExternalChild for API [%s]" % str(apiSuccessfulAdded))
+
+		# webgui
+		root = static.File(util.sibpath(__file__, "web-data"))
+		print("[SerienRecorder] WebUI root path: %s" % str(root))
+
+		try:
+			if use_openwebif or os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/WebInterface/web/external.xml"):
+				uiSuccessfulAdded = addExternalChild(("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION, True))
+				if uiSuccessfulAdded is not True:
+					addExternalChild(("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION))
+			else:
+				uiSuccessfulAdded = addExternalChild(("serienrecorderui", root))
+		except:
+			uiSuccessfulAdded = addExternalChild(("serienrecorderui", root))
+
+		print("[SerienRecorder] addExternalChild for UI [%s]" % str(uiSuccessfulAdded))
+
 	except Exception as e:
-		print(str(e))
+		print("[SerienRecorder] Failed to addWebInterface [%s]" % str(e))
 		pass
-
-	# webapi
-	(root, childs) = getApiList()
-	if childs:
-		for name, api in childs:
-			root.putChild(toBinary(name), api)
-	apiSuccessfulAdded = addExternalChild( ("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION, False) )
-	if apiSuccessfulAdded is not True:
-		apiSuccessfulAdded = addExternalChild(("serienrecorderapi", root, "SerienRecorder-API", SRAPIVERSION))
-
-	print("[SerienRecorder] addExternalChild for API [%s]" % str(apiSuccessfulAdded))
-
-	# webgui
-	root = static.File(util.sibpath(__file__, "web-data"))
-	print("[SerienRecorder] WebUI root path: %s" % str(root))
-
-	try:
-		if use_openwebif or os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/WebInterface/web/external.xml"):
-			uiSuccessfulAdded = addExternalChild( ("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION, True) )
-			if uiSuccessfulAdded is not True:
-				addExternalChild(("serienrecorderui", root, "SerienRecorder", SRWEBAPPVERSION))
-		else:
-			uiSuccessfulAdded = addExternalChild( ("serienrecorderui", root) )
-	except:
-		uiSuccessfulAdded = addExternalChild(("serienrecorderui", root))
-
-	print("[SerienRecorder] addExternalChild for UI [%s]" % str(uiSuccessfulAdded))
 
 class ApiBaseResource(resource.Resource):
 	def render_OPTIONS(self, req):
@@ -1210,8 +1210,9 @@ class ApiSearchSeriesResource(ApiBaseResource):
 				items.append({
 					'name': item[0],
 					'info': item[1],
-					'wlid': item[2],
-					'fsid': item[3]
+					'subtitle': item[2],
+					'wlid': item[3],
+					'fsid': item[4]
 				})
 
 			data = {
@@ -1591,7 +1592,7 @@ class ApiCreateTimerResource(ApiBaseResource):
 		data = json.loads(req.content.getvalue())
 		transmissions = []
 		for event in data['transmissions']:
-			transmissions.append([data['name'].encode('utf-8'), event['channel'].encode('utf-8'), event['startTime'], event['endTime'], event['season'], event['episode'], event['title'].encode('utf-8'), "1", event['type']])
+			transmissions.append([data['name'], event['channel'], event['startTime'], event['endTime'], event['season'], event['episode'], event['title'], "1", event['type']])
 
 		from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
 		from .SerienRecorderDatabase import SRDatabase

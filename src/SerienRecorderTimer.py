@@ -175,7 +175,7 @@ class serienRecTimer:
 								end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 								result = serienRecBoxTimer.addTimer(stbRef, str(serien_time), str(end_unixtime),
 								                                    timer_name, timer_description, eit, False, dirname, vpsSettings,
-								                                    tags, autoAdjust, kindOfTimer, None)
+								                                    tags, autoAdjust, kindOfTimer, False, None)
 								if result["result"]:
 									self.countTimer += 1
 									if addToDatabase:
@@ -330,6 +330,7 @@ class serienRecTimer:
 			optionalText = ""
 
 		SRLogger.writeLog("\n---------' Erstelle Timer%s '---------\n" % optionalText, True)
+		print("[SerienRecorder] Creating timers...")
 
 		transmissions = self.tempDB.getTransmissionsOrderedByNumberOfRecordings(NoOfRecords)
 		for transmission in transmissions:
@@ -341,7 +342,8 @@ class serienRecTimer:
 
 			self.konflikt = ""
 			TimerDone = self.doSearch(serien_fsid, staffel, episode, title, optionalText, preferredChannel)
-			if (not TimerDone) and useAlternativeChannel:
+			if not TimerDone and useAlternativeChannel:
+				print("[SerienRecorder] Timer not created: Try to create timer on alternative channel")
 				if preferredChannel == 1:
 					usedChannel = 2
 				else:
@@ -350,6 +352,7 @@ class serienRecTimer:
 
 			# Setze deaktivierten Timer
 			if not TimerDone:
+				print("[SerienRecorder] Timer not created: Try to create deactivated timer")
 				if str(episode).isdigit():
 					if int(episode) == 0:
 						transmissionsForTimer = self.tempDB.getTransmissionsToCreateTimer(serien_fsid, staffel, episode, title)
@@ -363,6 +366,15 @@ class serienRecTimer:
 					 webChannel, stbChannel, stbRef, start_unixtime, end_unixtime, altstbChannel, altstbRef,
 					 dirname, AnzahlAufnahmen, fromTime, toTime,
 					 vomMerkzettel, excludedWeekdays, updateFromEPG) = transmissionForTimer
+
+					print("[SerienRecorder] Transmission for deactivated timer: %s" % label_serie)
+					# set the lead/follow-up time
+					(margin_before, margin_after) = self.database.getMargins(serien_fsid, webChannel,
+					                                                         config.plugins.serienRec.margin_before.value,
+					                                                         config.plugins.serienRec.margin_after.value)
+
+					start_unixtime = int(start_unixtime) - (int(margin_before) * 60)
+					end_unixtime = int(end_unixtime) + (int(margin_after) * 60)
 
 					timer_start_unixtime = start_unixtime
 					timer_end_unixtime = end_unixtime
@@ -383,15 +395,18 @@ class serienRecTimer:
 					# Setze deaktivierten Timer
 					#
 					# Ueberpruefe ob der sendetermin zwischen der fromTime und toTime liegt
-					start_time = (time.localtime(int(timer_start_unixtime)).tm_hour * 60) + time.localtime(int(timer_start_unixtime)).tm_min
-					end_time = (time.localtime(int(timer_end_unixtime)).tm_hour * 60) + time.localtime(int(timer_end_unixtime)).tm_min
-					if TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
-						if self.doTimer(current_time, future_time, title, staffel, episode, label_serie,
-						                timer_start_unixtime, timer_end_unixtime, timer_stbRef,
-						                serien_name, serien_wlid, serien_fsid, markerType, webChannel, timer_stbChannel, optionalText,
-						                vomMerkzettel, True):
-							#self.removeTransmission(episode, serien_fsid, staffel, start_unixtime, stbRef, title)
-							break
+					if (int(fromTime) > 0) or (int(toTime) < (23 * 60) + 59):
+						start_time = (time.localtime(int(timer_start_unixtime)).tm_hour * 60) + time.localtime(int(timer_start_unixtime)).tm_min
+						end_time = (time.localtime(int(timer_end_unixtime)).tm_hour * 60) + time.localtime(int(timer_end_unixtime)).tm_min
+						print("[SerienRecorder] Check allowed time range [%s/%s] - [%s/%s]" % (str(fromTime), str(start_time), str(toTime), str(end_time)))
+						if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
+							continue
+
+					if self.doTimer(current_time, future_time, title, staffel, episode, label_serie,
+					                timer_start_unixtime, timer_end_unixtime, timer_stbRef,
+					                serien_name, serien_wlid, serien_fsid, markerType, webChannel, timer_stbChannel, optionalText,
+					                vomMerkzettel, True):
+						break
 
 				if len(self.konflikt) > 0:
 					if config.plugins.serienRec.showMessageOnConflicts.value:
@@ -410,8 +425,7 @@ class serienRecTimer:
 				STBHelpers.createDirectory(serien_fsid, markerType, dirname, dirname_serie)
 
 	def doSearch(self, serien_fsid, staffel, episode, title, optionalText, usedChannel):
-		# print("doSearch: %r" % serien_name)
-		# prepare postprocessing for forced recordings
+		print("[SerienRecorder] doSearch: %s" % serien_fsid)
 		forceRecordings = []
 		forceRecordings_W = []
 		eventRecordings = []
@@ -560,6 +574,7 @@ class serienRecTimer:
 			if (int(fromTime) > 0) or (int(toTime) < (23 * 60) + 59):
 				start_time = (time.localtime(int(timer_start_unixtime)).tm_hour * 60) + time.localtime(int(timer_start_unixtime)).tm_min
 				end_time = (time.localtime(int(timer_end_unixtime)).tm_hour * 60) + time.localtime(int(timer_end_unixtime)).tm_min
+				print("[SerienRecorder] Check allowed time range [%s/%s] - [%s/%s]" % (str(fromTime), str(start_time), str(toTime), str(end_time)))
 
 				if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
 					timeRangeConfigured = "%s:%s - %s:%s" % (str(int(fromTime) // 60).zfill(2), str(int(fromTime) % 60).zfill(2), str(int(toTime) // 60).zfill(2), str(int(toTime) % 60).zfill(2))
@@ -599,6 +614,7 @@ class serienRecTimer:
 			#
 			# Setze Timer
 			#
+			print("[SerienRecorder] Try to create timer")
 			if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime,
 			                timer_end_unixtime, timer_stbRef, serien_name, serien_wlid, serien_fsid, markerType, webChannel,
 			                timer_stbChannel, optionalText, vomMerkzettel):
@@ -610,7 +626,7 @@ class serienRecTimer:
 		self.tempDB.commitTransaction()
 
 		if not TimerDone:
-			# post processing for forced recordings
+			# post processing for rerun
 			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, dirname, serien_name, serien_wlid, serien_fsid, markerType, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel, current_time, future_time in forceRecordings_W:
 				if config.plugins.serienRec.selectBouquets.value and config.plugins.serienRec.preferMainBouquet.value:
 					(primary_bouquet_active, secondary_bouquet_active) = self.database.isBouquetActive(webChannel)
@@ -621,6 +637,7 @@ class serienRecTimer:
 					if self.database.getNumberOfTimers(serien_fsid, staffel, episode, title, False):
 						continue
 				# programmiere Timer (Wiederholung)
+				print("[SerienRecorder] Try to create timer (rerun)")
 				if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime,
 				                timer_end_unixtime, timer_stbRef, serien_name, serien_wlid, serien_fsid, markerType, webChannel,
 				                timer_stbChannel, optionalText, vomMerkzettel):
@@ -641,6 +658,7 @@ class serienRecTimer:
 				show_start = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
 				SRLogger.writeLogFilter("timeRange", "' %s ' - Keine Wiederholung gefunden! → %s" % (label_serie, show_start), True)
 				# programmiere Timer
+				print("[SerienRecorder] Try to create timer (force recording)")
 				if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime,
 				                timer_end_unixtime, timer_stbRef, serien_name, serien_wlid, serien_fsid, markerType, webChannel,
 				                timer_stbChannel, optionalText, vomMerkzettel):
@@ -655,11 +673,13 @@ class serienRecTimer:
 					SRLogger.writeLogFilter("timerDebug", "   ' %s ' - Einzelepisoden nicht gefunden! → %s" % (label_serie, show_start),
 					                  True)
 					# programmiere Timer
+					print("[SerienRecorder] Try to create timer (event)")
 					if self.doTimer(current_time, future_time, title, staffel, episode, label_serie, timer_start_unixtime,
 					                timer_end_unixtime, timer_stbRef, serien_name, serien_wlid, serien_fsid, markerType, webChannel,
 					                timer_stbChannel, optionalText, vomMerkzettel):
 						TimerDone = True
 
+		print("[SerienRecorder] doSearch: TimerDone = [%s]" % str(TimerDone))
 		return TimerDone
 
 	def countEpisode(self, check_SeasonEpisode, dirname, episode, serien_fsid, serien_name, season, title):
@@ -704,6 +724,7 @@ class serienRecTimer:
 	            stbRef, serien_name, serien_wlid, serien_fsid, markerType, webChannel, stbChannel, optionalText='',
 	            vomMerkzettel=False, tryDisabled=False):
 
+		print("[SerienRecorder] doTimer: %s [%s]" % (label_serie, str(start_unixtime)))
 		(margin_before, margin_after) = self.database.getMargins(serien_fsid, webChannel,
 		                                                         config.plugins.serienRec.margin_before.value,
 		                                                         config.plugins.serienRec.margin_after.value)
@@ -759,9 +780,11 @@ class serienRecTimer:
 		if STBHelpers.checkTuner(start_unixtime, end_unixtime, stbRef):
 			timer_name = self.getTimerName(serien_name, season, episode, title, markerType)
 			timer_description = self.getTimerDescription(serien_name, season, episode, title)
+
 			result = serienRecBoxTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name,
-			                                    timer_description, eit, False, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
-			# SRLogger.writeLog("%s: %s => %s" % (timer_name, str(start_unixtime), str(end_unixtime)), True)
+		                                        timer_description, eit, False, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, tryDisabled, None)
+			print("[SerienRecorder] addTimer result = [%s]" % str(result["result"]))
+
 			if result["result"]:
 				self.countTimer += 1
 				# Eintrag in die Datenbank
@@ -801,19 +824,20 @@ class serienRecTimer:
 				return True
 			elif not tryDisabled:
 				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
-				print("' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]))
+				print("[SerienRecorder] ' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]))
 				SRLogger.writeLog("' %s ' - Timer konnte nicht angelegt werden%s → [%s] - [%s] %s @ %s" % (
 				label_serie, optionalText, show_start, show_end, timer_name, stbChannel), True)
 				SRLogger.writeLog("' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]), True)
 			else:
-				self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
-				print("' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]))
-				SRLogger.writeLog("' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]), True)
+				#self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
+				#print("[SerienRecorder] ' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]))
+				#SRLogger.writeLog("' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]), True)
 				dbMessage = result["message"].replace("In Konflikt stehende Timer vorhanden!", "").strip()
 
 				result = serienRecBoxTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name,
 				                                    timer_description, eit, True,
-				                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, None)
+				                                    dirname, vpsSettings, tags, autoAdjust, kindOfTimer, False, None)
+				print("[SerienRecorder] addTimer (deactivated) result = [%s]" % str(result["result"]))
 				if result["result"]:
 					self.countNotActiveTimer += 1
 					# Eintrag in die Datenbank
@@ -831,10 +855,10 @@ class serienRecTimer:
 					return True
 				else:
 					self.konflikt = result["message"].replace("! ", "!\n").replace(" / ", "\n")
-					print("' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]))
+					print("[SerienRecorder] ' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]))
 					SRLogger.writeLog("' %s ' - ACHTUNG! → %s" % (label_serie, result["message"]), True)
 		else:
-			print("Tuner belegt ' %s %s '" % (label_serie, show_start))
+			print("[SerienRecorde] Tuner belegt ' %s %s '" % (label_serie, show_start))
 			SRLogger.writeLog("Tuner belegt: ' %s ' %s" % (label_serie, show_start), True)
 		return False
 
@@ -1131,9 +1155,17 @@ class serienRecBoxTimer:
 		return removed
 
 	@staticmethod
-	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, logentries=None):
+	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, silent, logentries=None):
 		from .SerienRecorderHelpers import hasAutoAdjust
 		recordHandler = NavigationInstance.instance.RecordTimer
+
+		if not silent:
+			if disabled:
+				print("[SerienRecorder] Versuche deaktivierten Timer anzulegen: %s [%s]" % (name, dirname))
+				SRLogger.writeLogFilter("timerDebug", "Versuche deaktivierten Timer anzulegen: ' %s ' - %s" % (name, dirname))
+			else:
+				print("[SerienRecorder] Versuche Timer anzulegen: %s [%s]" % (name, dirname))
+				SRLogger.writeLogFilter("timerDebug", "Versuche Timer anzulegen: ' %s ' - %s" % (name, dirname))
 
 		justplay = bool(int(kindOfTimer) & (1 << __C_JUSTPLAY__))
 		justremind = bool(int(kindOfTimer) & (1 << __C_JUSTREMIND__))
@@ -1155,7 +1187,7 @@ class serienRecBoxTimer:
 					afterEvent=int(config.plugins.serienRec.afterEvent.value),
 					dirname=dirname)
 			except Exception as e:
-				print("[SerienRecorder] addTimer: " + str(e))
+				print("[SerienRecorder] Exception addTimer: " + str(e))
 				if PY2:
 					sys.exc_clear()
 
@@ -1201,8 +1233,6 @@ class serienRecBoxTimer:
 			if logentries:
 				timer.log_entries = logentries
 
-			timer.log(0, "[SerienRecorder] Timer angelegt")
-
 			conflicts = recordHandler.record(timer)
 			if conflicts:
 				errors = []
@@ -1213,6 +1243,9 @@ class serienRecBoxTimer:
 					"result": False,
 					"message": "In Konflikt stehende Timer vorhanden! %s" % " / ".join(errors)
 				}
+			else:
+				timer.log(0, "[SerienRecorder] Timer angelegt")
+
 		except Exception as e:
 			print(("[%s] <%s>" % (__name__, e)))
 			return {
@@ -1220,8 +1253,8 @@ class serienRecBoxTimer:
 				"message": "Timer konnte nicht angelegt werden '%s'!" % e
 			}
 
-		print("[SerienRecorder] Versuche Timer anzulegen: %s [%s]" % (name, dirname))
-		SRLogger.writeLogFilter("timerDebug", "Versuche Timer anzulegen: ' %s ' - %s" % (name, dirname))
+
+		# Timer created successful
 		return {
 			"result": True,
 			"message": "Timer '%s' angelegt" % name,

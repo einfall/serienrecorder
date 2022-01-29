@@ -187,14 +187,15 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		channels = self.database.getChannels(True)
 		stbChannelList = STBHelpers.buildSTBChannelList()
 
-		stbServiceRefs = [x[1] for x in stbChannelList]
-		serviceRefs = [x[2] for x in channels]
 		missingServiceRefs = []
 		missingServices = []
 
-		for serviceRef in serviceRefs:
-			if serviceRef not in stbServiceRefs:
-				missingServiceRefs.append(serviceRef)
+		for channel in channels:
+			(webSender, servicename, serviceref, altservicename, altserviceref, status) = channel
+			if (servicename, serviceref) not in stbChannelList:
+				missingServiceRefs.append(serviceref)
+			if (altservicename, altserviceref) not in stbChannelList:
+				missingServiceRefs.append(altserviceref)
 
 		for missingServiceRef in missingServiceRefs:
 			for channel in channels:
@@ -205,7 +206,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 					break
 
 		if missingServices:
-			self.session.open(MessageBox, "Für folgende Sender existiert die ServiceRef nicht mehr,\nbitte die Sender neu zuweisen:\n\n" + "\n".join(missingServices), MessageBox.TYPE_INFO, timeout=0)
+			self.session.open(MessageBox, "Für folgende Sender existiert die ServiceRef nicht mehr oder entspricht nicht dem zugewiesenen Sender, bitte die Sender neu zuweisen:\n\n" + "\n".join(missingServices), MessageBox.TYPE_INFO, timeout=0)
 		else:
 			self.session.open(MessageBox, "Alle zugewiesenen Sender sind noch vorhanden.", MessageBox.TYPE_INFO, timeout=7)
 

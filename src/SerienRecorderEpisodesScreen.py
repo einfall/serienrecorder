@@ -430,34 +430,38 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 			self.loadEpisodes()
 
 	def answerStaffel(self, aStaffel):
-		self.aStaffel = aStaffel.strip()
-		if not self.aStaffel or self.aStaffel == "":
+		if not aStaffel:
 			return
+
+		self.aStaffel = aStaffel.strip()
+		if len(self.aStaffel) == 0:
+			return
+
 		self.session.openWithCallback(self.answerFromEpisode, NTIVirtualKeyBoard, title = "von Episode:")
 
 	def answerFromEpisode(self, aFromEpisode):
 		self.aFromEpisode = aFromEpisode
-		if not self.aFromEpisode or self.aFromEpisode == "":
+		if not self.aFromEpisode or len(self.aFromEpisode) == 0:
 			return
 		self.session.openWithCallback(self.answerToEpisode, NTIVirtualKeyBoard, title = "bis Episode:")
 
 	def answerToEpisode(self, aToEpisode):
 		self.aToEpisode = aToEpisode
-		if self.aToEpisode == "":
+		if len(self.aToEpisode) == 0:
 			self.aToEpisode = self.aFromEpisode
 
 		if not self.aToEpisode: # or self.aFromEpisode is None or self.aStaffel is None:
 			return
-		else:
-			print("[SerienRecorder] Staffel: %s" % self.aStaffel)
-			print("[SerienRecorder] von Episode: %s" % self.aFromEpisode)
-			print("[SerienRecorder] bis Episode: %s" % self.aToEpisode)
 
-			if self.aStaffel.startswith('0') and len(self.aStaffel) > 1:
-				self.aStaffel = self.aStaffel[1:]
+		print("[SerienRecorder] Staffel: %s" % self.aStaffel)
+		print("[SerienRecorder] von Episode: %s" % self.aFromEpisode)
+		print("[SerienRecorder] bis Episode: %s" % self.aToEpisode)
 
-			if self.database.addToTimerList(self.serien_name, self.serien_fsid, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
-				self.chooseMenuList.setList(list(map(self.buildList_episodes, self.episodes_list_cache[self.page])))
+		if self.aStaffel.startswith('0') and len(self.aStaffel) > 1:
+			self.aStaffel = self.aStaffel[1:]
+
+		if self.database.addToTimerList(self.serien_name, self.serien_fsid, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
+			self.chooseMenuList.setList(list(map(self.buildList_episodes, self.episodes_list_cache[self.page])))
 
 	def keyBlue(self):
 		if self.loading or not self.showEpisodes:
