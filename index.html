@@ -363,7 +363,7 @@
 			<br><br>			
 			
 	<div class="container-fluid">
-
+<!--
 		<h4>
 			Das meiste von unten Genanntem ist wohl behoben.
 			<br>Man wird auch bei Eingabe von <strong>https://www.vuplus-support.org/</strong>
@@ -383,6 +383,7 @@
 		
 </p>
 		<br><br><br><br><br><br><br><br>
+-->
 
 <!-- // ANCHOR - Einleitung		-->
 
@@ -1362,7 +1363,7 @@
 						</p>
 					</li>	
                     <li>
-                        <strong>Manuelle Timer immer erstellen:</strong>
+                        <strong>Manuelle Timer immer anlegen:</strong>
                         <p>
                             Ist diese Option gesetzt, dann werden manuell angelegte Timer, aus der Sendetermine-Ansicht immer erstellt, unabhängig davon ob
                             für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen vorhanden sind, bzw. die max. Anzahl an Tunern überschritten wird.
@@ -4247,7 +4248,7 @@
 		<h3 class="sub-header"><strong>TVDB-ID ändern/hinzufügen&nbsp; &nbsp;<kbd>2</kbd></strong></h3>
 		<br>	
 		<ul>
-		<p>Das hinzufügen bzw. ändern der TVDB-ID ist aus "Sicherheitsgründen" nur <strong>freigeschalteten</strong>  Usern möglich.</p>
+		<p>Das hinzufügen bzw. ändern der TVDB-ID ist aus "Sicherheitsgründen" nur <strong>freigeschalteten</strong>  Usern möglich, da man hiermit direkt Änderungen auf dem SerienServer macht.</p>
 		<p>Da der SerienRecorder nicht alle Daten von der Wunschliste.de Webseite nutzen darf, wird für manche angezeigten Daten auf andere Quellen zurückgegriffen.
 		<br>Im Falle von
 		<ul>
@@ -4271,17 +4272,54 @@
 		<br>Ist man freigeschaltet, wird die evtl. schon vorhandene TVDB-ID vom SerienServer abgerufen und angezeigt. Man hat dann die Möglichkeit die ID einzugeben bzw. zu ändern. Diese ID wird dann auf dem SerienServer gespeichert und das Cover wird neu geladen. Diese ID steht dann sofort auch allen anderen Nutzern des SerienRecorders zur Verfügung.
 		<br>Sollte auf TheTVDB noch kein Poster (Cover) vorhanden sein, sollte man die ID trotzdem eingeben, wovon ja auch die anderen Daten abhängig sind.
 		</p>
-		
+		<br><br>
 		<p><h4><strong>Und wie geht das nun?</strong></h4></p>
 		<p>Man muss dazu die Serie NICHT dem SR hinzufügen, wenn man die Serie in der Planer-Ansicht oder in den Serien-/Staffelstarts findet.
-		<br>Ansonsten muss man die Serie dem SR als Marker hinzufügen, welchen man aber nach Eingabe der ID wieder löschen kann.
-		<br><br>Als erstes sollte man auf die Webseite <a href="https://www.thetvdb.com/" target="_blank">www.thetvdb.com</a> gehen und die gewünschte Serie suchen. Dort ist dann auch die TVDB-ID zu sehen, welche man sich merkt oder aufschreibt etc. Dann sollte man noch runter scrollen zu den Postern der Serie, um sich zu vergewissern, das auch wirklich mind. ein Poster vorhanden ist.
-		<br>Man geht dann in den SR und drückt auf der jeweiligen Serie die Taste <kbd>2</kbd> , worauf man angezeigt bekommt, was für diese Serie auf dem SerienServer hinterlegt ist. Entweder "keine" oder aber eine TVDB-ID. Zudem wird gefragt, ob man diese nun ändern möchte.
-		<br>Ist schon die "richtige" ID auf dem SerienServer hinterlegt, muss es einen anderen Grund geben, weshalb kein Cover angezeigt wird. Dann kann man die Frage auch mit "Nein" bestätigen und man gelangt zurück zum SR.
-		<br>Andernfalls bestätigt man mit "Ja". In der folgenden Maske kann dann die nummerische ID eingegeben werden und bestätigt mit <kbd>OK</kbd>. Es wird dann sofort das Cover geladen und angezeigt, welches dann auch sofort allen anderen Usern zur Verfügung steht.
-		</p>
-		</ul>
+		<br>Ansonsten muss man die Serie dem SR als Marker hinzufügen, welchen man aber nach Eingabe der ID wieder löschen kann, sofern man die Serie nicht selbst nutzt.
 		<br><br>
+		Man drückt auf einer selektierten Serie die Taste <kbd>2</kbd>, worauf man angezeigt bekommt, was für diese Serie auf dem SerienServer hinterlegt ist. Entweder "keine" oder aber eine TVDB-ID. Zudem wird gefragt, ob man diese nun ändern möchte.
+		<br>Bestätigt man dies mit "ja", kommt man zur TVDB-ID Auswahl.
+		<br>
+		<p><small>(Klick zum vergrößern)</small></p>
+			<div class="d-flex">
+				<div class="col-md-3">
+					<div class="thumbnail with-caption">
+					<a href="images/TVDB ID _02.jpg" target="_blank">
+						<img src="images/TVDB ID _02.jpg" alt="TVDB-ID Auswahl" style="width:100%">
+						<p><small>Die TVDB-ID Auswahl</small></p>
+					</a>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="thumbnail with-caption">
+						<a href="images/TVDB ID _04.jpg" target="_blank">
+						<img src="images/TVDB ID _04.jpg" alt="TVDB-ID Auswahl" style="width:100%">
+						<p><small>Die TVDB-ID Auswahl</small></p>
+						</a>
+					</div>
+				</div>
+				
+			</div>
+		<p>
+			Die TVDB-ID Auswahl ist ähnlich der Cover-Auswahl, man muss das gewünschte Element nur selektieren und mit der Taste <kbd>OK</kbd> bestätigen, sofern das "richtige" dabei ist.
+			<br>Im 2. Screenshot wurde die Serie "Wilde Inseln" gesucht, was auch 1 falschen Treffer ergab und da die Serie 2x auf <a href="https://www.thetvdb.com/" target="_blank">www.thetvdb.com</a> vorhanden ist, auch 2 "richtige" Treffer. Hiervon nimmt man dann idR das deutsche Cover.
+			<br>
+			<br>Es gibt hier verschiedene Möglichkeiten der Ergebnisse.
+			<br>
+			<ul>
+				<li>Einen Treffer mit Cover, dann muss man nur mit "OK" bestätigen</li>
+				<li>Einen Treffer ohne Cover. Den sollte man auch übernehmen, denn es hängen ja noch andere Daten von der zugeordneten TVDB-ID ab und das Cover kann ja auch evtl. später noch bei TheTVDB auftauchen.</li>
+				<li>Man bekommt mehrere Treffer, weil der "Suchbegriff" nicht eindeutig war und man den "richtigen" nur auswählen muss. </li>
+				<li>Man bekommt mehrere Treffer, aber der passende ist nicht dabei. Dann kann es helfen, wenn man über <kbd>Menü</kbd> die Suche mit dem Aliasnamen macht, der idR der Original-Titel der Serie ist. Aber auch das führt nicht immer zum Ziel. Da kann man dann nur noch manuell auf TheTVDB nachschauen, ob die Serie wirklich nicht bei TheTVDB gelistet ist. Sollte man sie finden, kann man ja die TVDB-ID manuell im SR eingeben. </li>
+				<li>Die Suche ergibt keine Treffer. Auch in diesem Fall kann man noch manuell auf TheTVDB nachschauen, ob die Serie wirklich nicht bei TheTVDB gelistet ist. Sollte man sie finden, kann man ja die TVDB-ID manuell im SR eingeben.</li>
+
+
+			</ul> 
+		</p>	
+
+		<br><br><br><br>
+		
+				
 <!-- VPS-Plugin -->				
 		<span id="vps-plugin" class="anchor"></span>
 		<h3 class="sub-header"><strong>Das VPS-Plugin</strong></h3>
@@ -4398,7 +4436,7 @@
 		<div class="alert alert-info rot-links-rechts" role="alert">Wer einen Werbeblocker wie den <strong>Adblock</strong>  nutzt, sollte ihn für die Seite der SR WebInterface deaktivieren. </div>	
 	<div class="thumbnail with-caption mt-5">
 	
-	<img src="images/sr_webif_01.png" alt="Serienrecorder Webinterface" class="center">
+	<img src="images/webIf-start.jpg" alt="Serienrecorder Webinterface" class="center">
 	<p> <small>Serienrecorder Webinterface</small> </p>
 	</div>
 <br><br>
@@ -4431,6 +4469,8 @@
 <br><br><img src="images/system_infos.png">
 </p>
 <br><br>
+
+
 <!-- Suche -->
 <span id="suche" class="anchor"></span>	
 <h3 class="sub-header"><strong>Die Suche</strong> <small>(im Webinterface)</small></h3>
@@ -4443,8 +4483,8 @@
 	<div>
 			<div class="col-md-6">
 				<div class="thumbnail with-caption">
-				<a href="images/suche.png" target="_blank">
-					<img src="images/suche.png" alt="suche.png" style="width:100%">
+				<a href="images/suche.jpg" target="_blank">
+					<img src="images/suche.jpg" alt="suche.jpg" style="width:100%">
 				<p><small>Suche</small></p>
 				</a>
 				</div>
@@ -4514,8 +4554,8 @@
 		<br>Sollte das neu gewählte Cover nicht sofort angezeigt werden, muss man evtl einmal kurz die Seite neu laden. (Durch klick, F5 oder Strg+R)
 		<div class="col-md-6 mt-3">
 			<div class="thumbnail with-caption">
-			<a href="images/webif-cover-waehlen.png" target="_blank">
-				<img src="images/webif-cover-waehlen.png" alt="webif-cover-waehlen.png" style="width:100%">
+			<a href="images/webIf-cover-auswahl-01.jpg" target="_blank">
+				<img src="images/webIf-cover-auswahl-01.jpg" alt="webIf-cover-auswahl-01.jpg" style="width:100%">
 			<p><small>Serienmarker Cover-Auswahl</small></p>
 			</a>
 			</div>
@@ -4530,6 +4570,7 @@
 </p>		
 <br><br><br>
 
+
 <!-- Timer-Liste -->	
 <span id="webtimer-liste" class="anchor"></span>	
 <h3 class="sub-header"><strong>Timer-Liste</strong> <small>(im Webinterface)</small></h3>
@@ -4537,6 +4578,14 @@
 <ul>
 	<p>In dieser Ansicht sieht man die noch ausstehenden Timer. Dort kann man über den "Mülleimer" rechts, einzelne Timer löschen oder auch über den roten Button ALLE noch ausstehenden Timer löschen. Des weiteren kann man hier auch einen manuellen Suchlauf starten.
 	</p>
+	<div class="col-md-6 mt-3">
+		<div class="thumbnail with-caption">
+		<a href="images/webIf-timer-liste.jpg" target="_blank">
+			<img src="images/webIf-timer-liste.jpg" alt="webIf-timer-liste.jpg" style="width:100%">
+		<p><small>SR Timer-Liste</small></p>
+		</a>
+		</div>
+	</div>
 </ul>	
 <br><br><br>
 
@@ -4547,6 +4596,14 @@
 <ul>
 	<p>Um hier einem Wunschliste Sender einen Box Sender zuzuordnen, muss man in die Zeile des jeweiligen Senders klicken, womit sich dann ein Fenster zum zuordnen öffnet. Damit ist der Sender dann aber noch nicht aktiv, falls er deaktiviert war, denn dazu muss man vorne noch das "Häkchen" setzten.
 	</p>
+	<div class="col-md-6 mt-3">
+		<div class="thumbnail with-caption">
+		<a href="images/webIf-senderzuordnung.jpg" target="_blank">
+			<img src="images/webIf-senderzuordnung.jpg" alt="webIf-senderzuordnung.jpg" style="width:100%">
+		<p><small>SR Senderzuordnung</small></p>
+		</a>
+		</div>
+	</div>
 </ul>	
 <br><br><br>
 
@@ -4555,8 +4612,17 @@
 <h3 class="sub-header"><strong>Einstellungen</strong> <small>(im Webinterface)</small></h3>
 <br>	
 <ul>
-	<p>Noch nicht implementiert.
+	<p>Hier können die selben Einstellungen vorgenommen werden, wie im Serienrecorder selbst auch.
+		<br><br>
 	</p>
+	<div class="col-md-6 mt-3">
+		<div class="thumbnail with-caption">
+		<a href="images/webIf-einstellungen.jpg" target="_blank">
+			<img src="images/webIf-einstellungen.jpg" alt="webIf-einstellungen.jpg" style="width:100%">
+		<p><small>SR Globale Einstellungen</small></p>
+		</a>
+		</div>
+	</div>
 </ul>	
 <br><br><br>
 
@@ -4567,6 +4633,15 @@
 <ul>
 	<p>Hier wird das letzte Log des SR angezeigt.
 	</p>
+	<br><br>
+	<div class="col-md-6 mt-3">
+		<div class="thumbnail with-caption">
+		<a href="images/webIf-log-ansicht.jpg" target="_blank">
+			<img src="images/webIf-log-ansicht.jpg" alt="webIf-log-ansicht.jpg" style="width:100%">
+		<p><small>Log Ansicht</small></p>
+		</a>
+		</div>
+	</div>
 </ul>	
 <br><br><br>
 
