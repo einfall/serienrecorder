@@ -27,6 +27,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.piconLoader = PiconLoader()
 		self.picloader = None
 		self.filter = False
+		self.channelFilter = True
 		self.database = SRDatabase(getDataBaseFilePath())
 		self.changesMade = False
 
@@ -38,7 +39,8 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			"up": (self.keyUp, "eine Zeile nach oben"),
 			"down": (self.keyDown, "eine Zeile nach unten"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
-			"yellow": (self.keyYellow, "Zeige nur Serien-Starts"),
+			"yellow": (self.keyYellow, "Umschalten zwischen 'Nur Serienstarts' und 'Serien- und Staffelstarts'"),
+			"blue": (self.keyBlue, "Umschalten zwischen 'Alle Sender' und 'Zugewiesene Sender'"),
 			"startTeletext": (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"	    : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"2"		: (self.changeTVDBID, "TVDB-ID ändern"),
@@ -71,6 +73,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self['text_ok'].setText("Marker hinzufügen")
 		self['text_yellow'].setText("Zeige Serienstarts")
+		self['text_blue'].setText("Alle Sender")
 
 		self.num_bt_text[2][0] = "TVDB-ID ändern"
 		self.num_bt_text[3][0] = buttonText_na
@@ -86,6 +89,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		if not config.plugins.serienRec.showAllButtons.value:
 			self['bt_ok'].show()
 			self['bt_yellow'].show()
+			self['bt_blue'].show()
 			self['bt_exit'].show()
 			self['bt_text'].show()
 			self['bt_info'].show()
@@ -93,6 +97,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 			self['text_ok'].show()
 			self['text_yellow'].show()
+			self['text_blue'].show()
 			self['text_0'].show()
 			self['text_1'].show()
 			self['text_2'].show()
@@ -121,10 +126,15 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def readProposal(self):
 		self['title'].setText("Lade neue Serien/Staffeln...")
+		self.transmissions = {}
 
 		def downloadSeasonBegins():
 			print("[SerienRecorder] downloadSeasonBegins")
-			return SeriesServer().doGetSeasonBegins(self.webChannels)
+			channels = self.webChannels
+			if not self.channelFilter:
+				channels = []
+
+			return SeriesServer().doGetSeasonBegins(channels)
 
 		def onDownloadSeasonBeginsSuccessful(result):
 			print("[SerienRecorder] onDownloadSeasonBeginsSuccessful")
@@ -155,6 +165,11 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self['text_yellow'].setText("Zeige Serienstarts")
 
+		if self.channelFilter:
+			self['text_blue'].setText("Alle Sender")
+		else:
+			self['text_blue'].setText("Zugewiesene Sender")
+
 		for event in self.transmissions['events']:
 			if self.filter and str(event['season']).isdigit() and int(event['season']) > 1:
 				continue
@@ -163,11 +178,11 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			seriesID = int(event['id'])
 
 			# marker flags: 0 = no marker, 1 = active marker, 2 = inactive marker
-			markerFlag = 0
+			marker_flag = 0
 			if seriesID in markers:
-				markerFlag = 1 if markers[seriesID] else 2
+				marker_flag = 1 if markers[seriesID] else 2
 
-			self.proposalList.append([seriesName, event['season'], toStr(event['channel']), event['start'], event['id'], markerFlag, event['fs_id'], toStr(event['info']), toStr(event['subtitle'])])
+			self.proposalList.append([seriesName, event['season'], toStr(event['channel']), event['start'], event['id'], marker_flag, event['fs_id'], toStr(event['info']), toStr(event['subtitle'])])
 
 		if self.filter:
 			self['title'].setText("%d neue Serien gefunden:" % len(self.proposalList))
@@ -188,11 +203,11 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		imageNeu = "%s/images/neu.png" % serienRecMainPath
 
 		if marker_flag == 1:
-			setFarbe = parseColor('green').argb()
+			seriesColor = parseColor('green').argb()
 		elif marker_flag == 2:
-			setFarbe = parseColor('red').argb()
+			seriesColor = parseColor('red').argb()
 		else:
-			setFarbe = parseColor('foreground').argb()
+			seriesColor = None
 
 		if str(season).isdigit() and int(season) == 1:
 			icon = imageNeu
@@ -218,26 +233,26 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 340 * skinFactor, 15 * skinFactor, 30
 					 * skinFactor, 30 * skinFactor, loadPNG(icon)),
 					(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 3, 230 * skinFactor, 26 * skinFactor, 0,
-					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, channel, foregroundColor, foregroundColor),
+					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, channel),
 					(eListboxPythonMultiContent.TYPE_TEXT, 110 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18
-					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime),
+					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
 					(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0,
-					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, series, setFarbe, setFarbe),
+					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, series, seriesColor, seriesColor),
 					(eListboxPythonMultiContent.TYPE_TEXT, 375 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18
-					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, season)
+					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, season, foregroundColor, foregroundColor)
 					]
 		else:
 			return [entry,
 					(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 15, 15 * skinFactor, 30 * skinFactor, 30
 					 * skinFactor, loadPNG(icon)),
 					(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 3, 230 * skinFactor, 26 * skinFactor, 0,
-					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, channel, foregroundColor, foregroundColor),
+					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, channel),
 					(eListboxPythonMultiContent.TYPE_TEXT, 50 * skinFactor, 29 * skinFactor, 200 * skinFactor, 18
-					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime),
+					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
 					(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0,
-					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, series, setFarbe, setFarbe),
+					 RT_HALIGN_LEFT | RT_VALIGN_CENTER, series, seriesColor, seriesColor),
 					(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18
-					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, season)
+					 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, season, foregroundColor, foregroundColor)
 					]
 
 	def serieInfo(self):
@@ -298,6 +313,13 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self.filter = True
 		self.buildProposalList()
+
+	def keyBlue(self):
+		if self.channelFilter:
+			self.channelFilter = False
+		else:
+			self.channelFilter = True
+		self.readProposal()
 
 	def keyLeft(self):
 		self[self.modus].pageUp()

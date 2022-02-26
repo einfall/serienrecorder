@@ -20,14 +20,15 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.4.8-beta'
+SRVERSION = '4.4.9-beta'
 SRDBVERSION = '4.4.2'
 SRAPIVERSION = '2.4'
-SRWEBAPPVERSION = '0.9.4'
+SRWEBAPPVERSION = '0.9.5'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
+PY3_4 = sys.version_info[0] == 3 and sys.version_info[1] >= 4
 
 def toBinary(s):
 	if PY3 and isinstance(s, str):

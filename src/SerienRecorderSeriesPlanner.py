@@ -38,7 +38,8 @@ class serienRecSeriesPlanner:
 
 	def updatePlannerData(self):
 		webChannels = self.database.getActiveChannels()
-		markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
+		#markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
+		markers = self.database.getAllMarkerStatusForBoxID(config.plugins.serienRec.BoxID.value)
 
 		SRLogger.writeLog("\nLaden der Serien-Planer Daten gestartet ...", True)
 
@@ -71,7 +72,6 @@ class serienRecSeriesPlanner:
 
 		for event in data["events"]:
 			aufnahme = False
-			serieAdded = 0
 			start_h = event["time"][:+2]
 			start_m = event["time"][+3:]
 			start_time = TimeHelpers.getUnixTimeWithDayOffset(start_h, start_m, daypage)
@@ -94,8 +94,9 @@ class serienRecSeriesPlanner:
 					aufnahme = True
 
 			# 0 = no marker, 1 = active marker, 2 = deactive marker
+			marker_flag = 0
 			if serien_wlid in markers:
-				serieAdded = 1 if markers[serien_wlid] else 2
+				marker_flag = 1 if markers[serien_wlid] else 2
 
 			staffel = str(staffel).zfill(2)
 			episode = str(episode).zfill(2)
@@ -131,7 +132,7 @@ class serienRecSeriesPlanner:
 			prime = False
 			transmissionTime = event["time"]
 			daylist[0].append((regional, paytv, neu, prime, transmissionTime, serien_name, sender, staffel,
-			                   episode, title, aufnahme, serieAdded, bereits_vorhanden, serien_wlid, serien_fsid, serien_info))
+			                   episode, title, aufnahme, marker_flag, bereits_vorhanden, serien_wlid, serien_fsid, serien_info))
 
 		print("[SerienRecorder] Found %s series for page %s" % (len(daylist[0]), str(daypage)))
 

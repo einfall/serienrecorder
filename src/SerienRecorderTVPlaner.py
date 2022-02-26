@@ -5,7 +5,7 @@ from Components.config import config
 from Screens.MessageBox import MessageBox
 from Tools.Directories import fileExists
 
-from .SerienRecorderHelpers import decrypt, STBHelpers, TimeHelpers, toStr, toBinary, PY3
+from .SerienRecorderHelpers import decrypt, STBHelpers, TimeHelpers, toStr, toBinary, PY2, PY3, PY3_4
 from .SerienRecorderDatabase import SRDatabase
 from .SerienRecorderSeriesServer import SeriesServer
 from .SerienRecorderLogWriter import SRLogger
@@ -178,9 +178,19 @@ def getEmailData():
 		SRLogger.writeLog('Starte HTML Parsing der TV-Planer E-Mail.', True)
 		print("[SerienRecorder] TV-Planer: Start HTML parsing")
 		parser = AdvancedHTMLParser.AdvancedHTMLParser()
+
+		if PY2:
+			from HTMLParser import HTMLParser
+			html = HTMLParser().unescape(html)
 		if PY3:
 			html = toStr(html)
-		html = parser.unescape(html)
+			if PY3_4:
+				import html as HTMLParser
+				html = HTMLParser.unescape(html)
+			else:
+				from html.parser import HTMLParser
+				html = HTMLParser().unescape(html)
+
 		parser.parseStr(html)
 
 		# Get tables from HTML
@@ -275,6 +285,7 @@ def getEmailData():
 		SRLogger.writeLog("In der Kopfzeile der TV-Planer E-Mail konnte keine Uhrzeit gefunden werden, bitte die angelegten Timer kontrollieren!\n")
 	transmissiondict = dict()
 
+	channels = set()
 	import quopri
 	for starttime, url, seriesname, season, episode, title, description, endtime, channel in transmissions:
 		try:
@@ -302,6 +313,7 @@ def getEmailData():
 			transmission = [ seriesname ]
 			# channel
 			channel = channel.replace(' (Pay-TV)','').replace(' (Schweiz)','').replace(' (GB)','').replace(' (Österreich)','').replace(' (USA)','').replace(' (RP)','').replace(' (F)','').strip()
+			channels.add(channel)
 			transmission += [ channel ]
 			# start time
 			(hour, minute) = starttime.split(':')
@@ -341,11 +353,18 @@ def getEmailData():
 			print("[SerienRecorder] TV-Planer: Processing TV-Planer e-mail failed: [%s]" % str(e))
 			SRLogger.writeLog("TV-Planer Verarbeitung fehlgeschlagen! [%s]" % str(e), True)
 
+	# Check channels
+	print("[SerienRecorder] TV-Planer: Check channels...")
+	from .SerienRecorder import serienRecDataBaseFilePath
+	database = SRDatabase(serienRecDataBaseFilePath)
+	webChannels = database.getActiveChannels()
+	for channel in channels:
+		if channel not in webChannels:
+			SRLogger.writeLogFilter("channels", "Der Sender ' %s ' wurde in der TV-Planer E-Mail gefunden, ist aber im SerienRecorder nicht zugeordnet." % channel)
+
 	# Create marker
 	SRLogger.writeLog("\n", True)
-	from .SerienRecorder import serienRecDataBaseFilePath
 	print("[SerienRecorder] TV-Planer: Create markers...")
-	database = SRDatabase(serienRecDataBaseFilePath)
 	for fsID in list(transmissiondict.keys()):
 		print("[SerienRecorder] TV-Planer: Check whether or not a marker exists for fsid: [%s]" % str(fsID))
 		# marker isn't in database, create new marker

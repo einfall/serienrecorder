@@ -1300,8 +1300,11 @@ class ApiGetChannelsResource(ApiBaseResource):
 		data = []
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
+		from .SerienRecorderHelpers import STBHelpers
+
 		database = SRDatabase(serienRecDataBaseFilePath)
 		channels = database.getChannels(True)
+		stbChannelList = STBHelpers.buildSTBChannelList()
 
 		for channel in channels:
 			(webChannel, stbChannel, serviceRef, alternativeSTBChannel, alternativeServiceRef, enabled) = channel
@@ -1310,11 +1313,11 @@ class ApiGetChannelsResource(ApiBaseResource):
 				'enabled': enabled,
 				'standard': {
 					'serviceRef': serviceRef,
-					'stbChannel': stbChannel,
+					'stbChannel': STBHelpers.getChannelByRef(stbChannelList, serviceRef),
 				},
 				'alternative': {
 					'serviceRef': alternativeServiceRef,
-					'stbChannel': alternativeSTBChannel,
+					'stbChannel': STBHelpers.getChannelByRef(stbChannelList, alternativeServiceRef),
 				}
 			})
 

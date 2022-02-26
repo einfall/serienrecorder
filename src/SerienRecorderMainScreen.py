@@ -272,6 +272,9 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def startScreen(self):
 		print("[SerienRecorder] version %s is running..." % config.plugins.serienRec.showversion.value)
 
+		#for color in colors:
+		#	print("[SerienRecorder] Skin colors: %s" % color)
+
 		from .SerienRecorderCheckForRecording import checkForRecordingInstance, refreshTimer, initDB
 
 		if not refreshTimer:
@@ -322,6 +325,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.setHeadline()
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
+		self['menu_list'].moveToIndex(0)
 
 		self.loading = True
 		self['title'].setText("Lade Infos aus dem Speicher...")
@@ -390,17 +394,17 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if len(self.daylist[0]) != 0:
 			if headDate:
 				self['title'].setText(
-					"Für %s werden %s Episode(n) vorgeschlagen." % (headDate[0], len(self.daylist[0])))
+					"Für %s werden %s Episode(n) vorgeschlagen" % (headDate[0], len(self.daylist[0])))
 				self['title'].instance.setForegroundColor(parseColor("foreground"))
 			else:
-				self['title'].setText("Für heute werden %s Episode(n) vorgeschlagen." % len(self.daylist[0]))
+				self['title'].setText("Für heute werden %s Episode(n) vorgeschlagen" % len(self.daylist[0]))
 				self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.chooseMenuList.setList(list(map(self.buildPlanerList, self.daylist[0])))
 			self.getCover()
 		else:
 			if int(self.page) < 1 and not int(self.page) == 0:
 				self.page -= 1
-			self['title'].setText("Für heute werden %s Episode(n) vorgeschlagen." % len(self.daylist[0]))
+			self['title'].setText("Für heute werden %s Episode(n) vorgeschlagen" % len(self.daylist[0]))
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			print("[SerienRecorder] Wunschliste Serien-Planer -> LISTE IST LEER !!!!")
 			self.chooseMenuList.setList(list(map(self.buildPlanerList, self.daylist[0])))
@@ -442,7 +446,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				serienRecSeriesPlanner.writePlannerData(2, cache)
 
 		self.loading = False
-		self['title'].setText("")
+		self['title'].setText("Die Serien mit den meisten Abrufen in den letzten 12 Monaten")
 		self.chooseMenuList.setList(list(map(self.buildTopThirtyList, self.daylist[0])))
 		self.getCover()
 
@@ -462,10 +466,10 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			seriesColor = parseColor('red').argb()
 		else:
 			seriesColor = None
-		if aufnahme:
-			seriesColor = parseColor('blue').argb()
 
 		titleColor = timeColor = parseColor('foreground').argb()
+		if aufnahme:
+			titleColor = parseColor('blue').argb()
 
 		if int(neu) == 0:
 			imageNeu = imageNone

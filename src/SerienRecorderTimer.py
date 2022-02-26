@@ -365,7 +365,7 @@ class serienRecTimer:
 					(current_time, future_time, serien_name, serien_wlid, serien_fsid, markerType, staffel, episode, check_SeasonEpisode, title, label_serie,
 					 webChannel, stbChannel, stbRef, start_unixtime, end_unixtime, altstbChannel, altstbRef,
 					 dirname, AnzahlAufnahmen, fromTime, toTime,
-					 vomMerkzettel, excludedWeekdays, updateFromEPG) = transmissionForTimer
+					 vomMerkzettel, excludedWeekdays, updateFromEPG, source) = transmissionForTimer
 
 					print("[SerienRecorder] Transmission for deactivated timer: %s" % label_serie)
 					# set the lead/follow-up time
@@ -445,7 +445,7 @@ class serienRecTimer:
 			(current_time, future_time, serien_name, serien_wlid, serien_fsid, markerType, staffel, episode, check_SeasonEpisode, title, label_serie,
 			 webChannel, stbChannel, stbRef, start_unixtime, end_unixtime, altstbChannel, altstbRef,
 			 dirname, AnzahlAufnahmen, fromTime, toTime, vomMerkzettel,
-			 excludedWeekdays, updateFromEPG) = transmissionForTimer
+			 excludedWeekdays, updateFromEPG, source) = transmissionForTimer
 
 			# set the lead/follow-up time
 			(margin_before, margin_after) = self.database.getMargins(serien_fsid, webChannel,

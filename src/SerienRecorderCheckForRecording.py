@@ -402,8 +402,10 @@ class serienRecCheckForRecording:
 
 		# read channels
 		self.senderListe = {}
+		stbChannelList = STBHelpers.buildSTBChannelList()
 		for s in self.database.getChannels():
-			self.senderListe[s[0].lower()] = s[:]
+			# [0] = WebChannel, [1] = STBChannel (no longer reliable), [2] = ServiceRef, [3] = alternativSTBChannel (no longer reliable), [4] = alternativServiceRef, [5] = Erlaubt
+			self.senderListe[s[0].lower()] = (s[0], STBHelpers.getChannelByRef(stbChannelList, s[2]), s[2], STBHelpers.getChannelByRef(stbChannelList, s[4]), s[4], s[5])
 
 		webChannels = self.database.getActiveChannels()
 		SRLogger.writeLog("\nAnzahl aktiver Websender: %d" % len(webChannels), True)
@@ -526,6 +528,7 @@ class serienRecCheckForRecording:
 							markerChannels = webChannels
 						else:
 							markerChannels = SerieSender
+							SRLogger.writeLogFilter("channel", "' %s ' - Für diesen Serien-Marker sind die Sender eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt." % serienTitle)
 							limitedChannels = True
 
 						self.countActivatedSeries += 1
@@ -537,6 +540,10 @@ class serienRecCheckForRecording:
 
 					if -2 in SerieStaffel:
 						SRLogger.writeLog("' %s ' - Dieser Serien-Marker steht auf manuell - es werden keine Timer automatisch angelegt." % serienTitle, True)
+					elif (-1 in SerieStaffel) and (0 in SerieStaffel):  # 'Alle'
+						dummy = 0
+					else:
+						SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Für diesen Serien-Marker sind die Staffeln eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt." % serienTitle)
 
 				# Create the threads
 				for i in range(4):
@@ -545,11 +552,19 @@ class serienRecCheckForRecording:
 					worker.start()
 
 				jobQueue.join()
+				number_of_server_transmissions = 0
+				number_of_server_series = 0
 				while not resultQueue.empty():
 					(transmissionFailed, transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, limitedChannels) = resultQueue.get()
-					self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, excludedWeekdays, 0)
+					self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, 0, excludedWeekdays, 0)
+					number_of_server_transmissions += len(transmissions)
+					if len(transmissions) > 0:
+						number_of_server_series += 1
 					resultQueue.task_done()
 
+				SRLogger.writeLog("\nEs wurden ' %d ' Ausstrahlungstermine für ' %d ' Serien vom SerienServer abgerufen." % (number_of_server_transmissions, number_of_server_series), True)
+				(number_of_considered_transmissions, number_of_considered_series) = self.tempDB.countTransmissions(0)
+				SRLogger.writeLog("Berücksichtigt werden ' %d ' Ausstrahlungstermine für ' %d ' Serien." % (number_of_considered_transmissions, number_of_considered_series), True)
 				break
 		#
 		# In order to provide an emergency recording service when serien server is down or
@@ -604,14 +619,19 @@ class serienRecCheckForRecording:
 						markerChannels = {x: x for x in webChannels}
 					else:
 						markerChannels = {x: x for x in SerieSender}
+						SRLogger.writeLogFilter("channels", "' %s ' - Für diesen Serien-Marker sind die Sender eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt." % serienTitle)
 						limitedChannels = True
 
 					jobQueue.put((markerChannels, SerieUrl, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType, limitedChannels))
 				else:
 					SRLogger.writeLog("' %s ' - Dieser Serien-Marker ist deaktiviert - es werden keine Timer angelegt." % serienTitle, True)
 
-				if -2 in SerieStaffel:
+				if -2 in SerieStaffel: # 'Manuell'
 					SRLogger.writeLog("' %s ' - Für diesen Serien-Marker sind die Staffeln auf 'manuell' gestellt - es werden keine Timer automatisch angelegt." % serienTitle, True)
+				elif (-1 in SerieStaffel) and (0 in SerieStaffel):  # 'Alle'
+					dummy = 0
+				else:
+					SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Für diesen Serien-Marker sind die Staffeln eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt." % serienTitle)
 
 			# Create the threads
 			for i in range(4):
@@ -620,10 +640,19 @@ class serienRecCheckForRecording:
 				worker.start()
 
 			jobQueue.join()
+			number_of_planer_transmissions = 0
+			number_of_planer_series = 0
 			while not resultQueue.empty():
 				(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType, limitedChannels) = resultQueue.get()
-				self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, excludedWeekdays, markerType)
+				self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, 1, excludedWeekdays, markerType)
+				number_of_planer_transmissions += len(transmissions)
+				if len(transmissions) > 0:
+					number_of_planer_series += 1
 				resultQueue.task_done()
+
+			SRLogger.writeLog("\nEs wurden ' %d ' Ausstrahlungstermine für ' %d ' Serien aus der TV-Planer E-Mail ausgelesen." % (number_of_planer_transmissions, number_of_planer_series), True)
+			(number_of_considered_transmissions, number_of_considered_series) = self.tempDB.countTransmissions(1)
+			SRLogger.writeLog("Berücksichtigt werden ' %d ' Ausstrahlungstermine für ' %d ' Serien." % (number_of_considered_transmissions, number_of_considered_series), True)
 
 		self.createTimer()
 		self.checkFinal()
@@ -737,16 +766,16 @@ class serienRecCheckForRecording:
 		# in den deep-standby fahren.
 		self.askForDSB()
 
-	def processTransmission(self, data, serien_wlid, serien_fsid, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, excludedWeekdays=None, markerType=0):
+	def processTransmission(self, data, serien_wlid, serien_fsid, serien_name, staffeln, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, source, excludedWeekdays=None, markerType=0):
 		if data is None:
 			SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der Ausstrahlungstermine [%s]" % serien_name, True)
 			# print("[SerienRecorder] processTransmissions: no Data")
 			return
 
-		print("[SerienRecorder] processTransmissions: %r [%d]" % (toStr(serien_name), len(data)))
+		print("[SerienRecorder] processTransmissions: (%d) %r [%d]" % (source, toStr(serien_name), len(data)))
 
 		if len(data) == 0 and limitedChannels:
-			SRLogger.writeLogFilter("channels", "' %s ' Es wurden keine Ausstrahlungstermine gefunden, die Sender sind am Marker eingeschränkt." % serien_name)
+			SRLogger.writeLogFilter("channels", "' %s ' - Für diesen Serien-Marker wurden keine Ausstrahlungstermine gefunden, die Sender sind am Marker eingeschränkt." % serien_name)
 
 		(fromTime, toTime) = self.database.getTimeSpan(serien_wlid, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
 		if self.noOfRecords < AnzahlAufnahmen:
@@ -792,8 +821,8 @@ class serienRecCheckForRecording:
 			#
 			# ueberprueft welche sender aktiviert und eingestellt sind.
 			#
-			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkSender(sender)
-			if stbChannel == "" and altstbChannel == "":
+			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.checkChannel(sender)
+			if stbRef == "" and altstbRef == "":
 				SRLogger.writeLogFilter("channels", "' %s ' - Box-Sender nicht gefunden ' → ' %s '" % (label_serie, webChannel))
 				continue
 
@@ -866,7 +895,7 @@ class serienRecCheckForRecording:
 
 			(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
 			self.tempDB.addTransmission([(current_time, future_time, serien_name, serien_wlid, serien_fsid, markerType, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, start_unixtime, end_unixtime, altstbChannel, altstbRef, dirname, AnzahlAufnahmen,
-			                              fromTime, toTime, int(vomMerkzettel), excludedWeekdays, updateFromEPG)])
+			                              fromTime, toTime, int(vomMerkzettel), excludedWeekdays, updateFromEPG, source)])
 		self.tempDB.commitTransaction()
 
 	def askForDSB(self):
@@ -910,7 +939,7 @@ class serienRecCheckForRecording:
 					SRLogger.writeLog("Gehe in den Standby")
 					Notifications.AddNotification(Screens.Standby.Standby)
 
-	def checkSender(self, channel):
+	def checkChannel(self, channel):
 		if channel.lower() in self.senderListe:
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = self.senderListe[channel.lower()]
 		else:

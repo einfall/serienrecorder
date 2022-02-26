@@ -970,7 +970,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Timernachlauf (in Min.):", config.plugins.serienRec.margin_after))
 		self.list.append(getConfigListEntry("Timername:", config.plugins.serienRec.TimerName))
 		self.list.append(getConfigListEntry("Timerbeschreibung:", config.plugins.serienRec.TimerDescription))
-		self.list.append(getConfigListEntry("Manuelle Timer immer erstellen:", config.plugins.serienRec.forceManualRecording))
+		self.list.append(getConfigListEntry("Manuelle Timer immer anlegen:", config.plugins.serienRec.forceManualRecording))
 		self.list.append(getConfigListEntry("Event-Programmierungen behandeln:", config.plugins.serienRec.splitEventTimer))
 		if config.plugins.serienRec.splitEventTimer.value != "0":
 			self.list.append(getConfigListEntry("    Episoden-Titel beim Vergleich berücksichtigen:", config.plugins.serienRec.splitEventTimerCompareTitle))

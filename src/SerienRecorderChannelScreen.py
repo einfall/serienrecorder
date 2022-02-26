@@ -213,8 +213,12 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 	def showChannels(self):
 		self.serienRecChannelList = []
 		channels = self.database.getChannels(True)
+		stbChannelList = STBHelpers.buildSTBChannelList()
+
 		for channel in channels:
 			(webSender, servicename, serviceref, altservicename, altserviceref, status) = channel
+			servicename = STBHelpers.getChannelByRef(stbChannelList, serviceref)
+			altservicename = STBHelpers.getChannelByRef(stbChannelList, altserviceref)
 			self.serienRecChannelList.append((webSender, servicename, altservicename, status))
 
 		if len(self.serienRecChannelList) != 0:
@@ -383,14 +387,14 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self.stbChannelList.insert(0, ("", ""))
 			self.chooseMenuList_popup.setList(list(map(self.buildList_popup, self.stbChannelList)))
 			idx = 0
-			(stbChannel, altstbChannel) = self.database.getSTBChannel(self['list'].getCurrent()[0][0])
-			if stbChannel:
+			(serviceRef, altServiceRef) = self.database.getSTBChannelRef(self['list'].getCurrent()[0][0])
+			if serviceRef:
 				try:
-					idx = list(zip(*self.stbChannelList))[0].index(stbChannel)
+					idx = list(zip(*self.stbChannelList))[1].index(serviceRef)
 				except:
 					pass
 			self['popup_list'].moveToIndex(idx)
-			self['title'].setText("Standard STB-Sender für %s:" % self['list'].getCurrent()[0][0])
+			self['title'].setText("Standard STB-Sender für '%s':" % self['list'].getCurrent()[0][0])
 		elif config.plugins.serienRec.selectBouquets.value:
 			if self.modus == "popup_list":
 				self.modus = "popup_list2"
@@ -401,14 +405,14 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				self.stbChannelList.insert(0, ("", ""))
 				self.chooseMenuList_popup2.setList(list(map(self.buildList_popup, self.stbChannelList)))
 				idx = 0
-				(stbChannel, altstbChannel) = self.database.getSTBChannel(self['list'].getCurrent()[0][0])
-				if stbChannel:
+				(serviceRef, altServiceRef) = self.database.getSTBChannelRef(self['list'].getCurrent()[0][0])
+				if altServiceRef:
 					try:
-						idx = list(zip(*self.stbChannelList))[0].index(altstbChannel)
+						idx = list(zip(*self.stbChannelList))[1].index(altServiceRef)
 					except:
 						pass
 				self['popup_list2'].moveToIndex(idx)
-				self['title'].setText("alternativer Box-Sender für %s:" % self['list'].getCurrent()[0][0])
+				self['title'].setText("alternativer Box-Sender für '%s':" % self['list'].getCurrent()[0][0])
 			else:
 				self.modus = "list"
 				self['popup_list'].hide()

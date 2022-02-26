@@ -709,7 +709,11 @@ class SRDatabase:
 		if row:
 			(tagString,) = row
 			if tagString is not None and len(tagString) > 0:
-				tags = pickle.loads(tagString)
+				try:
+					tags = pickle.loads(tagString)
+				except:
+					SRLogger.writeLog("Fehler beim Lesen der gespeicherten Tags am Marker mit der Wunschliste ID ' %s '" % wlID)
+
 		cur.close()
 		return tags
 
@@ -1224,9 +1228,9 @@ class SRDatabase:
 		cur.close()
 		return channels
 
-	def getSTBChannel(self, channel):
+	def getSTBChannelRef(self, channel):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT STBChannel, alternativSTBChannel FROM Channels WHERE LOWER(WebChannel)=?", [channel.lower()])
+		cur.execute("SELECT ServiceRef, alternativServiceRef FROM Channels WHERE LOWER(WebChannel)=?", [channel.lower()])
 		row = cur.fetchone()
 		cur.close()
 		return row
@@ -1557,7 +1561,8 @@ class SRTempDatabase:
 																	AufnahmezeitBis INTEGER,
 																	vomMerkzettel INTEGER DEFAULT 0,
 																	excludedWeekdays INTEGER DEFAULT NULL,
-																	updateFromEPG INTEGER DEFAULT 1)''')
+																	updateFromEPG INTEGER DEFAULT 1,
+																	source INTEGER DEFAULT NULL)''')
 
 		cur.close()
 
@@ -1575,7 +1580,7 @@ class SRTempDatabase:
 		cur = self._tempDBConn.cursor()
 		sql = "INSERT OR IGNORE INTO GefundeneFolgen (CurrentTime, FutureTime, SerieName, wlID, fsID, type, Staffel, Episode, SeasonEpisode," \
 		      " Title, LabelSerie, webChannel, stbChannel, ServiceRef, StartTime, EndTime, alternativStbChannel, alternativServiceRef, DirName," \
-		      " AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays, updateFromEPG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+		      " AnzahlAufnahmen, AufnahmezeitVon, AufnahmezeitBis, vomMerkzettel, excludedWeekdays, updateFromEPG, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		cur.execute(sql, transmission[0])
 		cur.close()
 
@@ -1620,3 +1625,9 @@ class SRTempDatabase:
 			cur.execute("DELETE FROM GefundeneFolgen WHERE fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND StartTime=? AND LOWER(ServiceRef)=?", (fsID, str(season).lower(), episode.lower(), startUnixtime, stbRef.lower()))
 		cur.close()
 
+	def countTransmissions(self, source):
+		cur = self._tempDBConn.cursor()
+		cur.execute("SELECT COUNT(*), COUNT(DISTINCT wlID) FROM GefundeneFolgen WHERE source = ?", [source])
+		(number_of_transmissions, number_of_series) = cur.fetchone()
+		cur.close()
+		return (number_of_transmissions, number_of_series)

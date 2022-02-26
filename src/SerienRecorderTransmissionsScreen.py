@@ -310,21 +310,14 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		foregroundColor = parseColor('foreground').argb()
 
 		return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor,
-				 loadPNG(leftImage)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 240 * skinFactor, 26 * skinFactor, 0,
-				 RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender, foregroundColor, foregroundColor),
-				(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 230 * skinFactor,
-				 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (datum, startTime)),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 7 * skinFactor, 30 * skinFactor,
-				 22 * skinFactor, loadPNG(imageTimer)),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 30 * skinFactor, 30 * skinFactor,
-				 22 * skinFactor, loadPNG(imageHDD)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0,
-				 RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, foregroundColor, foregroundColor),
-				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 498 * skinFactor,
-				 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title),
-				 titleColor, titleColor)
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 15 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 240 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
+				(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 230 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (datum, startTime), foregroundColor, foregroundColor),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 7 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer)),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 265 * skinFactor, 30 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDD)),
+				#(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 565 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
+				#(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 29 * skinFactor, 565 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), titleColor, titleColor)
+				(eListboxPythonMultiContent.TYPE_TEXT, 300 * skinFactor, 3, 565 * skinFactor, 44 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s - %s" % (seasonEpisodeString, title), titleColor, titleColor)
 				]
 
 	@staticmethod
