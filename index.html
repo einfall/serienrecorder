@@ -356,8 +356,8 @@
 					
 					
 					</div>
-					<div class="update">Letztes Update <strong>21.02.2022</strong> <br>Stand der Anleitung:<br><a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-4-4-0-16-05-2021/&postID=2102299#post2102299" target="_blank"><strong><u>Version 4.4.8 Beta</u></strong></a>
-					<br><a href="https://www.vuplus-support.org/wbb4/index.php?thread/142111-serienrecorder-webinterface-0-9-1-24-05-2021/&postID=2102872#post2102872" target="_blank"> Webinterface 0.9.4</a>
+					<div class="update">Letztes Update <strong>27.02.2022</strong> <br>Stand der Anleitung:<br><a href="https://www.vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-4-4-0-16-05-2021/&postID=2102299#post2102299" target="_blank"><strong><u>Version 4.4.9 Beta</u></strong></a>
+					<br><a href="https://www.vuplus-support.org/wbb4/index.php?thread/142111-serienrecorder-webinterface-0-9-1-24-05-2021/&postID=2102872#post2102872" target="_blank"> Webinterface 0.9.5</a>
 					</div>
 				
 				<br>
@@ -700,8 +700,24 @@
   <br>Ist die <a href="#starttv-planer-mail"><strong><u>TV-Planer-Mail-Funktion</u></strong></a> aktiviert, dann wird mit <kbd>EPG</kbd> ein Hinweisfenster (Messagebox) geöffnet, wo man auswählen muss ob der Timer-Suchlauf nur die Mail verarbeiten soll oder aber ein Voller Timer-Suchlauf über alle aktiven Serien gemacht werden soll. Es gibt bei den Messageboxen leider nur Ja/Nein - dann ist <kbd>Exit</kbd> automatisch immer „Nein“, das lässt sich nicht ändern.
   <br>Bei einem vollen Timer-Suchlauf werden für alle aktivierten Serien-Marker die Ausstrahlungstermine von Wunschliste.de (bzw. dem SerienServer) abgerufen und ggf. für den eingestellten Zeitraum Timer angelegt.
   </p>
-  <p> Das Protokoll eines automatischen bzw. manuellen Suchlauf wird in einer Log-Datei abgespeichert und kann, aus so gut wie jeder Ansicht heraus, über die Taste <kbd>0</kbd> aufgerufen werden. </p>
-  <a class="ml-5" href="#autocheck"><strong><u>- Einstellungen zum Timer-Suchlauf</u></strong></a>
+  <p> Das Protokoll eines automatischen bzw. manuellen Suchlauf wird in einer Log-Datei abgespeichert und kann, aus so gut wie jeder Ansicht heraus, über die Taste <kbd>0</kbd> aufgerufen werden. 
+<br>Beim Timer-Suchlauf werden noch zusätzliche Informationen ausgegeben, die hoffentlich bei der Fehlersuche helfen:
+<br>Wie z.B.:
+<ul>
+	<li>' Serie xyz ' - Für diesen Serien-Marker sind die Staffeln eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt.</li>
+	<li>' Serie xyz ' - Für diesen Serien-Marker sind die Sender eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt.</li>
+	<li>Es wurden ' 194 ' Ausstrahlungstermine für ' 41 ' Serien vom SerienServer abgerufen.
+		<br>Berücksichtigt werden ' 143 ' Ausstrahlungstermine für ' 35 ' Serien.</li>
+		<br>
+		Dazu passend auch die Ausgabe, wenn man den TV-Planer Suchlauf nutzt:
+		<br><br>
+	<li>Es wurden ' 34 ' Ausstrahlungstermine für ' 10 ' Serien aus der TV-Planer E-Mail ausgelesen.
+		<br>Berücksichtigt werden ' 24 ' Ausstrahlungstermine für ' 9 ' Serien.</li>
+	
+</ul>
+</p>
+<br>
+  <a href="#autocheck"><strong><u>- Einstellungen zum Timer-Suchlauf</u></strong></a>
   <br><br>
   
 </div> 
@@ -2266,6 +2282,8 @@
 			<br><br>Man kann noch zusätzlich „alternative Sender“ <strong>(alt.Box-Sender)</strong> angeben, die dann zur Timererstellung genutzt werden, falls es Konflikte gibt oder man für einzelne Serien anstatt des HD Kanals, den UHD Kanal auswählen möchte. Um die alternativen Sender nutzen zu können ist es erforderlich, das man mind. 2 Bouquets auf der Box angelegt hat. Dann muss man noch in der Einstellung <a href="#bouquets-auswählen"><strong><u>Bouquets auswählen</u></strong></a> eines für die "normalen" Sender und eines für die alternativen Sender zuordnen. Hier wird dann idR als "alternativer Sender" die SD Variante eines HD-Senders genutzt, um Timerkonflikte zu umgehen.
 			<br>Man kann bei <strong>Bouquets auswählen</strong> aber auch 2 mal das selbe Bouquet angeben, falls man bei manchen Serien anstatt des HD-Senders lieber den UHD-Sender zuordnen möchte, sofern alles in einem Bouquet ist.
 			<br>Die Nutzung der alternativen Sender hat dann allerdings den Nachteil, das man dann nur noch Sender aus den beiden Bouquets zuordnen kann, die man angegeben hat.
+			<br><br>
+			Seit der <strong>SR-Version 4.4.9</strong> verwendet der SerienRecorder jetzt an allen Stellen die ServiceRef und liest den Sendername für die Anzeige live aus der Senderliste der Box aus. So sieht man auch in der Senderzuordnung wenn ein falscher Sender durch eine Änderung der ServiceRef vorhanden ist.
 		</p>
 		<br>
 		<p><h4><strong>Beispiel Screenshot für die Senderzuordnung</strong></h4></p>
@@ -3880,7 +3898,13 @@
 		<br>
 		<p>Hiermit ist die Einrichtung der <strong>Wunschliste TV-Planer E-Mail</strong> abgeschlossen und sollte nun funktionieren.
 		</p>
-		
+		<br><br>
+		<p>Beim TV-Planer Suchlauf wird eine Senderprüfung durchgeführt.
+		Es wird geprüft, ob der in der E-Mail angegebene Sender auch im SerienRecorder zugeordnet ist. Falls nicht, wird eine entsprechende Meldung im Log ausgegeben.
+		<div class="bs-callout bs-callout">Der Sender ' xyz ' wurde in der TV-Planer E-Mail gefunden, ist aber im SerienRecorder nicht zugeordnet.
+		</div>
+
+		</p>
 		<br><br>
 		<p class="lead">
 		   <strong>Anmerkungen und Wissenswertes</strong>
@@ -4199,24 +4223,32 @@
 		
 		</ul>
 		</p>
-		<p>Die Daten für die Serien-/Staffelstart Ansicht werden von unserem SerienServer generiert und zeigen immer nur Serien der im SerienRecorder zugewiesenen Sender an. Es würde ja keinen Sinn ergeben, hier Serien anzuzeigen, die auf Sendern ausgestrahlt werden, die man selbst nicht empfangen kann. 
+		<p>Die Daten für die Serien-/Staffelstart Ansicht werden von unserem SerienServer generiert und zeigen beim öffnen nur Serien der im SerienRecorder zugewiesenen Sender an. Es würde ja keinen Sinn ergeben, hier Serien anzuzeigen, die auf Sendern ausgestrahlt werden, die man selbst nicht empfangen kann.
+		<br>Man kann aber mit <kbd class="blue">Blau</kbd> die Ansicht umschalten, so das auch Serien-/Staffelstarts <strong>Aller Sender</strong> angezeigt werden können. Drückt man ein weiteres mal auf <kbd class="blue">Blau</kbd> wird wieder umgeschaltet auf <strong>Zugewiesene Sender</strong><div class=""></div>
 		</p>
 		<br>
 		<p><h4><strong>Beispiel Screenshot für eine Anzeige der Staffelstarts</strong></h4></p>
 		<div class="thumbnail with-caption">
-			<img src="images/staffelstarts.jpg" alt="Screenshot für Staffelstarts" class="center">
+			<img src="images/staffelstarts-zugewiesene_sender.jpg" alt="Screenshot für Staffelstarts" class="center">
 
 			<p>
 				<small>Staffelstarts Screenshot</small>
 			</p>
 		</div>
-		<p class="mt-5">Im obigen Screenshot werden sämtliche Staffelstarts angezeigt, egal ob Staffel 01, 02 oder 08.
+		<div class="thumbnail with-caption">
+			<img src="images/staffelstarts-alle_sender.jpg" alt="Screenshot für Staffelstarts" class="center">
+
+			<p>
+				<small>Staffelstarts Screenshot</small>
+			</p>
+		</div>
+		<p class="mt-5">In den beiden obigen Screenshots werden sämtliche Staffelstarts angezeigt, egal ob Staffel 01, 02 oder 08.
 		</p>
 		
 		<br>
 		<p><h4><strong>Beispiel Screenshot für eine Anzeige der Serienstarts</strong></h4></p>
 		<div class="thumbnail with-caption">
-			<img src="images/serienstarts.jpg" alt="Screenshot für Serienstarts" class="center">
+			<img src="images/serienstarts-alle_sender.jpg" alt="Screenshot für Serienstarts" class="center">
 
 			<p>
 				<small>Serienstarts Screenshot</small>
