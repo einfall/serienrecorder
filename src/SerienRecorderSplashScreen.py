@@ -69,9 +69,9 @@ class ShowSplashScreen(Screen):
 		self['version'].instance.setZPosition(5)
 		self['copyright'].instance.setZPosition(5)
 
-		from .SerienRecorderHelpers import SRVERSION
+		from .SerienRecorderHelpers import SRVERSION, SRCOPYRIGHT
 		self['version'].setText("Version %s" % SRVERSION)
-		self['copyright'].setText("©2014-21 einfall, w22754, egn und MacDisein")
+		self['copyright'].setText(SRCOPYRIGHT)
 
 	def keyExit(self):
 		self.close()

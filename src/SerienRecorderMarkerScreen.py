@@ -48,6 +48,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.sender_liste = []
 		self.AbEpisode = 0
 		self.columnWidth = int(config.plugins.serienRec.markerColumnWidth.value)
+		self.markerList = []
 
 		if config.plugins.serienRec.firstscreen.value == "0":
 			self.showMainScreen = True
@@ -68,6 +69,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			"right"         : (self.keyRight, "Zur nächsten Seite blättern"),
 			"up"            : (self.keyUp, "Eine Zeile nach oben"),
 			"down"          : (self.keyDown, "Eine Zeile nach unten"),
+			"nextBouquet"   : (self.keyNextBouquet, "Zur vorherigen Serie mit anderem Anfangsbuchstaben springen"),
+			"prevBouquet"   : (self.keyPrevBouquet, "Zur nächsten Serie mit anderem Anfangsbuchstaben springen"),
 			"menu"          : (self.markerSetup, "Menü für Serien-Einstellungen öffnen"),
 			"menu_long"     : (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"startTeletext" : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
@@ -99,7 +102,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		self.modus = "menu_list"
 		self.changesMade = False
 		self.loading = True
-		self.selected_serien_wlid = toBeSelect
+		self.selected_serien_fsid = toBeSelect
 
 		self.onShow.append(self.checkLastMarkerUpdate)
 
@@ -178,14 +181,14 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 		serien_id = self['menu_list'].getCurrent()[0][0]
 		serien_name = self['menu_list'].getCurrent()[0][1]
-		self.selected_serien_wlid = self['menu_list'].getCurrent()[0][2]
-		serien_fsid = self['menu_list'].getCurrent()[0][13]
-		self.session.openWithCallback(self.setupFinished, serienRecMarkerSetup, serien_name, self.selected_serien_wlid, serien_id, serien_fsid)
+		serien_wlid = self['menu_list'].getCurrent()[0][2]
+		self.selected_serien_fsid = self['menu_list'].getCurrent()[0][13]
+		self.session.openWithCallback(self.setupFinished, serienRecMarkerSetup, serien_name, serien_wlid, serien_id, self.selected_serien_fsid)
 
 	def setupFinished(self, result):
 		if result:
 			self.changesMade = True
-		self.readSerienMarker(self.selected_serien_wlid)
+		self.readSerienMarker(self.selected_serien_fsid)
 		return
 
 	def getCurrentSelection(self):
@@ -245,7 +248,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if self['menu_list'].getCurrent() is None:
 			return
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		super(self.__class__, self).wunschliste(serien_wlid)
+		super(self.__class__, self).wunschliste(serien_fsid)
 
 	def resetTransmissions(self):
 		if self['menu_list'].getCurrent() is None:
@@ -269,19 +272,19 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		from .SerienRecorder import getCover
-		getCover(self, serien_name, serien_wlid, serien_fsid)
+		getCover(self, serien_name, serien_fsid)
 
-	def readSerienMarker(self, selectedSeriesWLID=None):
-		if selectedSeriesWLID:
-			self.selected_serien_wlid = selectedSeriesWLID
+	def readSerienMarker(self, selectedSeriesFSID=None):
+		if selectedSeriesFSID:
+			self.selected_serien_fsid = selectedSeriesFSID
 
-		numberOfDeactivatedSeries, markerList = self.getMarkerList(self.database)
-		self['title'].setText("Serien-Marker - %d/%d Serien vorgemerkt." % (len(markerList)-numberOfDeactivatedSeries, len(markerList)))
-		if len(markerList) != 0:
-			self.chooseMenuList.setList(list(map(self.buildList, markerList)))
-			if self.selected_serien_wlid:
+		numberOfDeactivatedSeries, self.markerList = self.getMarkerList(self.database)
+		self['title'].setText("Serien-Marker - %d/%d Serien vorgemerkt." % (len(self.markerList)-numberOfDeactivatedSeries, len(self.markerList)))
+		if len(self.markerList) != 0:
+			self.chooseMenuList.setList(list(map(self.buildList, self.markerList)))
+			if self.selected_serien_fsid:
 				try:
-					idx = list(zip(*markerList))[2].index(str(self.selected_serien_wlid))
+					idx = list(zip(*self.markerList))[13].index(self.selected_serien_fsid)
 					self['menu_list'].moveToIndex(idx)
 				except Exception:
 					pass
@@ -294,13 +297,13 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		markerList = []
 		numberOfDeactivatedSeries = 0
 		
-		markers = database.getAllMarkers(True if config.plugins.serienRec.markerSort.value == '1' else False)		
+		markers = database.getAllMarkers(True if config.plugins.serienRec.markerSort.value == '1' else False)
 		for marker in markers:
 			(ID, Serie, Info, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount, fsID) = marker
 			if alleSender:
 				sender = ['Alle',]
 			else:
-				sender = database.getMarkerChannels(Url, False)
+				sender = database.getMarkerChannels(fsID, False)
 
 			if AlleStaffelnAb == -2: 		# 'Manuell'
 				staffeln = ['Manuell',]
@@ -395,7 +398,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def keyOK(self):
 		if self.modus == "popup_list":	# Staffel
-			self.selected_serien_wlid = self['menu_list'].getCurrent()[0][2]
+			self.selected_serien_fsid = self['menu_list'].getCurrent()[0][13]
 			select_staffel = self['popup_list'].getCurrent()[0][0]
 			select_mode = self['popup_list'].getCurrent()[0][1]
 			select_index = self['popup_list'].getCurrent()[0][2]
@@ -442,7 +445,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 			self.chooseMenuList_popup.setList(list(map(self.buildList2, self.staffel_liste)))
 		elif self.modus == "popup_list2":	# Sender
-			self.selected_serien_wlid = self['menu_list'].getCurrent()[0][2]
+			self.selected_serien_fsid = self['menu_list'].getCurrent()[0][13]
 			select_sender = self['popup_list'].getCurrent()[0][0]
 			select_mode = self['popup_list'].getCurrent()[0][1]
 			select_index = self['popup_list'].getCurrent()[0][2]
@@ -475,7 +478,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				return
 
 			self.modus = "popup_list"
-			self.selected_serien_wlid = self['menu_list'].getCurrent()[0][2]
+			self.selected_serien_fsid = self['menu_list'].getCurrent()[0][13]
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			
@@ -483,7 +486,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			staffeln.extend(list(range(config.plugins.serienRec.max_season.value+1)))
 			mode_list = [0,]*len(staffeln)
 			index_list = list(range(len(staffeln)))
-			(ID, AlleStaffelnAb, self.AbEpisode, TimerForSpecials) = self.database.getMarkerSeasonSettings(self.selected_serien_wlid)
+			(ID, AlleStaffelnAb, self.AbEpisode, TimerForSpecials) = self.database.getMarkerSeasonSettings(self.selected_serien_fsid)
 
 			if AlleStaffelnAb == -2:		# 'Manuell'
 				mode_list[0] = 1
@@ -539,12 +542,12 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				self.modus = "popup_list2"
 				self['popup_list'].show()
 				self['popup_bg'].show()
-				self.selected_serien_wlid = self['menu_list'].getCurrent()[0][2]
+				self.selected_serien_fsid = self['menu_list'].getCurrent()[0][13]
 
 				activeChannels.insert(0, 'Alle')
 				mode_list = [0,]*len(activeChannels)
 				index_list = list(range(len(activeChannels)))
-				channels = self.database.getMarkerChannels(self.selected_serien_wlid, False)
+				channels = self.database.getMarkerChannels(self.selected_serien_fsid, False)
 				if len(channels) > 0:
 					for channel in channels:
 						if channel in activeChannels:
@@ -585,7 +588,17 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def callDelMsg(self, answer):
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
 		self.removeSerienMarker(serien_fsid, serien_name, answer)
-		
+
+	def callCleanupTimer(self, answer):
+		if answer:
+			(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+			serien_info = self['menu_list'].getCurrent()[0][12]
+			(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = self.database.getMarkerSeasonSettings(serien_fsid)
+			seasonList = self.database.getAllowedSeasons(ID, allSeasonsFrom)
+			print("[SerienRecorder] callCleanupTimer", ID, allSeasonsFrom, fromEpisode, timerForSpecials, seasonList)
+			numberOfRemovedTimers = self.database.removeTimersBySeason(serien_fsid, allSeasonsFrom, seasonList, timerForSpecials)
+			self.session.open(MessageBox, "Es wurden %d Timer Einträge für '%s (%s) aus der Datenbank gelöscht." % (numberOfRemovedTimers, serien_name, serien_info), MessageBox.TYPE_INFO, timeout=10)
+
 	def removeSerienMarker(self, serien_fsid, serien_name, answer):
 		serien_info = self['menu_list'].getCurrent()[0][12]
 		serienRecMarker.doRemoveSerienMarker(serien_fsid, serien_name, serien_info, answer)
@@ -609,9 +622,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				print("[SerienRecorder] Serien-Marker Tabelle leer.")
 				return
 			else:
-				self.selected_serien_wlid = self['menu_list'].getCurrent()[0][2]
-				self.database.changeMarkerStatus(self.selected_serien_wlid, config.plugins.serienRec.BoxID.value)
-				self.readSerienMarker(self.selected_serien_wlid)
+				self.selected_serien_fsid = self['menu_list'].getCurrent()[0][13]
+				self.database.changeMarkerStatus(self.selected_serien_fsid, config.plugins.serienRec.BoxID.value)
+				self.readSerienMarker(self.selected_serien_fsid)
 					
 	def keyRedLong(self):
 		if self.modus == "menu_list":
@@ -619,7 +632,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				print("[SerienRecorder] Serien-Marker Tabelle leer.")
 				return
 			else:
-				self.selected_serien_wlid = None
+				self.selected_serien_fsid = None
 				serien_name = self['menu_list'].getCurrent()[0][1]
 				serien_info = self['menu_list'].getCurrent()[0][12]
 				if config.plugins.serienRec.confirmOnDelete.value:
@@ -636,9 +649,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				self.session.openWithCallback(self.callDisableAll, MessageBox, "Alle Serien-Marker für diese Box deaktivieren?", MessageBox.TYPE_YESNO, default = False)
 
 	def insertStaffelMarker(self):
-		(ID, AlleStaffelnAb, AbEpisode, TimerForSpecials) = self.database.getMarkerSeasonSettings(self.selected_serien_wlid)
+		(ID, AlleStaffelnAb, AbEpisode, TimerForSpecials) = self.database.getMarkerSeasonSettings(self.selected_serien_fsid)
 		if ID:
-			self.database.removeAllMarkerSeasons(self.selected_serien_wlid)
+			self.database.removeAllMarkerSeasons(self.selected_serien_fsid)
 			liste = self.staffel_liste[1:]
 			print("[SerienRecorder] insertStaffelMarker")
 			#print(liste)
@@ -684,15 +697,18 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			if AlleStaffelnAb == -2: # 'Manuell'
 				self.session.open(MessageBox, "Mit dieser Einstellung ('Manuell') werden für diesen\nSerien-Marker keine Timer mehr automatisch angelegt!", MessageBox.TYPE_INFO, timeout=10)
 
-		self.database.updateMarkerSeasonsSettings(self.selected_serien_wlid, AlleStaffelnAb, AbEpisode, TimerForSpecials)
+		self.database.updateMarkerSeasonsSettings(self.selected_serien_fsid, AlleStaffelnAb, AbEpisode, TimerForSpecials)
+
+		if AlleStaffelnAb >= 2:
+			self.session.openWithCallback(self.callCleanupTimer, MessageBox, "Sollen die Timer Einträge für ältere Staffeln aus der Datenbank gelöscht werden?", MessageBox.TYPE_YESNO, default = False)
 
 		self.changesMade = True
 		self.readSerienMarker()
 
 	def insertMarkerChannels(self):
 		alleSender = 0
-		self.database.removeAllMarkerChannels(self.selected_serien_wlid)
-		markerID = self.database.getMarkerID(self.selected_serien_wlid)
+		self.database.removeAllMarkerChannels(self.selected_serien_fsid)
+		markerID = self.database.getMarkerID(self.selected_serien_fsid)
 		liste = self.sender_liste[1:]
 		liste = list(zip(*liste))
 		data = []
@@ -708,7 +724,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			alleSender = 1
 
-		self.database.setAllChannelsToMarker(self.selected_serien_wlid, alleSender)
+		self.database.setAllChannelsToMarker(self.selected_serien_fsid, alleSender)
 
 		self.changesMade = True
 		self.readSerienMarker()
@@ -768,9 +784,33 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			self.getCover()
 			self.setMenuKeyText()
 
+	def keyPrevBouquet(self):
+		if self.modus == "menu_list":
+			(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+			nextFSID = self.database.getNextMarker(serien_name[0].lower(), True if config.plugins.serienRec.markerSort.value == '1' else False)
+			try:
+				idx = list(zip(*self.markerList))[13].index(nextFSID)
+				self['menu_list'].moveToIndex(idx)
+			except Exception:
+				pass
+			self.getCover()
+			self.setMenuKeyText()
+
+	def keyNextBouquet(self):
+		if self.modus == "menu_list":
+			(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
+			previousFSID = self.database.getPreviousMarker(serien_name[0].lower(), True if config.plugins.serienRec.markerSort.value == '1' else False)
+			try:
+				idx = list(zip(*self.markerList))[13].index(previousFSID)
+				self['menu_list'].moveToIndex(idx)
+			except Exception:
+				pass
+			self.getCover()
+			self.setMenuKeyText()
+
 	def selectEpisode(self, episode):
 		if str(episode).isdigit():
-			self.database.setMarkerEpisode(self.selected_serien_wlid, episode)
+			self.database.setMarkerEpisode(self.selected_serien_fsid, episode)
 		self.insertStaffelMarker()
 			
 	def __onClose(self):

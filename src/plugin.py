@@ -21,10 +21,10 @@ def SRstart(session, **kwargs):
 def movielist(session, service, **kwargs):
 	from enigma import eServiceCenter
 
-	def handleSeriesSearchEnd(series_wlid=None):
-		if series_wlid:
+	def handleSeriesSearchEnd(series_fsid=None):
+		if series_fsid:
 			from .SerienRecorderMarkerScreen import serienRecMarker
-			session.open(serienRecMarker, series_wlid)
+			session.open(serienRecMarker, series_fsid)
 
 	serviceHandler = eServiceCenter.getInstance()
 	info = serviceHandler.info(service)
@@ -48,10 +48,10 @@ def eventinfo(session, servicelist, **kwargs):
 # EventView or EPGSelection
 def eventview(session, event, ref):
 
-	def handleSeriesSearchEnd(series_wlid=None):
-		if series_wlid:
+	def handleSeriesSearchEnd(series_fsid=None):
+		if series_fsid:
 			from .SerienRecorderMarkerScreen import serienRecMarker
-			session.open(serienRecMarker, series_wlid)
+			session.open(serienRecMarker, series_fsid)
 
 	if ref.getPath() and ref.getPath()[0] == "/":
 		from enigma import eServiceReference

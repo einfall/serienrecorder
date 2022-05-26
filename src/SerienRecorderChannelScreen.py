@@ -51,22 +51,19 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 		from .SerienRecorderDatabase import SRDatabase
 		self.database = SRDatabase(serienRecDataBaseFilePath)
 
-		# from difflib import SequenceMatcher
-		# self.sequenceMatcher = SequenceMatcher(" ".__eq__, "", "")
-		
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok"       : (self.keyOK, "Popup-Fenster zur Auswahl des STB-Sender öffnen"),
-			"cancel"   : (self.keyCancel, "zurück zur Serienplaner-Ansicht"),
-			"red"	   : (self.keyRed, "umschalten ausgewählter Sender für Timererstellung aktiviert/deaktiviert"),
-			"red_long" : (self.keyRedLong, "ausgewählten Sender aus der Channelliste endgültig löschen"),
+			"ok"       : (self.keyOK, "Popup-Fenster zur Auswahl des Senders auf der Box öffnen"),
+			"cancel"   : (self.keyCancel, "Zurück zur Serienplaner-Ansicht"),
+			"red"	   : (self.keyRed, "Ausgewählten Sender für Timererstellung aktivieren/deaktivieren"),
+			"red_long" : (self.keyRedLong, "Ausgewählten Sender aus der Senderliste löschen"),
 			"green"    : (self.keyGreen, "Sender-Zuordnung aktualisieren"),
 			"blue"     : (self.keyBlue, "Automatische Sender-Zuordnung"),
 			"menu"     : (self.channelSetup, "Menü für Sender-Einstellungen öffnen"),
 			"menu_long": (self.recSetup, "Menü für globale Einstellungen öffnen"),
-			"left"     : (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right"    : (self.keyRight, "zur nächsten Seite blättern"),
-			"up"       : (self.keyUp, "eine Zeile nach oben"),
-			"down"     : (self.keyDown, "eine Zeile nach unten"),
+			"left"     : (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right"    : (self.keyRight, "Zur nächsten Seite blättern"),
+			"up"       : (self.keyUp, "Eine Zeile nach oben"),
+			"down"     : (self.keyDown, "Eine Zeile nach unten"),
 			"0"		   : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"3"		   : (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"6"		   : (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
@@ -645,8 +642,8 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 			"green": (self.save, "Einstellungen speichern und zurück zur Sender-Ansicht"),
 			"cancel": (self.cancel, "Änderungen verwerfen und zurück zur Sender-Ansicht"),
 			"ok": (self.ok, "---"),
-			"up": (self.keyUp, "eine Zeile nach oben"),
-			"down": (self.keyDown, "eine Zeile nach unten"),
+			"up": (self.keyUp, "Eine Zeile nach oben"),
+			"down": (self.keyDown, "Eine Zeile nach unten"),
 			"startTeletext": (self.showAbout, "Über dieses Plugin"),
 		}, -1)
 		self.helpList[0][2].sort()

@@ -34,7 +34,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 					"@einfall: Ein PN schicken für den Amazon Wunschzettel,\n"
 		            "@MacDisein: PayPal an macdisein@gmx.de\n\n"
 		            "Mit Unterstützung und Genehmigung zur Verwendung der Daten von\n"
-		            "Wunschliste.de - http://www.wunschliste.de") % config.plugins.serienRec.showversion.value
+		            "Wunschliste.de - https://www.wunschliste.de") % config.plugins.serienRec.showversion.value
 
 		self["pluginInfo"] = Label(self.info)
 

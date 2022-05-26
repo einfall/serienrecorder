@@ -25,16 +25,16 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 		self.session = session
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"left": (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right": (self.keyRight, "zur nächsten Seite blättern"),
-			"up": (self.keyUp, "eine Zeile nach oben"),
-			"down": (self.keyDown, "eine Zeile nach unten"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"left": (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right": (self.keyRight, "Zur nächsten Seite blättern"),
+			"up": (self.keyUp, "Eine Zeile nach oben"),
+			"down": (self.keyDown, "Eine Zeile nach unten"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"3"	: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-			"red"   : (self.keyRed, "zurück zur vorherigen Ansicht"),
+			"red"   : (self.keyRed, "Zurück zur vorherigen Ansicht"),
 		}, -1)
 		self.helpList[0][2].sort()
 

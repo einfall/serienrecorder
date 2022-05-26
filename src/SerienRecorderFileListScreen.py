@@ -29,16 +29,16 @@ class serienRecFileListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.skin = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"left": (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right": (self.keyRight, "zur nächsten Seite blättern"),
-			"up": (self.keyUp, "eine Zeile nach oben"),
-			"down": (self.keyDown, "eine Zeile nach unten"),
-			"ok": (self.keyOk, "ins ausgewählte Verzeichnis wechseln"),
-			"green": (self.keyGreen, "ausgewähltes Verzeichnis übernehmen"),
-			"red": (self.keyRed, "ausgewähltes Verzeichnis löschen"),
-			"yellow": (self.keyYellow, "auf globales Aufnahmeverzeichnis zurücksetzen"),
-			"blue": (self.keyBlue, "neues Verzeichnis anlegen"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"left": (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right": (self.keyRight, "Zur nächsten Seite blättern"),
+			"up": (self.keyUp, "Eine Zeile nach oben"),
+			"down": (self.keyDown, "Eine Zeile nach unten"),
+			"ok": (self.keyOk, "In das ausgewählte Verzeichnis wechseln"),
+			"green": (self.keyGreen, "Ausgewähltes Verzeichnis übernehmen"),
+			"red": (self.keyRed, "Ausgewähltes Verzeichnis löschen"),
+			"yellow": (self.keyYellow, "Auf globales Aufnahmeverzeichnis zurücksetzen"),
+			"blue": (self.keyBlue, "Neues Verzeichnis anlegen"),
 		}, -1)
 		self.helpList[0][2].sort()
 

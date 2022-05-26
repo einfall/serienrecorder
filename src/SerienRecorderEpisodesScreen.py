@@ -142,7 +142,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		super(self.__class__, self).setupClose(result)
 
 	def wunschliste(self):
-		super(self.__class__, self).wunschliste(self.serien_wlid)
+		super(self.__class__, self).wunschliste(self.serien_fsid)
 
 	def resultsEpisodes(self, data):
 		self.maxPages = 1
@@ -165,7 +165,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.showPages()
 
 	def loadEpisodes(self):
-		getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
+		getCover(self, self.serien_name, self.serien_fsid)
 		if self.page in self.episodes_list_cache:
 			self.chooseMenuList.setList(list(map(self.buildList_episodes, self.episodes_list_cache[self.page])))
 			self['title'].setText("%s Episoden für ' %s ' gefunden." % (self.numberOfEpisodes, self.serien_name))
@@ -334,7 +334,7 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.page in self.episodes_list_cache:
 			if len(self.episodes_list_cache[self.page]) != 0:
 				if self.episodes_list_cache[self.page][sindex][2]:
-					self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.serien_wlid, self.serien_fsid, self.episodes_list_cache[self.page][sindex][3], self.episodes_list_cache[self.page][sindex][2])
+					self.session.open(serienRecShowEpisodeInfo, self.serien_name, self.serien_fsid, self.episodes_list_cache[self.page][sindex][3], self.episodes_list_cache[self.page][sindex][2])
 					#self.session.open(MessageBox, "Diese Funktion steht in dieser Version noch nicht zur Verfügung!", MessageBox.TYPE_INFO, timeout=10)
 
 	def keyRed(self):
@@ -475,14 +475,13 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		self.stopDisplayTimer()
 
 class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
-	def __init__(self, session, serieName, serienID, serienFSID, episodeTitle, episodeID):
+	def __init__(self, session, serieName, serienFSID, episodeTitle, episodeID):
 		serienRecBaseScreen.__init__(self, session)
 		Screen.__init__(self, session)
 		HelpableScreen.__init__(self)
 		self.displayMode = 2
 		self.session = session
 		self.picload = ePicLoad()
-		self.serien_wlid = serienID
 		self.serien_name = serieName
 		self.serien_fsid = serienFSID
 		self.episodeID = episodeID
@@ -491,12 +490,12 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		self.displayTimer_conn = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"red"   : (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"left"  : (self.pageUp, "zur vorherigen Seite blättern"),
-			"right" : (self.pageDown, "zur nächsten Seite blättern"),
-			"up"    : (self.pageUp, "zur vorherigen Seite blättern"),
-			"down"  : (self.pageDown, "zur nächsten Seite blättern"),
+			"red"   : (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"left"  : (self.pageUp, "Zur vorherigen Seite blättern"),
+			"right" : (self.pageDown, "Zur nächsten Seite blättern"),
+			"up"    : (self.pageUp, "Zur vorherigen Seite blättern"),
+			"down"  : (self.pageDown, "Zur nächsten Seite blättern"),
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"startTeletext"  : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
@@ -569,7 +568,7 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		updateMenuKeys(self)
 
 	def wunschliste(self):
-		super(self.__class__, self).wunschliste(self.serien_wlid)
+		super(self.__class__, self).wunschliste(self.serien_fsid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -577,7 +576,7 @@ class serienRecShowEpisodeInfo(serienRecBaseScreen, Screen, HelpableScreen):
 			self.getData()
 
 	def getData(self):
-		getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
+		getCover(self, self.serien_name, self.serien_fsid)
 
 		def downloadEpisodeInfo():
 			print("[SerienRecorder] downloadEpisodeInfo")

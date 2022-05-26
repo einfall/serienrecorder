@@ -51,11 +51,11 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok"    : (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
 			"cancel": (self.keyCancel, "SerienRecorder beenden"),
-			"left"  : (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right" : (self.keyRight, "zur nächsten Seite blättern"),
-			"up"    : (self.keyUp, "eine Zeile nach oben"),
-			"down"  : (self.keyDown, "eine Zeile nach unten"),
-			"red"	: (self.keyRed, "Anzeige-Modus auswählen"),
+			"left"  : (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right" : (self.keyRight, "Zur nächsten Seite blättern"),
+			"up"    : (self.keyUp, "Eine Zeile nach oben"),
+			"down"  : (self.keyDown, "Eine Zeile nach unten"),
+			"red"	: (self.keyRed, "Anzeige-Modus wechseln (Serien-Planer / Top 30)"),
 			"green"	: (self.keyGreen, "Ansicht Sender-Zuordnung öffnen"),
 			"yellow": (self.keyYellow, "Ansicht Serien-Marker öffnen"),
 			"blue"	: (self.keyBlue, "Ansicht Timer-Liste öffnen"),
@@ -71,7 +71,8 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
-			"8"		: (self.reloadSerienplaner, "Serienplaner neu laden"),
+			"8"		: (self.reloadSerienplaner, "Serien-Planer neu laden"),
+			#"9"     : (self.test, ""),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -117,6 +118,10 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				self.onFirstExecBegin.append(self.startScreen)
 		else:
 			self.onFirstExecBegin.append(self.startScreen)
+
+	# def test(self):
+	# 	from .SerienRecorderHelpers import createCompressedBackup
+	# 	createCompressedBackup(False)
 
 	def showInfoText(self):
 		from .SerienRecorderStartupInfoScreen import ShowStartupInfo
@@ -231,10 +236,10 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			from .SerienRecorderSearchResultScreen import serienRecSearchResultScreen
 			self.session.openWithCallback(self.handleSeriesSearchEnd, serienRecSearchResultScreen, serien_name)
 
-	def handleSeriesSearchEnd(self, serien_wlid=None):
-		if serien_wlid:
+	def handleSeriesSearchEnd(self, serien_fsid=None):
+		if serien_fsid:
 			from .SerienRecorderMarkerScreen import serienRecMarker
-			self.session.openWithCallback(self.readPlanerData, serienRecMarker, serien_wlid)
+			self.session.openWithCallback(self.readPlanerData, serienRecMarker, serien_fsid)
 		else:
 			self.readPlanerData(False)
 
@@ -248,7 +253,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def wunschliste(self):
 		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
-		super(self.__class__, self).wunschliste(serien_wlid)
+		super(self.__class__, self).wunschliste(serien_fsid)
 
 	def setHeadline(self):
 		if int(config.plugins.serienRec.screenplaner.value) == 1:
@@ -431,8 +436,8 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 				# 0 = no marker, 1 = active marker, 2 = deactive marker
 				serieAdded = 0
-				if serien_wlid in markers:
-					serieAdded = 1 if markers[serien_wlid] else 2
+				if serien_fsid in markers:
+					serieAdded = 1 if markers[serien_fsid] else 2
 
 				rank += 1
 				self.daylist[0].append((serien_name, average, serien_wlid, serieAdded, rank, serien_fsid, serien_info))
@@ -554,11 +559,11 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				self['title'].instance.setForegroundColor(parseColor("green"))
 
 				from .SerienRecorder import getCover
-				getCover(self, serien_name, serien_wlid, serien_fsid, False, True)
+				getCover(self, serien_name, serien_fsid, False, True)
 
 				if config.plugins.serienRec.openMarkerScreen.value:
 					from .SerienRecorderMarkerScreen import serienRecMarker
-					self.session.open(serienRecMarker, serien_wlid)
+					self.session.open(serienRecMarker, serien_fsid)
 			else:
 				self['title'].setText("Marker für '%s (%s)' ist bereits vorhanden." % (serien_name, serien_info))
 				self['title'].instance.setForegroundColor(parseColor("red"))
@@ -569,7 +574,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
 		from .SerienRecorder import getCover
-		getCover(self, serien_name, serien_wlid, serien_fsid)
+		getCover(self, serien_name, serien_fsid)
 
 	def keyRed(self):
 		if self.modus == "list":

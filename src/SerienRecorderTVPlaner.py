@@ -360,7 +360,7 @@ def getEmailData():
 	webChannels = database.getActiveChannels()
 	for channel in channels:
 		if channel not in webChannels:
-			SRLogger.writeLogFilter("channels", "Der Sender ' %s ' wurde in der TV-Planer E-Mail gefunden, ist aber im SerienRecorder nicht zugeordnet." % channel)
+			SRLogger.writeLogFilter("channels", "\nDer Sender ' %s ' wurde in der TV-Planer E-Mail gefunden, ist aber im SerienRecorder nicht zugeordnet." % channel)
 
 	# Create marker
 	SRLogger.writeLog("\n", True)

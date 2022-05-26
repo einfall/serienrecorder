@@ -77,6 +77,7 @@ class TVDBSelectorScreen(Screen):
 		self._searchResultList = []
 		self._searchTerm = searchTerm
 
+		self['list'].setList(self._searchResultList)
 		if self._series_alias and len(self._series_alias) > 0:
 			self['headline'].setText("%s (%s)" % (self._series_name, self._series_alias))
 		else:
@@ -154,7 +155,7 @@ class TVDBSelectorScreen(Screen):
 				self.enterTVDBID()
 			if ret == "reload_cover":
 				from .SerienRecorder import getCover
-				getCover(self._parent, self._series_name, self._series_id, self._series_fsid, False, True)
+				getCover(self._parent, self._series_name, self._series_fsid, False, True)
 				self.close()
 			if ret == "search_with_alias":
 				# If there are more than one alias they are separated by slashes
@@ -179,7 +180,7 @@ class TVDBSelectorScreen(Screen):
 				self.session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
 
 			from .SerienRecorder import getCover
-			getCover(self._parent, self._series_name, self._series_id, self._series_fsid, False, True)
+			getCover(self._parent, self._series_name, self._series_fsid, False, True)
 		self.close()
 
 	def keyExit(self):

@@ -54,7 +54,7 @@ startTimerConnection = None
 
 #---------------------------------- Common Functions ------------------------------------------
 
-def getCover(self, serien_name, serien_id, serien_fsid, auto_check = False, forceReload = False):
+def getCover(self, serien_name, serien_fsid, auto_check=False, forceReload=False):
 	if not config.plugins.serienRec.downloadCover.value:
 		return
 
@@ -74,6 +74,7 @@ def getCover(self, serien_name, serien_id, serien_fsid, auto_check = False, forc
 				os.mkdir(config.plugins.serienRec.coverPath.value)
 			except:
 				Notifications.AddPopup("Cover Pfad (%s) kann nicht angelegt werden.\n\nÜberprüfen Sie den Pfad und die Rechte!" % config.plugins.serienRec.coverPath.value, MessageBox.TYPE_INFO, timeout=10, id="checkFileAccess")
+				return
 
 		# Change PNG cover file extension to correct file extension JPG
 		if fileExists(png_serien_cover_path):
@@ -95,9 +96,9 @@ def getCover(self, serien_name, serien_id, serien_fsid, auto_check = False, forc
 		if fileExists(fsid_serien_cover_path):
 			if self and config.plugins.serienRec.showCover.value:
 				showCover(None, self, fsid_serien_cover_path)
-		elif serien_id and (config.plugins.serienRec.showCover.value or (config.plugins.serienRec.downloadCover.value and auto_check)):
+		elif serien_fsid and (config.plugins.serienRec.showCover.value or (config.plugins.serienRec.downloadCover.value and auto_check)):
 			try:
-				posterURL = SeriesServer().doGetCoverURL(int(serien_id), serien_fsid)
+				posterURL = SeriesServer().doGetCoverURL(0, serien_fsid)
 				#SRLogger.writeLog("Cover URL [%s] (%s) => %s" % (serien_name, serien_fsid, posterURL), True)
 				if posterURL:
 					from twisted.web import client
@@ -113,7 +114,7 @@ def getCover(self, serien_name, serien_id, serien_fsid, auto_check = False, forc
 		print("Exception loading cover: %s [%s]" % (fsid_serien_cover_path, str(e)))
 
 def getCoverDataError(error, self, serien_cover_path):
-	SRLogger.writeLog("Datenfehler beim Laden des Covers für ' %s ': %s" % (serien_cover_path, str(error)), True)
+	#SRLogger.writeLog("Datenfehler beim Laden des Covers für ' %s ': %s" % (serien_cover_path, str(error)), True)
 	print(error)
 
 def showCover(data, self, serien_cover_path, force_show=True):
@@ -192,7 +193,7 @@ def initDB():
 				dbVersionMatch = True
 			elif dbVersion > config.plugins.serienRec.dbversion.value:
 				SRLogger.writeLog("Datenbankversion nicht kompatibel: SerienRecorder Version muss mindestens %s sein." % dbVersion)
-				Notifications.AddPopup("Die SerienRecorder Datenbank ist mit dieser Version nicht kompatibel.\nAktualisieren Sie mindestens auf die SerienRecorder Version %s!" % dbVersion, MessageBox.TYPE_INFO, timeout=10)
+				Notifications.AddPopup("Die SerienRecorder Datenbank ist mit dieser Version nicht kompatibel.\nEs wird mindestens die SerienRecorder Version %s benötigt!" % dbVersion, MessageBox.TYPE_INFO, timeout=10)
 				dbIncompatible = True
 		else:
 			dbIncompatible = True
@@ -256,10 +257,10 @@ class serienRecEPGSelection(EPGSelection):
 			from .SerienRecorderSearchResultScreen import serienRecSearchResultScreen
 			self.session.openWithCallback(self.handleSeriesSearchEnd, serienRecSearchResultScreen, seriesName)
 
-	def handleSeriesSearchEnd(self, series_wlid=None):
-		if series_wlid:
+	def handleSeriesSearchEnd(self, series_fsid=None):
+		if series_fsid:
 			from .SerienRecorderMarkerScreen import serienRecMarker
-			self.session.open(serienRecMarker, series_wlid)
+			self.session.open(serienRecMarker, series_fsid)
 
 # ---------------------------------- Main Functions ------------------------------------------
 
@@ -318,7 +319,7 @@ def autostart(reason, **kwargs):
 		# API
 		if config.plugins.serienRec.enableWebinterface.value:
 			from .SerienRecorderResource import addWebInterface
-			addWebInterface()
+			addWebInterface(session)
 
 	elif reason == 1:
 		# Shutdown

@@ -67,8 +67,8 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.autoCheckRunning = False
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"red": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
+			"red": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"3"	: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),

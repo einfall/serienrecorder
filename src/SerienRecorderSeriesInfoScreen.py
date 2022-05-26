@@ -27,14 +27,14 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		self.infoText = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"left"  : (self.pageUp, "zur vorherigen Seite blättern"),
-			"right" : (self.pageDown, "zur nächsten Seite blättern"),
-			"up"    : (self.pageUp, "zur vorherigen Seite blättern"),
-			"down"  : (self.pageDown, "zur nächsten Seite blättern"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"left"  : (self.pageUp, "Zur vorherigen Seite blättern"),
+			"right" : (self.pageDown, "Zur nächsten Seite blättern"),
+			"up"    : (self.pageUp, "Zur vorherigen Seite blättern"),
+			"down"  : (self.pageDown, "Zur nächsten Seite blättern"),
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"startTeletext"  : (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
-			"red"   : (self.keyCancel, "zurück zur vorherigen Ansicht"),
+			"red"   : (self.keyCancel, "Zurück zur vorherigen Ansicht"),
 			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"1"		: (self.createInfoFile, "Serien-Informationen in Textdatei exportieren"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
@@ -93,13 +93,13 @@ class serienRecShowInfo(serienRecBaseScreen, Screen, HelpableScreen):
 		updateMenuKeys(self)
 
 	def wunschliste(self):
-		super(self.__class__, self).wunschliste(self.serien_wlid)
+		super(self.__class__, self).wunschliste(self.serien_fsid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
 
 	def getData(self):
-		SerienRecorder.getCover(self, self.serien_name, self.serien_wlid, self.serien_fsid)
+		SerienRecorder.getCover(self, self.serien_name, self.serien_fsid)
 
 		def downloadSeriesInfo():
 			print("[SerienRecorder] downloadSeriesInfo")

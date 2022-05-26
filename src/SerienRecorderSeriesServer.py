@@ -196,8 +196,19 @@ class SeriesServer:
 		resultList = []
 		try:
 			searchResults = self.server.sp.cache.searchSeries(searchString, start)
+
+			from .SerienRecorder import serienRecDataBaseFilePath
+			from .SerienRecorderDatabase import SRDatabase
+			from Components.config import config
+
+			database = SRDatabase(serienRecDataBaseFilePath)
+			markers = database.getAllMarkerStatusForBoxID(config.plugins.serienRec.BoxID.value)
+
 			for searchResult in searchResults['results']:
-				resultList.append((toStr(searchResult['name']), toStr(searchResult['country_year']), toStr(searchResult['subtitle']), str(searchResult['id']), searchResult['fs_id']))
+				marker_flag = 0
+				if searchResult['fs_id'] in markers:
+					marker_flag = 1 if markers[searchResult['fs_id']] else 2
+				resultList.append((toStr(searchResult['name']), toStr(searchResult['country_year']), toStr(searchResult['subtitle']), str(searchResult['id']), searchResult['fs_id'], marker_flag))
 			if 'more' in searchResults:
 				more = int(searchResults['more'])
 		except:
@@ -215,7 +226,7 @@ class SeriesServer:
 			results = self.server.sp.cache.getCoverURLs(int(seriesID))
 			return results['covers']
 		except Exception as e:
-			print("[SerienRecorder] Fehler beim Abrufen der Cover [%s]" % str(e))
+			print("[SerienRecorder] Failed to get cover URLs [%s]" % str(e))
 			return None
 			
 	def doGetWebChannels(self):
@@ -232,6 +243,7 @@ class SeriesServer:
 
 	def doGetTransmissions(self, seriesID, offset, webChannels):
 		resultList = []
+		print("[SerienRecorder] doGetTransmissions [%s] (%d) [%s]" % (seriesID, offset, ', '.join(webChannels)))
 		transmissions = self.server.sp.cache.getTransmissions(int(seriesID), int(offset), webChannels)
 		seriesName = transmissions['series']
 

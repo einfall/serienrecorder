@@ -33,11 +33,11 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok": (self.keyOK, "Marker für die ausgewählte Serie hinzufügen"),
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"left": (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right": (self.keyRight, "zur nächsten Seite blättern"),
-			"up": (self.keyUp, "eine Zeile nach oben"),
-			"down": (self.keyDown, "eine Zeile nach unten"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"left": (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right": (self.keyRight, "Zur nächsten Seite blättern"),
+			"up": (self.keyUp, "Eine Zeile nach oben"),
+			"down": (self.keyDown, "Eine Zeile nach unten"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"yellow": (self.keyYellow, "Umschalten zwischen 'Nur Serienstarts' und 'Serien- und Staffelstarts'"),
 			"blue": (self.keyBlue, "Umschalten zwischen 'Alle Sender' und 'Zugewiesene Sender'"),
@@ -174,15 +174,15 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			if self.filter and str(event['season']).isdigit() and int(event['season']) > 1:
 				continue
 
-			seriesName = toStr(event['name'])
-			seriesID = int(event['id'])
+			series_name = toStr(event['name'])
+			series_fsid = event['fs_id']
 
 			# marker flags: 0 = no marker, 1 = active marker, 2 = inactive marker
 			marker_flag = 0
-			if seriesID in markers:
-				marker_flag = 1 if markers[seriesID] else 2
+			if series_fsid in markers:
+				marker_flag = 1 if markers[series_fsid] else 2
 
-			self.proposalList.append([seriesName, event['season'], toStr(event['channel']), event['start'], event['id'], marker_flag, event['fs_id'], toStr(event['info']), toStr(event['subtitle'])])
+			self.proposalList.append([series_name, event['season'], toStr(event['channel']), event['start'], event['id'], marker_flag, series_fsid, toStr(event['info']), toStr(event['subtitle'])])
 
 		if self.filter:
 			self['title'].setText("%d neue Serien gefunden:" % len(self.proposalList))
@@ -193,7 +193,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self['menu_list'].moveToIndex(0)
 		if self['menu_list'].getCurrent():
 			(serien_name, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
-			getCover(self, serien_name, serien_wlid, serien_fsid)
+			getCover(self, serien_name, serien_fsid)
 
 	def buildList(self, entry):
 		(series, season, channel, utc_time, ID, marker_flag, fs_id, info, alias) = entry
@@ -267,7 +267,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		if self[self.modus].getCurrent() is None:
 			return
 		(serien_name, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		super(self.__class__, self).wunschliste(serien_wlid)
+		super(self.__class__, self).wunschliste(serien_fsid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -277,7 +277,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			return
 		else:
 			(serien_name, serien_staffel, serien_sender, serien_startzeit, serien_wlid, serien_markerFlag, serien_fsid, serien_info, serien_alias) = self[self.modus].getCurrent()[0]
-			(existingID, from_season, all_channels) = self.database.getMarkerSeasonAndChannelSettings(serien_wlid)
+			(existingID, from_season, all_channels) = self.database.getMarkerSeasonAndChannelSettings(serien_fsid)
 			if existingID > 0:
 				# Add season and channel of selected series to marker
 				self.database.updateMarkerSeasonAndChannelSettings(existingID, from_season, serien_staffel, all_channels, serien_sender)
@@ -295,11 +295,11 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 
 				from .SerienRecorder import getCover
-				getCover(self, serien_name, serien_wlid, serien_fsid, False, True)
+				getCover(self, serien_name, serien_fsid, False, True)
 
 			if config.plugins.serienRec.openMarkerScreen.value:
 				from .SerienRecorderMarkerScreen import serienRecMarker
-				self.session.open(serienRecMarker, serien_wlid)
+				self.session.open(serienRecMarker, serien_fsid)
 
 			selectedIndex = self[self.modus].getSelectedIndex()
 			self.changesMade = True
@@ -315,6 +315,9 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self.buildProposalList()
 
 	def keyBlue(self):
+		self.proposalList = []
+		self.chooseMenuList.setList(list(map(self.buildList, self.proposalList)))
+
 		if self.channelFilter:
 			self.channelFilter = False
 		else:
@@ -324,22 +327,22 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyLeft(self):
 		self[self.modus].pageUp()
 		(serien_name, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		getCover(self, serien_name, serien_wlid, serien_fsid)
+		getCover(self, serien_name, serien_fsid)
 
 	def keyRight(self):
 		self[self.modus].pageDown()
 		(serien_name, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		getCover(self, serien_name, serien_wlid, serien_fsid)
+		getCover(self, serien_name, serien_fsid)
 
 	def keyDown(self):
 		self[self.modus].down()
 		(serien_name, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		getCover(self, serien_name, serien_wlid, serien_fsid)
+		getCover(self, serien_name, serien_fsid)
 
 	def keyUp(self):
 		self[self.modus].up()
 		(serien_name, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		getCover(self, serien_name, serien_wlid, serien_fsid)
+		getCover(self, serien_name, serien_fsid)
 
 	def __onClose(self):
 		self.stopDisplayTimer()

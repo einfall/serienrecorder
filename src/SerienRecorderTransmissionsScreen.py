@@ -37,15 +37,15 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		self.skin = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok": (self.keyOK, "umschalten ausgewählter Sendetermin aktiviert/deaktiviert"),
-			"cancel": (self.keyCancel, "zurück zur Serien-Marker-Ansicht"),
-			"left": (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right": (self.keyRight, "zur nächsten Seite blättern"),
-			"up": (self.keyUp, "eine Zeile nach oben"),
-			"down": (self.keyDown, "eine Zeile nach unten"),
-			"red": (self.keyRed, "zurück zur Serien-Marker-Ansicht"),
+			"ok": (self.keyOK, "Umschalten ausgewählter Sendetermin aktiviert/deaktiviert"),
+			"cancel": (self.keyCancel, "Zurück zur Serien-Marker-Ansicht"),
+			"left": (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right": (self.keyRight, "Zur nächsten Seite blättern"),
+			"up": (self.keyUp, "Eine Zeile nach oben"),
+			"down": (self.keyDown, "Eine Zeile nach unten"),
+			"red": (self.keyRed, "Zurück zur Serien-Marker-Ansicht"),
 			"green": (self.keyGreen, "Timer für aktivierte Sendetermine erstellen"),
-			"yellow": (self.keyYellow, "umschalten Filter (aktive Sender) aktiviert/deaktiviert"),
+			"yellow": (self.keyYellow, "Filter umschalten (aktive Sender / Marker-Sender / alle)"),
 			"blue": (self.keyBlue, "Ansicht Timer-Liste öffnen"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"startTeletext": (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
@@ -146,8 +146,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		#				  MessageBox.TYPE_INFO, timeout=10)
 
 	def wunschliste(self):
-		serien_id = self.seriesWLID
-		super(self.__class__, self).wunschliste(serien_id)
+		super(self.__class__, self).wunschliste(self.seriesFSID)
 
 	def setupClose(self, result):
 		if not result[2]:
@@ -164,22 +163,20 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 	def searchEvents(self, result=None):
 		self['title'].setText("Suche ' %s '" % self.seriesName)
 		print("[SerienRecorder] suche ' %s '" % self.seriesName)
-		print(self.seriesWLID)
 
 		transmissions = None
 		if self.seriesWLID:
 
 			if self.seriesWLID != 0:
-				print(self.seriesWLID)
 				from .SerienRecorder import getCover
-				getCover(self, self.seriesName, self.seriesWLID, self.seriesFSID)
+				getCover(self, self.seriesName, self.seriesFSID)
 
 				if self.filterMode == 0:
 					webChannels = []
 				elif self.filterMode == 1:
 					webChannels = self.database.getActiveChannels()
 				else:
-					webChannels = self.database.getMarkerChannels(self.seriesWLID)
+					webChannels = self.database.getMarkerChannels(self.seriesFSID)
 
 				try:
 					transmissions = SeriesServer().doGetTransmissions(self.seriesWLID, 0, webChannels)
@@ -209,7 +206,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		for seriesName, channel, startTime, endTime, season, episode, title, status in transmissions:
 			seasonAllowed = True
 			if config.plugins.serienRec.seasonFilter.value:
-				seasonAllowed = serienRecSendeTermine.isSeasonAllowed(database, seriesWLID, season, episode, seriesSeason, fromEpisode)
+				seasonAllowed = serienRecSendeTermine.isSeasonAllowed(database, seriesFSID, season, episode, seriesSeason, fromEpisode)
 
 			if seasonAllowed:
 				seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
@@ -399,7 +396,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			 staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags,
 			 addToDatabase, autoAdjust, epgSeriesName, kindOfTimer) = params
 			# check sender
-			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = database.getChannelInfo(sender, wlid, filterMode)
+			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = database.getChannelInfo(sender, fsid, filterMode)
 
 			TimerOK = False
 			if stbChannel == "":
@@ -523,24 +520,36 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				vpsSettings = database.getVPS(fsid, sender)
 
 				# get tags from marker
-				tags = database.getTags(wlid)
+				tags = database.getTags(fsid)
 
 				# get addToDatabase for marker
-				addToDatabase = database.getAddToDatabase(wlid)
+				addToDatabase = database.getAddToDatabase(fsid)
 
 				# get autoAdjust for marker
-				autoAdjust = database.getAutoAdjust(wlid, sender)
+				autoAdjust = database.getAutoAdjust(fsid, sender)
 
 				# get kind of timer for marker
-				kindOfTimer = database.getKindOfTimer(wlid, config.plugins.serienRec.kindOfTimer.value)
+				kindOfTimer = database.getKindOfTimer(fsid, config.plugins.serienRec.kindOfTimer.value)
 
 				# get alternative epg series name
 				epgSeriesName = database.getMarkerEPGName(fsid)
 
 				(dirname, dirname_serie) = getDirname(database, serien_name, fsid, staffel)
 
+				# Versuche Verzeichnisse zu erreichen
+				print("[SerienRecorder] Check configured recording directories")
+				try:
+					SRLogger.writeLog("\nPrüfe konfigurierte Aufnahmeverzeichnisse:", True)
+					recordDirectories = database.getRecordDirectories(config.plugins.serienRec.savetopath.value)
+					for directory in recordDirectories:
+						SRLogger.writeLog("  ' %s '" % directory, True)
+						os.path.exists(directory)
+					SRLogger.writeLog("\n", True)
+				except:
+					SRLogger.writeLog("Es konnten nicht alle Aufnahmeverzeichnisse gefunden werden", True)
+
 				(NoOfRecords, preferredChannel, useAlternativeChannel) = database.getPreferredMarkerChannels(
-					wlid, config.plugins.serienRec.useAlternativeChannel.value,
+					fsid, config.plugins.serienRec.useAlternativeChannel.value,
 					config.plugins.serienRec.NoOfRecords.value)
 
 				params = (serien_name, sender, start_unixtime, margin_before, margin_after, end_unixtime,
@@ -593,13 +602,13 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		if deactivatedTimer > 0:
 			SRLogger.writeLog("%s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(deactivatedTimer), True)
 			print("[SerienRecorder] %s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(deactivatedTimer))
-		SRLogger.writeLog("---------' Manuelle Timererstellung aus Sendeterminen beendet '---------", True)
+		SRLogger.writeLog("\n---------' Manuelle Timererstellung aus Sendeterminen beendet '---------", True)
 		print("---------' Manuelle Timererstellung aus Sendeterminen beendet '---------")
 
 		return activatedTimer, deactivatedTimer
 
 	@staticmethod
-	def isSeasonAllowed(database, seriesWLID, season, episode, markerSeasons, fromEpisode):
+	def isSeasonAllowed(database, seriesFSID, season, episode, markerSeasons, fromEpisode):
 		if not markerSeasons and not fromEpisode:
 			return True
 
@@ -620,7 +629,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			elif -1 in markerSeasons:  # 'folgende'
 				if int(season) >= max(markerSeasons):
 					allowed = True
-		elif database.getSpecialsAllowed(seriesWLID):
+		elif database.getSpecialsAllowed(seriesFSID):
 			allowed = True
 
 		return allowed
@@ -684,7 +693,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		elif self.filterMode == 1:
 			webChannels = self.database.getActiveChannels()
 		else:
-			webChannels = self.database.getMarkerChannels(self.seriesWLID)
+			webChannels = self.database.getMarkerChannels(self.seriesFSID)
 
 		try:
 			transmissions = SeriesServer().doGetTransmissions(self.seriesWLID, 0, webChannels)

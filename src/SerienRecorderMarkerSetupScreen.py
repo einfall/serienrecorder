@@ -58,8 +58,8 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			"blue": (self.resetCover, "Cover zurücksetzen"),
 			"cancel": (self.cancel, "Änderungen verwerfen und zurück zur Serien-Marker-Ansicht"),
 			"ok": (self.ok, "Fenster für Verzeichnisauswahl öffnen"),
-			"up": (self.keyUp, "eine Zeile nach oben"),
-			"down": (self.keyDown, "eine Zeile nach unten"),
+			"up": (self.keyUp, "Eine Zeile nach oben"),
+			"down": (self.keyDown, "Eine Zeile nach unten"),
 			"startTeletext": (self.showAbout, "Über dieses Plugin"),
 		}, -1)
 		self.helpList[0][2].sort()

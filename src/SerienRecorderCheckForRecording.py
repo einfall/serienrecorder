@@ -10,7 +10,7 @@ from Tools import Notifications
 from enigma import getDesktop, eTimer, quitMainloop
 from Screens.MessageBox import MessageBox
 
-from .SerienRecorderHelpers import SRAPIVERSION, STBHelpers, TimeHelpers, isDreamOS, createBackup, getDirname, toStr, PY2
+from .SerienRecorderHelpers import SRAPIVERSION, STBHelpers, TimeHelpers, isDreamOS, createBackup, createCompressedBackup, getDirname, toStr, PY2
 from .SerienRecorder import serienRecDataBaseFilePath, getCover, initDB
 from .SerienRecorderSeriesServer import SeriesServer
 from .SerienRecorderDatabase import SRDatabase, SRTempDatabase
@@ -188,13 +188,13 @@ class serienRecCheckForRecording:
 
 	@staticmethod
 	def getNextAutoCheckTimer(lt):
-		acttime = (lt.tm_hour * 60 + lt.tm_min)
-		deltime = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
-		if acttime < deltime:
-			deltatime = deltime - acttime
+		current_time = (lt.tm_hour * 60 + lt.tm_min)
+		next_autocheck_time = (config.plugins.serienRec.deltime.value[0] * 60 + config.plugins.serienRec.deltime.value[1])
+		if current_time < next_autocheck_time:
+			delta_time = next_autocheck_time - current_time
 		else:
-			deltatime = abs(1440 - acttime + deltime)
-		return deltatime
+			delta_time = abs(1440 - current_time + next_autocheck_time)
+		return delta_time
 
 	def setEPGRefreshCallback(self, configentry=None):
 		try:
@@ -215,7 +215,7 @@ class serienRecCheckForRecording:
 		markers = self.database.getAllMarkers(False)
 		for marker in markers:
 			(ID, Serie, Info, Url, AufnahmeVerzeichnis, AlleStaffelnAb, alleSender, Vorlaufzeit, Nachlaufzeit, AnzahlAufnahmen, preferredChannel, useAlternativeChannel, AbEpisode, TimerForSpecials, ErlaubteSTB, ErlaubteStaffelCount, fsID) = marker
-			getCover(None, Serie, ID, fsID, True)
+			getCover(self, Serie, fsID, True)
 
 	def startCheck(self):
 		self.database = SRDatabase(serienRecDataBaseFilePath)
@@ -284,7 +284,10 @@ class serienRecCheckForRecording:
 			SRLogger.writeLog("Verbleibende Zeit: %s Stunden" % TimeHelpers.td2HHMMstr(datetime.timedelta(minutes=deltatime + int(config.plugins.serienRec.maxDelayForAutocheck.value))), True)
 
 		if config.plugins.serienRec.AutoBackup.value == "before":
-			createBackup(self.manuell)
+			if config.plugins.serienRec.createCompressedBackup.value:
+				createCompressedBackup(self.manuell)
+			else:
+				createBackup(self.manuell)
 
 		SRLogger.reset()
 		from .SerienRecorderTVPlaner import resetTVPlanerHTMLBackup
@@ -363,7 +366,10 @@ class serienRecCheckForRecording:
 			self.autoCheckFinished = True
 
 			if config.plugins.serienRec.AutoBackup.value == "after":
-				createBackup(self.manuell)
+				if config.plugins.serienRec.createCompressedBackup.value:
+					createCompressedBackup(self.manuell)
+				else:
+					createBackup(self.manuell)
 
 			# in den deep-standby fahren.
 			self.askForDSB()
@@ -557,14 +563,15 @@ class serienRecCheckForRecording:
 				while not resultQueue.empty():
 					(transmissionFailed, transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, limitedChannels) = resultQueue.get()
 					self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, 0, excludedWeekdays, 0)
-					number_of_server_transmissions += len(transmissions)
-					if len(transmissions) > 0:
-						number_of_server_series += 1
+					if transmissions:
+						number_of_server_transmissions += len(transmissions)
+						if len(transmissions) > 0:
+							number_of_server_series += 1
 					resultQueue.task_done()
 
 				SRLogger.writeLog("\nEs wurden ' %d ' Ausstrahlungstermine für ' %d ' Serien vom SerienServer abgerufen." % (number_of_server_transmissions, number_of_server_series), True)
 				(number_of_considered_transmissions, number_of_considered_series) = self.tempDB.countTransmissions(0)
-				SRLogger.writeLog("Berücksichtigt werden ' %d ' Ausstrahlungstermine für ' %d ' Serien." % (number_of_considered_transmissions, number_of_considered_series), True)
+				SRLogger.writeLog("Berücksichtigt werden ' %d ' Ausstrahlungstermine für ' %d ' Serien.\n" % (number_of_considered_transmissions, number_of_considered_series), True)
 				break
 		#
 		# In order to provide an emergency recording service when serien server is down or
@@ -645,14 +652,15 @@ class serienRecCheckForRecording:
 			while not resultQueue.empty():
 				(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, markerType, limitedChannels) = resultQueue.get()
 				self.processTransmission(transmissions, seriesID, fsID, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, limitedChannels, 1, excludedWeekdays, markerType)
-				number_of_planer_transmissions += len(transmissions)
-				if len(transmissions) > 0:
-					number_of_planer_series += 1
+				if transmissions:
+					number_of_planer_transmissions += len(transmissions)
+					if len(transmissions) > 0:
+						number_of_planer_series += 1
 				resultQueue.task_done()
 
 			SRLogger.writeLog("\nEs wurden ' %d ' Ausstrahlungstermine für ' %d ' Serien aus der TV-Planer E-Mail ausgelesen." % (number_of_planer_transmissions, number_of_planer_series), True)
 			(number_of_considered_transmissions, number_of_considered_series) = self.tempDB.countTransmissions(1)
-			SRLogger.writeLog("Berücksichtigt werden ' %d ' Ausstrahlungstermine für ' %d ' Serien." % (number_of_considered_transmissions, number_of_considered_series), True)
+			SRLogger.writeLog("Berücksichtigt werden ' %d ' Ausstrahlungstermine für ' %d ' Serien.\n" % (number_of_considered_transmissions, number_of_considered_series), True)
 
 		self.createTimer()
 		self.checkFinal()
@@ -741,7 +749,10 @@ class serienRecCheckForRecording:
 				configfile.save()
 
 		if config.plugins.serienRec.AutoBackup.value == "after":
-			createBackup(self.manuell)
+			if config.plugins.serienRec.createCompressedBackup.value:
+				createCompressedBackup(self.manuell)
+			else:
+				createBackup(self.manuell)
 
 		SRLogger.backup()
 		from .SerienRecorderTVPlaner import backupTVPlanerHTML
@@ -777,7 +788,7 @@ class serienRecCheckForRecording:
 		if len(data) == 0 and limitedChannels:
 			SRLogger.writeLogFilter("channels", "' %s ' - Für diesen Serien-Marker wurden keine Ausstrahlungstermine gefunden, die Sender sind am Marker eingeschränkt." % serien_name)
 
-		(fromTime, toTime) = self.database.getTimeSpan(serien_wlid, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
+		(fromTime, toTime) = self.database.getTimeSpan(serien_fsid, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
 		if self.noOfRecords < AnzahlAufnahmen:
 			self.noOfRecords = AnzahlAufnahmen
 
@@ -863,7 +874,7 @@ class serienRecCheckForRecording:
 				elif -1 in staffeln:  # 'folgende'
 					if int(staffel) >= max(staffeln):
 						serieAllowed = True
-			elif self.database.getSpecialsAllowed(serien_wlid):
+			elif self.database.getSpecialsAllowed(serien_fsid):
 				serieAllowed = True
 
 			vomMerkzettel = False

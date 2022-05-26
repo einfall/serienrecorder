@@ -9,7 +9,7 @@ from enigma import eServiceReference, eTimer, eServiceCenter, eEPGCache, ePicLoa
 
 from Screens.ChannelSelection import service_types_tv
 
-from Tools.Directories import fileExists
+from Tools.Directories import pathExists, fileExists, SCOPE_SKIN, resolveFilename
 
 import datetime, os, re, sys, time, shutil
 
@@ -20,11 +20,12 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.4.9-beta'
-SRDBVERSION = '4.4.2'
-SRAPIVERSION = '2.4'
-SRWEBAPPVERSION = '0.9.5'
+SRVERSION = '4.5.0-beta'
+SRDBVERSION = '4.5.0'
+SRAPIVERSION = '2.5'
+SRWEBAPPVERSION = '0.9.6'
 SRMANUALURL = "http://einfall.github.io/serienrecorder/"
+SRCOPYRIGHT = "©2014-22 einfall, w22754, egn und MacDisein"
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
@@ -175,44 +176,102 @@ def createBackup(isManualAutoCheck):
 			for name in dirs:
 				if logFolderPattern.match(name) and os.stat(os.path.join(root, name)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
 					shutil.rmtree(os.path.join(root, name), True)
-					SRLogger.writeLog("Lösche Ordner: %s" % os.path.join(root, name), True)
+					SRLogger.writeLog("Lösche Backup Ordner: %s" % os.path.join(root, name), True)
 	else:
 		SRLogger.writeLog("Erzeuge neues Backup", True)
 
-	BackupPath = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
-	if not os.path.exists(BackupPath):
+	backup_path = "%s%s%s%s%s%s/" % (config.plugins.serienRec.BackupPath.value, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
+	if not os.path.exists(backup_path):
 		try:
-			os.makedirs(BackupPath)
+			os.makedirs(backup_path)
 		except:
 			pass
-	if os.path.isdir(BackupPath):
+	if os.path.isdir(backup_path):
 		try:
 			from .SerienRecorder import getDataBaseFilePath
-			serienRecMainPath = os.path.dirname(__file__)
-
 			if fileExists(getDataBaseFilePath()):
 				from .SerienRecorderDatabase import SRDatabase
 				database = SRDatabase(getDataBaseFilePath())
-				database.backup(BackupPath)
+				database.backup(backup_path)
 			if fileExists(SRLogger.getLogFilePath()):
-				shutil.copy(SRLogger.getLogFilePath(), BackupPath)
+				shutil.copy(SRLogger.getLogFilePath(), backup_path)
 			if fileExists("/etc/enigma2/timers.xml"):
-				shutil.copy("/etc/enigma2/timers.xml", BackupPath)
+				shutil.copy("/etc/enigma2/timers.xml", backup_path)
 			if fileExists("/etc/enigma2/timers_vps.xml"):
-				shutil.copy("/etc/enigma2/timers_vps.xml", BackupPath)
-			if fileExists(os.path.join(serienRecMainPath, "Config.backup")):
-				shutil.copy(os.path.join(serienRecMainPath, "Config.backup"), BackupPath)
-			STBHelpers.saveEnigmaSettingsToFile(BackupPath)
-			for filename in os.listdir(BackupPath):
-				os.chmod(os.path.join(BackupPath, filename), 0o777)
-
+				shutil.copy("/etc/enigma2/timers_vps.xml", backup_path)
+			STBHelpers.saveEnigmaSettingsToFile(backup_path)
 			htmlFilePath = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
 			if fileExists(htmlFilePath):
-				shutil.copy(htmlFilePath, BackupPath)
+				shutil.copy(htmlFilePath, backup_path)
+
+			for filename in os.listdir(backup_path):
+				os.chmod(os.path.join(backup_path, filename), 0o777)
 		except Exception as e:
+			print("[SerienRecorder] Failed to create backup", e)
 			SRLogger.writeLog("Backup konnte nicht erstellt werden: " + str(e), True)
 
-	print("[SerienRecorder] Creating backup done")
+	print("[SerienRecorder] Backup created")
+
+def createCompressedBackup(isManualAutoCheck):
+	if not config.plugins.serienRec.backupAtManualCheck.value and isManualAutoCheck:
+		return
+	print("[SerienRecorder] Creating compressed backup...")
+
+	from .SerienRecorderLogWriter import SRLogger
+	from .SerienRecorderTVPlaner import SERIENRECORDER_TVPLANER_HTML_FILENAME
+	lt = time.localtime()
+
+	backup_path = config.plugins.serienRec.BackupPath.value
+	if not os.path.exists(backup_path):
+		try:
+			os.makedirs(backup_path)
+		except:
+			pass
+
+	# Remove old backups
+	if config.plugins.serienRec.deleteBackupFilesOlderThan.value > 0:
+		SRLogger.writeLog("\nEntferne alte Backup-Dateien und erzeuge neues Backup.", True)
+		now = time.time()
+		logFilePattern = re.compile('\d{4}\d{2}\d{2}\d{2}\d{2}-SerienRecorder-Backup')
+		for filename in os.listdir(backup_path):
+			if logFilePattern.match(filename) and filename.endswith("tar.gz") and os.stat(os.path.join(backup_path, filename)).st_ctime < (now - config.plugins.serienRec.deleteBackupFilesOlderThan.value * 24 * 60 * 60):
+				os.remove(os.path.join(backup_path, filename))
+				SRLogger.writeLog("Lösche Backup: %s" % os.path.join(backup_path, filename), True)
+	else:
+		SRLogger.writeLog("Erzeuge neues Backup", True)
+
+	if os.path.isdir(backup_path):
+		try:
+			import tarfile
+
+			backup_filepath = "%s%s%s%s%s%s-SerienRecorder-Backup.tar.gz" % (backup_path, lt.tm_year, str(lt.tm_mon).zfill(2), str(lt.tm_mday).zfill(2), str(lt.tm_hour).zfill(2), str(lt.tm_min).zfill(2))
+			with tarfile.open(backup_filepath, "w:gz") as tar:
+				from .SerienRecorder import getDataBaseFilePath
+				serienRecMainPath = os.path.dirname(__file__)
+
+				if fileExists(getDataBaseFilePath()):
+					from .SerienRecorderDatabase import SRDatabase
+					database = SRDatabase(getDataBaseFilePath())
+					database_backup_filepath = "/tmp/SerienRecorder.db"
+					database.backup("/tmp/")
+					tar.add(database_backup_filepath, arcname=getDataBaseFilePath())
+					os.remove(database_backup_filepath)
+				if fileExists(SRLogger.getLogFilePath()):
+					tar.add(SRLogger.getLogFilePath())
+				if fileExists("/etc/enigma2/timers.xml"):
+					tar.add("/etc/enigma2/timers.xml")
+				if fileExists("/etc/enigma2/timers_vps.xml"):
+					tar.add("/etc/enigma2/timers_vps.xml")
+				STBHelpers.saveEnigmaSettingsToFile("/tmp/")
+				tar.add(os.path.join("/tmp", "Config.backup"), arcname=os.path.join(serienRecMainPath, "Config.backup"))
+				htmlFilePath = os.path.join(config.plugins.serienRec.LogFilePath.value, SERIENRECORDER_TVPLANER_HTML_FILENAME)
+				if fileExists(htmlFilePath):
+					tar.add(htmlFilePath)
+		except Exception as e:
+			print("[SerienRecorder] Failed to create backup", e)
+			SRLogger.writeLog("Backup konnte nicht erstellt werden: " + str(e), True)
+
+	print("[SerienRecorder] Compressed backup created")
 
 def getDirname(database, serien_name, serien_fsid, staffel):
 	if config.plugins.serienRec.seasonsubdirfillchar.value == '<SPACE>':
@@ -700,10 +759,11 @@ class PicLoader:
 		if not sc:
 			sc = AVSwitch().getFramebufferScale()
 		# max width, max height, aspect x, aspect y, cache, quality (0 = simple, 1 = better, 2 = fast), backgroundcolor
-		self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
+		# print("[SerienRecorder] PicLoader::__init__", width, height, sc)
+		self.picload.setPara((int(width), int(height), sc[0], sc[1], False, 1, "#ff000000"))
 
 	def load(self, filename):
-		#print("[SerienRecorder] PicLoader::load: <%s>" % filename)
+		#print("[SerienRecorder] PicLoader::load: [%s]" % filename)
 		if isDreamOS():
 			self.picload.startDecode(filename, False)
 		else:
@@ -743,8 +803,8 @@ class PiconLoader:
 				self.nameCache[sRef] = pngname
 			if pngname == "": # no picon for service found
 				pngname = self.nameCache.get("default", "")
-				if pngname == "": # no default yet in cache..
-					pngname = self.findPicon("picon_default")
+				if pngname == "": # no default in cache yet
+					pngname = resolveFilename(SCOPE_SKIN, "skin_default/picon_default.png")
 					if pngname != "":
 						self.nameCache["default"] = pngname
 		if fileExists(pngname):
@@ -755,9 +815,14 @@ class PiconLoader:
 	@staticmethod
 	def findPicon(sRef):
 		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, sRef)
-		#print("[SerienRecorder] PiconLoader::findPicon: <%s>" % pngname)
+		#print("[SerienRecorder] PiconLoader::findPicon: [%s] => [%s]" % (sRef, pngname))
 		if not fileExists(pngname):
-			pngname = ""
+			# Try to normalize the name
+			normalizedSRef = sRef.replace(" ", "").lower()
+			pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, normalizedSRef)
+			#print("[SerienRecorder] PiconLoader::findPicon: [%s] => [%s] (normalized)" % (normalizedSRef, pngname))
+			if not fileExists(pngname):
+				pngname = ""
 		return pngname
 
 	def piconPathChanged(self, configElement = None):

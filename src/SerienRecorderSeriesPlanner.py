@@ -38,7 +38,6 @@ class serienRecSeriesPlanner:
 
 	def updatePlannerData(self):
 		webChannels = self.database.getActiveChannels()
-		#markers = self.database.getAllMarkers(config.plugins.serienRec.BoxID.value)
 		markers = self.database.getAllMarkerStatusForBoxID(config.plugins.serienRec.BoxID.value)
 
 		SRLogger.writeLog("\nLaden der Serien-Planer Daten gestartet ...", True)
@@ -95,8 +94,8 @@ class serienRecSeriesPlanner:
 
 			# 0 = no marker, 1 = active marker, 2 = deactive marker
 			marker_flag = 0
-			if serien_wlid in markers:
-				marker_flag = 1 if markers[serien_wlid] else 2
+			if serien_fsid in markers:
+				marker_flag = 1 if markers[serien_fsid] else 2
 
 			staffel = str(staffel).zfill(2)
 			episode = str(episode).zfill(2)

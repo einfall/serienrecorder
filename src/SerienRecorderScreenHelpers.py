@@ -76,7 +76,7 @@ elif DESKTOP_WIDTH > 1280:
 	skinFactor = 1.5
 else:
 	skinFactor = 1
-print("[SerienRecorder] Skinfactor: %s" % skinFactor)
+#print("[SerienRecorder] Skinfactor: %s" % skinFactor)
 
 def SelectSkin():
 	global buttonText_na
@@ -405,7 +405,7 @@ class serienRecBaseScreen:
 		self.session.open(serienRecWishlistScreen)
 
 	def wunschliste(self, seriesID):
-		url = "https://www.wunschliste.de/" + str(seriesID)
+		url = "https://www.wunschliste.de/serie/" + str(seriesID)
 		if OperaBrowserInstalled:
 			self.session.open(HbbTVWindow, url, None)
 		elif DMMBrowserInstalled:

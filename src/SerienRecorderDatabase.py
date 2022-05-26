@@ -113,6 +113,12 @@ class SRDatabase:
 		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('Version', ?)", [version])
 		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('ChannelsLastUpdate', ?)", [int(time.time())])
 		cur.execute("INSERT OR IGNORE INTO dbInfo (Key, Value) VALUES ('MarkersLastUpdate', ?)", [int(time.time())])
+
+		# Create index
+		self.createIndex(cur)
+
+		# Create trigger
+		self.createTrigger(cur)
 		cur.close()
 
 	def getVersion(self):
@@ -147,6 +153,35 @@ class SRDatabase:
 			pass
 
 		return malformed
+
+	@staticmethod
+	def createIndex(cur):
+		cur.execute("CREATE INDEX IF NOT EXISTS serienmarker_url ON SerienMarker (Url ASC)")
+		cur.execute("CREATE INDEX IF NOT EXISTS serienmarker_fsid ON SerienMarker (fsID ASC)")
+		cur.execute("CREATE INDEX IF NOT EXISTS serienmarker_serie ON SerienMarker (Serie ASC)")
+		cur.execute("CREATE INDEX IF NOT EXISTS channels_webchannel ON Channels (WebChannel ASC)")
+
+	@staticmethod
+	def createTrigger(cur):
+		cur.execute('''CREATE TABLE undolog_timer (
+									series TEXT,
+									season TEXT,
+									episode TEXT,
+									title TEXT,
+									starttime INTEGER,
+									serviceref TEXT,
+									webchannel TEXT,
+									eventid INTEGER,
+									active INTEGER,
+									fsid TEXT,
+									created	TEXT
+								)
+		''')
+		cur.execute('''CREATE TRIGGER AngelegteTimer_dt BEFORE DELETE ON AngelegteTimer 
+							BEGIN
+							  INSERT INTO undolog_timer VALUES(old.Serie, old.Staffel, old.Episode, old.Titel, old.StartZeitstempel, old.ServiceRef, old.webChannel, old.EventID, old.TimerAktiviert, old.fsID, datetime('now','localtime'));
+							END;
+		''')
 
 	@staticmethod
 	def hasColumn(rows, columnName):
@@ -414,11 +449,27 @@ class SRDatabase:
 			updateSuccessful = False
 			SRLogger.writeLog("Der Zeitstempel für die letzte Aktualisierung der Kanalliste konnte nicht gesetzt werden [%s]." % str(e), True)
 
+		# Create indexes
+		try:
+			self.createIndex(cur)
+		except Exception as e:
+			updateSuccessful = False
+			SRLogger.writeLog("Indizes für Tabellen konnten nicht angelegt werden [%s]." % str(e), True)
+
+		# Create trigger
+		try:
+			self.createTrigger(cur)
+		except Exception as e:
+			updateSuccessful = False
+			SRLogger.writeLog("Trigger für Tabellen konnten nicht angelegt werden [%s]." % str(e), True)
+
 		if updateSuccessful:
 			SRLogger.writeLog("Datenbank wurde erfolgreich aktualisiert - aktualisiere Versionsnummer.", True)
 			cur.execute("UPDATE OR IGNORE dbInfo SET Value=? WHERE Key='Version'", [version])
 		else:
 			SRLogger.writeLog("Fehler beim Aktualisieren der Datenbank - bitte wenden Sie sich mit diesem Log an die Entwickler.", True)
+
+
 		cur.close()
 
 		return updateSuccessful
@@ -701,10 +752,10 @@ class SRDatabase:
 		cur.close()
 		return bool(result & 0x1), bool(result & 0x2)
 
-	def getTags(self, wlID):
+	def getTags(self, fsID):
 		tags = []
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT tags FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT tags FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			(tagString,) = row
@@ -717,30 +768,30 @@ class SRDatabase:
 		cur.close()
 		return tags
 
-	def getAddToDatabase(self, wlID):
+	def getAddToDatabase(self, fsID):
 		result = True
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT addToDatabase FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT addToDatabase FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			(result,) = row
 		cur.close()
 		return bool(result)
 
-	def getAutoAdjust(self, wlID, channel):
+	def getAutoAdjust(self, fsID, channel):
 		result = None
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT CASE WHEN SerienMarker.autoAdjust IS NOT NULL THEN SerienMarker.autoAdjust ELSE Channels.autoAdjust END as autoAdjust FROM Channels,SerienMarker WHERE LOWER(Channels.WebChannel)=? AND SerienMarker.Url=?", (channel.lower(), wlID))
+		cur.execute("SELECT CASE WHEN SerienMarker.autoAdjust IS NOT NULL THEN SerienMarker.autoAdjust ELSE Channels.autoAdjust END as autoAdjust FROM Channels,SerienMarker WHERE LOWER(Channels.WebChannel)=? AND SerienMarker.fsID=?", (channel.lower(), fsID))
 		row = cur.fetchone()
 		if row:
 			(result,) = row
 		cur.close()
 		return result
 
-	def getKindOfTimer(self, wlID, default):
+	def getKindOfTimer(self, fsID, default):
 		result = None
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT kindOfTimer FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT kindOfTimer FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			(result,) = row
@@ -773,10 +824,10 @@ class SRDatabase:
 			result = default
 		return bool(result)
 
-	def getSpecialsAllowed(self, wlID):
+	def getSpecialsAllowed(self, fsID):
 		TimerForSpecials = False
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AlleStaffelnAb, TimerForSpecials FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT AlleStaffelnAb, TimerForSpecials FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			(AlleStaffelnAb, TimerForSpecials,) = row
@@ -787,9 +838,9 @@ class SRDatabase:
 		cur.close()
 		return bool(TimerForSpecials)
 
-	def getTimeSpan(self, wlID, globalTimeFrom, globalTimeTo):
+	def getTimeSpan(self, fsID, globalTimeFrom, globalTimeTo):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmezeitVon, AufnahmezeitBis FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT AufnahmezeitVon, AufnahmezeitBis FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			(fromTime, toTime) = row
@@ -806,15 +857,15 @@ class SRDatabase:
 	def getAllMarkerStatusForBoxID(self, boxID):
 		markers = {}
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT Url AS wl_id, ErlaubteSTB FROM SerienMarker LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID")
+		cur.execute("SELECT fsID, ErlaubteSTB FROM SerienMarker LEFT OUTER JOIN STBAuswahl ON SerienMarker.ID = STBAuswahl.ID")
 		rows = cur.fetchall()
 		for row in rows:
 			try:
-				(wl_id, allowedSTB) = row
+				(fsID, allowedSTB) = row
 				seriesActivated = True
 				if allowedSTB is not None and not (allowedSTB & (1 << (int(boxID) - 1))):
 					seriesActivated = False
-				markers[int(wl_id)] = seriesActivated
+				markers[fsID] = seriesActivated
 			except:
 				continue
 		cur.close()
@@ -839,6 +890,41 @@ class SRDatabase:
 		markers = cur.fetchall()
 		cur.close()
 		return markers
+
+	def getNextMarker(self, currentIndex, sortLikeWL):
+		fsID = None
+		cur = self._srDBConn.cursor()
+		sql = "SELECT DISTINCT LOWER(SUBSTR(Serie, 1, 1)) as fc, fsID FROM SerienMarker WHERE fc > ?"
+		if sortLikeWL:
+			sql += " ORDER BY REPLACE(REPLACE(REPLACE(REPLACE(LOWER(Serie), 'the ', ''), 'das ', ''), 'die ', ''), 'der ', '')"
+		else:
+			sql += " ORDER BY LOWER(Serie)"
+		sql += " LIMIT 1"
+		cur.execute(sql, [currentIndex])
+		row = cur.fetchone()
+		if row:
+			(fc, fsID) = row
+		cur.close()
+		return fsID
+
+	def getPreviousMarker(self, currentIndex, sortLikeWL):
+		result = None
+		cur = self._srDBConn.cursor()
+		sql = "SELECT DISTINCT LOWER(SUBSTR(Serie, 1, 1)) as fc, fsID FROM SerienMarker WHERE fc < ?"
+		if sortLikeWL:
+			sql += " ORDER BY REPLACE(REPLACE(REPLACE(REPLACE(LOWER(Serie), 'the ', ''), 'das ', ''), 'die ', ''), 'der ', '') DESC"
+		else:
+			sql += " ORDER BY LOWER(Serie) DESC"
+		cur.execute(sql, [currentIndex])
+		rows = cur.fetchall()
+		for row in rows:
+			(fc, fsID) = row
+			if fc == rows[0][0]:
+				result = fsID
+			else:
+				break
+		cur.close()
+		return result
 
 	def getMarkerSettings(self, seriesID):
 		cur = self._srDBConn.cursor()
@@ -889,9 +975,9 @@ class SRDatabase:
 		cur.close()
 		return result
 
-	def getPreferredMarkerChannels(self, wlID, globalUseAlternativeChannel, globalNumberOfRecordings):
+	def getPreferredMarkerChannels(self, fsID, globalUseAlternativeChannel, globalNumberOfRecordings):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AnzahlWiederholungen, preferredChannel, useAlternativeChannel FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT AnzahlWiederholungen, preferredChannel, useAlternativeChannel FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			(numberOfRecordings, preferredChannel, useAlternativeChannel) = row
@@ -906,10 +992,10 @@ class SRDatabase:
 			numberOfRecordings = globalNumberOfRecordings
 		return numberOfRecordings, preferredChannel, useAlternativeChannel
 
-	def getMarkerID(self, wlID):
+	def getMarkerID(self, fsID):
 		markerID = None
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT ID FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if row:
 			(markerID, ) = row
@@ -973,18 +1059,18 @@ class SRDatabase:
 		cur.close()
 		return rows
 
-	def getMarkerSeasonAndChannelSettings(self, wlID):
+	def getMarkerSeasonAndChannelSettings(self, fsID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID, AlleStaffelnAb, alleSender FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT ID, AlleStaffelnAb, alleSender FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		if not row:
 			row = (0, 999999, 0)
 		cur.close()
 		return row
 
-	def getMarkerSeasonSettings(self, wlID):
+	def getMarkerSeasonSettings(self, fsID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID, AlleStaffelnAb, AbEpisode, TimerForSpecials FROM SerienMarker WHERE Url=?", [wlID])
+		cur.execute("SELECT ID, AlleStaffelnAb, AbEpisode, TimerForSpecials FROM SerienMarker WHERE fsID=?", [fsID])
 		row = cur.fetchone()
 		cur.close()
 		return row
@@ -1033,24 +1119,24 @@ class SRDatabase:
 		cur.execute("INSERT OR IGNORE INTO StaffelAuswahl (ID, ErlaubteStaffel) VALUES (?, ?)", (markerID, season))
 		cur.close()
 
-	def updateMarkerSeasonsSettings(self, wlID, fromSeason, fromEpisode, specials):
+	def updateMarkerSeasonsSettings(self, fsID, fromSeason, fromEpisode, specials):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=?, AbEpisode=?, TimerForSpecials=? WHERE Url=?", (fromSeason, fromEpisode, specials, wlID))
+		cur.execute("UPDATE OR IGNORE SerienMarker SET AlleStaffelnAb=?, AbEpisode=?, TimerForSpecials=? WHERE fsID=?", (fromSeason, fromEpisode, specials, fsID))
 		cur.close()
 
-	def setAllChannelsToMarker(self, wlID, allChannels):
+	def setAllChannelsToMarker(self, fsID, allChannels):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE SerienMarker SET alleSender=? WHERE Url=?", (allChannels, wlID))
+		cur.execute("UPDATE OR IGNORE SerienMarker SET alleSender=? WHERE fsID=?", (allChannels, fsID))
 		cur.close()
 
-	def setMarkerEpisode(self, wlID, fromEpisode):
+	def setMarkerEpisode(self, fsID, fromEpisode):
 		cur = self._srDBConn.cursor()
-		cur.execute("UPDATE OR IGNORE SerienMarker SET AbEpisode=? WHERE Url=?", (int(fromEpisode), wlID))
+		cur.execute("UPDATE OR IGNORE SerienMarker SET AbEpisode=? WHERE fsID=?", (int(fromEpisode), fsID))
 		cur.close()
 
-	def changeMarkerStatus(self, wlID, boxID):
+	def changeMarkerStatus(self, fsID, boxID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE Url=?)", [wlID])
+		cur.execute("SELECT ID, ErlaubteSTB FROM STBAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE fsID=?)", [fsID])
 		row = cur.fetchone()
 		if row:
 			(ID, ErlaubteSTB) = row
@@ -1091,14 +1177,14 @@ class SRDatabase:
 			cur.execute("DELETE FROM AngelegteTimer WHERE fsID=?", [fsID])
 		cur.close()
 
-	def removeAllMarkerSeasons(self, wlID):
+	def removeAllMarkerSeasons(self, fsID):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE Url=?)", [wlID])
+		cur.execute("DELETE FROM StaffelAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE fsID=?)", [fsID])
 		cur.close()
 
-	def removeAllMarkerChannels(self, wlID):
+	def removeAllMarkerChannels(self, fsID):
 		cur = self._srDBConn.cursor()
-		cur.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE Url=?)", [wlID])
+		cur.execute("DELETE FROM SenderAuswahl WHERE ID IN (SELECT ID FROM SerienMarker WHERE fsID=?)", [fsID])
 		cur.close()
 
 	def getMarkerLastUpdate(self):
@@ -1283,9 +1369,9 @@ class SRDatabase:
 		cur.close()
 		return localChannelListLastUpdated
 
-	def getChannelInfo(self, channel, wlID, filterMode):
+	def getChannelInfo(self, channel, fsID, filterMode):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.Url = ?", [str(wlID)])
+		cur.execute("SELECT DISTINCT alleSender, SerienMarker.ID FROM SenderAuswahl, SerienMarker WHERE SerienMarker.fsID = ?", [fsID])
 		row = cur.fetchone()
 		allChannels = True
 		markerID = 0
@@ -1315,10 +1401,10 @@ class SRDatabase:
 		return webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status
 
 
-	def getMarkerChannels(self, wlID, withActiveChannels = True):
+	def getMarkerChannels(self, fsID, withActiveChannels = True):
 		channels = []
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT ErlaubterSender FROM SenderAuswahl INNER JOIN SerienMarker ON SenderAuswahl.ID=SerienMarker.ID WHERE SerienMarker.Url=? ORDER BY LOWER(ErlaubterSender)", [wlID])
+		cur.execute("SELECT ErlaubterSender FROM SenderAuswahl INNER JOIN SerienMarker ON SenderAuswahl.ID=SerienMarker.ID WHERE SerienMarker.fsID=? ORDER BY LOWER(ErlaubterSender)", [fsID])
 		rows = cur.fetchall()
 		if len(rows) > 0:
 			channels = [x[0] for x in rows]
@@ -1396,7 +1482,7 @@ class SRDatabase:
 			if alleSender:
 				channels = ['Alle', ]
 			else:
-				channels = self.getMarkerChannels(url, False)
+				channels = self.getMarkerChannels(fsID, False)
 
 			if AlleStaffelnAb == -2:  # 'Manuell'
 				seasons = [AlleStaffelnAb, ]
@@ -1470,6 +1556,24 @@ class SRDatabase:
 			cur.execute("DELETE FROM AngelegteTimer WHERE ROWID=?", [row_id])
 		cur.close()
 
+	def removeTimersBySeason(self, fsID, maxSeason, allowedSeasons, allowSpecials):
+		numberOfRemovedTimers = 0
+		cur = self._srDBConn.cursor()
+		bindings = (fsID, int(maxSeason))
+		sqlStatement = "DELETE FROM AngelegteTimer WHERE fsID=? AND CAST(Staffel AS INT)<? AND CAST(Staffel AS INT)"
+		if len(allowedSeasons) > 0:
+			sqlStatement += "  NOT IN (%s)" % ','.join('?' * len(allowedSeasons))
+			bindings += tuple(allowedSeasons)
+		if allowSpecials:
+			sqlStatement += " AND Staffel == CAST(Staffel AS INTEGER)"
+		cur.execute(sqlStatement, bindings)
+		cur.execute("SELECT CHANGES()")
+		row = cur.fetchone()
+		if row:
+			(numberOfRemovedTimers,) = row
+		cur.close()
+		return numberOfRemovedTimers
+
 	def removeAllOldTimer(self):
 		cur = self._srDBConn.cursor()
 		cur.execute("DELETE FROM AngelegteTimer WHERE StartZeitstempel<?", [int(time.time())])
@@ -1478,7 +1582,7 @@ class SRDatabase:
 	def getDeactivatedTimers(self):
 		timers = []
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT Serie, fsID, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE TimerAktiviert=0")
+		cur.execute("SELECT Serie, fsID, Staffel, Episode, Titel, StartZeitstempel, ServiceRef, webChannel, EventID FROM AngelegteTimer WHERE TimerAktiviert=0 AND StartZeitstempel>=?", [int(time.time())])
 		rows = cur.fetchall()
 		for row in rows:
 			(serien_name, serien_fsid, staffel, episode, serien_title, serien_time, stbRef, webChannel, eit) = row
@@ -1506,6 +1610,42 @@ class SRDatabase:
 	def removeOrphanTimers(self):
 		cur = self._srDBConn.cursor()
 		cur.execute("DELETE FROM AngelegteTimer WHERE (fsID NOT IN (SELECT fsID FROM SerienMarker) OR fsid IS NULL) AND Staffel != '0' AND Episode != '00'")
+		cur.close()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+	def getUndoTimer(self):
+		timers = []
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT ROWID, series, season, episode, title, fsid, STRFTIME('%d.%m.%Y - %H:%M', created) as created FROM undolog_timer ORDER BY created DESC")
+		rows = cur.fetchall()
+		for row in rows:
+			(row_id, series_name, season, episode, title, fsID, created) = row
+			timers.append((row_id, series_name, season, episode, title, fsID, created))
+		cur.close()
+		return timers
+
+	def deleteUndoTimer(self, row_id):
+		cur = self._srDBConn.cursor()
+		cur.execute("DELETE FROM undolog_timer WHERE ROWID=?", [row_id])
+		cur.close()
+
+	def restoreUndoTimerByID(self, row_id):
+		cur = self._srDBConn.cursor()
+		cur.execute("INSERT INTO AngelegteTimer SELECT series, season, episode, title, starttime, serviceref, webchannel, eventid, active, fsid FROM undolog_timer WHERE ROWID=?", [row_id])
+		cur.execute("DELETE FROM undolog_timer WHERE ROWID=?", [row_id])
+		cur.close()
+
+	def restoreUndoTimerBySeries(self, fsid):
+		cur = self._srDBConn.cursor()
+		cur.execute("INSERT INTO AngelegteTimer SELECT series, season, episode, title, starttime, serviceref, webchannel, eventid, active, fsid FROM undolog_timer WHERE fsid=?", [fsid])
+		cur.execute("DELETE FROM undolog_timer WHERE fsid=?", [fsid])
+		cur.close()
+
+	def restoreUndoTimerByDate(self, date):
+		cur = self._srDBConn.cursor()
+		cur.execute("INSERT INTO AngelegteTimer SELECT series, season, episode, title, starttime, serviceref, webchannel, eventid, active, fsid FROM undolog_timer WHERE STRFTIME('%d.%m.%Y', created)=?", [date])
+		cur.execute("DELETE FROM undolog_timer WHERE STRFTIME('%d.%m.%Y', created)=?", [date])
 		cur.close()
 
 # ----------------------------------------------------------------------------------------------------------------------

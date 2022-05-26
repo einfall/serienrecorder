@@ -75,6 +75,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.backupAtManualCheck = ConfigYesNo(default=True)
 	config.plugins.serienRec.BackupPath = ConfigText(default="/media/hdd/SR_Backup/", fixed_size=False, visible_width=80)
 	config.plugins.serienRec.deleteBackupFilesOlderThan = ConfigInteger(5, (5, 999))
+	config.plugins.serienRec.createCompressedBackup = ConfigYesNo(default=False)
 
 	###############################################################################################################################
 	# TIMER-SUCHLAUF
@@ -138,7 +139,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.forceManualRecording = ConfigYesNo(default=False)
 	config.plugins.serienRec.splitEventTimer = ConfigSelection(choices=[("0", "Nein"), ("1", "Timer anlegen"), ("2", "Einzelepisoden bevorzugen")], default="0")
 	config.plugins.serienRec.splitEventTimerCompareTitle = ConfigYesNo(default=True)
-	config.plugins.serienRec.addSingleTimersForEvent = ConfigSelection(choices=[("0", "Nein"), ("1", "Ja")], default="0")
+	config.plugins.serienRec.addSingleTimersForEvent = ConfigYesNo(default=False)
 	config.plugins.serienRec.selectBouquets = ConfigYesNo(default=False)
 
 	boxBouquets = STBHelpers.getTVBouquets()
@@ -268,6 +269,10 @@ def ReadConfigFile():
 		config.plugins.serienRec.enableWebinterface.value = False
 	config.plugins.serienRec.enableWebinterface.save()
 
+	if config.plugins.serienRec.addSingleTimersForEvent.value == "1":
+		config.plugins.serienRec.addSingleTimersForEvent.value = True
+	config.plugins.serienRec.addSingleTimersForEvent.save()
+
 	configfile.save()
 
 	SelectSkin()
@@ -349,6 +354,7 @@ def saveSettings():
 	config.plugins.serienRec.backupAtManualCheck.save()
 	config.plugins.serienRec.BackupPath.save()
 	config.plugins.serienRec.deleteBackupFilesOlderThan.save()
+	config.plugins.serienRec.createCompressedBackup.save()
 
 	###############################################################################################################################
 	# TIMER-SUCHLAUF
@@ -908,6 +914,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		if config.plugins.serienRec.AutoBackup.value != "0":
 			self.list.append(getConfigListEntry("    Backup bei manuellem Timer-Suchlauf:", config.plugins.serienRec.backupAtManualCheck))
 			self.list.append(getConfigListEntry("    Verzeichnis für Backups:", config.plugins.serienRec.BackupPath))
+			self.list.append(getConfigListEntry("    Backup-Dateien komprimieren:", config.plugins.serienRec.createCompressedBackup))
 			self.list.append(getConfigListEntry("    Backup-Dateien löschen die älter als x Tage sind:", config.plugins.serienRec.deleteBackupFilesOlderThan))
 
 		###############################################################################################################################
@@ -1153,9 +1160,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			else:
 				return "%d Sekunden" % config.plugins.serienRec.showMessageTimeout.value
 
-		lt = time.localtime()
-
-		from .SerienRecorderLogWriter import SERIENRECORDER_LONG_LOGFILENAME
 		self.HilfeTexte = {
 			###############################################################################################################################
 			# SYSTEM
@@ -1194,6 +1198,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' wird bei einem manuellen Timer-Suchlauf ein Backup erstellt."),
 			config.plugins.serienRec.BackupPath: (
 				"Das Verzeichnis auswählen und/oder erstellen, in dem die Backups gespeichert werden."),
+			config.plugins.serienRec.createCompressedBackup: (
+				"Die Backup-Dateien werden komprimiert als einzelne .tar.gz Datei abgespeichert, so lässt sich das Backup leichter zurückspielen, weil die ursprüngliche Verzeichnisstruktur erhalten bleibt."),
 			config.plugins.serienRec.deleteBackupFilesOlderThan: (
 				"Backup-Dateien, die älter sind als die hier angegebene Anzahl von Tagen, werden beim Timer-Suchlauf automatisch gelöscht."),
 
@@ -1487,6 +1493,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' erfolgt die Anzeige der Log-Datei mit Zeilenumbruch, d.h. es werden drei Zeilen pro Eintrag angezeigt.\n"
 				"Bei 'nein' erfolgt die Anzeige der Log-Datei mit einer Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichtbar!)"),
 		}
+		lt = time.localtime()
+
+		from .SerienRecorderLogWriter import SERIENRECORDER_LONG_LOGFILENAME
 
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
@@ -1553,9 +1562,16 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		from .SerienRecorderChannelScreen import serienRecMainChannelEdit
 		self.session.openWithCallback(self.changedEntry, serienRecMainChannelEdit)
 
+	def cancelConfirm(self, confirm):
+		if not confirm:
+			return
+		configfile.load()
+		ReadConfigFile()
+		self.close((False, False, True))
+
 	def keyCancel(self):
-		if self.setupModified:
-			self.save()
+		if self['config'].isChanged():
+			self.session.openWithCallback(self.cancelConfirm, MessageBox, "Wirklich ohne Speichern verlassen?")
 		else:
 			configfile.load()
 			ReadConfigFile()

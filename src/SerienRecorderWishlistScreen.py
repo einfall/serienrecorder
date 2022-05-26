@@ -32,16 +32,16 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
-			"ok"    : (self.keyOK, "für die ausgewählte Serien neue Einträge hinzufügen"),
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"left"  : (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right" : (self.keyRight, "zur nächsten Seite blättern"),
-			"up"    : (self.keyUp, "eine Zeile nach oben"),
-			"down"  : (self.keyDown, "eine Zeile nach unten"),
-			"red"	: (self.keyRed, "ausgewählten Eintrag löschen"),
-			"green" : (self.keyGreen, "alle Änderungen speichern und zurück zur vorherigen Ansicht"),
-			"yellow": (self.keyYellow, "umschalten Sortierung ein/aus"),
-			"blue"	: (self.keyBlue, "alle Einträge aus der Liste endgültig löschen"),
+			"ok"    : (self.keyOK, "Für die ausgewählte Serie neue Einträge hinzufügen"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"left"  : (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right" : (self.keyRight, "Zur nächsten Seite blättern"),
+			"up"    : (self.keyUp, "Eine Zeile nach oben"),
+			"down"  : (self.keyDown, "Eine Zeile nach unten"),
+			"red"	: (self.keyRed, "Ausgewählten Eintrag löschen"),
+			"green" : (self.keyGreen, "Alle Änderungen speichern und zurück zur vorherigen Ansicht"),
+			"yellow": (self.keyYellow, "Sortierung ändern"),
+			"blue"	: (self.keyBlue, "Alle Einträge aus der Liste endgültig löschen"),
 			"menu"  : (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"0"		: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
@@ -162,8 +162,8 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def wunschliste(self):
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		if serien_wlid:
-			super(self.__class__, self).wunschliste(serien_wlid)
+		if serien_fsid:
+			super(self.__class__, self).wunschliste(serien_fsid)
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
@@ -305,8 +305,8 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def getCover(self):
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		if serien_name and serien_wlid:
-			SerienRecorder.getCover(self, serien_name, serien_wlid, serien_fsid)
+		if serien_name and serien_fsid:
+			SerienRecorder.getCover(self, serien_name, serien_fsid)
 
 	def keyLeft(self):
 		self[self.modus].pageUp()

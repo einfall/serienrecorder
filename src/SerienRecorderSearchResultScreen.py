@@ -15,7 +15,6 @@ from skin import parseColor
 
 from . import SerienRecorder
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, updateMenuKeys, InitSkin, skinFactor
-from .SerienRecorderDatabase import SRDatabase
 
 if fileExists("/usr/lib/enigma2/python/Plugins/SystemPlugins/Toolkit/NTIVirtualKeyBoard.pyo"):
 	from Plugins.SystemPlugins.Toolkit.NTIVirtualKeyBoard import NTIVirtualKeyBoard
@@ -34,19 +33,20 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.session = session
 		self.picload = ePicLoad()
 		self.serien_name = serien_name
-		self.serienlist = []
+		self.resultlist = []
+		self.markers = []
 		self.skin = None
 		self.displayTimer_conn = None
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
 			"ok": (self.keyOK, "Marker für ausgewählte Serie hinzufügen"),
-			"cancel": (self.keyCancel, "zurück zur vorherigen Ansicht"),
-			"left": (self.keyLeft, "zur vorherigen Seite blättern"),
-			"right": (self.keyRight, "zur nächsten Seite blättern"),
-			"up": (self.keyUp, "eine Zeile nach oben"),
-			"down": (self.keyDown, "eine Zeile nach unten"),
-			"red": (self.keyRed, "zurück zur vorherigen Ansicht"),
-			"blue": (self.keyBlue, "Serie manuell suchen"),
+			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
+			"left": (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right": (self.keyRight, "Zur nächsten Seite blättern"),
+			"up": (self.keyUp, "Eine Zeile nach oben"),
+			"down": (self.keyDown, "Eine Zeile nach unten"),
+			"red": (self.keyRed, "Zurück zur vorherigen Ansicht"),
+			"blue": (self.keyBlue, "Suche wiederholen und ggf. Suchbegriff ändern"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
 			"startTeletext": (self.wunschliste, "Informationen zur ausgewählten Serie auf Wunschliste anzeigen"),
 			"0"	: (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
@@ -151,7 +151,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['title'].setText("Suche nach ' %s '" % self.serien_name)
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 		if start == 0:
-			self.serienlist = []
+			self.resultlist = []
 
 		searchResults = downloadSearchResults(self.serien_name, start)
 		searchResults.start()
@@ -159,18 +159,18 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.results(searchResults.getData())
 
-	def results(self, serienlist):
-		(startOffset, moreResults, searchResults) = serienlist
-		self.serienlist.extend(searchResults)
-		self['title'].setText("Die Suche nach ' %s ' ergab %s Treffer." % (self.serien_name, str(len(self.serienlist))))
+	def results(self, resultlist):
+		(startOffset, moreResults, searchResults) = resultlist
+		self.resultlist.extend(searchResults)
+		self['title'].setText("Die Suche nach ' %s ' ergab %s Treffer." % (self.serien_name, str(len(self.resultlist))))
 		self['title'].instance.setForegroundColor(parseColor("foreground"))
 
 		# deep copy list
-		resultList = self.serienlist[:]
+		resultList = self.resultlist[:]
 
 		if moreResults > 0:
-			resultList.append(("", "", "", "", ""))
-			resultList.append(("=> Weitere Ergebnisse laden?", str(moreResults), "", "-1", ""))
+			resultList.append(("", "", "", "", "", 0))
+			resultList.append(("=> Weitere Ergebnisse laden?", str(moreResults), "", "-1", "", 0))
 		self.chooseMenuList.setList(list(map(self.buildList, resultList)))
 		self['menu_list'].moveToIndex(startOffset)
 		self.loading = False
@@ -178,16 +178,21 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		(serien_name, serien_info, serien_alias, serien_wlid, serien_fsid) = entry
+		(serien_name, serien_info, serien_alias, serien_wlid, serien_fsid, marker_flag) = entry
 
 		# weitere Ergebnisse Eintrag
 		if serien_wlid == "-1":
 			serien_info = ""
 
-		# name_Serie = doReplaces(name_Serie)
+		if marker_flag == 1:
+			seriesColor = parseColor('green').argb()
+		elif marker_flag == 2:
+			seriesColor = parseColor('red').argb()
+		else:
+			seriesColor = None
 
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 500 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name),
+		        (eListboxPythonMultiContent.TYPE_TEXT, 40, 0, 500 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, seriesColor, seriesColor),
 		        (eListboxPythonMultiContent.TYPE_TEXT, 600 * skinFactor, 0, 350 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_info)
 		        ]
 
@@ -195,6 +200,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def createMarker(serien_wlid, serien_name, serien_info, serien_fsid):
 		result = False
 
+		from .SerienRecorderDatabase import SRDatabase
 		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 		if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
 			boxID = None
@@ -229,10 +235,10 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self['title'].instance.setForegroundColor(parseColor("green"))
 
 			from .SerienRecorder import getCover
-			getCover(self, serien_name, serien_wlid, serien_fsid, False, True)
+			getCover(self, serien_name, serien_fsid, False, True)
 
 			if config.plugins.serienRec.openMarkerScreen.value:
-				self.close(str(serien_wlid))
+				self.close(serien_fsid)
 		else:
 			self['title'].setText("Marker '%s (%s)' ist schon vorhanden." % (serien_name, serien_info))
 			self['title'].instance.setForegroundColor(parseColor("red"))
@@ -250,7 +256,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self['title'].setText("")
 			self['title'].instance.setForegroundColor(parseColor("foreground"))
 			self.serien_name = serien_name
-			self.serienlist = []
+			self.resultlist = []
 			self.searchSerie()
 
 	def keyLeft(self):
@@ -270,15 +276,15 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.getCover()
 
 	def wunschliste(self):
-		serien_id = self['menu_list'].getCurrent()[0][2]
-		super(self.__class__, self).wunschliste(serien_id)
+		serien_fsid = self['menu_list'].getCurrent()[0][4]
+		super(self.__class__, self).wunschliste(serien_fsid)
 
 	def getCover(self):
 		if self.loading or self['menu_list'].getCurrent() is None:
 			return
 
 		(serien_name, serien_info, serien_alias, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		SerienRecorder.getCover(self, serien_name, serien_wlid, serien_fsid)
+		SerienRecorder.getCover(self, serien_name, serien_fsid)
 
 	def __onClose(self):
 		self.stopDisplayTimer()

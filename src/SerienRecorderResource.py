@@ -11,7 +11,7 @@ from .SerienRecorderHelpers import decrypt, encrypt, STBHelpers, SRAPIVERSION, S
 
 import json, os, time
 
-def getApiList():
+def getApiList(session):
 	root = ApiBaseResource()
 	childs = []
 	childs.append( ('markers', ApiGetMarkersResource() ) )
@@ -24,7 +24,7 @@ def getApiList():
 	childs.append( ('createmarker', ApiCreateMarkerResource() ) )
 	childs.append( ('deletemarker', ApiDeleteMarkerResource() ) )
 	childs.append( ('settings', ApiGetSettingsResource() ) )
-	childs.append( ('setsettings', ApiSetSettingsResource()))
+	childs.append( ('setsettings', ApiSetSettingsResource(session)))
 	childs.append( ('resetsettings', ApiResetSettingsResource()))
 	childs.append( ('cover', ApiGetCoverResource() ) )
 	childs.append( ('picon', ApiGetPiconResource() ) )
@@ -47,6 +47,7 @@ def getApiList():
 	childs.append( ('markertimer', ApiGetMarkerTimerResource() ) )
 	childs.append( ('addtimers', ApiAddTimersResource() ) )
 	childs.append( ('removetimer', ApiRemoveTimerResource() ) )
+	childs.append( ('removetimerbyseason', ApiRemoveTimerBySeasonResource() ) )
 	childs.append( ('removeallremainingtimer', ApiRemoveAllRemainingTimerResource() ) )
 	childs.append( ('createtimer', ApiCreateTimerResource() ) )
 	childs.append( ('seriesinfo', ApiGetSeriesInfoResource() ) )
@@ -58,7 +59,7 @@ def getApiList():
 
 	return ( root, childs )
 
-def addWebInterface():
+def addWebInterface(session):
 	use_openwebif = False
 	if os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/OpenWebif/pluginshook.src"):
 		use_openwebif = True
@@ -70,7 +71,7 @@ def addWebInterface():
 		#from WebChilds.UploadResource import UploadResource
 
 		# webapi
-		(root, childs) = getApiList()
+		(root, childs) = getApiList(session)
 		if childs:
 			for name, api in childs:
 				root.putChild(toBinary(name), api)
@@ -353,11 +354,11 @@ class ApiChangeMarkerStatusResource(ApiBaseResource):
 		print("[SerienRecorder] ApiChangeMarkerStatus")
 		print(req.args)
 
-		wl_id = toStr(req.args[toBinary("wlid")][0])
+		fs_id = toStr(req.args[toBinary("fsid")][0])
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
 		database = SRDatabase(serienRecDataBaseFilePath)
-		database.changeMarkerStatus(wl_id, config.plugins.serienRec.BoxID.value)
+		database.changeMarkerStatus(fs_id, config.plugins.serienRec.BoxID.value)
 		result = True
 		return self.returnResult(req, result, None)
 
@@ -373,7 +374,7 @@ class ApiCreateMarkerResource(ApiBaseResource):
 			from .SerienRecorderSearchResultScreen import serienRecSearchResultScreen
 			if serienRecSearchResultScreen.createMarker(data['wlid'], data['name'], data['info'], data['fsid']):
 				from .SerienRecorder import getCover
-				getCover(None, data['name'], data['wlid'], data['fsid'], False, True)
+				getCover(None, data['name'], data['fsid'], False, True)
 				result = True
 		return self.returnResult(req, result, None)
 
@@ -398,12 +399,12 @@ class ApiSetMarkerChannelsResource(ApiBaseResource):
 		data = json.loads(req.content.getvalue())
 
 		channels = []
-		if 'wlid' in data:
+		if 'fsid' in data:
 			from .SerienRecorderDatabase import SRDatabase
 			from .SerienRecorder import serienRecDataBaseFilePath
 			database = SRDatabase(serienRecDataBaseFilePath)
-			database.removeAllMarkerChannels(data['wlid'])
-			markerID = database.getMarkerID(data['wlid'])
+			database.removeAllMarkerChannels(data['fsid'])
+			markerID = database.getMarkerID(data['fsid'])
 
 			allChannels = 0
 			channelData = []
@@ -419,12 +420,12 @@ class ApiSetMarkerChannelsResource(ApiBaseResource):
 			else:
 				database.setMarkerChannels(channelData)
 
-			database.setAllChannelsToMarker(data['wlid'], allChannels)
+			database.setAllChannelsToMarker(data['fsid'], allChannels)
 
 			if allChannels:
 				channels = ['Alle',]
 			else:
-				channels = database.getMarkerChannels(data['wlid'], False)
+				channels = database.getMarkerChannels(data['fsid'], False)
 			channels = str(channels).replace("[", "").replace("]", "").replace("'", "").replace('"', "")
 
 		return self.returnResult(req, True, channels)
@@ -434,12 +435,12 @@ class ApiGetMarkerSeasonSettingsResource(ApiBaseResource):
 		print("[SerienRecorder] ApiGetMarkerSeasonSettings")
 		print(req.args)
 
-		wl_id = toStr(req.args[toBinary("wlid")][0])
+		fs_id = toStr(req.args[toBinary("fsid")][0])
 
 		from .SerienRecorderDatabase import SRDatabase
 		from .SerienRecorder import serienRecDataBaseFilePath
 		database = SRDatabase(serienRecDataBaseFilePath)
-		(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = database.getMarkerSeasonSettings(wl_id)
+		(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = database.getMarkerSeasonSettings(fs_id)
 		markerSeasons = database.getAllowedSeasons(ID, allSeasonsFrom)
 		data = {
 			'id' : ID,
@@ -460,11 +461,11 @@ class ApiSetMarkerSeasonSettingsResource(ApiBaseResource):
 		data = json.loads(req.content.getvalue())
 
 		results = []
-		if 'wlid' in data:
+		if 'fsid' in data:
 			from .SerienRecorderDatabase import SRDatabase
 			from .SerienRecorder import serienRecDataBaseFilePath
 			database = SRDatabase(serienRecDataBaseFilePath)
-			database.removeAllMarkerSeasons(data['wlid'])
+			database.removeAllMarkerSeasons(data['fsid'])
 
 			AbEpisode = data['episode']
 			TimerForSpecials = 0
@@ -501,7 +502,7 @@ class ApiSetMarkerSeasonSettingsResource(ApiBaseResource):
 			if 0 < AlleStaffelnAb < 999999:
 				results.append('ab %s' % AlleStaffelnAb)
 
-			database.updateMarkerSeasonsSettings(data['wlid'], AlleStaffelnAb, AbEpisode, TimerForSpecials)
+			database.updateMarkerSeasonsSettings(data['fsid'], AlleStaffelnAb, AbEpisode, TimerForSpecials)
 
 		results = ', '.join(str(staffel) for staffel in results)
 		return self.returnResult(req, True, results)
@@ -864,6 +865,7 @@ class ApiGetSettingsResource(ApiBaseResource):
 				'backupAtManualCheck': config.plugins.serienRec.backupAtManualCheck.value,
 				'backupPath': config.plugins.serienRec.BackupPath.value,
 				'deleteBackupFilesOlderThan': config.plugins.serienRec.deleteBackupFilesOlderThan.value,
+				'createCompressedBackup' : config.plugins.serienRec.createCompressedBackup.value,
 				'videoDirs': config.movielist.videodirs.value,
 			},
 			'autocheck' : {
@@ -991,6 +993,9 @@ class ApiGetSettingsResource(ApiBaseResource):
 		return self.returnResult(req, True, data)
 
 class ApiSetSettingsResource(ApiBaseResource):
+	def __init__(self, session):
+		self.session = session
+
 	def render_POST(self, req):
 		print("[SerienRecorder] ApiSetSettings")
 		print(req)
@@ -1013,14 +1018,15 @@ class ApiSetSettingsResource(ApiBaseResource):
 			config.plugins.serienRec.backupAtManualCheck.value = data['system']['backupAtManualCheck']
 			config.plugins.serienRec.BackupPath.value = data['system']['backupPath']
 			config.plugins.serienRec.deleteBackupFilesOlderThan.value = data['system']['deleteBackupFilesOlderThan']
+			config.plugins.serienRec.createCompressedBackup.value = data['system']['createCompressedBackup']
 
 		if 'autocheck' in data and data['autocheck']['changed']:
 			config.plugins.serienRec.autochecktype.value = data['autocheck']['type']
-			config.plugins.serienRec.deltime.value = data['autocheck']['deltime'].split(':')
+			config.plugins.serienRec.deltime.value = [int(x) for x in data['autocheck']['deltime'].split(':')]
 			config.plugins.serienRec.maxDelayForAutocheck.value = data['autocheck']['maxDelayForAutoCheck']
 			config.plugins.serienRec.checkfordays.value = data['autocheck']['checkfordays']
-			config.plugins.serienRec.globalFromTime.value = data['autocheck']['globalFromTime'].split(':')
-			config.plugins.serienRec.globalToTime.value = data['autocheck']['globalToTime'].split(':')
+			config.plugins.serienRec.globalFromTime.value = [int(x) for x in data['autocheck']['globalFromTime'].split(':')]
+			config.plugins.serienRec.globalToTime.value = [int(x) for x in data['autocheck']['globalToTime'].split(':')]
 			config.plugins.serienRec.eventid.value = data['autocheck']['eventid']
 			config.plugins.serienRec.epgTimeSpan.value = data['autocheck']['epgTimeSpan']
 			config.plugins.serienRec.forceRecording.value = data['autocheck']['forceRecording']
@@ -1132,6 +1138,10 @@ class ApiSetSettingsResource(ApiBaseResource):
 		if getDataBaseFilePath() != "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value:
 			DBPathChanged = True
 
+		if 'autocheck' in data and data['autocheck']['changed']:
+			from .SerienRecorderCheckForRecording import checkForRecordingInstance
+			checkForRecordingInstance.initialize(self.session, False, False)
+
 		return self.returnResult(req, True, DBPathChanged)
 
 class ApiResetSettingsResource(ApiBaseResource):
@@ -1162,7 +1172,7 @@ class ApiGetTransmissionsResource(ApiBaseResource):
 		elif filterMode == 1:
 			webChannels = database.getActiveChannels()
 		else:
-			webChannels = database.getMarkerChannels(wl_id)
+			webChannels = database.getMarkerChannels(fs_id)
 
 		try:
 			transmissions = SeriesServer().doGetTransmissions(wl_id, 0, webChannels)
@@ -1212,7 +1222,8 @@ class ApiSearchSeriesResource(ApiBaseResource):
 					'info': item[1],
 					'subtitle': item[2],
 					'wlid': item[3],
-					'fsid': item[4]
+					'fsid': item[4],
+					'flag': item[5]
 				})
 
 			data = {
@@ -1433,17 +1444,14 @@ class ApiUpdateChannelsResource(ApiBaseResource):
 			# Delete remove channels
 			if removedWebChannels:
 				SRLogger.writeLog("Folgende Sender wurden bei Wunschliste nicht mehr gefunden, die Zuordnung im SerienRecorder wurde gelöscht:\n" + "\n".join(removedWebChannels), True)
-				#self.session.open(MessageBox, "Folgende Sender wurden bei Wunschliste nicht mehr gefunden,\ndie Zuordnung im SerienRecorder wurde gelöscht:\n\n" + "\n".join(removedWebChannels), MessageBox.TYPE_INFO, timeout=10)
 				for webChannel in removedWebChannels:
 					database.removeChannel(webChannel)
 
 			if not newWebChannels:
 				SRLogger.writeLog("Es wurden keine neuen Sender bei Wunschliste gefunden.")
-				#self.session.open(MessageBox, "Es wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
 			else:
 				newChannelsMessage = "Folgende Sender wurden neu bei Wunschliste gefunden:\n" + "\n".join(newWebChannels)
 				SRLogger.writeLog(newChannelsMessage, True)
-				#self.session.open(MessageBox, "Folgende Sender wurden neu bei Wunschliste gefunden,\nsie wurden am Ende der Liste eingefügt:\n\n" + "\n".join(newWebChannels), MessageBox.TYPE_INFO, timeout=10)
 				channels = []
 				for webChannel in newWebChannels:
 					channels.append((webChannel, "", "", 0))
@@ -1533,7 +1541,8 @@ class ApiGetMarkerTimerResource(ApiBaseResource):
 						'episode': episode,
 					    'title': title,
 					    'startTime': start_time,
-					    'webChannel': webChannel
+					    'webChannel': webChannel,
+						'eit': 0
 				    })
 
 			timerList.sort(key=lambda x: (x['season'].lower(), x['episode'].lower()))
@@ -1566,8 +1575,27 @@ class ApiRemoveTimerResource(ApiBaseResource):
 		from .SerienRecorder import serienRecDataBaseFilePath
 		database = SRDatabase(serienRecDataBaseFilePath)
 
-		serienRecTimerListScreen.removeTimer(database, data['series'], data['fsid'], data['season'], data['episode'], data['title'], data['startTime'], data['webChannel'], data['eit'])
+		for timer in data['timers']:
+			serienRecTimerListScreen.removeTimer(database, data['series'], data['fsid'], timer['season'], timer['episode'], timer['title'], timer['startTime'], timer['webChannel'], timer['eit'])
 		return self.returnResult(req, True, None)
+
+class ApiRemoveTimerBySeasonResource(ApiBaseResource):
+	def render_POST(self, req):
+		print("[SerienRecorder] ApiRemoveTimerBySeason")
+		print(req.content.getvalue())
+
+		data = json.loads(req.content.getvalue())
+
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		database = SRDatabase(serienRecDataBaseFilePath)
+
+		(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = database.getMarkerSeasonSettings(data['fsid'])
+		seasonList = database.getAllowedSeasons(ID, allSeasonsFrom)
+		print("[SerienRecorder] callCleanupTimer", ID, allSeasonsFrom, fromEpisode, timerForSpecials, seasonList)
+		numberOfRemovedTimers = database.removeTimersBySeason(data['fsid'], allSeasonsFrom, seasonList, timerForSpecials)
+
+		return self.returnResult(req, True, numberOfRemovedTimers)
 
 class ApiRemoveAllRemainingTimerResource(ApiBaseResource):
 	def render_POST(self, req):
@@ -1582,8 +1610,8 @@ class ApiRemoveAllRemainingTimerResource(ApiBaseResource):
 		current_time = int(time.time())
 		timers = database.getAllTimer(current_time)
 		for timer in timers:
-			(row_id, serie, staffel, episode, title, start_time, serviceRef, webChannel, eit, activeTimer, serien_fsid) = timer
-			serienRecTimerListScreen.removeTimer(database, serie, serien_fsid, staffel, episode, title, start_time, webChannel, eit)
+			(row_id, series, season, episode, title, start_time, serviceRef, webChannel, eit, activeTimer, series_fsid) = timer
+			serienRecTimerListScreen.removeTimer(database, series, series_fsid, season, episode, title, start_time, webChannel, eit)
 
 		return self.returnResult(req, True, None)
 
