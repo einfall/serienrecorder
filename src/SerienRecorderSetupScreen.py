@@ -283,6 +283,15 @@ class ConfigListHC(ConfigList):
 	def __init__(self, list, session=None):
 		ConfigList.__init__(self, list, session=session)
 
+	def isChanged(self):
+		print("[SerienRecorder] isChanged")
+		is_changed = False
+		for x in self.list:
+			if len(x) > 1:
+				is_changed |= x[1].isChanged()
+
+		return is_changed
+
 	def jumpToPreviousSection(self):
 		index = self.getCurrentIndex() - 1
 		maxlen = len(self._ConfigList__list)
