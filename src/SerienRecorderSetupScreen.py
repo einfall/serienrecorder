@@ -1160,6 +1160,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			else:
 				return "%d Sekunden" % config.plugins.serienRec.showMessageTimeout.value
 
+		lt = time.localtime()
+		from .SerienRecorderLogWriter import SERIENRECORDER_LONG_LOGFILENAME
+
 		self.HilfeTexte = {
 			###############################################################################################################################
 			# SYSTEM
@@ -1493,10 +1496,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' erfolgt die Anzeige der Log-Datei mit Zeilenumbruch, d.h. es werden drei Zeilen pro Eintrag angezeigt.\n"
 				"Bei 'nein' erfolgt die Anzeige der Log-Datei mit einer Zeile pro Eintrag (Bei langen Zeilen sind dann die Enden nicht mehr sichtbar!)"),
 		}
-		lt = time.localtime()
-
-		from .SerienRecorderLogWriter import SERIENRECORDER_LONG_LOGFILENAME
-
 		try:
 			text = self.HilfeTexte[self['config'].getCurrent()[1]]
 		except:
