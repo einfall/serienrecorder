@@ -364,6 +364,10 @@ Nicht in Benutzung --*/
   border-left-color: #f30909;
   border-right-color: #f30909;
 }
+.rahmen-einfach{
+  border-style: solid;
+  border-width: 2px;
+}
 .thumbnail.with-caption {
   display: inline-block;
 }
