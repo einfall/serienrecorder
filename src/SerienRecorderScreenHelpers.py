@@ -478,7 +478,7 @@ class EditTVDBID:
 				self._session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!", MessageBox.TYPE_ERROR, timeout=5)
 			else:
 				tvdb_id_text = str(self._tvdb_id) if self._tvdb_id > 0 else 'Keine'
-				message = "Für ' %s ' ist folgende TVDB-ID zugewiesen: %s\n\nMöchten Sie die TVDB-ID ändern?" % (self._serien_name, tvdb_id_text)
+				message = "Für ' %s ' ist folgende TVDB-ID zugewiesen: %s\n\nDie TVDB-ID ändern?" % (self._serien_name, tvdb_id_text)
 				self._session.openWithCallback(self.enterTVDBID, MessageBox, message, MessageBox.TYPE_YESNO, default = False)
 		else:
 			message = "Cover und Serien-/Episodeninformationen stammen von 'TheTVDB' - dafür muss jeder Serie eine TVDB-ID zugewiesen werden. " \

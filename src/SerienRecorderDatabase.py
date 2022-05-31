@@ -1556,21 +1556,22 @@ class SRDatabase:
 			cur.execute("DELETE FROM AngelegteTimer WHERE ROWID=?", [row_id])
 		cur.close()
 
-	def removeTimersBySeason(self, fsID, maxSeason, allowedSeasons, allowSpecials):
+	def removeTimersBySeason(self, fsID, maxSeason, fromEpisode, allowedSeasons, allowSpecials):
 		numberOfRemovedTimers = 0
 		cur = self._srDBConn.cursor()
-		bindings = (fsID, int(maxSeason))
-		sqlStatement = "DELETE FROM AngelegteTimer WHERE fsID=? AND CAST(Staffel AS INT)<? AND CAST(Staffel AS INT)"
-		if len(allowedSeasons) > 0:
-			sqlStatement += "  NOT IN (%s)" % ','.join('?' * len(allowedSeasons))
-			bindings += tuple(allowedSeasons)
-		if allowSpecials:
-			sqlStatement += " AND Staffel == CAST(Staffel AS INTEGER)"
-		cur.execute(sqlStatement, bindings)
-		cur.execute("SELECT CHANGES()")
-		row = cur.fetchone()
-		if row:
-			(numberOfRemovedTimers,) = row
+		if maxSeason == 999999:
+			cur.execute("DELETE FROM AngelegteTimer WHERE fsID=? AND CAST(Staffel AS INT) = 0 AND CAST(Episode AS INT)<?", (fsID, int(fromEpisode)))
+			numberOfRemovedTimers = cur.rowcount
+		else:
+			bindings = (fsID, int(maxSeason))
+			sqlStatement = "DELETE FROM AngelegteTimer WHERE fsID=? AND CAST(Staffel AS INT)<? AND CAST(Staffel AS INT)"
+			if len(allowedSeasons) > 0:
+				sqlStatement += "  NOT IN (%s)" % ','.join('?' * len(allowedSeasons))
+				bindings += tuple(allowedSeasons)
+			if allowSpecials:
+				sqlStatement += " AND Staffel == CAST(Staffel AS INTEGER)"
+			cur.execute(sqlStatement, bindings)
+			numberOfRemovedTimers = cur.rowcount
 		cur.close()
 		return numberOfRemovedTimers
 

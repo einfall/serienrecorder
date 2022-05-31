@@ -467,7 +467,7 @@ class ApiSetMarkerSeasonSettingsResource(ApiBaseResource):
 			database = SRDatabase(serienRecDataBaseFilePath)
 			database.removeAllMarkerSeasons(data['fsid'])
 
-			AbEpisode = data['episode']
+			AbEpisode = int(data['episode'])
 			TimerForSpecials = 0
 			AlleStaffelnAb = 999999
 
@@ -1593,7 +1593,7 @@ class ApiRemoveTimerBySeasonResource(ApiBaseResource):
 		(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = database.getMarkerSeasonSettings(data['fsid'])
 		seasonList = database.getAllowedSeasons(ID, allSeasonsFrom)
 		print("[SerienRecorder] callCleanupTimer", ID, allSeasonsFrom, fromEpisode, timerForSpecials, seasonList)
-		numberOfRemovedTimers = database.removeTimersBySeason(data['fsid'], allSeasonsFrom, seasonList, timerForSpecials)
+		numberOfRemovedTimers = database.removeTimersBySeason(data['fsid'], allSeasonsFrom, fromEpisode, seasonList, timerForSpecials)
 
 		return self.returnResult(req, True, numberOfRemovedTimers)
 

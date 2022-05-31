@@ -284,7 +284,6 @@ class ConfigListHC(ConfigList):
 		ConfigList.__init__(self, list, session=session)
 
 	def isChanged(self):
-		print("[SerienRecorder] isChanged")
 		is_changed = False
 		for x in self.list:
 			if len(x) > 1:

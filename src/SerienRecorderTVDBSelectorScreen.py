@@ -16,7 +16,7 @@ from Tools.Directories import fileExists
 
 from .SerienRecorderHelpers import PicLoader, toStr
 
-import os, shutil
+import os
 
 class TVDBSelectorScreen(Screen):
 	DESKTOP_WIDTH  = getDesktop(0).size().width()
