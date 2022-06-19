@@ -224,7 +224,6 @@ def ReadConfigFile():
 	config.plugins.serienRec.tvplaner_last_full_check = ConfigInteger(0)
 	config.plugins.serienRec.timeUpdate = ConfigYesNo(default=False)
 	config.plugins.serienRec.showAdvice = ConfigYesNo(default=True)
-	config.plugins.serienRec.showStartupInfoText = ConfigYesNo(default=True)
 
 	# INTERNAL
 	config.plugins.serienRec.showversion = NoSave(ConfigText(default=SRVERSION))
@@ -249,7 +248,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.justplay = NoSave(ConfigYesNo(default=False))
 	config.plugins.serienRec.justremind = NoSave(ConfigYesNo(default=False))
 	config.plugins.serienRec.zapbeforerecord = NoSave(ConfigYesNo(default=False))
-
+	config.plugins.serienRec.showStartupInfoText = NoSave(ConfigYesNo(default=True))
 
 
 	# CORRECT DEFAULTS
@@ -769,12 +768,15 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			try:
 				from .SerienRecorderUpdateScreen import checkGitHubUpdate
 				webapp_assets = checkGitHubUpdate.checkForWebinterfaceUpdate()
-				for webapp_asset in webapp_assets:
-					(api_version, webapp_version, url, size) = webapp_asset
-					if api_version == SRAPIVERSION:
-						os.makedirs(targetFilePath)
-						successful = checkGitHubUpdate.installWebinterfaceUpdate(url)
-						break
+				if not webapp_assets:
+					error = ' [Fehler beim Herunterladen des Updates]'
+				else:
+					for webapp_asset in webapp_assets:
+						(api_version, webapp_version, url, size) = webapp_asset
+						if api_version == SRAPIVERSION:
+							os.makedirs(targetFilePath)
+							successful = checkGitHubUpdate.installWebinterfaceUpdate(url)
+							break
 			except Exception as e:
 				print("[SerienRecorder] Failed to install webinterface [%s]" % str(e))
 				error = ' [%s]' % str(e)
@@ -1085,7 +1087,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 	def changedEntry(self, dummy=False):
 		self.createConfigList()
-		self['config'].setList(self.list)
+		if self.get('config'):
+			self['config'].setList(self.list)
 
 	def keyOK(self):
 		from .SerienRecorderFileListScreen import serienRecFileListScreen

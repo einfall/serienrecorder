@@ -37,7 +37,7 @@ class ShowStartupInfo(Screen):
 
 	def __init__(self, session):
 		self.session = session
-		self.serienRecInfoFilePath = "%s/StartupInfoText" % os.path.dirname(__file__)
+		self.serienRecInfoFilePath = "%s/Changelog" % os.path.dirname(__file__)
 
 
 		Screen.__init__(self, session)
@@ -81,9 +81,8 @@ class ShowStartupInfo(Screen):
 		self['srlog'].pageUp()
 
 	def keyOK(self):
-		config.plugins.serienRec.showStartupInfoText.value = False
-		config.plugins.serienRec.showStartupInfoText.save()
-		configfile.save()
+		if fileExists(self.serienRecInfoFilePath):
+			os.remove(self.serienRecInfoFilePath)
 		self.close()
 
 	def keyCancel(self):

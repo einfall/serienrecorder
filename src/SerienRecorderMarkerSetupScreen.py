@@ -1,7 +1,10 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Marker Setup Screen
-
+try:
+	import simplejson as json
+except ImportError:
+	import json
 import time
 
 from Components.ActionMap import ActionMap, HelpableActionMap
@@ -27,11 +30,6 @@ from .SerienRecorderDatabase import SRDatabase
 
 # Tageditor
 from Screens.MovieSelection import getPreferredTagEditor
-
-if PY2:
-	import cPickle as pickle
-else:
-	import pickle
 
 class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScreen):
 	def __init__(self, session, serien_name, serien_wlid, serien_id, serien_fsid):
@@ -201,7 +199,19 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		if tags is None or len(tags) == 0:
 			self.serienmarker_tags = []
 		else:
-			self.serienmarker_tags = pickle.loads(tags)
+			if tags.startswith("(lp1"):
+				# tags are pickled
+				if PY2:
+					import cPickle as pickle
+					self.serienmarker_tags = pickle.loads(tags)
+				else:
+					import pickle
+					from .SerienRecorderHelpers import toBinary
+					self.serienmarker_tags = pickle.loads(toBinary(tags), encoding="utf-8")
+			else:
+				import json
+				self.serienmarker_tags = json.loads(tags)
+
 		self.tags = NoSave(
 			ConfigSelection(choices=[len(self.serienmarker_tags) == 0 and "Keine" or ' '.join(self.serienmarker_tags)]))
 
@@ -705,7 +715,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		if len(self.serienmarker_tags) == 0:
 			tags = ""
 		else:
-			tags = pickle.dumps(self.serienmarker_tags)
+			tags = json.dumps(self.serienmarker_tags)
 
 		self.database.setMarkerSettings(self.serien_id, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),

@@ -109,15 +109,6 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.onClose.append(self.__onClose)
 
 		self.onFirstExecBegin.append(self.showSplashScreen)
-		self.onFirstExecBegin.append(self.checkForUpdate)
-
-		if config.plugins.serienRec.showStartupInfoText.value:
-			if fileExists("%s/StartupInfoText" % os.path.dirname(__file__)):
-				self.onFirstExecBegin.append(self.showInfoText)
-			else:
-				self.onFirstExecBegin.append(self.startScreen)
-		else:
-			self.onFirstExecBegin.append(self.startScreen)
 
 	# def test(self):
 	# 	from .SerienRecorderHelpers import createCompressedBackup
@@ -136,7 +127,10 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			from .SerienRecorderUpdateScreen import checkGitHubUpdate
 			checkGitHubUpdate(self.session).checkForUpdate()
 
-		self.startScreen()
+		if fileExists("%s/Changelog" % os.path.dirname(__file__)):
+			self.showInfoText()
+		else:
+			self.startScreen()
 
 	def callHelpAction(self, *args):
 		HelpableScreen.callHelpAction(self, *args)

@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
-import pickle, shutil, sqlite3, time
+try:
+	import simplejson as json
+except ImportError:
+	import json
 
-from .SerienRecorderHelpers import getChangedSeriesNames, PY3
+import shutil, sqlite3, time
+
+from .SerienRecorderHelpers import getChangedSeriesNames, PY2
 from .SerienRecorderLogWriter import SRLogger
 
 class SRDatabase:
@@ -761,9 +766,18 @@ class SRDatabase:
 			(tagString,) = row
 			if tagString is not None and len(tagString) > 0:
 				try:
-					tags = pickle.loads(tagString)
+					if tagString.startswith('(lp1'):
+						if PY2:
+							import cPickle as pickle
+							tags = pickle.loads(tags)
+						else:
+							import pickle
+							from .SerienRecorderHelpers import toBinary
+							tags = pickle.loads(toBinary(tags), encoding="utf-8")
+					else:
+						tags = json.loads(tagString)
 				except:
-					SRLogger.writeLog("Fehler beim Lesen der gespeicherten Tags am Marker mit der Wunschliste ID ' %s '" % wlID)
+					SRLogger.writeLog("Fehler beim Lesen der gespeicherten Tags am Marker mit der Fernsehserie ID ' %s '" % fsID)
 
 		cur.close()
 		return tags

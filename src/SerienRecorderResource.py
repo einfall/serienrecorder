@@ -628,11 +628,15 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 		if tags is None or len(tags) == 0:
 			serienmarker_tags = []
 		else:
-			if PY2:
-				import cPickle as pickle
+			if tags.startswith('(lp1'):
+				if PY2:
+					import cPickle as pickle
+					serienmarker_tags = pickle.loads(tags)
+				else:
+					import pickle
+					serienmarker_tags = pickle.loads(toBinary(tags), encoding='utf-8')
 			else:
-				import pickle
-			serienmarker_tags = pickle.loads(tags)
+				serienmarker_tags = json.loads(tags)
 
 		data = {
 			'recordDir': {
@@ -804,11 +808,7 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 			if len(data['settings']['tags']) == 0:
 				tags = ""
 			else:
-				if PY2:
-					import cPickle as pickle
-				else:
-					import pickle
-				tags = pickle.dumps(data['settings']['tags'])
+				tags = json.dumps(data['settings']['tags'])
 
 			database.setMarkerSettings(int(data['markerid']),
 			                           (AufnahmeVerzeichnis, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
