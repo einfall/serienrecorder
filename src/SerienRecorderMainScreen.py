@@ -466,9 +466,10 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			seriesColor = None
 
-		titleColor = timeColor = parseColor('foreground').argb()
+		titleColor = titleColorSelected = timeColor = parseColor('foreground').argb()
 		if aufnahme:
 			titleColor = parseColor('blue').argb()
+			titleColorSelected = 0x0099C7
 
 		if int(neu) == 0:
 			imageNeu = imageNone
@@ -491,22 +492,22 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 					self.picloader.destroy()
 
 			return [entry,
-			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5 * skinFactor, 80 * skinFactor, 40 * skinFactor, picon),
-			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 7 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageNeu)),
-			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 30 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDDTimer)),
+			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5 * skinFactor, 5 * skinFactor, 80 * skinFactor, 40 * skinFactor, picon),
+			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 5 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageNeu)),
+			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 330 * skinFactor, 27 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDDTimer)),
 			        (eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 3, 230 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
 			        (eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, timeColor, timeColor),
 			        (eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, seriesColor, seriesColor),
-			        (eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, titleColor, titleColor)
+			        (eListboxPythonMultiContent.TYPE_TEXT, 365 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, titleColor, titleColorSelected)
 			        ]
 		else:
 			return [entry,
-			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 7, 30 * skinFactor, 22 * skinFactor, loadPNG(imageNeu)),
-			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 30 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDDTimer)),
+			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5 * skinFactor, 5 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageNeu)),
+			        (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5 * skinFactor, 27 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageHDDTimer)),
 			        (eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 280 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, sender),
 			        (eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 29 * skinFactor, 150 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, transmissionTime, timeColor, timeColor),
 			        (eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serien_name, seriesColor, seriesColor),
-			        (eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 29 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, titleColor, titleColor)
+			        (eListboxPythonMultiContent.TYPE_TEXT, 340 * skinFactor, 29 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, titleColor, titleColorSelected)
 			        ]
 
 	@staticmethod

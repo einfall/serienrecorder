@@ -206,43 +206,31 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		serienRecMainPath = os.path.dirname(__file__)
 		imageNone = "%s/images/black.png" % serienRecMainPath
 
-		# imageMinus = "%s/images/red_dot.png" % serienRecMainPath
-		# imagePlus = "%s/images/green_dot.png" % serienRecMainPath
 		imageMinus = "%s/images/minus.png" % serienRecMainPath
 		imagePlus = "%s/images/plus.png" % serienRecMainPath
 		imageTimer = "%s/images/timer.png" % serienRecMainPath
 
-		leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imageMinus))
+		leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5 * skinFactor, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imageMinus))
 		middleImage = imageNone
 
-		# leftImage = imageMinus
-		# if len(self.addedEpisodes) > 0 and self.isAlreadyAdded(season, episode, title):
-		# 	leftImage = imagePlus
-		#
-		# color = parseColor('yellow').argb()
-		# if not str(season).isdigit():
-		# 	color = parseColor('red').argb()
-		# if activeTimer:
-		# 	leftImage = imageTimer
-
 		color = parseColor('red').argb()
+		colorSelected = color
 		if len(self.addedEpisodes) > 0 and self.isAlreadyAdded(season, episode, title):
 			color = parseColor('green').argb()
-			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imagePlus))
+			colorSelected = color
+			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5 * skinFactor, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(imagePlus))
 		if activeTimer:
 			color = parseColor('blue').argb()
-			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 1, 3 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer))
-			#middleImage = imageTimer
+			colorSelected = 0x0099C7
+			leftImage = (eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 1 * skinFactor, 3 * skinFactor, 28 * skinFactor, 17 * skinFactor, loadPNG(imageTimer))
 
 		foregroundColor = parseColor('foreground').argb()
 
 		return [entry,
-			#(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 6 * skinFactor, 16 * skinFactor, 16 * skinFactor, loadPNG(leftImage)),
 		    leftImage,
-			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3, 140 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % seasonEpisodeString, color, color),
+			(eListboxPythonMultiContent.TYPE_TEXT, 40 * skinFactor, 3 * skinFactor, 140 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, "%s" % seasonEpisodeString, color, colorSelected),
 			(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 165 * skinFactor, 3 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(middleImage)),
-			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3, 550 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, foregroundColor, foregroundColor),
-			#(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 29 * skinFactor, 550 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, otitle, parseColor('yellow').argb()),
+			(eListboxPythonMultiContent.TYPE_TEXT, 200 * skinFactor, 3 * skinFactor, 550 * skinFactor, 22 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, foregroundColor, foregroundColor),
 			]
 
 	def loadTimer(self):

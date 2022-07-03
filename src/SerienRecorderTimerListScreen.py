@@ -251,11 +251,11 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 					self.picloader.destroy()
 
 		return [entry,
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5, 5, 80 * skinFactor, 40 * skinFactor, picon),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 3, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, channelName, SerieColor, SerieColor),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5 * skinFactor, 5 * skinFactor, 80 * skinFactor, 40 * skinFactor, picon),
+				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 3 * skinFactor, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, channelName, SerieColor, SerieColor),
 				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 27 * skinFactor, 220 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 315 * skinFactor, 30 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer)),
-				(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 3, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 315 * skinFactor, 27 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer)),
+				(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 3 * skinFactor, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
 				(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtitle, foregroundColor, foregroundColor)
 		        ]
 

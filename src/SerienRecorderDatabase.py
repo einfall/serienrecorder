@@ -769,11 +769,11 @@ class SRDatabase:
 					if tagString.startswith('(lp1'):
 						if PY2:
 							import cPickle as pickle
-							tags = pickle.loads(tags)
+							tags = pickle.loads(tagString)
 						else:
 							import pickle
 							from .SerienRecorderHelpers import toBinary
-							tags = pickle.loads(toBinary(tags), encoding="utf-8")
+							tags = pickle.loads(toBinary(tagString), encoding="utf-8")
 					else:
 						tags = json.loads(tagString)
 				except:
@@ -905,14 +905,10 @@ class SRDatabase:
 		cur.close()
 		return markers
 
-	def getNextMarker(self, currentIndex, sortLikeWL):
+	def getNextMarker(self, currentIndex):
 		fsID = None
 		cur = self._srDBConn.cursor()
-		sql = "SELECT DISTINCT LOWER(SUBSTR(Serie, 1, 1)) as fc, fsID FROM SerienMarker WHERE fc > ?"
-		if sortLikeWL:
-			sql += " ORDER BY REPLACE(REPLACE(REPLACE(REPLACE(LOWER(Serie), 'the ', ''), 'das ', ''), 'die ', ''), 'der ', '')"
-		else:
-			sql += " ORDER BY LOWER(Serie)"
+		sql = "SELECT DISTINCT LOWER(SUBSTR(Serie, 1, 1)) as fc, fsID FROM SerienMarker WHERE fc > ? ORDER BY LOWER(Serie)"
 		sql += " LIMIT 1"
 		cur.execute(sql, [currentIndex])
 		row = cur.fetchone()
@@ -921,14 +917,10 @@ class SRDatabase:
 		cur.close()
 		return fsID
 
-	def getPreviousMarker(self, currentIndex, sortLikeWL):
+	def getPreviousMarker(self, currentIndex):
 		result = None
 		cur = self._srDBConn.cursor()
-		sql = "SELECT DISTINCT LOWER(SUBSTR(Serie, 1, 1)) as fc, fsID FROM SerienMarker WHERE fc < ?"
-		if sortLikeWL:
-			sql += " ORDER BY REPLACE(REPLACE(REPLACE(REPLACE(LOWER(Serie), 'the ', ''), 'das ', ''), 'die ', ''), 'der ', '') DESC"
-		else:
-			sql += " ORDER BY LOWER(Serie) DESC"
+		sql = "SELECT DISTINCT LOWER(SUBSTR(Serie, 1, 1)) as fc, fsID FROM SerienMarker WHERE fc < ? ORDER BY LOWER(Serie) DESC"
 		cur.execute(sql, [currentIndex])
 		rows = cur.fetchall()
 		for row in rows:

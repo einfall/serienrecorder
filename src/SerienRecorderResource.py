@@ -9,7 +9,7 @@ from Tools.Directories import fileExists
 
 from .SerienRecorderHelpers import decrypt, encrypt, STBHelpers, SRAPIVERSION, SRWEBAPPVERSION, toBinary, toStr, PY2
 
-import json, os, time
+import json, os, time, re
 
 def getApiList(session):
 	root = ApiBaseResource()
@@ -902,9 +902,9 @@ class ApiGetSettingsResource(ApiBaseResource):
 				'fullCheck' : config.plugins.serienRec.tvplaner_full_check.value,
 				'skipSerienServer' : config.plugins.serienRec.tvplaner_skipSerienServer.value,
 				'series' : config.plugins.serienRec.tvplaner_series.value,
-				'seriesActivateSTB' : config.plugins.serienRec.tvplaner_series_activeSTB.value,
+				'seriesActiveSTB' : config.plugins.serienRec.tvplaner_series_activeSTB.value,
 				'movies' : config.plugins.serienRec.tvplaner_movies.value,
-				'moviesActivateSTB' : config.plugins.serienRec.tvplaner_movies_activeSTB.value,
+				'moviesActiveSTB' : config.plugins.serienRec.tvplaner_movies_activeSTB.value,
 				'moviesFilepath' : config.plugins.serienRec.tvplaner_movies_filepath.value,
 				'moviesCreateSubdir' : config.plugins.serienRec.tvplaner_movies_createsubdir.value,
 				'videoDirs': config.movielist.videodirs.value,
@@ -1545,7 +1545,12 @@ class ApiGetMarkerTimerResource(ApiBaseResource):
 						'eit': 0
 				    })
 
-			timerList.sort(key=lambda x: (x['season'].lower(), x['episode'].lower()))
+			_nsre = re.compile('([0-9]+)')
+			def natural_sort_key(s):
+				return [int(text) if text.isdigit() else text.lower()
+				        for text in re.split(_nsre, s)]
+
+			timerList = sorted(timerList, key=lambda x: (natural_sort_key(x['season']), natural_sort_key(x['episode'])))
 
 		return self.returnResult(req, True, timerList)
 

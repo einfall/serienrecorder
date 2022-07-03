@@ -12,12 +12,12 @@
     <eLabel position="1381,171" zPosition="3" size="495,280" backgroundColor="transparent" />
     <widget name="video" position="1387,175" size="490,275" zPosition="-8" />
    
-    <widget name="config" position="15,200" size="1335,740" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_big.png" />
-    <widget name="menu_list" position="15,190" size="1335,750" foregroundColor="yellow" foregroundColorSelected="yellow" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_big.png" />
-    <widget name="log" position="15,170" size="1885,740" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="15" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_big.png" />
+    <widget name="config" position="15,200" size="1335,740" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" />
+    <widget name="menu_list" position="15,190" size="1335,750" foregroundColor="yellow" foregroundColorSelected="yellow" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" />
+    <widget name="log" position="15,170" size="1885,740" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="15" />
     
 	<widget name="popup_bg" position="125,250" size="805,670" backgroundColor="#00000000" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/popup_bg.png" transparent="1" zPosition="4" />
-    <widget name="popup_list" position="125,250" size="770,670" backgroundColor="#181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_small.png" />
+    <widget name="popup_list" position="125,250" size="770,670" backgroundColor="#181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="5" />
     <widget name="cover" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/no_cover.png" position="1360,462" size="540,480" zPosition="12" transparent="1" alphatest="blend" />
     
 	<widget name="bt_red" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/red_round.png" position="15,975" zPosition="1" size="45,45" alphatest="on" />
@@ -65,8 +65,8 @@
     <widget name="STB_Channel" position="541,165" size="270,40" font="Regular; 30" backgroundColor="#26181d20" foregroundColor="#000090e6" transparent="1" />
     <widget name="alt_STB_Channel" position="940,165" size="270,40" font="Regular; 30" backgroundColor="#26181d20" foregroundColor="#000090e6" transparent="1" />
     
-	<widget name="list" position="15,200" size="1335,740" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_small.png" />
-    <widget name="popup_list2" position="160,250" size="770,670" backgroundColor="#181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="6" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin1 FHD/images/sel_small.png" />
+	<widget name="list" position="15,200" size="1335,740" backgroundColor="#00000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" />
+    <widget name="popup_list2" position="160,250" size="770,670" backgroundColor="#181d20" scrollbarMode="showOnDemand" transparent="0" zPosition="6" />
     <widget name="config_information" position="1360,460" zPosition="3" size="540,480" backgroundColor="transparent" />
     <widget name="config_information_text" position="1360,460" size="540,480" backgroundColor="#00000000" transparent="0" halign="left" zPosition="5" font="Regular; 22" />
     <widget name="info" position="15,230" size="1335,720" font="Regular; 32" backgroundColor="#00000000" transparent="1" zPosition="1" />

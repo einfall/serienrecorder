@@ -8,11 +8,11 @@
     </widget>
     <eLabel position="1414,14" zPosition="3" size="495,280" backgroundColor="transparent" />
     <widget name="video" position="1416,15" size="490,275" zPosition="-8" />
-    <widget name="config" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
-    <widget name="menu_list" position="20,205" size="1360,780" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
-    <widget name="log" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_big.png" />
+    <widget name="config" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" />
+    <widget name="menu_list" position="20,205" size="1360,780" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1"  />
+    <widget name="log" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" />
     <widget name="popup_bg" position="19,209" size="1388,700" backgroundColor="#000000" transparent="1" zPosition="5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/popup_bg.png" />
-    <widget name="popup_list" position="80,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#181d20" zPosition="12" scrollbarMode="showOnDemand" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_small.png" />
+    <widget name="popup_list" position="80,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#181d20" zPosition="12" scrollbarMode="showOnDemand" transparent="0" />
     <widget name="popup_list2" position="120,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#00181d20" zPosition="11" scrollbarMode="showAlways" scrollbarWidth="8" scrollbarSliderBorderWidth="2" scrollbarKeepGapColor="1" scrollbarGap="2" scrollbarSliderForegroundColor="#1e90ff" scrollbarBackgroundPicture="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/scrollbar.png" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_small.png" />
     <widget name="cover" position="1244,3" size="166,184" transparent="0" alphatest="blend" zPosition="0" />
     <widget name="Web_Channel" position="85,155" size="180,30" zPosition="10" font="Regular;20" transparent="1" />

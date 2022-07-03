@@ -9,17 +9,19 @@ from Tools.Directories import fileExists
 
 from Components.Label import Label
 from Components.ActionMap import ActionMap
-from Components.ScrollLabel import ScrollLabel
+from Components.MenuList import MenuList
 from Components.config import config, configfile
 from Components.ProgressBar import ProgressBar
 
-from enigma import getDesktop, eTimer, eConsoleAppContainer
+from enigma import eListboxPythonMultiContent, gFont, getDesktop, eTimer, eConsoleAppContainer, RT_HALIGN_LEFT, RT_VALIGN_CENTER
+from skin import parseColor
 from twisted.web.client import getPage, downloadPage
 
 from .SerienRecorderHelpers import isDreamOS, toStr, toBinary, PY2, SRAPIVERSION
+from .SerienRecorderScreenHelpers import skinFactor
 
 import Screens.Standby
-import os, ssl
+import os, re, ssl
 
 try:
 	import simplejson as json
@@ -181,7 +183,7 @@ class checkGitHubUpdateScreen(Screen):
 	skin = """
 		<screen name="SerienRecorderUpdateCheck" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20">
 			<widget name="headline" position="20,20" size="600,40" foregroundColor="#00ff4a3c" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
-			<widget name="srlog" position="5,100" size="%d,%d" font="Regular;21" valign="top" halign="left" foregroundColor="#FFFFFF" transparent="1" zPosition="5"/>
+			<widget name="changelog" position="5,100" size="%d,%d" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand"/>
 			<widget name="progressslider" position="5,%d" size="%d,25" borderWidth="1" zPosition="1" backgroundColor="#00242424"/>
 			<widget name="status" position="5,%d" size="%d,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
 			<widget name="separator" position="%d,%d" size="%d,5" backgroundColor="#00808080" zPosition="6" />
@@ -214,6 +216,9 @@ class checkGitHubUpdateScreen(Screen):
 		self.filePath = None
 		self.console = eConsoleAppContainer()
 		self.progressTimer = eTimer()
+		self.cmdList = []
+		self.indent = False
+
 		if isDreamOS():
 			self.progressTimerConnection = self.progressTimer.timeout.connect(self.updateProgressBar)
 			self.appClosed_conn = None
@@ -231,7 +236,13 @@ class checkGitHubUpdateScreen(Screen):
 		}, -1)
 
 		self['headline'] = Label("")
-		self['srlog'] = ScrollLabel("")
+
+		self.changeLogList = MenuList([], enableWrapAround=False, content=eListboxPythonMultiContent)
+		self.changeLogList.l.setFont(0, gFont('Regular', int(16 * skinFactor)))
+		self.changeLogList.l.setFont(1, gFont('Regular', int(22 * skinFactor)))
+		self.changeLogList.l.setItemHeight(int(28 * skinFactor))
+		self['changelog'] = self.changeLogList
+
 		self['status'] = Label("")
 		self['progressslider'] = ProgressBar()
 		self['separator'] = Label("")
@@ -242,20 +253,46 @@ class checkGitHubUpdateScreen(Screen):
 
 	def __onLayoutFinished(self):
 		self['headline'].setText("Update verfügbar: %s" % self.updateName)
-		self['srlog'].setText(self.updateInfo)
+
+		changelog_list = []
+		for row in self.updateInfo.splitlines():
+			changelog_list.append(row)
+		self.changeLogList.setList(list(map(self.buildList, changelog_list)))
+
 		self['progressslider'].setValue(0)
 
+	def buildList(self, entry):
+		(row) = entry
+		DESKTOP_WIDTH = getDesktop(0).size().width()
+
+		if len(row) == 0:
+			self.indent = False
+
+		if row.startswith('**'):
+			row = row.replace('*', '')
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 5, 2 * skinFactor, DESKTOP_WIDTH - 105, 28 * skinFactor, 1, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row)]
+		elif re.search('^[1-9-]', row):
+			color = parseColor('foreground').argb()
+			self.indent = True
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 20, 2 * skinFactor, DESKTOP_WIDTH - 90, 28 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
+		elif self.indent:
+			color = parseColor('foreground').argb()
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 40, 2 * skinFactor, DESKTOP_WIDTH - 70, 28 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
+		else:
+			color = parseColor('foreground').argb()
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 20, 2 * skinFactor, DESKTOP_WIDTH - 90, 28 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
+
 	def keyLeft(self):
-		self['srlog'].pageUp()
+		self['changelog'].pageUp()
 
 	def keyRight(self):
-		self['srlog'].pageDown()
+		self['changelog'].pageDown()
 
 	def keyDown(self):
-		self['srlog'].pageDown()
+		self['changelog'].pageDown()
 
 	def keyUp(self):
-		self['srlog'].pageUp()
+		self['changelog'].pageUp()
 
 	def keyOK(self):
 		if self.inProgres:
@@ -276,8 +313,12 @@ class checkGitHubUpdateScreen(Screen):
 		self.close()
 
 	def cmdData(self, data):
-		#print data
-		self['srlog'].setText(toStr(data))
+		for row in toStr(data).splitlines():
+			self.cmdList.append(row)
+		self.changeLogList.setList(list(map(self.buildList, self.cmdList)))
+		count = len(self.cmdList)
+		if count != 0:
+			self['changelog'].moveToIndex(int(count - 1))
 
 	def updateProgressBar(self):
 		if self.downloadDone:
@@ -346,9 +387,6 @@ class checkGitHubUpdateScreen(Screen):
 			os.remove(self.filePath)
 
 		if retval == 0:
-			config.plugins.serienRec.showStartupInfoText.value = True
-			config.plugins.serienRec.showStartupInfoText.save()
-			configfile.save()
 			self.session.openWithCallback(self.restartGUI, MessageBox,
 			                              text="Der SerienRecorder wurde erfolgreich aktualisiert!\nSoll die Box jetzt neu gestartet werden?",
 			                              type=MessageBox.TYPE_YESNO)

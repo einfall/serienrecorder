@@ -787,7 +787,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyPrevBouquet(self):
 		if self.modus == "menu_list":
 			(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
-			nextFSID = self.database.getNextMarker(serien_name[0].lower(), True if config.plugins.serienRec.markerSort.value == '1' else False)
+			nextFSID = self.database.getNextMarker(serien_name[0].lower())
 			try:
 				idx = list(zip(*self.markerList))[13].index(nextFSID)
 				self['menu_list'].moveToIndex(idx)
@@ -799,7 +799,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def keyNextBouquet(self):
 		if self.modus == "menu_list":
 			(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
-			previousFSID = self.database.getPreviousMarker(serien_name[0].lower(), True if config.plugins.serienRec.markerSort.value == '1' else False)
+			previousFSID = self.database.getPreviousMarker(serien_name[0].lower())
 			try:
 				idx = list(zip(*self.markerList))[13].index(previousFSID)
 				self['menu_list'].moveToIndex(idx)
