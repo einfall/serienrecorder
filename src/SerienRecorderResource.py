@@ -1598,7 +1598,7 @@ class ApiRemoveTimerBySeasonResource(ApiBaseResource):
 		(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = database.getMarkerSeasonSettings(data['fsid'])
 		seasonList = database.getAllowedSeasons(ID, allSeasonsFrom)
 		print("[SerienRecorder] callCleanupTimer", ID, allSeasonsFrom, fromEpisode, timerForSpecials, seasonList)
-		numberOfRemovedTimers = database.removeTimersBySeason(data['fsid'], allSeasonsFrom, fromEpisode, seasonList, timerForSpecials)
+		numberOfRemovedTimers = database.removeTimersBySeason(data['fsid'], allSeasonsFrom, fromEpisode, seasonList, bool(timerForSpecials))
 
 		return self.returnResult(req, True, numberOfRemovedTimers)
 
@@ -1616,7 +1616,7 @@ class ApiRemoveAllRemainingTimerResource(ApiBaseResource):
 		timers = database.getAllTimer(current_time)
 		for timer in timers:
 			(row_id, series, season, episode, title, start_time, serviceRef, webChannel, eit, activeTimer, series_fsid) = timer
-			serienRecTimerListScreen.removeTimer(database, series, series_fsid, season, episode, title, start_time, webChannel, eit)
+			serienRecTimerListScreen.removeTimer(database, series, series_fsid, season, episode, title, start_time, webChannel, eit, row_id)
 
 		return self.returnResult(req, True, None)
 

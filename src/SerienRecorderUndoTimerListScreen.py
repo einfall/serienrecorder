@@ -207,7 +207,9 @@ class serienRecUndoTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 		self.getUndoList()
 
 	def getCover(self):
-		print('[SerienRecorder] getCover')
+		if self['menu_list'].getCurrent() is None:
+			return
+
 		(created, series_name, series_wlid, series_fsid) = self.getCurrentSelection()
 		self['text_yellow'].setText("Alle vom %s%s" % (created[0:6], created[8:10]))
 		if series_name and series_fsid and self.lastSelectedFSID != series_fsid:

@@ -293,6 +293,7 @@ class serienRecCheckForRecording:
 		from .SerienRecorderTVPlaner import resetTVPlanerHTMLBackup
 		resetTVPlanerHTMLBackup()
 		self.database.removeExpiredTimerConflicts()
+		self.database.removeExpiredUndoTimer()
 
 		# HEADER ###########################################################################################################
 		check_type = ""
@@ -688,24 +689,27 @@ class serienRecCheckForRecording:
 
 		self.autoCheckFinished = True
 
-		(countTimer, countTimerUpdate, countNotActiveTimer, countTimerFromWishlist, self.messageList) = timer.getCounts()
+		(countTimer, countTimerUpdate, countNotActiveTimer, countTimerFromWishlist, countBoxOnlyTimer, self.messageList) = timer.getCounts()
 
 		# Statistik
 		self.speedEndTime = time.time()
 		print("[SerienRecorder] Stopwatch End: " + str(self.speedEndTime))
 		speedTime = (self.speedEndTime - self.speedStartTime)
 		if config.plugins.serienRec.eventid.value:
-			SRLogger.writeLog("%s/%s Serie(n) sind vorgemerkt dafür wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer), str(countTimerUpdate)), True)
-			print("[SerienRecorder] %s/%s Serie(n) sind vorgemerkt dafür wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer), str(countTimerUpdate)))
+			SRLogger.writeLog("%s/%s Serie(n) sind vorgemerkt, dafür wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer), str(countTimerUpdate)), True)
+			print("[SerienRecorder] %s/%s Serie(n) sind vorgemerkt, dafür wurde(n) %s Timer erstellt und %s Timer aktualisiert." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer), str(countTimerUpdate)))
 		else:
-			SRLogger.writeLog("%s/%s Serie(n) sind vorgemerkt dafür wurde(n) %s Timer erstellt." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer)), True)
-			print("[SerienRecorder] %s/%s Serie(n) sind vorgemerkt dafür wurde(n) %s Timer erstellt." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer)))
+			SRLogger.writeLog("%s/%s Serie(n) sind vorgemerkt, dafür wurde(n) %s Timer erstellt." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer)), True)
+			print("[SerienRecorder] %s/%s Serie(n) sind vorgemerkt, dafür wurde(n) %s Timer erstellt." % (str(self.countActivatedSeries), str(self.countSerien), str(countTimer)))
 		if countNotActiveTimer > 0:
 			SRLogger.writeLog("%s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(countNotActiveTimer), True)
 			print("[SerienRecorder] %s Timer wurde(n) wegen Konflikten deaktiviert erstellt!" % str(countNotActiveTimer))
 		if countTimerFromWishlist > 0:
-			SRLogger.writeLog("%s Timer vom Merkzettel wurde(n) erstellt!" % str(countTimerFromWishlist), True)
-			print("[SerienRecorder] %s Timer vom Merkzettel wurde(n) erstellt!" % str(countTimerFromWishlist))
+			SRLogger.writeLog("%s Timer wurde(n) vom Merkzettel erstellt!" % str(countTimerFromWishlist), True)
+			print("[SerienRecorder] %s Timer wurde(n) vom Merkzettel erstellt!" % str(countTimerFromWishlist))
+		if countBoxOnlyTimer > 0:
+			SRLogger.writeLog("%s Timer wurde(n) auf Wunsch nicht in der SerienRecorder Datenbank gespeichert." % str(countBoxOnlyTimer), True)
+			print("[SerienRecorder] %s Timer wurde(n) auf Wunsch nicht in der SerienRecorder Datenbank gespeichert." % str(countBoxOnlyTimer))
 		SRLogger.writeLog("---------' Timer-Suchlauf beendet (Ausführungsdauer: %3.2f Sek.) '---------" % speedTime, True)
 		print("[SerienRecorder] ---------' Timer-Suchlauf beendet (Ausführungsdauer: %3.2f Sek.) '---------" % speedTime)
 

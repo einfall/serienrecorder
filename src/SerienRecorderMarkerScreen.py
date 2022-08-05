@@ -596,15 +596,15 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			(ID, allSeasonsFrom, fromEpisode, timerForSpecials) = self.database.getMarkerSeasonSettings(serien_fsid)
 			seasonList = self.database.getAllowedSeasons(ID, allSeasonsFrom)
 			print("[SerienRecorder] callCleanupTimer", ID, allSeasonsFrom, fromEpisode, timerForSpecials, seasonList)
-			numberOfRemovedTimers = self.database.removeTimersBySeason(serien_fsid, allSeasonsFrom, fromEpisode, seasonList, timerForSpecials)
-			self.session.open(MessageBox, "Es wurden %d Timer Einträge für '%s (%s) aus der Datenbank gelöscht." % (numberOfRemovedTimers, serien_name, serien_info), MessageBox.TYPE_INFO, timeout=10)
+			numberOfRemovedTimers = self.database.removeTimersBySeason(serien_fsid, allSeasonsFrom, fromEpisode, seasonList, bool(timerForSpecials))
+			self.session.open(MessageBox, "Es wurden %d Timer Einträge für '%s (%s)' aus der Datenbank gelöscht." % (numberOfRemovedTimers, serien_name, serien_info), MessageBox.TYPE_INFO, timeout=10)
 
 	def removeSerienMarker(self, serien_fsid, serien_name, answer):
 		serien_info = self['menu_list'].getCurrent()[0][12]
 		serienRecMarker.doRemoveSerienMarker(serien_fsid, serien_name, serien_info, answer)
 		self.changesMade = True
 		self['title'].instance.setForegroundColor(parseColor("red"))
-		self['title'].setText("Marker für '%s (%s)' wurde gelöscht." % (serien_name, serien_info))
+		self['title'].setText("Serien-Marker für '%s (%s)' wurde gelöscht." % (serien_name, serien_info))
 		self.readSerienMarker()	
 
 	@staticmethod

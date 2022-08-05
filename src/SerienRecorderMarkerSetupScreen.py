@@ -25,7 +25,7 @@ else:
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, InitSkin, setMenuTexts, buttonText_na
 from .SerienRecorder import serienRecDataBaseFilePath
 
-from .SerienRecorderHelpers import hasAutoAdjust, PY2
+from .SerienRecorderHelpers import hasAutoAdjust, PY2, toStr
 from .SerienRecorderDatabase import SRDatabase
 
 # Tageditor
@@ -210,7 +210,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 					self.serienmarker_tags = pickle.loads(toBinary(tags), encoding="utf-8")
 			else:
 				import json
-				self.serienmarker_tags = json.loads(tags)
+				self.serienmarker_tags = [toStr(x) for x in json.loads(tags)]
 
 		self.tags = NoSave(
 			ConfigSelection(choices=[len(self.serienmarker_tags) == 0 and "Keine" or ' '.join(self.serienmarker_tags)]))

@@ -4,7 +4,7 @@ try:
 except ImportError:
 	import json
 
-import shutil, sqlite3, time
+import shutil, sqlite3, time, os
 
 from .SerienRecorderHelpers import getChangedSeriesNames, PY2
 from .SerienRecorderLogWriter import SRLogger
@@ -705,11 +705,13 @@ class SRDatabase:
 		cur.execute("SELECT distinct(AufnahmeVerzeichnis) FROM SerienMarker WHERE AufnahmeVerzeichnis NOT NULL")
 		rows = cur.fetchall()
 		for row in rows:
-			(AufnahmeVerzeichnis,) = row
-			if AufnahmeVerzeichnis:
-				directories.append(AufnahmeVerzeichnis)
+			(recordPath,) = row
+			if recordPath:
+				recordPath = os.path.normpath(recordPath)
+				directories.append(recordPath)
 		cur.close()
 		if defaultSavePath not in directories:
+			defaultSavePath = os.path.normpath(defaultSavePath)
 			directories.append(defaultSavePath)
 		return directories
 
@@ -1227,9 +1229,9 @@ class SRDatabase:
 	def getNumberOfTimersByBouquet(self, fsID, season, episode, title=None):
 		cur = self._srDBConn.cursor()
 		if title is None:
-			cur.execute("SELECT COUNT(*), LENGTH(c.STBChannel) > 0, LENGTH(c.alternativSTBChannel) > 0 FROM AngelegteTimer as t, Channels AS c WHERE LOWER(c.webChannel) = LOWER(t.webChannel) AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND TimerAktiviert=1 AND c.Erlaubt=1 GROUP BY t.webChannel", (fsID, str(season).lower(), str(episode).lower()))
+			cur.execute("SELECT COUNT(*), LENGTH(c.STBChannel) > 0, LENGTH(c.alternativSTBChannel) > 0 FROM AngelegteTimer as t, Channels AS c WHERE LOWER(c.webChannel) = LOWER(t.webChannel) AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND TimerAktiviert=1 AND c.Erlaubt=1", (fsID, str(season).lower(), str(episode).lower()))
 		else:
-			cur.execute("SELECT COUNT(*), LENGTH(c.STBChannel) > 0, LENGTH(c.alternativSTBChannel) > 0 FROM AngelegteTimer as t, Channels AS c WHERE LOWER(c.webChannel) = LOWER(t.webChannel) AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND TimerAktiviert=1 AND c.Erlaubt=1 GROUP BY t.webChannel", (fsID, str(season).lower(), str(episode).lower(), title.lower()))
+			cur.execute("SELECT COUNT(*), LENGTH(c.STBChannel) > 0, LENGTH(c.alternativSTBChannel) > 0 FROM AngelegteTimer as t, Channels AS c WHERE LOWER(c.webChannel) = LOWER(t.webChannel) AND fsID=? AND LOWER(Staffel)=? AND LOWER(Episode)=? AND LOWER(Titel)=? AND TimerAktiviert=1 AND c.Erlaubt=1", (fsID, str(season).lower(), str(episode).lower(), title.lower()))
 
 		rows = cur.fetchall()
 		count_primary_bouquet = 0
@@ -1653,6 +1655,11 @@ class SRDatabase:
 		cur = self._srDBConn.cursor()
 		cur.execute("INSERT INTO AngelegteTimer SELECT series, season, episode, title, starttime, serviceref, webchannel, eventid, active, fsid FROM undolog_timer WHERE STRFTIME('%d.%m.%Y', created)=?", [date])
 		cur.execute("DELETE FROM undolog_timer WHERE STRFTIME('%d.%m.%Y', created)=?", [date])
+		cur.close()
+
+	def removeExpiredUndoTimer(self):
+		cur = self._srDBConn.cursor()
+		cur.execute("DELETE FROM undolog_timer WHERE created < date('now', '-30 day')")
 		cur.close()
 
 # ----------------------------------------------------------------------------------------------------------------------

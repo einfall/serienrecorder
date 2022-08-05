@@ -26,6 +26,7 @@ class serienRecTimer:
 		self.countTimerUpdate = 0
 		self.countNotActiveTimer = 0
 		self.countTimerFromWishlist = 0
+		self.countBoxOnlyTimer = 0
 		self.messageList = []
 
 		self.database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
@@ -38,7 +39,7 @@ class serienRecTimer:
 		self.tempDB = database
 
 	def getCounts(self):
-		return self.countTimer, self.countTimerUpdate, self.countNotActiveTimer, self.countTimerFromWishlist, self.messageList
+		return self.countTimer, self.countTimerUpdate, self.countNotActiveTimer, self.countTimerFromWishlist, self.countBoxOnlyTimer, self.messageList
 
 	@staticmethod
 	def getTimerName(series_name, series_season, series_episode, series_title, marker_type):
@@ -184,6 +185,8 @@ class serienRecTimer:
 										# Eintrag in das timer file
 										self.database.activateTimer(serien_fsid, staffel, episode, serien_title,
 										                            serien_time, stbRef, webChannel, eit)
+									else:
+										self.countBoxOnlyTimer += 1
 									show_start = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(serien_time)))
 									SRLogger.writeLog("' %s ' - Timer wurde angelegt → %s %s @ %s" % (label_serie, show_start, timer_name, channelName), True)
 								break
@@ -482,7 +485,7 @@ class serienRecTimer:
 			#
 			# CHECK
 			#
-			# ueberprueft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
+			# ueberprueft anhand des Seriennamen, Season, Episode, ob die serie bereits auf der HDD existiert
 			#
 			# check ob timer existiert
 			startTimeLowBound = int(timer_start_unixtime) - (int(STBHelpers.getEPGTimeSpan()) * 60)
@@ -515,7 +518,7 @@ class serienRecTimer:
 					TimerDone = True
 					break
 
-			# check for excluded weekdays - this can be done early so we can skip all other checks
+			# check for excluded weekdays - this can be done early, so we can skip all other checks
 			# if the transmission date is on an excluded weekday
 			if str(excludedWeekdays).isdigit():
 				print("[SerienRecorder] - Excluded weekdays check")
@@ -867,8 +870,9 @@ class serienRecTimer:
 	def addTimerToDB(self, serien_name, serien_wlid, serien_fsid, staffel, episode, title, start_time, stbRef, webChannel, eit, addToDatabase, TimerAktiviert=True):
 		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
 		if not addToDatabase:
-			print("[SerienRecorder] Timer angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
-			SRLogger.writeLogFilter("timerDebug", "   Timer angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
+			print("[SerienRecorder] Timer nur auf der Box angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
+			SRLogger.writeLogFilter("timerDebug", "   Timer nur auf der Box angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
+			self.countBoxOnlyTimer += 1
 		else:
 			#startTimeLowBound = int(start_time) - (int(STBHelpers.getEPGTimeSpan()) * 60)
 			#startTimeHighBound = int(start_time) + (int(STBHelpers.getEPGTimeSpan()) * 60)
