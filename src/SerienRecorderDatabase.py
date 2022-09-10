@@ -710,8 +710,8 @@ class SRDatabase:
 				recordPath = os.path.normpath(recordPath)
 				directories.append(recordPath)
 		cur.close()
+		defaultSavePath = os.path.normpath(defaultSavePath)
 		if defaultSavePath not in directories:
-			defaultSavePath = os.path.normpath(defaultSavePath)
 			directories.append(defaultSavePath)
 		return directories
 

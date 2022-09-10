@@ -1175,13 +1175,14 @@ class serienRecBoxTimer:
 
 		try:
 			try:
+				print("[SerienRecorder] Trying to instantiate RecordTimerEntry")
 				timer = RecordTimerEntry(
 					ServiceReference(serviceref),
-					begin,
-					end,
+					int(begin),
+					int(end),
 					name,
 					description,
-					eit,
+					int(eit),
 					disabled=disabled,
 					justplay=justplay,
 					zapbeforerecord=zapbeforerecord,
@@ -1193,21 +1194,24 @@ class serienRecBoxTimer:
 				if PY2:
 					sys.exc_clear()
 
+				print("[SerienRecorder] Trying to instantiate alternative RecordTimerEntry")
 				timer = RecordTimerEntry(
 					ServiceReference(serviceref),
-					begin,
-					end,
+					int(begin),
+					int(end),
 					name,
 					description,
-					eit,
+					int(eit),
 					disabled,
 					justplay | justremind,
 					afterEvent=int(config.plugins.serienRec.afterEvent.value),
 					dirname=dirname,
 					tags=None)
 
+			print("[SerienRecorder] Setting repeated")
 			timer.repeated = 0
 			try:
+				print("[SerienRecorder] Setting autoAdjust")
 				if hasAutoAdjust() and autoAdjust is not None:
 					print("[SerienRecorder] Current autoAdjust for timer [%s]: %s" % (name, str(timer.autoadjust)))
 					print("[SerienRecorder] autoAdjust is: %s" % str(autoAdjust))
@@ -1217,14 +1221,17 @@ class serienRecBoxTimer:
 				print("[SerienRecorder] Failed to set autoAdjust for timer [%s] - missconfigured database" % name)
 
 			# Add tags
+			print("[SerienRecorder] Getting tags")
 			timerTags = timer.tags[:]
 			timerTags.append('SerienRecorder')
 			if len(tags) != 0:
 				timerTags.extend(tags)
+			print("[SerienRecorder] Setting tags")
 			timer.tags = timerTags
 
 			# If eit = 0 the VPS plugin won't work properly for this timer, so we have to disable VPS in this case.
 			if SerienRecorder.VPSPluginAvailable and eit != 0:
+				print("[SerienRecorder] Getting VPS")
 				timer.vpsplugin_enabled = vpsSettings[0]
 				timer.vpsplugin_overwrite = timer.vpsplugin_enabled and (not vpsSettings[1])
 
@@ -1233,8 +1240,10 @@ class serienRecBoxTimer:
 				SRLogger.writeLogFilter("timerDebug", "Event ID ist 0 - VPS kann nicht am Timer gesetzt werden: ' %s ' - %s" % (name, dirname))
 
 			if logentries:
+				print("[SerienRecorder] Getting log entries")
 				timer.log_entries = logentries
 
+			print("[SerienRecorder] Setting RecordTimerEntry to recordHandler")
 			conflicts = recordHandler.record(timer)
 			if conflicts:
 				errors = []

@@ -573,7 +573,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					if count_manually >= NoOfRecords or (count_primary_bouquet >= NoOfRecords or (secondary_bouquet_active and count_secondary_bouquet >= NoOfRecords) or (primary_bouquet_active and count_primary_bouquet >= NoOfRecords)):
 						timerExists = True
 				else:
-					# überprüft anhand des Seriennamen, Season, Episode ob die serie bereits auf der HDD existiert
+					# überprüft anhand des Seriennamen, Season und Episode ob, die Serie bereits auf der HDD existiert
 					if str(episode).isdigit():
 						if int(episode) == 0:
 							bereits_vorhanden = database.getNumberOfTimers(fsid, str(staffel), str(episode), title, searchOnlyActiveTimers=True)
