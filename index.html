@@ -74,8 +74,8 @@
 				  <li class="nav-item"><a class="nav-link" href="https://github.com/einfall/serienrecorder/releases/download/v4.5.0/enigma2-plugin-extensions-serienrecorder_4.5.0_all.deb">Download 4.5.0 deb</a></li>
 				  <li class="dropdown-divider"></li>
 				  <h5 class="dropdown-header">Beta-Versionen</h5>
-				  <li class="nav-item"><a class="nav-link" href="https://vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-4-4-7-30-12-2021/&postID=2164190#post2164190" target="_blank">Beta 4.5.0 Info</a></li>
-				  <li class="nav-item"><a class="nav-link" href="https://vuplus-forum.org/wbb4/index.php?thread/85765-serien-recorder-4-4-7-30-12-2021/&postID=2152535#post2152535" target="_blank">Beta 4.4.9 Info</a></li>
+				  <li class="nav-item"><a class="nav-link" href="https://vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-4-5-0-19-06-2022/&postID=2176670#post2176670" target="_blank">Beta 4.5.3 Info</a></li>
+				  
 				  <li class="nav-item"><a class="nav-link" href="https://github.com/einfall/serienrecorder/archive/refs/heads/master.zip" target="_blank">Download aktuelle Beta</a></li>
 				  
 				  <h5 class="dropdown-header">Python3-Versionen <br>Release</h5>
@@ -358,7 +358,7 @@
 					
 					
 					</div>
-					<div class="update">Letztes Update <strong>20.06.2022</strong> <br>Stand der Anleitung:<br><a href="https://vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-4-5-0-19-06-2022/&postID=2166518#post2166518" target="_blank"><strong><u>Version 4.5.0 Release</u></strong></a>
+					<div class="update">Letztes Update <strong>04.10.2022</strong> <br>Stand der Anleitung:<br><a href="https://vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-4-5-0-19-06-2022/&postID=2176670#post2176670" target="_blank"><strong><u>Version 4.5.3 Beta</u></strong></a>
 					<br><a href="https://vuplus-support.org/wbb4/index.php?thread/142111-serienrecorder-webinterface-0-9-9-20-06-2022/&postID=2166673#post2166673" target="_blank"> Webinterface 0.9.9</a>
 					</div>
 				
@@ -2990,7 +2990,8 @@
 			<li>
 				<strong>Timer in Timer-Liste speichern</strong>
 			
-				<p>Wird dieses auf "NEIN" gestellt, wird der SR für diese Serie keinen Eintrag mehr in die DB machen, was bedeutet, das man von dieser Serie beliebig viele Timer erstellen lassen kann. Damit können dann auch Serien getimert werden, die weder Staffel noch Episoden Bezeichnungen haben. Damit könnte man z.B. jeden Abend die Tagesschau um 20:00 Uhr timern. Vorausgesetzt man begrenzt auf die Früheste und Späteste Zeit für die Timer.
+				<p>Wird dieses auf "NEIN" gestellt, wird der SR für diese Serie keinen Eintrag mehr in die DB machen, was bedeutet, das man von dieser Serie beliebig viele Timer erstellen lassen kann. Damit können dann auch Serien getimert werden, die weder Staffel noch Episoden Bezeichnungen haben. Damit könnte man z.B. jeden Abend die <strong>Tagesschau</strong>  um 20:00 Uhr timern. Von Vorteil dabei kann sein, man begrenzt auf die Früheste und Späteste Zeit für die Timer.
+				<br>In der Log Statistik beim Suchlauf wird unten aufgeführt, wie viele Timer erstellt wurden, die nicht in die DB eingetragen wurden.
 				</p>
 			</li>
 			<br>
@@ -4015,7 +4016,7 @@
 		<p>Zur Sicherheit sollte man auch die Option <strong>"Voller Suchlauf mindestens einmal im Erstellungszeitraum"</strong> aktivieren, damit einmal in der Zeitspanne <strong>"Timer für x Tage erstellen"</strong> ein voller Timer-Suchlauf über alle Serien gemacht wird. So wird dann sichergestellt, das einmal innerhalb der <strong>"x Tage"</strong> die Sendetermine für alle aktiven Serien abgerufen werden, falls eine Serie oder ein Sendetermin <u>nicht</u> in der Mail auftaucht.
 		</p>
 		<p>Auch wenn man auf Wunschliste bereits gesehene Staffeln oder Episoden markieren kann, werden diese Einstellungen nicht in den Serienmarker übertragen, denn diese Informationen sind in der E-Mail nicht enthalten. Diese Einstellungen müssen weiterhin direkt im SerienRecorder vorgenommen werden.
-		<br>Anders sieht es natürlich aus, wenn man die Option <strong>"Timer nur aus der TV-Planer E-Mail anlegen"</strong> aktiviert. Dies ist für diejenigen interessant, die ihre Serien komplett bei Wunschliste verwalten wollen, also auch dort markieren welche Episoden sie bereits gesehen/aufgezeichnet haben. Diese Funktion <strong>"Timer nur aus der TV-Planer E-Mail anlegen"</strong> sorgt dafür, dass der Suchlauf auf dem SerienServer übersprungen wird und nur die Timer erstellt werden, die in der TV-Planer E-Mail vorhanden sind. Es werden nach wie vor Serien-Marker angelegt und auch ALLE Einstellungen im SR beachtet.
+		<br>Anders sieht es natürlich aus, wenn man die Option <strong>"Timer nur aus der TV-Planer E-Mail anlegen"</strong> aktiviert. Dies ist für diejenigen interessant, die ihre Serien komplett bei Wunschliste verwalten wollen, also auch dort markieren welche Episoden sie bereits gesehen/aufgezeichnet haben. Diese Funktion <strong>"Timer nur aus der TV-Planer E-Mail anlegen"</strong> sorgt dafür, dass der Suchlauf auf dem SerienServer übersprungen wird und nur die Timer erstellt werden, die in der TV-Planer E-Mail vorhanden sind. Es werden nach wie vor Serien-Marker angelegt und auch ALLE Einstellungen im SR beachtet, aber es werden keine weiteren Sendetermine abgerufen und verarbeitet.
 		</p>
 		<p>Auch die <strong>Automatische Umbenennung von Serien</strong> im SR, wird teilweise durch die TVPM ausgelöst.
 		<br>Vor allem bei neuen Serien kommt es vor, dass die Bezeichnung der Serien noch angepasst werden. Diese Änderungen werden automatisch in die schon bestehenden Serienmarker übernommen. Zukünftige Timer werden entsprechend neu benannt, bereits erstellte Timer behalten den alten Namen. Wenn Serienordner automatisch angelegt werden, wird ein neues Verzeichnis angelegt, bereits bestehende Aufnahmen müssen dann manuell verschoben werden.
@@ -4570,7 +4571,8 @@
 	<div>
 		<p class="lead">
 			Der Serienrecorder hat jetzt auch ein Webinterface, damit man den Serienrecorder auch aus einem Webbrowser heraus direkt "bedienen" kann.
-			<br>Dieses Webinterface ist noch im Aufbau/Entwicklung und beinhaltet noch nicht alle Funktionen, auch kann es in diesem Stadium noch zu Fehlern/Crashes kommen, daher unbedingt mindestens den 1. Post im Thread für das <strong>"Serienrecorder Webinterface"</strong> lesen. Da die Installation des Webinterface jetzt direkt aus dem SR heraus geschieht, muss man sich auch keine Gedanken mehr über die API-Version machen. Manche Optionen oder Einstellungen kann man zwar sehen, aber es passiert nichts, was daran liegt, das daran gerade gearbeitet wird. Es wird sicherlich auch nicht ALLES Einzug in das SR WebInterface halten.
+			<br>Um das SR Webinterface uneingeschränkt nutzen zu können, müssen dafür Werbeblocker wie z.B. <strong><span class="redfont">AdBlock</span></strong> deaktiviert werden.
+			<br><br>Dieses Webinterface ist noch im Aufbau/Entwicklung und beinhaltet noch nicht alle Funktionen, auch kann es in diesem Stadium noch zu Fehlern/Crashes kommen, daher unbedingt mindestens den 1. Post im Thread für das <strong>"Serienrecorder Webinterface"</strong> lesen. Da die Installation des Webinterface jetzt direkt aus dem SR heraus geschieht, muss man sich auch keine Gedanken mehr über die API-Version machen. Manche Optionen oder Einstellungen kann man zwar sehen, aber es passiert nichts, was daran liegt, das daran gerade gearbeitet wird. Es wird sicherlich auch nicht ALLES Einzug in das SR WebInterface halten.
 			<br>Da die Einstellungen, die man hier tätigen kann, schon alle im SR erläutert werden, wurde hier darauf verzichtet, alles noch mal "haarklein" zu erklären.
 			<br>Nähere Informationen findet man im <a href="https://www.vuplus-support.org/wbb4/index.php?thread/142111-serienrecorder-webinterface-0-8-0-12-02-2021/&postID=2071152#post2071152" target="_blank"><strong>VTI-Forum</strong></a> fürs WebInterface.
 		</p>
