@@ -199,18 +199,20 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		if tags is None or len(tags) == 0:
 			self.serienmarker_tags = []
 		else:
-			if tags.startswith("(lp1"):
-				# tags are pickled
-				if PY2:
-					import cPickle as pickle
-					self.serienmarker_tags = pickle.loads(tags)
-				else:
-					import pickle
-					from .SerienRecorderHelpers import toBinary
-					self.serienmarker_tags = pickle.loads(toBinary(tags), encoding="utf-8")
-			else:
-				import json
-				self.serienmarker_tags = [toStr(x) for x in json.loads(tags)]
+			# if tags.startswith("(lp1"):
+			# 	# tags are pickled
+			# 	if PY2:
+			# 		import cPickle as pickle
+			# 		self.serienmarker_tags = pickle.loads(tags)
+			# 	else:
+			# 		import pickle
+			# 		from .SerienRecorderHelpers import toBinary
+			# 		self.serienmarker_tags = pickle.loads(toBinary(tags), encoding="utf-8")
+			# else:
+			# 	import json
+			# 	self.serienmarker_tags = [toStr(x) for x in json.loads(tags)]
+			from .SerienRecorderHelpers import readTags
+			self.serienmarker_tags = readTags(tags)
 
 		self.tags = NoSave(
 			ConfigSelection(choices=[len(self.serienmarker_tags) == 0 and "Keine" or ' '.join(self.serienmarker_tags)]))

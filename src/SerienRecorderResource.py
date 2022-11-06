@@ -628,15 +628,27 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 		if tags is None or len(tags) == 0:
 			serienmarker_tags = []
 		else:
-			if tags.startswith('(lp1'):
-				if PY2:
-					import cPickle as pickle
-					serienmarker_tags = pickle.loads(tags)
-				else:
-					import pickle
-					serienmarker_tags = pickle.loads(toBinary(tags), encoding='utf-8')
-			else:
-				serienmarker_tags = json.loads(tags)
+			# if tags.startswith('(lp1'):
+			# 	if PY2:
+			# 		import cPickle as pickle
+			# 		serienmarker_tags = pickle.loads(tags)
+			# 	else:
+			# 		import pickle
+			# 		serienmarker_tags = pickle.loads(toBinary(tags), encoding='utf-8')
+			# else:
+			# 	serienmarker_tags = json.loads(tags)
+			from .SerienRecorderHelpers import readTags
+			serienmarker_tags = readTags(tags)
+
+		# Load all tags from file
+		try:
+			file = open("/etc/enigma2/movietags")
+			all_tags = [x.rstrip() for x in file]
+			while "" in all_tags:
+				all_tags.remove("")
+			file.close()
+		except IOError as ioe:
+			all_tags = []
 
 		data = {
 			'recordDir': {
@@ -688,6 +700,7 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 				'value': excludedWeekdaysList
 			},
 			'tags': serienmarker_tags,
+			'allTags' : all_tags,
 			'addToDatabase': addToDatabase,
 			'updateFromEPG': {
 				'available': config.plugins.serienRec.eventid.value,
@@ -1157,7 +1170,7 @@ class ApiGetTransmissionsResource(ApiBaseResource):
 		print("[SerienRecorder] ApiGetTransmissions")
 		print(req.args)
 
-		data = []
+		transmission_data = []
 		wl_id = toStr(req.args[toBinary("wlid")][0])
 		fs_id = toStr(req.args[toBinary("fsid")][0])
 		filterMode = int(req.args[toBinary("filterMode")][0])
@@ -1183,19 +1196,25 @@ class ApiGetTransmissionsResource(ApiBaseResource):
 			from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
 
 			addedEpisodes = database.getTimerForSeries(fs_id, False)
-			filteredTransmissions = serienRecSendeTermine.getFilteredTransmissions(transmissions, addedEpisodes, database, wl_id, fs_id)
+			filteredTransmissions = serienRecSendeTermine.getFilteredTransmissions(transmissions, addedEpisodes, database, fs_id)
 
-			for seriesName, channel, startTime, endTime, season, episode, title, status, addedType in filteredTransmissions:
+			for seriesName, channel, startTime, endTime, season, episode, title, status, addedType, seasonAllowed in filteredTransmissions:
 
-				data.append({
+				transmission_data.append({
 					'channel' : channel,
 					'startTime' : startTime,
 					'endTime' : endTime,
 					'season' : season,
 					'episode' : episode,
 					'title' : title,
-					'type' : addedType
+					'type' : addedType,
+					'seasonAllowed' : seasonAllowed
 				})
+
+			data = {
+				'seasonFilter' : int(config.plugins.serienRec.seasonFilter.value),
+				'transmissions' : transmission_data
+			}
 
 		return self.returnResult(req, True, data)
 

@@ -188,7 +188,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		self.resultsEvents(transmissions)
 
 	@staticmethod
-	def getFilteredTransmissions(transmissions, addedEpisodes, database, seriesWLID, seriesFSID):
+	def getFilteredTransmissions(transmissions, addedEpisodes, database, seriesFSID):
 
 		filteredTransmissions = []
 		# build unique dir list by season
@@ -204,47 +204,47 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			SRLogger.writeLog("Fehler beim Filtern nach Staffel", True)
 
 		for seriesName, channel, startTime, endTime, season, episode, title, status in transmissions:
-			seasonAllowed = True
-			if config.plugins.serienRec.seasonFilter.value:
-				seasonAllowed = serienRecSendeTermine.isSeasonAllowed(database, seriesFSID, season, episode, seriesSeason, fromEpisode)
+			seasonAllowed = serienRecSendeTermine.isSeasonAllowed(database, seriesFSID, season, episode, seriesSeason, fromEpisode)
 
-			if seasonAllowed:
-				seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
+			if config.plugins.serienRec.seasonFilter.value == "1" and not seasonAllowed:
+				continue
 
-				bereits_vorhanden = False
-				if config.plugins.serienRec.sucheAufnahme.value:
-					if not season in dirList:
-						dirList[season] = getDirname(database, seriesName, seriesFSID, season)
+			seasonEpisodeString = "S%sE%s" % (str(season).zfill(2), str(episode).zfill(2))
 
-					(dirname, dirname_serie) = dirList[season]
-					if str(episode).isdigit():
-						if int(episode) == 0:
-							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, seriesName, True, title) and True or False
-						else:
-							bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, seriesName, True) and True or False
+			bereits_vorhanden = False
+			if config.plugins.serienRec.sucheAufnahme.value:
+				if not season in dirList:
+					dirList[season] = getDirname(database, seriesName, seriesFSID, season)
+
+				(dirname, dirname_serie) = dirList[season]
+				if str(episode).isdigit():
+					if int(episode) == 0:
+						bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, seriesName, True, title) and True or False
 					else:
 						bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, seriesName, True) and True or False
-
-				if bereits_vorhanden:
-					addedType = 1
 				else:
-					if not channel in marginList:
-						marginList[channel] = database.getMargins(seriesFSID, channel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
+					bereits_vorhanden = STBHelpers.countEpisodeOnHDD(dirname, seasonEpisodeString, seriesName, True) and True or False
 
-					(margin_before, margin_after) = marginList[channel]
+			if bereits_vorhanden:
+				addedType = 1
+			else:
+				if not channel in marginList:
+					marginList[channel] = database.getMargins(seriesFSID, channel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
 
-					# check 2 (im timer file)
-					start_unixtime = startTime - (int(margin_before) * 60)
+				(margin_before, margin_after) = marginList[channel]
 
-					if serienRecSendeTermine.isTimerAdded(addedEpisodes, channel, season, episode, int(start_unixtime), title):
-						addedType = 2
-					elif serienRecSendeTermine.isAlreadyAdded(addedEpisodes, season, episode, title):
-						addedType = 3
-					else:
-						addedType = 0
+				# check 2 (im timer file)
+				start_unixtime = startTime - (int(margin_before) * 60)
 
-				if not config.plugins.serienRec.timerFilter.value or config.plugins.serienRec.timerFilter.value and addedType == 0:
-					filteredTransmissions.append([seriesName, channel, startTime, endTime, season, episode, title, status, addedType])
+				if serienRecSendeTermine.isTimerAdded(addedEpisodes, channel, season, episode, int(start_unixtime), title):
+					addedType = 2
+				elif serienRecSendeTermine.isAlreadyAdded(addedEpisodes, season, episode, title):
+					addedType = 3
+				else:
+					addedType = 0
+
+			if not config.plugins.serienRec.timerFilter.value or config.plugins.serienRec.timerFilter.value and addedType == 0:
+				filteredTransmissions.append([seriesName, channel, startTime, endTime, season, episode, title, status, addedType, seasonAllowed])
 
 		return filteredTransmissions
 
@@ -258,7 +258,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.changesMade:
 			self.addedEpisodes = self.database.getTimerForSeries(self.seriesFSID, False)
 
-		self.sendetermine_list = serienRecSendeTermine.getFilteredTransmissions(transmissions, self.addedEpisodes, self.database, self.seriesWLID, self.seriesFSID)
+		self.sendetermine_list = serienRecSendeTermine.getFilteredTransmissions(transmissions, self.addedEpisodes, self.database, self.seriesFSID)
 
 		if len(self.sendetermine_list):
 			self['text_green'].setText("Timer erstellen")
@@ -270,7 +270,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList_termine(entry):
-		(serien_name, sender, start, end, staffel, episode, title, status, addedType) = entry
+		(serien_name, sender, start, end, staffel, episode, title, status, addedType, seasonAllowed) = entry
 
 		# addedType: 0 = None, 1 = on HDD, 2 = Timer available, 3 = in DB
 		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
@@ -293,7 +293,10 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 		imageHDD = imageNone
 		imageTimer = imageNone
-		if addedType == 1:
+		if not seasonAllowed and config.plugins.serienRec.seasonFilter.value == "2":
+			titleColor = parseColor('grey').argb()
+			titleColorSelected = titleColor
+		elif addedType == 1:
 			titleColor = None
 			titleColorSelected = None
 			imageHDD = "%simages/hdd_icon.png" % serienRecMainPath
@@ -365,7 +368,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def countSelectedTransmissionForTimerCreation(self):
 		result = 0
-		for serien_name, sender, start_unixtime, end_unixtime, staffel, episode, title, status, addedType in self.sendetermine_list:
+		for serien_name, sender, start_unixtime, end_unixtime, staffel, episode, title, status, addedType, seasonAllowed in self.sendetermine_list:
 			if int(status) == 1:
 				result += 1
 
@@ -507,7 +510,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 		print("---------' Manuelle Timererstellung aus Sendeterminen um %s '---------" % uhrzeit)
 		SRLogger.writeLog("\n---------' Manuelle Timererstellung aus Sendeterminen um %s '---------" % uhrzeit, True)
-		for serien_name, sender, start_unixtime, end_unixtime, staffel, episode, title, status, addedType in sendetermine:
+		for serien_name, sender, start_unixtime, end_unixtime, staffel, episode, title, status, addedType, seasonAllowed  in sendetermine:
 			if int(status) == 1:
 				# initialize strings
 				seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))

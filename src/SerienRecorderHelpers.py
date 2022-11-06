@@ -20,10 +20,10 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.5.3-beta'
+SRVERSION = '4.5.4-beta'
 SRDBVERSION = '4.5.0'
-SRAPIVERSION = '2.5'
-SRWEBAPPVERSION = '0.9.8'
+SRAPIVERSION = '2.6'
+SRWEBAPPVERSION = '0.10.0'
 SRMANUALURL = "https://einfall.github.io/serienrecorder/"
 SRCOPYRIGHT = "©2014-22 einfall, w22754, egn und MacDisein"
 
@@ -331,6 +331,22 @@ def getDirname(database, serien_name, serien_fsid, staffel):
 
 	return dirname, dirname_serie
 
+def readTags(tagString):
+	tags = []
+	if tagString.startswith("(lp1"):
+		# tags are pickled
+		if PY2:
+			import cPickle as pickle
+			tags = pickle.loads(tagString)
+		else:
+			import pickle
+			tags = pickle.loads(toBinary(tagString), encoding="utf-8")
+	else:
+		import json
+		tags = [toStr(x) for x in json.loads(tagString)]
+
+	return tags
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # TimeHelper - Time related helper functions
@@ -496,7 +512,7 @@ class STBHelpers:
 
 		epgmatches = []
 		epgcache = eEPGCache.getInstance()
-		query = ['RITBDSE', (channelref, 0, int(starttime) - epg_timespan, -1)]
+		query = ['ITBDS', (channelref, 0, int(starttime) - epg_timespan, -1)]
 		allevents = epgcache.lookupEvent(query) or []
 
 		import re
@@ -510,7 +526,7 @@ class STBHelpers:
 		highEPGStartTime_str = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(highEPGStartTime)))
 		print("[SerienRecorder] getEPGEvent: Boundaries: [%s (%d)] - [%s (%d)]" % (lowEPGStartTime_str, lowEPGStartTime, highEPGStartTime_str, highEPGStartTime))
 
-		for serviceref, eit, name, begin, event_duration, shortdesc, extdesc in allevents:
+		for eit, name, begin, event_duration, shortdesc in allevents:
 			normalized_name = regex.sub("", name.lower().replace(" ", ""))
 
 			nameMatch = False
@@ -523,7 +539,7 @@ class STBHelpers:
 
 			if bool(lowEPGStartTime <= int(begin) <= highEPGStartTime) and nameMatch:
 				print("[SerienRecorder] getEPGEvent: Event found")
-				epgmatches.append((serviceref, eit, name, begin, event_duration, shortdesc, extdesc))
+				epgmatches.append((eit, name, begin, event_duration, shortdesc))
 				break
 
 			if begin > highEPGStartTime:
@@ -539,10 +555,10 @@ class STBHelpers:
 		(noEventsFound, event_matches) = cls.getEPGEvent(stbRef, series_name, epg_series_name, int(start_unixtime_eit) + (int(margin_before) * 60))
 		if event_matches and len(event_matches) > 0:
 			for event_entry in event_matches:
-				print("[SerienRecorder] found eventID: %s" % int(event_entry[1]))
-				eit = int(event_entry[1])
-				start_unixtime_eit = int(event_entry[3])
-				end_unixtime_eit = int(event_entry[3]) + int(event_entry[4])
+				print("[SerienRecorder] found eventID: %s" % int(event_entry[0]))
+				eit = int(event_entry[0])
+				start_unixtime_eit = int(event_entry[2])
+				end_unixtime_eit = int(event_entry[2]) + int(event_entry[3])
 				break
 
 		return eit, start_unixtime_eit, end_unixtime_eit
@@ -783,24 +799,17 @@ class PicLoader:
 class PiconLoader:
 	def __init__(self):
 		self.nameCache = { }
-		self.partnerbox = re.compile('1:0:[0-9a-fA-F]+:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[1-9a-fA-F]+[0-9a-fA-F]*:[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+:http')
 
 	def getPicon(self, sRef):
 		if not sRef:
 			return None
 
-		pos = sRef.rfind(':')
-		if pos != -1:
-			pos2 = sRef.rfind(':', 0, pos)
-			if pos - pos2 == 1 or self.partnerbox.match(sRef) is not None:
-				sRef = sRef[:pos2].replace(':', '_')
-			else:
-				sRef = sRef[:pos].replace(':', '_')
-		pngname = self.nameCache.get(sRef, "")
+		piconName = self.getPiconName(sRef)
+		pngname = self.nameCache.get(piconName, "")
 		if pngname == "":
-			pngname = self.findPicon(sRef)
+			pngname = self.findPicon(piconName)
 			if pngname != "":
-				self.nameCache[sRef] = pngname
+				self.nameCache[piconName] = pngname
 			if pngname == "": # no picon for service found
 				pngname = self.nameCache.get("default", "")
 				if pngname == "": # no default in cache yet
@@ -812,15 +821,36 @@ class PiconLoader:
 		else:
 			return None
 
+	def getPiconName(self, sRef):
+		# remove the path and name fields, and replace ':' by '_'
+		fields = sRef.split(':', 10)[:10]
+		if not fields or len(fields) < 10:
+			return ""
+		pngname = '_'.join(fields)
+		if not pngname and not fields[6].endswith("0000"):
+			# remove "subnetwork" from namespace
+			fields[6] = fields[6][:-4] + "0000"
+			pngname = '_'.join(fields)
+		if not pngname and fields[0] != '1':
+			# fallback to 1 for other reftypes
+			fields[0] = '1'
+			pngname = '_'.join(fields)
+		if not pngname and fields[2] != '1':
+			# fallback to 1 for services with different service types
+			fields[2] = '1'
+			pngname = '_'.join(fields)
+		print("[SerienRecorder] PiconLoader::getPiconName: [%s] => [%s]" % (sRef, pngname))
+		return pngname
+
 	@staticmethod
-	def findPicon(sRef):
-		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, sRef)
-		#print("[SerienRecorder] PiconLoader::findPicon: [%s] => [%s]" % (sRef, pngname))
+	def findPicon(piconName):
+		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, piconName)
+		print("[SerienRecorder] PiconLoader::findPicon: [%s]" % pngname)
 		if not fileExists(pngname):
 			# Try to normalize the name
-			normalizedSRef = sRef.replace(" ", "").lower()
-			pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, normalizedSRef)
-			#print("[SerienRecorder] PiconLoader::findPicon: [%s] => [%s] (normalized)" % (normalizedSRef, pngname))
+			normalizedPiconName = piconName.replace(" ", "").lower()
+			pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, normalizedPiconName)
+			print("[SerienRecorder] PiconLoader::findPicon: [%s] (normalized)" % pngname)
 			if not fileExists(pngname):
 				pngname = ""
 		return pngname

@@ -24,13 +24,13 @@ class ShowStartupInfo(Screen):
 
 	skin = """
 		<screen name="SerienRecorderHints" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20">
-			<widget name="changelog" position="5,5" size="%d,%d" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand"/>
+			<widget name="changelog" position="5,5" size="%d,%d" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand" selectionDisabled="1"/>
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_ok.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_ok" position="%d,%d" size="%d,26" zPosition="1" font="Regular;19" halign="left" backgroundColor="#26181d20" transparent="1" />
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/images/key_exit.png" position="%d,%d" zPosition="1" size="32,32" alphatest="on" />
 			<widget name="text_exit" position="%d,%d" size="%d,26" zPosition="1" font="Regular; 19" halign="left" backgroundColor="#26181d20" transparent="1" />
 		</screen>""" % (50, 100, DESKTOP_WIDTH - 100, DESKTOP_HEIGHT - 180, "SerienRecorder Changelog",
-		                DESKTOP_WIDTH - 110, DESKTOP_HEIGHT - 232,
+		                DESKTOP_WIDTH - 110, DESKTOP_HEIGHT - 235,
 		                BUTTON_X + 50, BUTTON_Y,
 		                BUTTON_X + 92, BUTTON_Y + 3, BUTTON_X - 100,
 		                50, BUTTON_Y,

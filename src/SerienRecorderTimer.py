@@ -992,7 +992,7 @@ class serienRecTimer:
 
 				if no_events_found and no_new_events_found:
 					print("[SerienRecorder] Failed to update timer, not enough EPG data")
-					SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+					SRLogger.writeLog("' %s ' @ %s" % (title, channelName), True)
 					SRLogger.writeLog("   Timer konnte nicht aus dem EPG aktualisiert werden, nicht genügend EPG Daten vorhanden @ %s" % channelName)
 					updateFromEPGFailed = True
 					#continue
@@ -1000,20 +1000,20 @@ class serienRecTimer:
 					if new_event_matches and len(new_event_matches) > 0 and (not event_matches or (event_matches and len(event_matches) == 0)):
 						# Old event not found but new one with different start time
 						print("[SerienRecorder] Event could be found in EPG, but a repetition at a different time")
-						SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+						SRLogger.writeLog("' %s ' @ %s" % (title, channelName), True)
 						SRLogger.writeLog("   Die Sendung wurde im EPG nicht gefunden, es wurde aber eine Wiederholung zu einer anderen Zeit gefunden @ %s" % channelName)
 						event_matches = new_event_matches
 						updateFromEPGFailed = True
 
 					if event_matches and len(event_matches) > 0:
 						for event_entry in event_matches:
-							eit = int(event_entry[1])
-							start_unixtime = int(event_entry[3]) - (int(margin_before) * 60)
-							end_unixtime = int(event_entry[3]) + int(event_entry[4]) + (int(margin_after) * 60)
+							eit = int(event_entry[0])
+							start_unixtime = int(event_entry[2]) - (int(margin_before) * 60)
+							end_unixtime = int(event_entry[2]) + int(event_entry[3]) + (int(margin_after) * 60)
 							break
 					else:
 						print("[SerienRecorder] Failed to update timer, event not found in time range")
-						SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+						SRLogger.writeLog("' %s ' @ %s" % (title, channelName), True)
 						SRLogger.writeLog("   Timer konnte nicht aus dem EPG aktualisiert werden, die Sendung wurde im Zeitfenster nicht gefunden @ %s" % channelName)
 						eventsNotFound += "%s\n" % title
 						updateFromEPGFailed = True
@@ -1033,7 +1033,7 @@ class serienRecTimer:
 
 			except Exception as e:
 				print("[SerienRecorder] Modifying enigma2 timer failed: %s [%d] (%s)" % (title, serien_time, str(e)))
-				SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+				SRLogger.writeLog("' %s ' @ %s" % (title, channelName), True)
 				SRLogger.writeLog("   Timeraktualisierung fehlgeschlagen @ %s" % channelName, True)
 
 		# Notification event not found

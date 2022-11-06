@@ -181,7 +181,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 35, 1, default=0)
 	config.plugins.serienRec.markerColumnWidth = ConfigSelectionNumber(-200, 200, 10, default=0)
 	config.plugins.serienRec.markerNameInset = ConfigSelectionNumber(0, 80, 1, default=40)
-	config.plugins.serienRec.seasonFilter = ConfigYesNo(default=False)
+	config.plugins.serienRec.seasonFilter = ConfigSelection(choices=[("0", "Nein"), ("1", "Ausblenden"), ("2", "In grau anzeigen")], default="0")
 	config.plugins.serienRec.timerFilter = ConfigYesNo(default=False)
 	config.plugins.serienRec.markerSort = ConfigSelection(choices=[("0", "Alphabetisch"), ("1", "Wunschliste")], default="0")
 	config.plugins.serienRec.max_season = ConfigInteger(30, (1, 999))
@@ -1416,8 +1416,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von der Standardbreite kann die Spalte schmaler bzw. breiter gemacht machen."),
 			config.plugins.serienRec.markerNameInset: (
 				"Mit dieser Einstellung kann der Einzug der Seriennamen in der Serien-Marker Ansicht angepasst werden. Damit lässt sich eine deutlichere optische Abgrenzung der einzelnen Serien-Marker erreichen."),
-			config.plugins.serienRec.seasonFilter: (
-				"Bei 'ja' werden in der Sendetermine Ansicht nur Termine angezeigt, die der am Marker eingestellten Staffeln entsprechen."),
+			config.plugins.serienRec.seasonFilter: ("Bei 'Ausblenden' werden nur Termine angezeigt, die der am Marker eingestellten Staffeln entsprechen.\n"
+			                                      "Bei 'In grau anezeigen' werden die Termine in grau angezeigt, die NICHT der am Marker eingestellten Staffeln entsprechen"),
 			config.plugins.serienRec.timerFilter: (
 				"Bei 'ja' werden in der Sendetermine Ansicht nur Termine angezeigt, für die noch Timer angelegt werden müssen."),
 			config.plugins.serienRec.markerSort: ("Bei 'Alphabetisch' werden die Serien-Marker alphabetisch sortiert.\n"

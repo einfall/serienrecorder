@@ -9,6 +9,7 @@ from Components.config import config
 from Tools.Directories import fileExists
 
 from enigma import eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_WRAP, RT_VALIGN_CENTER
+from skin import parseColor
 
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
 from .SerienRecorderLogWriter import SRLogger
@@ -58,6 +59,8 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 		self.num_bt_text[0][0] = buttonText_na
 		self.num_bt_text[4][0] = buttonText_na
 
+		self['log'].selectionEnabled(False)
+
 		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
@@ -102,9 +105,9 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 		if not logFileSize == 0:
 			readLog = open(logFilePath, "r")
 			logliste = []
-			for zeile in readLog.readlines():
-				if (not config.plugins.serienRec.logWrapAround.value) or (len(zeile.strip()) > 0):
-					logliste.append(zeile)
+			for line in readLog.readlines():
+				if (not config.plugins.serienRec.logWrapAround.value) or (len(line.strip()) > 0):
+					logliste.append(line)
 			readLog.close()
 			self['title'].hide()
 			self['path'].setText("Logdatei:\n(%s)" % logFilePath)
@@ -117,17 +120,22 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		(zeile) = entry
+		(row) = entry
 		width = 850
 		if config.plugins.serienRec.SkinType.value == "":
 			width = 1240
 
-		if config.plugins.serienRec.logWrapAround.value:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, width * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
+		if row.startswith('---------'):
+			color = parseColor('blue').argb()
+		elif row.startswith('\''):
+			color = parseColor('green').argb()
 		else:
-			return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 20 * skinFactor, 0,
-			RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
+			color = None
+
+		if config.plugins.serienRec.logWrapAround.value:
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, row, color, color)]
+		else:
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
 
 	def keyLeft(self):
 		self['log'].pageUp()
@@ -136,10 +144,10 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 		self['log'].pageDown()
 
 	def keyDown(self):
-		self['log'].down()
+		self['log'].pageDown()
 
 	def keyUp(self):
-		self['log'].up()
+		self['log'].pageUp()
 
 	def __onClose(self):
 		self.stopDisplayTimer()

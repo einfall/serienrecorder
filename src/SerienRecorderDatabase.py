@@ -6,7 +6,7 @@ except ImportError:
 
 import shutil, sqlite3, time, os
 
-from .SerienRecorderHelpers import getChangedSeriesNames, PY2
+from .SerienRecorderHelpers import getChangedSeriesNames, PY2, toStr
 from .SerienRecorderLogWriter import SRLogger
 
 class SRDatabase:
@@ -768,16 +768,18 @@ class SRDatabase:
 			(tagString,) = row
 			if tagString is not None and len(tagString) > 0:
 				try:
-					if tagString.startswith('(lp1'):
-						if PY2:
-							import cPickle as pickle
-							tags = pickle.loads(tagString)
-						else:
-							import pickle
-							from .SerienRecorderHelpers import toBinary
-							tags = pickle.loads(toBinary(tagString), encoding="utf-8")
-					else:
-						tags = json.loads(tagString)
+					# if tagString.startswith('(lp1'):
+					# 	if PY2:
+					# 		import cPickle as pickle
+					# 		tags = pickle.loads(tagString)
+					# 	else:
+					# 		import pickle
+					# 		from .SerienRecorderHelpers import toBinary
+					# 		tags = pickle.loads(toBinary(tagString), encoding="utf-8")
+					# else:
+					# 	tags = [toStr(x) for x in json.loads(tagString)]
+					from .SerienRecorderHelpers import readTags
+					tags = readTags(tagString)
 				except:
 					SRLogger.writeLog("Fehler beim Lesen der gespeicherten Tags am Marker mit der Fernsehserie ID ' %s '" % fsID)
 
@@ -1238,9 +1240,9 @@ class SRDatabase:
 		count_secondary_bouquet = 0
 		for row in rows:
 			(count, primary_bouquet, secondary_bouquet) = row
-			if primary_bouquet > 0:
+			if primary_bouquet and primary_bouquet > 0:
 				count_primary_bouquet += count
-			elif secondary_bouquet > 0:
+			elif secondary_bouquet and secondary_bouquet > 0:
 				count_secondary_bouquet += count
 
 		if title is None:

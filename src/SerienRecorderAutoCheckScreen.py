@@ -11,6 +11,7 @@ from Components.Label import Label
 from Components.ProgressBar import ProgressBar
 
 from enigma import eTimer, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER, RT_WRAP, getDesktop
+from skin import parseColor
 
 from .SerienRecorderCheckForRecording import checkForRecordingInstance
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
@@ -103,6 +104,8 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_red'].setText("Abbrechen")
 		self.num_bt_text[0][0] = buttonText_na
 		self.num_bt_text[4][0] = buttonText_na
+
+		self['log'].selectionEnabled(False)
 
 		super(self.__class__, self).startDisplayTimer()
 
@@ -205,23 +208,34 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList(entry):
-		(zeile) = entry
+		(row) = entry
 		width = 850
 		if config.plugins.serienRec.SkinType.value == "":
 			width = 1240
 
-		if config.plugins.serienRec.logWrapAround.value:
-			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, width * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, zeile)]
+		if row.startswith('---------'):
+			color = parseColor('blue').argb()
+		elif row.startswith('\''):
+			color = parseColor('green').argb()
 		else:
-			return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 20 * skinFactor, 0,
-			RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile)]
+			color = None
+
+		if config.plugins.serienRec.logWrapAround.value:
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 00, width * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, row, color, color)]
+		else:
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
 
 	def pageUp(self):
 		self['log'].pageUp()
 
 	def pageDown(self):
 		self['log'].pageDown()
+
+	def keyDown(self):
+		self['log'].pageDown()
+
+	def keyUp(self):
+		self['log'].pageUp()
 
 	def __onClose(self):
 		if self.readLogTimer:
