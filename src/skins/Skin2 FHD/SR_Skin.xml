@@ -8,18 +8,18 @@
     </widget>
     <eLabel position="1414,14" zPosition="3" size="495,280" backgroundColor="transparent" />
     <widget name="video" position="1416,15" size="490,275" zPosition="-8" />
-    <widget name="config" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" />
-    <widget name="menu_list" position="20,205" size="1360,780" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1"  />
-    <widget name="log" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" />
+    <widget name="config" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" backgroundColorSelected="#204176b6" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1"  />
+    <widget name="menu_list" position="20,205" size="1360,780" foregroundColor="yellow" foregroundColorSelected="yellow" backgroundColorSelected="#204176b6" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" />
+    <widget name="log" position="20,205" size="1360,780" foregroundColorSelected="#ffffff" backgroundColor="#00000000" backgroundColorSelected="#204176b6" scrollbarMode="showOnDemand" enableWrapAround="1" transparent="1" />
     <widget name="popup_bg" position="19,209" size="1388,700" backgroundColor="#000000" transparent="1" zPosition="5" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/popup_bg.png" />
-    <widget name="popup_list" position="80,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#181d20" zPosition="12" scrollbarMode="showOnDemand" transparent="0" />
-    <widget name="popup_list2" position="120,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#00181d20" zPosition="11" scrollbarMode="showAlways" scrollbarWidth="8" scrollbarSliderBorderWidth="2" scrollbarKeepGapColor="1" scrollbarGap="2" scrollbarSliderForegroundColor="#1e90ff" scrollbarBackgroundPicture="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/scrollbar.png" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_small.png" />
+    <widget name="popup_list" position="80,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#181d20" backgroundColorSelected="#204176b6" zPosition="12" scrollbarMode="showOnDemand" transparent="0" />
+    <widget name="popup_list2" position="120,230" size="1200,660" foregroundColorSelected="#ffffff" backgroundColor="#00181d20" backgroundColorSelected="#204176b6" zPosition="11" scrollbarMode="showAlways" scrollbarWidth="8" scrollbarSliderBorderWidth="2" scrollbarKeepGapColor="1" scrollbarGap="2" scrollbarSliderForegroundColor="#1e90ff" scrollbarBackgroundPicture="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/scrollbar.png" transparent="0" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_small.png" />
     <widget name="cover" position="1244,3" size="166,184" transparent="0" alphatest="blend" zPosition="0" />
     <widget name="Web_Channel" position="85,155" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
     <widget name="STB_Channel" position="535,155" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
     <widget name="alt_STB_Channel" position="1060,155" size="180,30" zPosition="10" font="Regular;20" transparent="1" />
     <widget name="separator" position="20,190" size="1360,2" backgroundColor="#00aaaaaa" zPosition="6" />
-    <widget name="list" position="20,205" size="1360,780" backgroundColor="#000000" scrollbarMode="showOnDemand" transparent="0" zPosition="5" selectionPixmap="/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/skins/Skin2 FHD/images/sel_small.png" />
+    <widget name="list" position="20,205" size="1360,780" backgroundColor="#000000" backgroundColorSelected="#204176b6" scrollbarMode="showOnDemand" transparent="0" zPosition="5" />
     <widget name="config_information" position="1460,600" size="450,390" zPosition="3" backgroundColor="#000000" font="Regular; 20" />
     <widget name="config_information_text" position="1460,600" size="450,390" zPosition="5" font="Regular; 20" halign="left" transparent="1" />
     <!--widget source="config_information_text" position="923,103" size="304,314" zPosition="5" font="Regular;18" halign="left" transparent="1" render="RunningText" options="movetype=running,startpoint=0,direction=top,steptime=90,repeat=20,startdelay=10000,wrap" /-->

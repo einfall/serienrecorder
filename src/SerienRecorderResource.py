@@ -41,8 +41,6 @@ def getApiList(session):
 	childs.append( ('setchannel', ApiSetChannelResource() ) )
 	childs.append( ('removeallchannels', ApiRemoveAllChannelsResource() ) )
 	childs.append( ('updatechannels', ApiUpdateChannelsResource() ) )
-	#childs.append( ('webchannels', ApiWebChannelsResource() ) )
-	#childs.append( ('searchevents', ApiSearchEventsResource() ) )
 	childs.append( ('timer', ApiGetTimerResource() ) )
 	childs.append( ('markertimer', ApiGetMarkerTimerResource() ) )
 	childs.append( ('addtimers', ApiAddTimersResource() ) )
@@ -1647,7 +1645,7 @@ class ApiCreateTimerResource(ApiBaseResource):
 		data = json.loads(req.content.getvalue())
 		transmissions = []
 		for event in data['transmissions']:
-			transmissions.append([data['name'], event['channel'], event['startTime'], event['endTime'], event['season'], event['episode'], event['title'], "1", event['type']])
+			transmissions.append([data['name'], event['channel'], event['startTime'], event['endTime'], event['season'], event['episode'], event['title'], "1", event['type'], True])
 
 		from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
 		from .SerienRecorderDatabase import SRDatabase

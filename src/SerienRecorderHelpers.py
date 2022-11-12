@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.5.4-beta'
+SRVERSION = '4.5.5-beta'
 SRDBVERSION = '4.5.0'
 SRAPIVERSION = '2.6'
 SRWEBAPPVERSION = '0.10.0'
@@ -801,6 +801,7 @@ class PiconLoader:
 		self.nameCache = { }
 
 	def getPicon(self, sRef):
+		print("[SerienRecorder] PiconLoader::getPicon: [%s]" % sRef)
 		if not sRef:
 			return None
 
@@ -821,10 +822,11 @@ class PiconLoader:
 		else:
 			return None
 
-	def getPiconName(self, sRef):
+	@staticmethod
+	def getPiconName(sRef):
 		# remove the path and name fields, and replace ':' by '_'
 		fields = sRef.split(':', 10)[:10]
-		if not fields or len(fields) < 10:
+		if not fields or 10 > len(fields) > 1:
 			return ""
 		pngname = '_'.join(fields)
 		if not pngname and not fields[6].endswith("0000"):

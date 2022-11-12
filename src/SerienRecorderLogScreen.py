@@ -138,16 +138,28 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
 
 	def keyLeft(self):
-		self['log'].pageUp()
+		if self['log'].instance.atBegin():
+			self['log'].up()
+		else:
+			self['log'].pageUp()
 
 	def keyRight(self):
-		self['log'].pageDown()
+		if self['log'].instance.atEnd():
+			self['log'].down()
+		else:
+			self['log'].pageDown()
 
 	def keyDown(self):
-		self['log'].pageDown()
+		if self['log'].instance.atEnd():
+			self['log'].down()
+		else:
+			self['log'].pageDown()
 
 	def keyUp(self):
-		self['log'].pageUp()
+		if self['log'].instance.atBegin():
+			self['log'].up()
+		else:
+			self['log'].pageUp()
 
 	def __onClose(self):
 		self.stopDisplayTimer()

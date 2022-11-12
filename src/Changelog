@@ -1,4 +1,11 @@
-##Version 4.5.4-beta (06.11.2022)
+##Version 4.5.5-beta (12.11.2022)
+
+**Änderungen in der 4.5.5-beta**
+- Fehler beim Anlegen von manuellen Timern aus dem Webinterface behoben
+- Logansicht: Man kann wieder an das Ende bzw. den Anfang springen
+- Picons mit Namen sollten jetzt auch wieder geladen werden
+- Beim Aktualiseren von Timern wird jetzt statt des Aufnahmepfades der Sender im Log angezeigt
+- Im SerienRecorder Skin 2 FHD wird jetzt die Hintergrundfarbe der Selektion gesetzt
 
 **Änderungen in der 4.5.4-beta**
 - Picons werden jetzt auch für IPTV Sender geladen

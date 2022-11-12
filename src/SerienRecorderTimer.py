@@ -194,7 +194,7 @@ class serienRecTimer:
 				except:
 					pass
 
-	def update(self, timer_list, eit, end_unixtime, new_episode, new_serien_title, new_serien_name, serien_fsid, serien_time, new_staffel, start_unixtime, stbRef, title, dirname, vpsSettings, markerType, updateFromEPGFailed):
+	def update(self, timer_list, eit, end_unixtime, new_episode, new_serien_title, new_serien_name, serien_fsid, serien_time, new_staffel, start_unixtime, stbRef, title, dirname, channelName, vpsSettings, markerType, updateFromEPGFailed):
 		timerUpdated = False
 		timerFound = False
 		print("[SerienRecorder] Iterate box timers to update timer: " + title)
@@ -285,7 +285,7 @@ class serienRecTimer:
 
 					if updateEIT or updateStartTime or updateEndTime or updateName or updateDescription or updateDirectory:
 						if not updateFromEPGFailed:
-							SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+							SRLogger.writeLog("' %s ' @ %s" % (title, channelName), True)
 						new_start = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(start_unixtime)))
 						old_start = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(serien_time)))
 						new_end = time.strftime("%a, %d.%m. - %H:%M", time.localtime(int(end_unixtime)))
@@ -323,7 +323,7 @@ class serienRecTimer:
 		if not timerFound:
 			print("[SerienRecorder] Timer not found")
 			if not updateFromEPGFailed:
-				SRLogger.writeLog("' %s ' - %s" % (title, dirname), True)
+				SRLogger.writeLog("' %s ' @ %s" % (title, channelName), True)
 			SRLogger.writeLog("   Timer konnte nicht aktualisiert werden, weil er nicht gefunden werden konnte!", True)
 
 		return timerUpdated
@@ -1029,7 +1029,7 @@ class serienRecTimer:
 				self.update(recordHandler.timer_list + recordHandler.processed_timers, eit, end_unixtime, new_episode,
 				            new_serien_title, serien_name, serien_fsid, serien_time,
 				            new_staffel, start_unixtime, stbRef, title,
-				            dirname, vpsSettings, markerType, updateFromEPGFailed)
+				            dirname, channelName, vpsSettings, markerType, updateFromEPGFailed)
 
 			except Exception as e:
 				print("[SerienRecorder] Modifying enigma2 timer failed: %s [%d] (%s)" % (title, serien_time, str(e)))
