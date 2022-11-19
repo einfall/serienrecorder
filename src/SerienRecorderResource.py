@@ -1209,10 +1209,10 @@ class ApiGetTransmissionsResource(ApiBaseResource):
 					'seasonAllowed' : seasonAllowed
 				})
 
-			data = {
-				'seasonFilter' : int(config.plugins.serienRec.seasonFilter.value),
-				'transmissions' : transmission_data
-			}
+		data = {
+			'seasonFilter': int(config.plugins.serienRec.seasonFilter.value),
+			'transmissions': transmission_data
+		}
 
 		return self.returnResult(req, True, data)
 
