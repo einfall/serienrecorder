@@ -805,10 +805,10 @@ class PiconLoader:
 		if not sRef:
 			return None
 
-		piconName = self.getPiconName(sRef)
+		piconName, isPiconByServiceRef = self.getPiconName(sRef)
 		pngname = self.nameCache.get(piconName, "")
 		if pngname == "":
-			pngname = self.findPicon(piconName)
+			pngname = self.findPicon(piconName, isPiconByServiceRef)
 			if pngname != "":
 				self.nameCache[piconName] = pngname
 			if pngname == "": # no picon for service found
@@ -827,7 +827,7 @@ class PiconLoader:
 		# remove the path and name fields, and replace ':' by '_'
 		fields = sRef.split(':', 10)[:10]
 		if not fields or 10 > len(fields) > 1:
-			return ""
+			return "", False
 		pngname = '_'.join(fields)
 		if not pngname and not fields[6].endswith("0000"):
 			# remove "subnetwork" from namespace
@@ -842,17 +842,22 @@ class PiconLoader:
 			fields[2] = '1'
 			pngname = '_'.join(fields)
 		print("[SerienRecorder] PiconLoader::getPiconName: [%s] => [%s]" % (sRef, pngname))
-		return pngname
+		return pngname, True
 
 	@staticmethod
-	def findPicon(piconName):
+	def findPicon(piconName, isPiconByServiceRef):
 		pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, piconName)
 		print("[SerienRecorder] PiconLoader::findPicon: [%s]" % pngname)
 		if not fileExists(pngname):
-			# Try to normalize the name
-			normalizedPiconName = piconName.replace(" ", "").lower()
-			pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, normalizedPiconName)
-			print("[SerienRecorder] PiconLoader::findPicon: [%s] (normalized)" % pngname)
+			if isPiconByServiceRef and pngname.startswith("4097_"):
+				# Try to find with DVB reftype
+				pngname = pngname.replace("4097_", "1_")
+				print("[SerienRecorder] PiconLoader::findPicon: [%s] (DVB)" % pngname)
+			elif not isPiconByServiceRef:
+				# Try to normalize the name
+				normalizedPiconName = piconName.replace(" ", "").lower()
+				pngname = "%s%s.png" % (config.plugins.serienRec.piconPath.value, normalizedPiconName)
+				print("[SerienRecorder] PiconLoader::findPicon: [%s] (normalized)" % pngname)
 			if not fileExists(pngname):
 				pngname = ""
 		return pngname
