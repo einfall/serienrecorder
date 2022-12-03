@@ -129,8 +129,9 @@ def ReadConfigFile():
 	###############################################################################################################################
 	# TIMER
 	###############################################################################################################################
+	from .SerienRecorderHelpers import getKindOfTimerChoices
 
-	config.plugins.serienRec.kindOfTimer = ConfigSelection(choices=[("1", "Umschalten"), ("0", "Aufnehmen"), ("2", "Umschalten und aufnehmen"), ("4", "Erinnerung")], default="0")
+	config.plugins.serienRec.kindOfTimer = ConfigSelection(choices=getKindOfTimerChoices(), default="0")
 	config.plugins.serienRec.afterEvent = ConfigSelection(choices=[("0", "Nichts"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen"), ("3", "Automatisch")], default="3")
 	config.plugins.serienRec.margin_before = ConfigInteger(default_before, (0, 99))
 	config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0, 99))
@@ -1320,7 +1321,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			###############################################################################################################################
 			# TIMER
 			###############################################################################################################################
-			config.plugins.serienRec.kindOfTimer: ("Es kann ausgewählt werden, welche Art von Timer angelegt werden sollen:\n"
+			config.plugins.serienRec.kindOfTimer: ("Es kann ausgewählt werden, welche Art von Timer angelegt werden sollen (es sind nicht alle Optionen in jedem Image verfügbar):\n"
 			                   "  - 'Umschalten': Es wird ein Timer erstellt, bei dem nur auf den aufzunehmenden Sender umgeschaltet wird. Es erfolgt KEINE Aufnahme\n"
 			                   "  - 'Aufnehmen': Ein 'normaler' Timer wird erstellt (Standardwert)\n"
 			                   "  - 'Umschalten und aufnehmen': Es wird ein Timer erstellt, bei dem vor der Aufnahme auf den aufzunehmenden Sender umgeschaltet wird\n"
@@ -1381,7 +1382,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' wird in der Hauptansicht intensiver nach vorhandenen Timern gesucht, d.h. es wird vor der Suche versucht die Anfangszeit aus dem EPGCACHE zu aktualisieren was aber zeitintensiv ist."),
 			config.plugins.serienRec.sucheAufnahme: (
 				"Bei 'ja' wird beim Timer-Suchlauf der Aufnahmeordner nach der Episode durchsucht, für die ein Timer angelegt werden soll. Wird eine entsprechende Aufnahme gefunden, wird kein Timer mehr angelegt.\n"
-				"Zusätzlich sorgt diese Option dafür, dass ein Symbol für jede Episode angezeigt wird, die als Aufnahme auf der Festplatte gefunden wurde.\n\nDiese Suche kann u.U. zeitintensiv sein."),
+				"Zusätzlich sorgt diese Option dafür, dass ein Symbol für jede Episode angezeigt wird, die als Aufnahme auf der Festplatte gefunden wurde.\n"
+				"Diese Option kann nicht zusammen mit der Option 'Standard Bouquet bevorzugen' und 'Timername' mit Serienname verwendet werden."),
 
 			###############################################################################################################################
 			# BENUTZEROBERFLÄCHE

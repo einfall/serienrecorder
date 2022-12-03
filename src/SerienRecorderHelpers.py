@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.5.5-beta'
+SRVERSION = '4.5.6-beta'
 SRDBVERSION = '4.5.0'
 SRAPIVERSION = '2.6'
 SRWEBAPPVERSION = '0.10.0'
@@ -72,12 +72,31 @@ def hasAutoAdjust():
 	try:
 		from RecordTimer import RecordTimerEntry
 		from ServiceReference import ServiceReference
-		timer = RecordTimerEntry(ServiceReference("1:0:1:0:0:0:0:0:0:0"), 0, 0, '', '', 0)
-		if hasattr(timer, "autoadjust"):
+		dummyTimerObject = RecordTimerEntry(ServiceReference("1:0:1:0:0:0:0:0:0:0"), 0, 0, None, None, 0)
+		if hasattr(dummyTimerObject, "autoadjust"):
 			return True
 	except:
 		pass
 	return False
+
+def getKindOfTimerChoices():
+	from RecordTimer import RecordTimerEntry
+	from ServiceReference import ServiceReference
+	dummyTimerObject = RecordTimerEntry(ServiceReference("1:0:1:0:0:0:0:0:0:0"), 0, 0, None, None, 0)
+	print("[SerienRecorder] RecordTimerEntry attributes", dir(dummyTimerObject))
+
+	kindOfTimerChoices = [("0", "Aufnehmen")]
+	if hasattr(dummyTimerObject, 'justplay'):
+		print("[SerienRecorder] RecordTimerEntry has 'justplay'")
+		kindOfTimerChoices.append(("1", "Umschalten"))
+	if hasattr(dummyTimerObject, 'always_zap') or hasattr(dummyTimerObject, 'zapbeforerecord'):
+		print("[SerienRecorder] RecordTimerEntry has 'always_zap' or 'zapbeforerecord'")
+		kindOfTimerChoices.append(("2", "Umschalten und aufnehmen"))
+	if hasattr(dummyTimerObject, 'justremind'):
+		print("[SerienRecorder] RecordTimerEntry has 'justremind'")
+		kindOfTimerChoices.append(("4", "Erinnerung"))
+
+	return kindOfTimerChoices
 
 def base64_encode(bytes_or_str):
 	import base64

@@ -859,6 +859,9 @@ class ApiGetSettingsResource(ApiBaseResource):
 		from .SerienRecorderSetupScreen import getSRSkins
 		skins = getSRSkins()
 
+		from .SerienRecorderHelpers import getKindOfTimerChoices
+		kindOfTimerChoices = getKindOfTimerChoices()
+
 		data = {
 			'system' : {
 				'changed' : False,
@@ -939,7 +942,8 @@ class ApiGetSettingsResource(ApiBaseResource):
 				'alternativeBouquet' : config.plugins.serienRec.AlternativeBouquet.value,
 				'useAlternativeChannel' : config.plugins.serienRec.useAlternativeChannel.value,
 				'preferMainBouquet' : config.plugins.serienRec.preferMainBouquet.value,
-				'boxBouquets' : [item[1] for item in boxBouquets]
+				'boxBouquets' : [item[1] for item in boxBouquets],
+				'kindOfTimerChoices' : kindOfTimerChoices
 			},
 			'optimization': {
 				'changed' : False,

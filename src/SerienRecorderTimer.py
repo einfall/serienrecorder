@@ -1,7 +1,7 @@
 # coding=utf-8
 
 # This file contains the SerienRecoder Series Planner
-import time, datetime, sys
+import time, datetime
 import NavigationInstance
 
 from Components.config import config
@@ -13,11 +13,7 @@ from Tools import Notifications
 from . import SerienRecorder
 from .SerienRecorderLogWriter import SRLogger
 from .SerienRecorderDatabase import SRDatabase
-from .SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname, PY2
-
-__C_JUSTPLAY__ = 0
-__C_ZAPBEFORERECORD__ = 1
-__C_JUSTREMIND__ = 2
+from .SerienRecorderHelpers import STBHelpers, TimeHelpers, getDirname
 
 class serienRecTimer:
 	def __init__(self):
@@ -1158,67 +1154,66 @@ class serienRecBoxTimer:
 
 	@staticmethod
 	def addTimer(serviceref, begin, end, name, description, eit, disabled, dirname, vpsSettings, tags, autoAdjust, kindOfTimer, silent, logentries=None):
-		from .SerienRecorderHelpers import hasAutoAdjust
 		recordHandler = NavigationInstance.instance.RecordTimer
 
 		if not silent:
 			if disabled:
-				print("[SerienRecorder] Versuche deaktivierten Timer anzulegen: %s [%s]" % (name, dirname))
+				print("[SerienRecorder] Try to create deactivated timer: %s [%s]" % (name, dirname))
 				SRLogger.writeLogFilter("timerDebug", "Versuche deaktivierten Timer anzulegen: ' %s ' - %s" % (name, dirname))
 			else:
-				print("[SerienRecorder] Versuche Timer anzulegen: %s [%s]" % (name, dirname))
+				print("[SerienRecorder] Try to create timer: %s [%s]" % (name, dirname))
 				SRLogger.writeLogFilter("timerDebug", "Versuche Timer anzulegen: ' %s ' - %s" % (name, dirname))
 
-		justplay = bool(int(kindOfTimer) & (1 << __C_JUSTPLAY__))
-		justremind = bool(int(kindOfTimer) & (1 << __C_JUSTREMIND__))
-		zapbeforerecord = bool(int(kindOfTimer) & (1 << __C_ZAPBEFORERECORD__))
-
 		try:
-			try:
-				print("[SerienRecorder] Trying to instantiate RecordTimerEntry")
-				timer = RecordTimerEntry(
-					ServiceReference(serviceref),
-					int(begin),
-					int(end),
-					name,
-					description,
-					int(eit),
-					disabled=disabled,
-					justplay=justplay,
-					zapbeforerecord=zapbeforerecord,
-					justremind=justremind,
-					afterEvent=int(config.plugins.serienRec.afterEvent.value),
-					dirname=dirname)
-			except Exception as e:
-				print("[SerienRecorder] Exception addTimer: " + str(e))
-				if PY2:
-					sys.exc_clear()
+			timer = RecordTimerEntry(ServiceReference(serviceref), int(begin), int(end), name, description, int(eit))
 
-				print("[SerienRecorder] Trying to instantiate alternative RecordTimerEntry")
-				timer = RecordTimerEntry(
-					ServiceReference(serviceref),
-					int(begin),
-					int(end),
-					name,
-					description,
-					int(eit),
-					disabled,
-					justplay | justremind,
-					afterEvent=int(config.plugins.serienRec.afterEvent.value),
-					dirname=dirname,
-					tags=None)
+			# Set disabled
+			print("[SerienRecorder] Setting disabled")
+			timer.disabled = disabled
+
+			# Set afterEvent
+			print("[SerienRecorder] Setting afterEvent")
+			timer.afterEvent = int(config.plugins.serienRec.afterEvent.value)
+
+			# Set dirname
+			print("[SerienRecorder] Setting dirname")
+			timer.dirname = dirname
+
+			# Set kind of timer
+			if kindOfTimer == "1":
+				# Zap
+				print("[SerienRecorder] Setting justplay")
+				timer.justplay = True
+
+			if kindOfTimer == "2":
+				# Zap and record
+				if hasattr(timer, 'zapbeforerecord'):
+					print("[SerienRecorder] Setting zapbeforerecord")
+					timer.zapbeforerecord = True
+				if hasattr(timer, 'always_zap'):
+					print("[SerienRecorder] Setting always_zap")
+					timer.always_zap = True
+
+			if kindOfTimer == "4":
+				# Remind
+				if hasattr(timer, 'justremind'):
+					print("[SerienRecorder] Setting justremind")
+					timer.justremind = True
+				else:
+					print("[SerienRecorder] Setting justplay")
+					timer.justplay = True
+
 
 			print("[SerienRecorder] Setting repeated")
 			timer.repeated = 0
-			try:
-				print("[SerienRecorder] Setting autoAdjust")
-				if hasAutoAdjust() and autoAdjust is not None:
-					print("[SerienRecorder] Current autoAdjust for timer [%s]: %s" % (name, str(timer.autoadjust)))
-					print("[SerienRecorder] autoAdjust is: %s" % str(autoAdjust))
-					timer.autoadjust = autoAdjust
-					print("[SerienRecorder] Set autoAdjust for timer [%s] to: %s" % (name, str(timer.autoadjust)))
-			except:
-				print("[SerienRecorder] Failed to set autoAdjust for timer [%s] - missconfigured database" % name)
+
+			# Set autoAdjust
+			print("[SerienRecorder] Setting autoAdjust")
+			if hasattr(timer, 'autoadjust') and autoAdjust is not None:
+				print("[SerienRecorder] Current autoAdjust for timer [%s]: %s" % (name, str(timer.autoadjust)))
+				print("[SerienRecorder] autoAdjust is: %s" % str(autoAdjust))
+				timer.autoadjust = autoAdjust
+				print("[SerienRecorder] Set autoAdjust for timer [%s] to: %s" % (name, str(timer.autoadjust)))
 
 			# Add tags
 			print("[SerienRecorder] Getting tags")

@@ -146,11 +146,12 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.updateFromEPG = ConfigYesNo(default=config.plugins.serienRec.eventid.value)
 			self.enable_updateFromEPG = ConfigYesNo(default=False)
 
+		from .SerienRecorderHelpers import getKindOfTimerChoices
 		if str(kindOfTimer).isdigit():
-			self.kindOfTimer = ConfigSelection(choices=[("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default=str(kindOfTimer))
+			self.kindOfTimer = ConfigSelection(choices=getKindOfTimerChoices(), default=str(kindOfTimer))
 			self.enable_kindOfTimer = ConfigYesNo(default=True)
 		else:
-			self.kindOfTimer = ConfigSelection(choices=[("1", "umschalten"), ("0", "aufnehmen"), ("2", "umschalten und aufnehmen"), ("4", "Erinnerung")], default=str(config.plugins.serienRec.kindOfTimer.value))
+			self.kindOfTimer = ConfigSelection(choices=getKindOfTimerChoices(), default=str(config.plugins.serienRec.kindOfTimer.value))
 			self.enable_kindOfTimer = ConfigYesNo(default=False)
 
 		if str(skipSeriesServer).isdigit():
