@@ -11,6 +11,8 @@ from .SerienRecorderHelpers import decrypt, encrypt, STBHelpers, SRAPIVERSION, S
 
 import json, os, time, re
 
+SERIENRECORDER_WEBINTERFACE_CHANGELOGPATH = '/usr/lib/enigma2/python/Plugins/Extensions/serienrecorder/web-data/Changelog.md'
+
 def getApiList(session):
 	root = ApiBaseResource()
 	childs = []
@@ -52,6 +54,8 @@ def getApiList(session):
 	childs.append( ('autocheck', ApiExecuteAutoCheckResource() ) )
 	childs.append( ('log', ApiGetLogResource() ) )
 	childs.append( ('info', ApiGetInfoResource() ) )
+	childs.append( ('getChangelog', ApiGetChangelogResource() ) )
+	childs.append( ('removeChangelog', ApiRemoveChangelogResource() ) )
 	childs.append( ('checkforupdate', ApiCheckForUpdateResource() ) )
 	childs.append( ('installupdate', ApiInstallUpdateResource() ) )
 
@@ -1740,6 +1744,27 @@ class ApiGetInfoResource(ApiBaseResource):
 			'channelListeUpToDate': bool(channelListUpToDate)
 		}
 		return self.returnResult(req, True, data)
+
+class ApiGetChangelogResource(ApiBaseResource):
+	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetChangelog")
+
+		content = None
+		if fileExists(SERIENRECORDER_WEBINTERFACE_CHANGELOGPATH):
+			changelogFile = open(SERIENRECORDER_WEBINTERFACE_CHANGELOGPATH, "r")
+			content = changelogFile.read()
+			changelogFile.close()
+
+		return self.returnResult(req, True, content)
+
+class ApiRemoveChangelogResource(ApiBaseResource):
+	def render_POST(self, req):
+		print("[SerienRecorder] ApiRemoveChangelog")
+
+		if fileExists(SERIENRECORDER_WEBINTERFACE_CHANGELOGPATH):
+			os.remove(SERIENRECORDER_WEBINTERFACE_CHANGELOGPATH)
+
+		return self.returnResult(req, True, True)
 
 class ApiCheckForUpdateResource(ApiBaseResource):
 	def render_GET(self, req):
