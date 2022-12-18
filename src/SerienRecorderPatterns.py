@@ -6,6 +6,7 @@ default_timer_patterns = [
 		("{serie:s} S{staffel:s}E{episode:s}", "Serienname S01E01"),
 		("{serie:s} - S{staffel:s}E{episode:s} - {titel:s}", "Serienname - S01E01 - Episodenname"),
 		("{serie:s} S{staffel:s}E{episode:s} {titel:s}", "Serienname S01E01 Episodenname"),
+		("{serie:s}_S{staffel:s}E{episode:s}_{titel:s}", "Seriennamen_S01E01_Episodenname"),
 		("{serie:s} {titel:s}", "Serienname Episodenname"),
 		("{serie:s} - {titel:s}", "Serienname - Episodenname"),
 
