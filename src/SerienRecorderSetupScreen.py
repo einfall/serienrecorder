@@ -138,6 +138,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.TimerName = ConfigSelection(choices=pattern_title_choices, default=pattern_title_default)
 	config.plugins.serienRec.TimerDescription = ConfigSelection(choices=pattern_description_choices, default=pattern_description_default)
 	config.plugins.serienRec.forceManualRecording = ConfigYesNo(default=False)
+	config.plugins.serienRec.forceBookmarkRecording = ConfigYesNo(default=False)
 	config.plugins.serienRec.splitEventTimer = ConfigSelection(choices=[("0", "Nein"), ("1", "Timer anlegen"), ("2", "Einzelepisoden bevorzugen")], default="0")
 	config.plugins.serienRec.splitEventTimerCompareTitle = ConfigYesNo(default=True)
 	config.plugins.serienRec.addSingleTimersForEvent = ConfigYesNo(default=False)
@@ -422,6 +423,7 @@ def saveSettings():
 	config.plugins.serienRec.TimerName.save()
 	config.plugins.serienRec.TimerDescription.save()
 	config.plugins.serienRec.forceManualRecording.save()
+	config.plugins.serienRec.forceBookmarkRecording.save()
 	config.plugins.serienRec.splitEventTimer.save()
 	config.plugins.serienRec.splitEventTimerCompareTitle.save()
 	config.plugins.serienRec.addSingleTimersForEvent.save()
@@ -989,6 +991,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Timername:", config.plugins.serienRec.TimerName))
 		self.list.append(getConfigListEntry("Timerbeschreibung:", config.plugins.serienRec.TimerDescription))
 		self.list.append(getConfigListEntry("Manuelle Timer immer anlegen:", config.plugins.serienRec.forceManualRecording))
+		self.list.append(getConfigListEntry("Merkzettel Timer immer anlegen:", config.plugins.serienRec.forceBookmarkRecording))
 		self.list.append(getConfigListEntry("Event-Programmierungen behandeln:", config.plugins.serienRec.splitEventTimer))
 		if config.plugins.serienRec.splitEventTimer.value != "0":
 			self.list.append(getConfigListEntry("    Episoden-Titel beim Vergleich berücksichtigen:", config.plugins.serienRec.splitEventTimerCompareTitle))
@@ -1343,10 +1346,11 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.TimerDescription: (
 				"Es kann ausgewählt werden, wie die Timerbeschreibung gebildet werden soll."),
 			config.plugins.serienRec.forceManualRecording: (
-				"Bei 'nein' erfolgt beim manuellen Anlegen von Timern in 'Sendetermine' eine Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen erreicht wurde. "
-				"In diesem Fall wird der Timer NICHT angelegt, und es erfolgt ein entsprechender Eintrag im log.\n"
-				"Bei 'ja' wird beim manuellen Anlegen von Timern in 'Sendetermine' die Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen vorhanden sind, "
-				"ausgeschaltet. Der Timer wird also auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht."),
+				"Bei 'ja' erfolgt beim manuellen Anlegen von Timern aus der Sendetermine Ansicht keine Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen erreicht ist.\n"
+				"Der Timer wird also auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht."),
+			config.plugins.serienRec.forceBookmarkRecording: (
+				"Bei 'ja' erfolgt bei Timern die vom Merkzettel angelegt werden sollen keine Überprüfung, ob für die zu timende Folge bereits die maximale Anzahl von Timern und/oder Aufnahmen erreicht ist.\n"
+				"Der Timer wird also auf jeden Fall angelegt, sofern nicht ein Konflikt mit anderen Timern besteht."),
 			config.plugins.serienRec.splitEventTimer: (
 				"Bei 'nein' werden Event-Programmierungen (S01E01/1x02/1x03) als eigenständige Sendungen behandelt. "
 				"Ansonsten wird versucht die einzelnen Episoden eines Events erkennen.\n\n"

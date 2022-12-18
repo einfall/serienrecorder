@@ -938,6 +938,7 @@ class ApiGetSettingsResource(ApiBaseResource):
 				'timerDescription' : config.plugins.serienRec.TimerDescription.value,
 				'timerDescriptionOptions' : pattern_description_choices,
 				'forceManualRecording' : config.plugins.serienRec.forceManualRecording.value,
+				'forceBookmarkRecording' : config.plugins.serienRec.forceBookmarkRecording.value,
 				'splitEventTimer' : config.plugins.serienRec.splitEventTimer.value,
 				'splitEventTimerCompareTitle' : config.plugins.serienRec.splitEventTimerCompareTitle.value,
 				'addSingleTimerForEvent' : config.plugins.serienRec.addSingleTimersForEvent.value,
@@ -1087,6 +1088,7 @@ class ApiSetSettingsResource(ApiBaseResource):
 			config.plugins.serienRec.TimerName.value = data['timer']['timerName']
 			config.plugins.serienRec.TimerDescription.value = data['timer']['timerDescription']
 			config.plugins.serienRec.forceManualRecording.value = data['timer']['forceManualRecording']
+			config.plugins.serienRec.forceBookmarkRecording.value = data['timer']['forceBookmarkRecording']
 			config.plugins.serienRec.splitEventTimer.value = data['timer']['splitEventTimer']
 			config.plugins.serienRec.splitEventTimerCompareTitle.value = data['timer']['splitEventTimerCompareTitle']
 			config.plugins.serienRec.addSingleTimersForEvent.value = data['timer']['addSingleTimerForEvent']

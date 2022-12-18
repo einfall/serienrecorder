@@ -487,32 +487,33 @@ class serienRecTimer:
 			startTimeLowBound = int(timer_start_unixtime) - (int(STBHelpers.getEPGTimeSpan()) * 60)
 			startTimeHighBound = int(timer_start_unixtime) + (int(STBHelpers.getEPGTimeSpan()) * 60)
 
-			if self.database.timerExists(webChannel, serien_fsid, staffel, episode, startTimeLowBound, startTimeHighBound):
-				SRLogger.writeLogFilter("added", "' %s ' - Timer für diese Episode%s wurde bereits erstellt → ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
-				##self.removeTransmission(episode, serien_fsid, staffel, start_unixtime, stbRef, title)
-				TimerDone = True
-				continue
-
-			if config.plugins.serienRec.selectBouquets.value and config.plugins.serienRec.preferMainBouquet.value:
-				(primary_bouquet_active, secondary_bouquet_active) = self.database.isBouquetActive(webChannel)
-				(count_manually, count_primary_bouquet, count_secondary_bouquet) = self.countEpisodeByBouquet(episode, serien_fsid, staffel, title)
-				if count_manually >= AnzahlAufnahmen or (count_primary_bouquet >= AnzahlAufnahmen or (secondary_bouquet_active and count_secondary_bouquet >= AnzahlAufnahmen) or (primary_bouquet_active and count_primary_bouquet >= AnzahlAufnahmen)):
-					SRLogger.writeLogFilter("added", "' %s ' - Eingestellte Anzahl Timer für diese Episode%s wurden bereits erstellt → ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
+			if not (vomMerkzettel and config.plugins.serienRec.forceBookmarkRecording.value):
+				if self.database.timerExists(webChannel, serien_fsid, staffel, episode, startTimeLowBound, startTimeHighBound):
+					SRLogger.writeLogFilter("added", "' %s ' - Timer für diese Episode%s wurde bereits erstellt → ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
+					##self.removeTransmission(episode, serien_fsid, staffel, start_unixtime, stbRef, title)
 					TimerDone = True
-					break
-			else:
-				# check anzahl timer und auf hdd
-				bereits_vorhanden, bereits_vorhanden_HDD = self.countEpisode(check_SeasonEpisode, dirname, episode, serien_fsid, serien_name, staffel, title)
+					continue
 
-				if bereits_vorhanden >= AnzahlAufnahmen:
-					SRLogger.writeLogFilter("added", "' %s ' - Eingestellte Anzahl Timer für diese Episode%s wurden bereits erstellt → ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
-					TimerDone = True
-					break
+				if config.plugins.serienRec.selectBouquets.value and config.plugins.serienRec.preferMainBouquet.value:
+					(primary_bouquet_active, secondary_bouquet_active) = self.database.isBouquetActive(webChannel)
+					(count_manually, count_primary_bouquet, count_secondary_bouquet) = self.countEpisodeByBouquet(episode, serien_fsid, staffel, title)
+					if count_manually >= AnzahlAufnahmen or (count_primary_bouquet >= AnzahlAufnahmen or (secondary_bouquet_active and count_secondary_bouquet >= AnzahlAufnahmen) or (primary_bouquet_active and count_primary_bouquet >= AnzahlAufnahmen)):
+						SRLogger.writeLogFilter("added", "' %s ' - Eingestellte Anzahl Timer für diese Episode%s wurden bereits erstellt → ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
+						TimerDone = True
+						break
+				else:
+					# check anzahl timer und auf hdd
+					bereits_vorhanden, bereits_vorhanden_HDD = self.countEpisode(check_SeasonEpisode, dirname, episode, serien_fsid, serien_name, staffel, title)
 
-				if bereits_vorhanden_HDD >= AnzahlAufnahmen:
-					SRLogger.writeLogFilter("disk", "' %s ' - Episode%s bereits auf HDD vorhanden → ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
-					TimerDone = True
-					break
+					if bereits_vorhanden >= AnzahlAufnahmen:
+						SRLogger.writeLogFilter("added", "' %s ' - Eingestellte Anzahl Timer für diese Episode%s wurden bereits erstellt → ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
+						TimerDone = True
+						break
+
+					if bereits_vorhanden_HDD >= AnzahlAufnahmen:
+						SRLogger.writeLogFilter("disk", "' %s ' - Episode%s bereits auf HDD vorhanden → ' %s '" % (label_serie, optionalText, check_SeasonEpisode))
+						TimerDone = True
+						break
 
 			# check for excluded weekdays - this can be done early, so we can skip all other checks
 			# if the transmission date is on an excluded weekday
@@ -586,7 +587,7 @@ class serienRecTimer:
 					if not self.database.getForceRecording(serien_fsid, config.plugins.serienRec.forceRecording.value):
 						continue
 
-					# backup timer data for post processing
+					# backup timer data for post-processing
 					show_start = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
 					SRLogger.writeLogFilter("timeRange", "' %s ' - Backup Timer → %s" % (label_serie, show_start))
 					forceRecordings.append((title, staffel, episode, label_serie, timer_start_unixtime,
@@ -627,7 +628,7 @@ class serienRecTimer:
 		self.tempDB.commitTransaction()
 
 		if not TimerDone:
-			# post processing for rerun
+			# post-processing for rerun
 			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, dirname, serien_name, serien_wlid, serien_fsid, markerType, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel, current_time, future_time in forceRecordings_W:
 				if config.plugins.serienRec.selectBouquets.value and config.plugins.serienRec.preferMainBouquet.value:
 					(primary_bouquet_active, secondary_bouquet_active) = self.database.isBouquetActive(webChannel)
@@ -646,7 +647,7 @@ class serienRecTimer:
 					TimerDone = True
 
 		if not TimerDone:
-			# post processing for forced recordings
+			# post-processing for forced recordings
 			for title, staffel, episode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, dirname, serien_name, serien_wlid, serien_fsid, markerType, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel, current_time, future_time in forceRecordings:
 				if config.plugins.serienRec.selectBouquets.value and config.plugins.serienRec.preferMainBouquet.value:
 					(primary_bouquet_active, secondary_bouquet_active) = self.database.isBouquetActive(webChannel)
@@ -667,7 +668,7 @@ class serienRecTimer:
 					TimerDone = True
 
 		if not TimerDone:
-			# post processing event recordings
+			# post-processing event recordings
 			for singleTitle, staffel, singleEpisode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, dirname, serien_name, serien_wlid, serien_fsid, markerType, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel, current_time, future_time in eventRecordings[:]:
 				if self.shouldCreateEventTimer(serien_fsid, staffel, singleEpisode, singleTitle):
 					show_start = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
