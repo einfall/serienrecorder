@@ -153,6 +153,9 @@ def getEmailData():
 	html = html.replace('=\r\n', '').replace('=\n', '').replace('=\r', '').replace('\n', '').replace('\r', '')
 	html = html.replace('=3D', '=')
 
+	# Repair incorrect tags in 'IM STREAM' table rows
+	html = re.sub('(IM STREAM.*?)(<\/em><\/div>)', '\\1', html, flags=re.S)
+
 	try:
 
 		def getTextContentByTitle(node, titleValue, default):
@@ -177,7 +180,7 @@ def getEmailData():
 		from . import AdvancedHTMLParser
 		SRLogger.writeLog('Starte HTML Parsing der TV-Planer E-Mail.', True)
 		print("[SerienRecorder] TV-Planer: Start HTML parsing")
-		parser = AdvancedHTMLParser.AdvancedHTMLParser()
+		parser = AdvancedHTMLParser.IndexedAdvancedHTMLParser()
 
 		if PY2:
 			from HTMLParser import HTMLParser
@@ -229,7 +232,7 @@ def getEmailData():
 						url_title = url_title_regexp.findall(toStr(transmissionColumn.firstChild.toHTML()))[0]
 						transmission.extend(url_title)
 					if transmissionColumn.lastChild:
-						# Last element => End time (it has to be filled with a time because later on the time will be splitted)
+						# Last element => End time (it has to be filled with a time because later on the time will be split)
 						endtime = endtime_regexp.findall(toStr(transmissionColumn.lastChild.toHTML()))
 						if endtime:
 							episodeInfo[4] = endtime[0]
@@ -237,7 +240,7 @@ def getEmailData():
 					divPartIndex = 0
 					for transmissionPart in transmissionColumn.childNodes:
 						if transmissionPart is transmissionColumn.lastChild:
-							# Skip part if it the "last" part
+							# Skip part if it is the "last" part
 							continue
 						if transmissionPart.tagName == 'div' and divPartIndex == 0:
 							# First div element => Season / Episode / Title / e.g. NEU
