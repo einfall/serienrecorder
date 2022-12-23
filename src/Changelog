@@ -1,140 +1,48 @@
-##Version 4.5.5-beta (12.11.2022)
+##Version 4.6.0 (23.12.2022)
 
-**Änderungen in der 4.5.5-beta**
-- Fehler beim Anlegen von manuellen Timern aus dem Webinterface behoben
-- Logansicht: Man kann wieder an das Ende bzw. den Anfang springen
-- Picons mit Namen sollten jetzt auch wieder geladen werden
-- Beim Aktualiseren von Timern wird jetzt statt des Aufnahmepfades der Sender im Log angezeigt
-- Im SerienRecorder Skin 2 FHD wird jetzt die Hintergrundfarbe der Selektion gesetzt
+Diese Version stellt die SerienRecorder API Version 2.7 bereit.
+Es sollte ein Update auf die SerienRecorder Webinterface Version 1.0.0 durchgeführt werden.
 
-**Änderungen in der 4.5.4-beta**
-- Picons werden jetzt auch für IPTV Sender geladen
-- Suche im EPG optimiert
-- Die Option "Standard Bouquet bevorzugen" führte beim Timer-Suchlauf, bei Serien ohne Einträge in der Timer-Liste, zum Absturz 
-- Tags am Serien-Marker führen nicht mehr zum Absturz beim Anlegen von Timern
-- In der Sendetermine Ansicht können nicht erlaubte Staffeln alternativ in grau dargestellt werden
-- Log Screen überarbeitet, Einträge werden jetzt farbig hervorgehoben
-
-**Änderungen in der 4.5.3-beta**
-- Timer werden jetzt auch mit der aktuellen openATV 7.x Version wieder erstellt
-- Fehler beim Setzen des Standard Datenbank Pfades korrigiert
-
-**Änderungen in der 4.5.2-beta**
+**Neue Funktionen:**
 - Einträge in der UNDO Liste, die älter als 30 Tage sind, werden jetzt beim automatischen Suchlauf gelöscht
-- Encoding bei Tags korrigiert
 - Aufnahmeverzeichnisse werden jetzt normalisiert, damit werden z.B. /hdd/movie und /hdd/movie/ als gleich erkannt
-- Es konnte vorkommen, dass eine Episode nicht in der Timer-Liste gefunden wurde und dann noch ein weiterer Timer angelegt wurde
-- Einträge in der Timer-Liste werden jetzt über die ID gelöscht, so werden bei mehreren identischen Einträgen nicht mehr alle gelöscht
 - Timer die nicht in die SerienRecorder Datenbank eingefügt werden sollen, werden jetzt in der Statistik nach dem Suchlauf angezeigt
-- Bereinigen der Timer-Liste bei der Staffelauswahl hat in einer bestimmten Situation auch Specials gelöscht obwohl diese noch ausgewählt waren
-- Selektionsfarbe in der Senderzuordnung korrigiert
+- Picons werden jetzt auch für IPTV Sender geladen, sollte es keines geben, wird versucht das entsprechende Picon des DVB Senders zu laden
+- In der Sendetermine Ansicht können nicht erlaubte Staffeln alternativ in grau dargestellt werden
+- Zusätzlicher Timernamen "Serienname_S01E01_Episodenname" (siehe Anmerkung 1) (dafür muss die Datei '/etc/enigma2/SerienRecorder.timer-pattern.json' gelöscht werden)
+- Neue Option 'Merkzettel Timer immer anlegen' - Merkzettel Timer werden auch dann angelegt, wenn für die Episode bereits ein Timer angelegt wurde
 
-**Änderungen in der 4.5.1-beta**
-- Der Changelog Screen wurde überarbeitet, die Änderungen werden jetzt schöner dargestellt.
+**Änderungen:**
+- Der Changelog Screen wurde überarbeitet, die Änderungen werden jetzt schöner dargestellt
 - Der Update Screen wurde überarbeitet
+- Log Screen überarbeitet, Einträge werden jetzt farbig hervorgehoben
+- In den Skins wurde die Grafik für die Zeilenselektion entfernt, sodass jetzt die Standard Selektion benutzt wird
+- Einträge in der Timer-Liste werden jetzt über die ID gelöscht, so werden bei mehreren identischen Einträgen nicht mehr alle gelöscht
+- Suche im EPG optimiert
+- Beim Aktualiseren von Timern wird jetzt statt des Aufnahmepfades der Sender im Log angezeigt
+- Code für das Anlegen von Timern vereinheitlicht - so werden auch beim openATV Image die Timer mit der richtigen Timer-Art angelegt
+- In den Einstellungen (global/Marker) wird jetzt die mögliche Auswahl für die Timer-Art je nach verwendetem Image ermittelt
+
+**Bugfixes:**
 - Fehler beim Speichern der TV-Planer Einstellungen im Webinterface behoben
 - Sortierung der Timer-Liste für einen Serien-Marker im Webinterface wurde korrigiert
 - Fehler beim Laden von Tags am Serien-Marker im alten Format wurde korrigiert
 - Springen in der Serien-Marker Ansicht zum nächsten Anfangsbuchstaben funktioniert jetzt auch dann korrekt, wenn nach "Wunschliste" Regeln sortiert wird
-- In den Skins wurde die Grafik für die Zeilenselektion entfernt, sodass jetzt die Standard Selektion benutzt wird
-
-**Neue Funktionen:**
-- Beim TV-Planer Suchlauf wird jetzt eine Senderprüfung durchgeführt.
-- In der Serien-/Staffelstart Ansicht werden jetzt mit der blauen Taste die Serien für alle Sender geladen.
-- Neue Option „Backup-Dateien komprimieren“ zum Komprimieren der Backup-Dateien (siehe Anmerkungen 1)
-- Im openATV Image ab 7.1 gab es ein Problem mit der Darstellung der Picons im SerienRecorder (siehe Anmerkungen 2)
-- Wenn man die Staffel am Serien-Marker einschränkt, werden auf Wunsch auch automatisch die Timer-Liste bereinigt. (siehe Anmerkungen 3)
-- Wenn man in den globalen Einstellungen die Ansicht ohne zu speichern verlässt kommt jetzt eine Warnung
-- Neue Ansicht zum Wiederherstellen von gelöschten Einträgen aus der Timer-Liste. (siehe Anmerkungen 4)
-- In der Serien-Marker Ansicht kann man mit den Bouquet/Channel Tasten durch die Anfangsbuchstaben springen, also von A nach B nach C usw.
-
-**Änderungen:**
-- An vielen Stellen wird jetzt statt der Wunschliste-ID die Fernsehserie-ID verwendet.
-- Beim manuellen Timer-Suchlauf werden jetzt auch vorher die Verzeichnisse geprüft.
-- Die Suchergebnisse werden jetzt auch farbig dargestellt (grün/rot), wenn für die Serie bereits ein Serien-Marker vorhanden ist.
-- Beim Timer-Suchlauf werden jetzt zusätzliche Informationen ausgegeben, die hoffentlich bei der Fehlersuche helfen (siehe Anmerkung 5)
-- Design der Sendetermine Ansicht geändert
-- Die Option in den Einstellungen "Manuelle Timer immer erstellen" wurde in "Manuelle Timer immer anlegen" umbenannt.
-- Farben für Serienname bzw. Episodenname verwendet wurden in allen Ansichten angeglichen.
-- Titel in der Top 30 Ansicht hinzugefügt: Die Serien mit den meisten Abrufen in den letzten 12 Monaten
-- Die Senderzuordnung wurde überarbeitet, sodass jetzt (fast) überall im SerienRecorder die ServiceRef verwendet wird. (siehe Anmerkungen 6)
-- Konfliktbehandlung von Timern korrigiert (siehe Anmerkung 7)
-- Prüfung auf Änderungen an der Senderliste in der Senderzuordnung (Taste 8) eingefügt (siehe Anmerkung 8)
-- Setzen/Ändern der TVDB-ID komplett überarbeitet (siehe Anmerkung 9)
-- Verhalten der Changelog Ansicht beim Start des SerienRecorders verbessert.
-
-**Bugfixes:**
-- In seltenen Fällen konnte es vorkommen, dass zwar ein Timer angelegt wurde, aber kein Eintrag in die Timer-Liste erfolgte.
-- Absturz beim Timer-Suchlauf, wenn die TV-Planer E-Mail aktiviert war und der SerienServer nicht erreichbar war.
-- Anpassungen für openATV 7.1 - es gab Probleme bei der Verarbeitung der TV-Planer E-Mail.
-- Wenn man zwischen der Serien-Planer und der Top 30 Ansicht wechselt wird die Selektion zurückgesetzt.
-- Fehler beim Hinzufügen von Einträgen in die Timer-Liste korrigiert (Episodenliste und Timer-Liste).
-- Keine Bootschleife mehr, wenn das Webinterface komplett entfernt wurde, aber das SerienRecorder Webinterface noch aktiviert ist.
-- Anlegen von manuellen Timern aus dem SerienRecorder Webinterface funktioniert jetzt wieder korrekt.
-- Tags werden jetzt anders in der Datenbank gespeichert um mit Python 3 kompatibel zu sein.
-- Beim Speichern der Serien-Marker Einstellungen über das Webinterface gehen die Tags nicht mehr kaputt.
+- Encoding bei Tags korrigiert
+- Es konnte vorkommen, dass eine Episode nicht in der Timer-Liste gefunden wurde und dann noch ein weiterer Timer angelegt wurde
+- Bereinigen der Timer-Liste bei der Staffelauswahl hat in einer bestimmten Situation auch Specials gelöscht, obwohl diese noch ausgewählt waren
+- Selektionsfarbe in der Senderzuordnung korrigiert
+- Timer werden jetzt auch mit der aktuellen openATV 7.x Version wieder erstellt
+- Fehler beim Setzen des Standard Datenbank Pfades korrigiert
+- Die Option "Standard Bouquet bevorzugen" führte beim Timer-Suchlauf, bei Serien ohne Einträge in der Timer-Liste, zum Absturz
+- Tags am Serien-Marker führen nicht mehr zum Absturz beim Anlegen von Timern
+- Fehler beim Anlegen von manuellen Timern aus dem Webinterface behoben
+- Korrektur eines sporadischen HTML Fehlers in der TV-Planer E-Mail
 
 **Anmerkungen:**
-1. Wenn die Option "Backup-Dateien komprimieren“ aktiv ist, wird ein .tar.gz von den Dateien aus dem Backup gemacht,
-dabei wird auch die Verzeichnisstruktur beibehalten, sodass man das Backup leichter wieder zurückspielen kann.
-Ein weiterer Vorteil ist, dass die Backups so deutlich kleiner sind, bei mir 250 kB zu 980 kB.
-Zu beachten ist, dass wenn man die Komprimierung aktiviert, nur noch diese Dateien automatisch nach x Tagen gelöscht werden,
-nicht aber die Ordner die bisher angelegt wurden, man muss diese also von Hand löschen. 
-Das gilt natürlich auch im umgekehrten Fall, wenn die Komprimierung irgendwann wieder deaktiviert wird.
-
-2. Wenn man Picons mit Sendernamen verwendet, musste die Picon Datei bisher genauso heißen wie der Sender. 
-Jetzt wird die Datei zusätzlich mit einer normierten Norm gesucht.
-Alle Leerzeichen im Sendernamen werden entfernt und er wird in Kleinbuchstaben umgewandelt.
-Aus "Das Erste" wird also "daserste". So werden die Picons zuverlässiger gefunden, weil beide Varianten gesucht werden.
-Außerdem wird das Default Picon jetzt korrekt geladen, wenn kein Picon für den Sender gefunden wurde. 
-Das Default Picon stammt aus dem Image Skin: /usr/share/enigma2/skin_default/picon_default.png.
-
-3. Timer-Liste bei Staffeleinschränkung funktioniert, wenn man am Serien-Marker eine "ab Staffel" aktiviert hat. 
-Wenn man z.B. "ab Staffel 3" eingestellt hat und die Auswahl verlässt, fragt der SerienRecorder:
-"Sollen die Timer Einträge für ältere Staffeln aus der Datenbank gelöscht werden?"
-Bei "Ja" werden dann automatisch alle Timer-Einträge für die Staffeln 2, 1 und 0 sowie "Specials" dieser Serie gelöscht.
-Im Anschluss wird angezeigt, wie viele Einträge gelöscht wurden.
-Wenn man zusätzlich noch andere Staffeln gewählt hat, z.B. "Staffel 1" und "ab Staffel 3" würden 2, 0 und Specials gelöscht. 
-Falls "Specials" aktiviert waren, bleiben die natürlich erhalten.
-Wird Staffel 0 gewählt, werden bei Bedarf die Einträge bis zur gewählten Episode aus der Timer-Liste gelöscht.
-
-4. "Wiederherstellen gelöschter Timer-Eintrage" lässt sich in der Timer-Liste aufrufen:
-Timer-Liste (blaue Taste) -> Timer-Liste bearbeiten (OK) -> Wiederherstellen (blaue Taste).
-Dort hat man dann vier Funktionen: "Eintrag endgültig löschen" (rote Taste), "Eintrag wiederherstellen" (grüne Taste), 
-"Alle Einträge des ausgewählten Tages wiederherstellen" (gelbe Taste) und 
-"Alle Einträge der ausgewählten Serie wiederherstellen" (blaue Taste)
-
-5. Es wird geprüft, ob der in der E-Mail angegebene Sender auch im SerienRecorder zugeordnet ist.
-Falls nicht, wird eine entsprechende Meldung im Log ausgegeben.
-Der Sender ' xyz ' wurde in der TV-Planer E-Mail gefunden, ist aber im SerienRecorder nicht zugeordnet.
-' xyz ' - Für diesen Serien-Marker sind die Staffeln eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt.
-' xyz ' - Für diesen Serien-Marker sind die Sender eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt.
-Es wurden ' 194 ' Ausstrahlungstermine für ' 41 ' Serien vom SerienServer abgerufen.
-Berücksichtigt werden ' 143 ' Ausstrahlungstermine für ' 35 ' Serien.
-Dazu passend auch die Ausgabe, wenn man den TV-Planer Suchlauf nutzt:
-Es wurden ' 34 ' Ausstrahlungstermine für ' 10 ' Serien aus der TV-Planer E-Mail ausgelesen.
-Berücksichtigt werden ' 24 ' Ausstrahlungstermine für ' 9 ' Serien.
-
-6. Bisher wurden bei der Senderzuordnung im SerienRecorder neben der ServiceRef auch der Sendername in der Datenbank gespeichert. 
-Hat sich der Sendername oder die ServiceRef auf der Box verändert, dann hat der SerienRecorder Probleme bekommen.
-Durch die Änderungen in dieser Version wird der Sendername für die Anzeige live aus der Senderliste der Box ermittelt.
-So sieht man auch in der Senderzuordnung, wenn ein falscher Sender durch eine Änderung der ServiceRef vorhanden ist.
-Das Webinterface ist an dieser Stelle noch nicht komplett umgestellt.
-
-7. Offenbar gab es schon ziemlich lange ein Problem beim Timer-Suchlauf, wenn dabei ein Timerkonflikt auftrat.
-Dann hätte eigentlich ein deaktivierter Timer sowie ein Eintrag in die Timerkonflikt-Liste im SerienRecorder erstellt werden sollen.
-Das hat aber offenbar nur manchmal funktioniert und der deaktivierte Timer wurde mit falschen Vor- und Nachlaufzeiten angelegt.
-Ich habe jetzt die Erstellung von deaktivierten Timern, im Falle eines Konfliktes, komplett überarbeitet.
-
-8. Es gab schon seit einiger Zeit die Möglichkeit mit der Taste 8 in der Senderzuordnung eine Prüfung der Sender durchzuführen.
-Dabei wurde bisher aber nur geprüft, ob die im SerienRecorder zugewiesenen Sender noch in der Senderliste der Box vorhanden waren.
-Mit diesem Update habe ich die Funktion erweitert, sodass jetzt auch Namensänderungen und Umzüge von Sendern erkannt werden.
-
-9. Änderung bei der Eingabe der TVDB-ID (für diejenigen die die Berechtigung haben).
-Bisher konnte man die TVDB-ID im SerienRecorder nur händisch eingeben,
-man musste also zunächst im Webbrowser die TVDB-ID ermitteln und sie dann eingeben.
-Jetzt kann der SerienRecorder auch bei TheTVDB nach dem Namen der Serie suchen und die TVDB-ID kann bequem ausgewählt werden.
-
+1. Es gibt jetzt eine zusätzliche Auswahlmöglichkeit für den Timernamen (Serienname_S01E01_Episodenname).
+Damit der neue Eintrag in den Einstellungen erscheint, muss die Datei '/etc/enigma2/SerienRecorder.timer-pattern.json' gelöscht werden.
+Die Datei wird beim nächsten Start neu angelegt und enthält dann den neuen Timernamen.
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel
