@@ -124,6 +124,7 @@ class checkGitHubUpdate:
 			if remoteversion > version:
 				updateName = toStr(latestRelease['name'])
 				updateInfo = toStr(latestRelease['body'])
+				updateDate = toStr(latestRelease['published_at'])
 				downloadURL = None
 				downloadFileSize = 5 * 1024
 				for asset in latestRelease['assets']:
@@ -148,14 +149,14 @@ class checkGitHubUpdate:
 							break
 
 				if downloadURL:
-					return updateName, updateInfo, downloadURL, downloadFileSize
+					return updateName, updateInfo, updateDate, downloadURL, downloadFileSize
 
 			return None
 
 		def onUpdateAvailable(result):
 			if result:
-				(updateName, updateInfo, downloadURL, downloadFileSize) = result
-				self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, downloadURL, downloadFileSize)
+				(updateName, updateInfo, updateDate, downloadURL, downloadFileSize) = result
+				self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, updateDate, downloadURL, downloadFileSize)
 
 		def onUpdateCheckFailed():
 			print("[SerienRecorder] Update check failed")
@@ -182,8 +183,9 @@ class checkGitHubUpdateScreen(Screen):
 
 	skin = """
 		<screen name="SerienRecorderUpdateCheck" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20">
-			<widget name="headline" position="20,20" size="600,40" foregroundColor="#00ff4a3c" backgroundColor="#26181d20" transparent="1" font="Regular;26" valign="center" halign="left" />
-			<widget name="changelog" position="5,100" size="%d,%d" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand"/>
+			<widget name="headline" position="20,20" size="600,40" foregroundColor="#00ff4a3c" backgroundColor="#26181d20" transparent="1" font="Regular;26" halign="left" />
+			<widget name="dateline" position="20,60" size="600,40" foregroundColor="yellow" backgroundColor="#26181d20" transparent="1" font="Regular;16" halign="left" />
+			<widget name="changelog" position="5,100" size="%d,%d" foregroundColor="yellow" foregroundColorSelected="yellow" scrollbarMode="showOnDemand" selectionDisabled="1"/>
 			<widget name="progressslider" position="5,%d" size="%d,25" borderWidth="1" zPosition="1" backgroundColor="#00242424"/>
 			<widget name="status" position="5,%d" size="%d,25" font="Regular;20" valign="center" halign="center" foregroundColor="#00808080" transparent="1" zPosition="6"/>
 			<widget name="separator" position="%d,%d" size="%d,5" backgroundColor="#00808080" zPosition="6" />
@@ -202,12 +204,13 @@ class checkGitHubUpdateScreen(Screen):
 						92, BUTTON_Y + 3, BUTTON_X - 100,
 						)
 
-	def __init__(self, session, updateName, updateInfo, downloadURL, downloadFileSize):
+	def __init__(self, session, updateName, updateInfo, updateDate, downloadURL, downloadFileSize):
 		Screen.__init__(self, session)
 		self.session = session
 		self.updateAvailable = False
 		self.updateInfo = updateInfo
 		self.updateName = updateName
+		self.updateDate = updateDate
 		self.progress = 0
 		self.inProgres = False
 		self.downloadDone = False
@@ -236,6 +239,7 @@ class checkGitHubUpdateScreen(Screen):
 		}, -1)
 
 		self['headline'] = Label("")
+		self['dateline'] = Label("")
 
 		self.changeLogList = MenuList([], enableWrapAround=False, content=eListboxPythonMultiContent)
 		self.changeLogList.l.setFont(0, gFont('Regular', int(16 * skinFactor)))
@@ -253,6 +257,7 @@ class checkGitHubUpdateScreen(Screen):
 
 	def __onLayoutFinished(self):
 		self['headline'].setText("Update verfügbar: %s" % self.updateName)
+		self['dateline'].setText("Veröffentlicht am: %s / Größe: %s kB" % (re.sub(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z", r"\3.\2.\1 um \4:\5 Uhr", self.updateDate), self.downloadFileSize))
 
 		changelog_list = []
 		for row in self.updateInfo.splitlines():
