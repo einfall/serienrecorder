@@ -804,7 +804,7 @@ class SRDatabase:
 		if row:
 			(result,) = row
 		cur.close()
-		return result
+		return bool(result)
 
 	def getKindOfTimer(self, fsID, default):
 		result = None
@@ -816,7 +816,7 @@ class SRDatabase:
 		cur.close()
 		if result is None:
 			result = default
-		return result
+		return str(result)
 
 	def getUpdateFromEPG(self, fsID, default):
 		result = True
