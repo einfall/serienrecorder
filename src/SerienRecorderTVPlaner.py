@@ -220,7 +220,7 @@ def getEmailData():
 				# Each transmission row has three columns
 				# [0]: Start time
 				starttime = toStr(transmissionColumns[0].textContent)
-				if starttime != 'Anzeige':
+				if starttime != 'Anzeige' and starttime != 'IM STREAM':
 					transmission.append(starttime.replace(' Uhr', ''))
 					# [1]: URL, Title, Season, Episode, Info
 					transmissionColumn = transmissionColumns[1]
