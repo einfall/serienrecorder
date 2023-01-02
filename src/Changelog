@@ -1,48 +1,18 @@
-##Version 4.6.0 (23.12.2022)
-
-Diese Version stellt die SerienRecorder API Version 2.7 bereit.
-Es sollte ein Update auf die SerienRecorder Webinterface Version 1.0.0 durchgeführt werden.
-
-**Neue Funktionen:**
-- Einträge in der UNDO Liste, die älter als 30 Tage sind, werden jetzt beim automatischen Suchlauf gelöscht
-- Aufnahmeverzeichnisse werden jetzt normalisiert, damit werden z.B. /hdd/movie und /hdd/movie/ als gleich erkannt
-- Timer die nicht in die SerienRecorder Datenbank eingefügt werden sollen, werden jetzt in der Statistik nach dem Suchlauf angezeigt
-- Picons werden jetzt auch für IPTV Sender geladen, sollte es keines geben, wird versucht das entsprechende Picon des DVB Senders zu laden
-- In der Sendetermine Ansicht können nicht erlaubte Staffeln alternativ in grau dargestellt werden
-- Zusätzlicher Timernamen "Serienname_S01E01_Episodenname" (siehe Anmerkung 1) (dafür muss die Datei '/etc/enigma2/SerienRecorder.timer-pattern.json' gelöscht werden)
-- Neue Option 'Merkzettel Timer immer anlegen' - Merkzettel Timer werden auch dann angelegt, wenn für die Episode bereits ein Timer angelegt wurde
+##Version 4.6.1-beta (02.01.2023)
 
 **Änderungen:**
-- Der Changelog Screen wurde überarbeitet, die Änderungen werden jetzt schöner dargestellt
-- Der Update Screen wurde überarbeitet
-- Log Screen überarbeitet, Einträge werden jetzt farbig hervorgehoben
-- In den Skins wurde die Grafik für die Zeilenselektion entfernt, sodass jetzt die Standard Selektion benutzt wird
-- Einträge in der Timer-Liste werden jetzt über die ID gelöscht, so werden bei mehreren identischen Einträgen nicht mehr alle gelöscht
-- Suche im EPG optimiert
-- Beim Aktualiseren von Timern wird jetzt statt des Aufnahmepfades der Sender im Log angezeigt
-- Code für das Anlegen von Timern vereinheitlicht - so werden auch beim openATV Image die Timer mit der richtigen Timer-Art angelegt
-- In den Einstellungen (global/Marker) wird jetzt die mögliche Auswahl für die Timer-Art je nach verwendetem Image ermittelt
-
-**Bugfixes:**
-- Fehler beim Speichern der TV-Planer Einstellungen im Webinterface behoben
-- Sortierung der Timer-Liste für einen Serien-Marker im Webinterface wurde korrigiert
-- Fehler beim Laden von Tags am Serien-Marker im alten Format wurde korrigiert
-- Springen in der Serien-Marker Ansicht zum nächsten Anfangsbuchstaben funktioniert jetzt auch dann korrekt, wenn nach "Wunschliste" Regeln sortiert wird
-- Encoding bei Tags korrigiert
-- Es konnte vorkommen, dass eine Episode nicht in der Timer-Liste gefunden wurde und dann noch ein weiterer Timer angelegt wurde
-- Bereinigen der Timer-Liste bei der Staffelauswahl hat in einer bestimmten Situation auch Specials gelöscht, obwohl diese noch ausgewählt waren
-- Selektionsfarbe in der Senderzuordnung korrigiert
-- Timer werden jetzt auch mit der aktuellen openATV 7.x Version wieder erstellt
-- Fehler beim Setzen des Standard Datenbank Pfades korrigiert
-- Die Option "Standard Bouquet bevorzugen" führte beim Timer-Suchlauf, bei Serien ohne Einträge in der Timer-Liste, zum Absturz
-- Tags am Serien-Marker führen nicht mehr zum Absturz beim Anlegen von Timern
-- Fehler beim Anlegen von manuellen Timern aus dem Webinterface behoben
-- Korrektur eines sporadischen HTML Fehlers in der TV-Planer E-Mail
+- Wurde die Timer-Art am Serien-Marker gesetzt, wurde sie beim openATV Image nicht im Timer gesetzt
+- Der Update Screen zeigt jetzt auch das Datum und die Größe des Updates an
+- Weiterer Bugfix für "IM STREAM" Zeilen in der TV-Planer E-Mail
+- Am Serien-Marker kann ein alternativer Serienanme für den Timer gesetzt werden (siehe Anmerkung 1)
 
 **Anmerkungen:**
-1. Es gibt jetzt eine zusätzliche Auswahlmöglichkeit für den Timernamen (Serienname_S01E01_Episodenname).
-Damit der neue Eintrag in den Einstellungen erscheint, muss die Datei '/etc/enigma2/SerienRecorder.timer-pattern.json' gelöscht werden.
-Die Datei wird beim nächsten Start neu angelegt und enthält dann den neuen Timernamen.
+1. Manchmal gibt es Serien mit sehr langen Namen und man möchte für seine Aufnahmen nicht den kompletten
+Namen oder einen ganz anderen Namen vergeben.
+Das lässt sich jetzt mit der Option 'Alternativer Serienname für Timer' verwirklichen.
+Wird für einen Serien-Marker ein solcher 'Alternative Serienname für Timer' definiert, wird beim Anlegen
+des Timers dieser Name anstelle des Seriennamens verwendet (gemäß des verwendeten Timernamen Patterns).
+Beispiel: 'Anwälte der Toten - Die spektakulärsten Mordfälle aus den USA' in 'Anwälte der Toten'
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel

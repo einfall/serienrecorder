@@ -2,14 +2,12 @@
 
 # This file contains the SerienRecoder About Screen
 from Screens.Screen import Screen
-from Components.ConfigList import ConfigListScreen
 from Components.ActionMap import ActionMap
 from Components.Label import Label
-from Components.config import config
 
 from enigma import getDesktop
 
-class serienRecAboutScreen(Screen, ConfigListScreen):
+class serienRecAboutScreen(Screen):
 	DESKTOP_WIDTH       = getDesktop(0).size().width()
 	DESKTOP_HEIGHT      = getDesktop(0).size().height()
 
@@ -22,10 +20,12 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 		self.session = session
 		Screen.__init__(self, session)
 
+		from .SerienRecorderHelpers import SRVERSION, SRCOPYRIGHT
+
 		self["actions"] = ActionMap(["SerienRecorderActions"], dict(cancel=self.exit, ok=self.exit), -1)
 
-		self.info =("SerienRecorder für enigma2 (Version %s)\n"
-		            "(c) 2014-2022 by einfall, w22754, egn und MacDisein\n"
+		self.info =("SerienRecorder (Version %s)\n"
+		            "%s\n"
 					"\n"
 					"For more info:\n"
 					"https://tinyurl.com/yblfjmhr\n"
@@ -34,7 +34,7 @@ class serienRecAboutScreen(Screen, ConfigListScreen):
 					"@einfall: Ein PN schicken für den Amazon Wunschzettel,\n"
 		            "@MacDisein: PayPal an macdisein@gmx.de\n\n"
 		            "Mit Unterstützung und Genehmigung zur Verwendung der Daten von\n"
-		            "Wunschliste.de - https://www.wunschliste.de") % config.plugins.serienRec.showversion.value
+		            "Wunschliste.de - https://www.wunschliste.de") % (SRVERSION, SRCOPYRIGHT)
 
 		self["pluginInfo"] = Label(self.info)
 

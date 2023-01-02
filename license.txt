@@ -1,4 +1,4 @@
-	Copyright (C) 2014-2022 by einfall, w22754, egn und MacDisein
+	Copyright (C) 2014-2023 by einfall, w22754, egn und MacDisein
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

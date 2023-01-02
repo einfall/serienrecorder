@@ -20,12 +20,12 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.6.0'
-SRDBVERSION = '4.5.0'
-SRAPIVERSION = '2.7'
-SRWEBAPPVERSION = '1.0.0'
+SRVERSION = '4.6.1-beta'
+SRDBVERSION = '4.6.0'
+SRAPIVERSION = '2.8'
+SRWEBAPPVERSION = '1.1.0'
 SRMANUALURL = "https://einfall.github.io/serienrecorder/"
-SRCOPYRIGHT = "©2014-22 einfall, w22754, egn und MacDisein"
+SRCOPYRIGHT = "©2014-23 einfall, w22754, egn und MacDisein"
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
