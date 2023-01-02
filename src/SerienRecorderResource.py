@@ -522,13 +522,16 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
 		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG,
-		 skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording) = database.getMarkerSettings(marker_id)
+		 skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording, timerSeriesName) = database.getMarkerSettings(marker_id)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
 
 		if not epgSeriesName:
 			epgSeriesName = ""
+
+		if not timerSeriesName:
+			timerSeriesName = ""
 
 		if str(Vorlaufzeit).isdigit():
 			enable_lead_time = True
@@ -665,6 +668,10 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 			'epgSeriesName': {
 				'enabled': len(epgSeriesName) > 0,
 				'value': epgSeriesName
+			},
+			'timerSeriesName': {
+				'enabled': len(timerSeriesName) > 0,
+				'value': timerSeriesName
 			},
 			'leadTime': {
 				'enabled': enable_lead_time,
@@ -812,6 +819,11 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 			else:
 				epgSeriesName = data['settings']['epgSeriesName']['value']
 
+			if (not data['settings']['timerSeriesName']['enabled']) or (data['settings']['timerSeriesName']['value'] == ""):
+				timerSeriesName = None
+			else:
+				timerSeriesName = data['settings']['timerSeriesName']['value']
+
 			if not data['settings']['excludedWeekdays']['enabled']:
 				excludedWeekdays = None
 			else:
@@ -828,7 +840,7 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 			database.setMarkerSettings(int(data['markerid']),
 			                           (AufnahmeVerzeichnis, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 			                           AufnahmezeitVon, AufnahmezeitBis, int(data['settings']['preferredChannel']), int(data['settings']['useAlternativeChannel']['value']),
-			                           vpsSettings, excludedWeekdays, tags, int(data['settings']['addToDatabase']), updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording))
+			                           vpsSettings, excludedWeekdays, tags, int(data['settings']['addToDatabase']), updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording, timerSeriesName))
 
 			results = {
 				'recordfolder': AufnahmeVerzeichnis if AufnahmeVerzeichnis else config.plugins.serienRec.savetopath.value,

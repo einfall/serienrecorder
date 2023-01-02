@@ -80,7 +80,8 @@ class SRDatabase:
 																			fsID TEXT DEFAULT NULL,
 																			epgSeriesName TEXT DEFAULT NULL,
 																			kindOfTimer INTEGER DEFAULT NULL,
-																			forceRecording INTEGER DEFAULT NULL)''')
+																			forceRecording INTEGER DEFAULT NULL,
+																			timerSeriesName TEXT DEFAULT NULL)''')
 
 		cur.execute('''CREATE TABLE IF NOT EXISTS SenderAuswahl (ID INTEGER, 
 																			 ErlaubterSender TEXT NOT NULL, 
@@ -168,7 +169,7 @@ class SRDatabase:
 
 	@staticmethod
 	def createTrigger(cur):
-		cur.execute('''CREATE TABLE undolog_timer (
+		cur.execute('''CREATE TABLE IF NOT EXISTS undolog_timer (
 									series TEXT,
 									season TEXT,
 									episode TEXT,
@@ -182,7 +183,7 @@ class SRDatabase:
 									created	TEXT
 								)
 		''')
-		cur.execute('''CREATE TRIGGER AngelegteTimer_dt BEFORE DELETE ON AngelegteTimer 
+		cur.execute('''CREATE TRIGGER IF NOT EXISTS AngelegteTimer_dt BEFORE DELETE ON AngelegteTimer 
 							BEGIN
 							  INSERT INTO undolog_timer VALUES(old.Serie, old.Staffel, old.Episode, old.Titel, old.StartZeitstempel, old.ServiceRef, old.webChannel, old.EventID, old.TimerAktiviert, old.fsID, datetime('now','localtime'));
 							END;
@@ -351,6 +352,14 @@ class SRDatabase:
 			except Exception as e:
 				updateSuccessful = False
 				SRLogger.writeLog("Spalte 'forceRecording' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
+		if not self.hasColumn(markerRows, 'timerSeriesName'):
+			try:
+				cur.execute("ALTER TABLE SerienMarker ADD timerSeriesName TEXT DEFAULT NULL")
+			except Exception as e:
+				updateSuccessful = False
+				SRLogger.writeLog("Spalte 'timerSeriesName' konnte nicht in der Tabelle 'SerienMarker' angelegt werden [%s]." % str(e), True)
+
 
 		if not self.updateToWLID():
 			updateSuccessful = False
@@ -938,7 +947,7 @@ class SRDatabase:
 
 	def getMarkerSettings(self, seriesID):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording FROM SerienMarker WHERE ID=?", [seriesID])
+		cur.execute("SELECT AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon, AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording, timerSeriesName FROM SerienMarker WHERE ID=?", [seriesID])
 		row = cur.fetchone()
 		if not row:
 			row = (None, -1, None, None, None, None, None, 1, -1, None, None, "", 1, 1, 1, 1, None, None)
@@ -948,7 +957,7 @@ class SRDatabase:
 	def setMarkerSettings(self, seriesID, settings):
 		data = settings + (seriesID, )
 		cur = self._srDBConn.cursor()
-		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=?, epgSeriesName=?, kindOfTimer=?, forceRecording=? WHERE ID=?"
+		sql = "UPDATE OR IGNORE SerienMarker SET AufnahmeVerzeichnis=?, Staffelverzeichnis=?, Vorlaufzeit=?, Nachlaufzeit=?, AnzahlWiederholungen=?, AufnahmezeitVon=?, AufnahmezeitBis=?, preferredChannel=?, useAlternativeChannel=?, vps=?, excludedWeekdays=?, tags=?, addToDatabase=?, updateFromEPG=?, skipSeriesServer=?, autoAdjust=?, epgSeriesName=?, kindOfTimer=?, forceRecording=?, timerSeriesName=? WHERE ID=?"
 		cur.execute(sql, data)
 		cur.close()
 
@@ -1051,6 +1060,16 @@ class SRDatabase:
 			(epgSeriesName, ) = row
 		cur.close()
 		return "" if not epgSeriesName else epgSeriesName
+
+	def getMarkerTimerName(self, fsID):
+		timerSeriesName = None
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT timerSeriesName FROM SerienMarker WHERE fsID=?", [fsID])
+		row = cur.fetchone()
+		if row:
+			(timerSeriesName, ) = row
+		cur.close()
+		return "" if not timerSeriesName else timerSeriesName
 
 	def getMarkerType(self, fsID):
 		markerType = None

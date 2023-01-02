@@ -401,7 +401,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			(serien_name, sender, start_unixtime, margin_before, margin_after, end_unixtime, label_serie,
 			 staffel, episode, title, dirname, preferredChannel, useAlternativeChannel, vpsSettings, tags,
-			 addToDatabase, autoAdjust, epgSeriesName, kindOfTimer) = params
+			 addToDatabase, autoAdjust, epgSeriesName, timerSeriesName, kindOfTimer) = params
 			# check sender
 			(webChannel, stbChannel, stbRef, altstbChannel, altstbRef, status) = database.getChannelInfo(sender, fsid, filterMode)
 
@@ -413,7 +413,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			else:
 				from .SerienRecorderTimer import serienRecTimer, serienRecBoxTimer
 				timer = serienRecTimer()
-				timer_name = serienRecTimer.getTimerName(serien_name, staffel, episode, title, 0)
+				timer_name = serienRecTimer.getTimerName(serien_name, staffel, episode, title, timerSeriesName, 0)
 				timer_description = serienRecTimer.getTimerDescription(serien_name, staffel, episode, title)
 
 				if preferredChannel == 1:
@@ -541,6 +541,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				# get alternative epg series name
 				epgSeriesName = database.getMarkerEPGName(fsid)
 
+				# get alternative timer series name
+				timerSeriesName = database.getMarkerTimerName(fsid)
+
 				(dirname, dirname_serie) = getDirname(database, serien_name, fsid, staffel)
 
 				# Versuche Verzeichnisse zu erreichen
@@ -561,7 +564,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 				params = (serien_name, sender, start_unixtime, margin_before, margin_after, end_unixtime,
 				          label_serie, staffel, episode, title, dirname, preferredChannel,
-				          bool(useAlternativeChannel), vpsSettings, tags, addToDatabase, autoAdjust, epgSeriesName, kindOfTimer)
+				          bool(useAlternativeChannel), vpsSettings, tags, addToDatabase, autoAdjust, epgSeriesName, timerSeriesName, kindOfTimer)
 
 				timerExists = False
 				if config.plugins.serienRec.selectBouquets.value and config.plugins.serienRec.preferMainBouquet.value:

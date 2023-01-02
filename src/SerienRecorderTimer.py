@@ -38,19 +38,13 @@ class serienRecTimer:
 		return self.countTimer, self.countTimerUpdate, self.countNotActiveTimer, self.countTimerFromWishlist, self.countBoxOnlyTimer, self.messageList
 
 	@staticmethod
-	def getTimerName(series_name, series_season, series_episode, series_title, marker_type):
+	def getTimerName(series_name, series_season, series_episode, series_title, series_altname, marker_type):
 		if marker_type == 1:
 			timer_name = series_name
 		else:
-			# if config.plugins.serienRec.TimerName.value == "0":
-			# 	timer_name = "%s - S%sE%s - %s" % (series_name, str(series_season).zfill(2), str(series_episode).zfill(2), series_title)
-			# elif config.plugins.serienRec.TimerName.value == "2":
-			# 	timer_name = "S%sE%s - %s" % (str(series_season).zfill(2), str(series_episode).zfill(2), series_title)
-			# elif config.plugins.serienRec.TimerName.value == "3":
-			# 	timer_name = "%s - S%sE%s" % (series_name, str(series_season).zfill(2), str(series_episode).zfill(2))
-			# else:
-			# 	timer_name = series_name
 			try:
+				if len(series_altname) > 0:
+					series_name = series_altname
 				data = {"serie": series_name, "staffel": str(series_season).zfill(2), "episode": str(series_episode).zfill(2), "titel": series_title}
 				timer_name = config.plugins.serienRec.TimerName.value.strip().format(**data)
 			except Exception as e:
@@ -61,10 +55,6 @@ class serienRecTimer:
 
 	@staticmethod
 	def getTimerDescription(series_name, series_season, series_episode, series_title):
-		# if config.plugins.serienRec.TimerDescription.value == "1":
-		# 	timer_description = "%s" % series_title
-		# else:
-		# 	timer_description = "S%sE%s - %s" % (str(series_season).zfill(2), str(series_episode).zfill(2), series_title)
 		try:
 			data = {"serie": series_name, "staffel": str(series_season).zfill(2), "episode": str(series_episode).zfill(2), "titel": series_title}
 			timer_description = config.plugins.serienRec.TimerDescription.value.strip().format(**data)
@@ -95,6 +85,8 @@ class serienRecTimer:
 				(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
 				channelName = STBHelpers.getChannelByRef(self.channelList, stbRef)
 				try:
+					serien_altname = self.database.getMarkerTimerName(serien_fsid)
+
 					timerFound = False
 					# suche in deaktivierten Timern
 					for timer in recordHandler.processed_timers:
@@ -103,7 +95,7 @@ class serienRecTimer:
 							if (timer.begin == serien_time) and (timer.eit == eit) and (
 									str(timer.service_ref).lower() == stbRef.lower()):
 								# versuche deaktivierten Timer zu aktivieren
-								timer_name = self.getTimerName(serien_name, staffel, episode, serien_title, markerType)
+								timer_name = self.getTimerName(serien_name, staffel, episode, serien_title, serien_altname, markerType)
 								SRLogger.writeLog("Versuche deaktivierten Timer zu aktivieren: ' %s ' - %s" % (serien_title, dirname))
 
 								if STBHelpers.checkTuner(str(timer.begin), str(timer.end), str(timer.service_ref)):
@@ -167,7 +159,7 @@ class serienRecTimer:
 						for eventid, begin, duration in allevents:
 							if int(begin) == (int(serien_time) + (int(margin_before) * 60)):
 								label_serie = "%s - S%sE%s - %s" % (serien_name, str(staffel).zfill(2), str(episode).zfill(2), serien_title)
-								timer_name = self.getTimerName(serien_name, staffel, episode, serien_title, markerType)
+								timer_name = self.getTimerName(serien_name, staffel, episode, serien_title, serien_altname, markerType)
 								timer_description = self.getTimerDescription(serien_name, staffel, episode, serien_title)
 								SRLogger.writeLog("Versuche deaktivierten Timer aktiv zu erstellen: ' %s ' - %s" % (serien_title, dirname))
 								end_unixtime = int(begin) + int(duration)
@@ -190,7 +182,7 @@ class serienRecTimer:
 				except:
 					pass
 
-	def update(self, timer_list, eit, end_unixtime, new_episode, new_serien_title, new_serien_name, serien_fsid, serien_time, new_staffel, start_unixtime, stbRef, title, dirname, channelName, vpsSettings, markerType, updateFromEPGFailed):
+	def update(self, timer_list, eit, end_unixtime, new_episode, new_serien_title, new_serien_name, serien_fsid, serien_time, new_staffel, start_unixtime, stbRef, title, dirname, channelName, vpsSettings, markerType, updateFromEPGFailed, timerSeriesName):
 		timerUpdated = False
 		timerFound = False
 		print("[SerienRecorder] Iterate box timers to update timer: " + title)
@@ -254,7 +246,7 @@ class serienRecTimer:
 					# Timername
 					updateName = False
 					old_timername = timer.name
-					timer_name = self.getTimerName(new_serien_name, new_staffel, new_episode, new_serien_title, markerType)
+					timer_name = self.getTimerName(new_serien_name, new_staffel, new_episode, new_serien_title, timerSeriesName, markerType)
 					print("[SerienRecorder] Name: [%s]" % str(timer.name) + " / " + str(timer_name))
 					if timer.name != timer_name:
 						timer.name = timer_name
@@ -735,6 +727,10 @@ class serienRecTimer:
 		if len(epgSeriesName) == 0 or epgSeriesName == serien_name:
 			epgSeriesName = ""
 
+		timerSeriesName = self.database.getMarkerTimerName(serien_fsid)
+		if len(timerSeriesName) == 0 or timerSeriesName == serien_name:
+			timerSeriesName = ""
+
 		# try to get eventID (eit) from epgCache
 		eit = 0
 		if self.database.getUpdateFromEPG(serien_fsid, config.plugins.serienRec.eventid.value):
@@ -780,7 +776,7 @@ class serienRecTimer:
 		# versuche timer anzulegen
 		# setze strings für addtimer
 		if STBHelpers.checkTuner(start_unixtime, end_unixtime, stbRef):
-			timer_name = self.getTimerName(serien_name, season, episode, title, markerType)
+			timer_name = self.getTimerName(serien_name, season, episode, title, timerSeriesName, markerType)
 			timer_description = self.getTimerDescription(serien_name, season, episode, title)
 
 			result = serienRecBoxTimer.addTimer(stbRef, str(start_unixtime), str(end_unixtime), timer_name,
@@ -942,7 +938,7 @@ class serienRecTimer:
 
 			(margin_before, margin_after) = self.database.getMargins(serien_fsid, webChannel, config.plugins.serienRec.margin_before.value, config.plugins.serienRec.margin_after.value)
 			epg_timespan = int(STBHelpers.getEPGTimeSpan() * 60)
-			# If the transmission starts before the start time set in the timer, the getTransmission query doesn't return this transmission
+			# If the transmission starts before the start time set in the timer, the getTransmission query doesn't return this transmission,
 			# so we use the configured EPG timespan to make sure the transmission is considered
 			db_serien_time = int(serien_time) + (int(margin_before) * 60) - epg_timespan
 			transmission = self.tempDB.getTransmissionForTimerUpdate(serien_fsid, staffel, episode, db_serien_time, webChannel)
@@ -1022,11 +1018,14 @@ class serienRecTimer:
 				# get VPS settings for channel
 				vpsSettings = self.database.getVPS(serien_fsid, webChannel)
 
+				# get timer series name
+				timerSeriesName = self.database.getMarkerTimerName(serien_fsid)
+
 				# update box timer
 				self.update(recordHandler.timer_list + recordHandler.processed_timers, eit, end_unixtime, new_episode,
 				            new_serien_title, serien_name, serien_fsid, serien_time,
 				            new_staffel, start_unixtime, stbRef, title,
-				            dirname, channelName, vpsSettings, markerType, updateFromEPGFailed)
+				            dirname, channelName, vpsSettings, markerType, updateFromEPGFailed, timerSeriesName)
 
 			except Exception as e:
 				print("[SerienRecorder] Modifying enigma2 timer failed: %s [%d] (%s)" % (title, serien_time, str(e)))

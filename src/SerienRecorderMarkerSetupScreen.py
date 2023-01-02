@@ -72,7 +72,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			setMenuTexts(self)
 
 		(AufnahmeVerzeichnis, Staffelverzeichnis, Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen, AufnahmezeitVon,
-		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording) = self.database.getMarkerSettings(self.serien_id)
+		 AufnahmezeitBis, preferredChannel, useAlternativeChannel, vps, excludedWeekdays, tags, addToDatabase, updateFromEPG, skipSeriesServer, autoAdjust, epgSeriesName, kindOfTimer, forceRecording, timerSeriesName) = self.database.getMarkerSettings(self.serien_id)
 
 		if not AufnahmeVerzeichnis:
 			AufnahmeVerzeichnis = ""
@@ -223,6 +223,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			epgSeriesName = ""
 		self.epgSeriesName = ConfigText(default=epgSeriesName, fixed_size=False, visible_width=50)
 
+		# timer series name
+		if timerSeriesName is None:
+			timerSeriesName = ""
+		self.timerSeriesName = ConfigText(default=timerSeriesName, fixed_size=False, visible_width=50)
+
 		self.changedEntry()
 		ConfigListScreen.__init__(self, self.list)
 		self.setInfoText()
@@ -313,6 +318,9 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.margin_before_index += 1
 
 		self.list.append(getConfigListEntry("Alternativer Serienname im EPG:", self.epgSeriesName))
+		self.margin_after_index = self.margin_before_index + 1
+
+		self.list.append(getConfigListEntry("Alternativer Serienname für Timer:", self.timerSeriesName))
 		self.margin_after_index = self.margin_before_index + 1
 
 		self.list.append(getConfigListEntry("Aktiviere abweichenden Timervorlauf:", self.enable_margin_before))
@@ -475,7 +483,10 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.chooseTags()
 		elif self['config'].getCurrent()[1] == self.epgSeriesName:
 			value = self.serien_name if len(self.epgSeriesName.value) == 0 else self.epgSeriesName.value
-			self.session.openWithCallback(self.epgSeriesNameEditFinished, NTIVirtualKeyBoard, title="Serien Titel eingeben:", text=value)
+			self.session.openWithCallback(self.epgSeriesNameEditFinished, NTIVirtualKeyBoard, title="Serienname eingeben:", text=value)
+		elif self['config'].getCurrent()[1] == self.timerSeriesName:
+			value = self.serien_name if len(self.timerSeriesName.value) == 0 else self.timerSeriesName.value
+			self.session.openWithCallback(self.timerSeriesNameEditFinished, NTIVirtualKeyBoard, title="Serienname eingeben:", text=value)
 		else:
 			if self['config'].getCurrent()[1] == self.savetopath:
 				if config.plugins.serienRec.seriensubdir.value:
@@ -504,6 +515,11 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 	def epgSeriesNameEditFinished(self, res):
 		if res is not None:
 			self.epgSeriesName.value = res
+			self.changedEntry()
+
+	def timerSeriesNameEditFinished(self, res):
+		if res is not None:
+			self.timerSeriesName.value = res
 			self.changedEntry()
 
 	def tagEditFinished(self, res):
@@ -535,6 +551,9 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			self.epgSeriesName: ("Eingabe des Seriennamens wie er im EPG erscheint.\n\n"
 			                     "Manchmal kommt es vor, dass eine Serie bei Wunschliste anders heißt als im EPG (z.B. 'Die 2' vs. 'Die Zwei') das führt dazu, dass der SerienRecorder die Sendung nicht im EPG finden und aktualisieren kann.\n"
 			                     "Wenn sich der Serienname unterscheidet, kann der Name hier eingegeben werden, um darüber die Sendung im EPG zu finden."),
+			self.timerSeriesName: ("Eingabe des Seriennamens wie er im Timer erscheinen soll.\n\n"
+			                     "Manchmal möchte man einen sehr langen Seriennamen gerne in kürzerer Form abspeichern.\n"
+			                     "(z.B. 'Anwälte der Toten - Die spektakulärsten Mordfälle aus den USA' in 'Anwälte der Toten')"),
 			self.enable_margin_before: ("Bei 'ja' kann die Vorlaufzeit für Timer von '%s' eingestellt werden.\n"
 										"Diese Einstellung hat Vorrang gegenüber der globalen Einstellung für die Vorlaufzeit.\n"
 										"Ist auch beim aufzunehmenden Sender eine Vorlaufzeit eingestellt, so hat der HÖHERE Wert Vorrang.\n"
@@ -722,7 +741,7 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 
 		self.database.setMarkerSettings(self.serien_id, (self.savetopath.value, int(Staffelverzeichnis), Vorlaufzeit, Nachlaufzeit, AnzahlWiederholungen,
 		AufnahmezeitVon, AufnahmezeitBis, int(self.preferredChannel.value), int(self.useAlternativeChannel.value),
-		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust, self.epgSeriesName.value, kindOfTimer, forceRecording))
+		vpsSettings, excludedWeekdays, tags, int(self.addToDatabase.value), updateFromEPG, skipSeriesServer, autoAdjust, self.epgSeriesName.value, kindOfTimer, forceRecording, self.timerSeriesName.value))
 
 		self.close(True)
 

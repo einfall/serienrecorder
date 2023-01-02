@@ -293,7 +293,8 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			markerType = int(markerType)
 
 		from .SerienRecorderTimer import serienRecTimer
-		title = serienRecTimer.getTimerName(serien_name, staffel, episode, serien_title, markerType)
+		timerSeriesName = database.getMarkerTimerName(serien_fsid)
+		title = serienRecTimer.getTimerName(serien_name, staffel, episode, serien_title, timerSeriesName, markerType)
 
 		from .SerienRecorderTimer import serienRecBoxTimer
 		removed = serienRecBoxTimer.removeTimerEntry(title, serien_time, serien_eit)
