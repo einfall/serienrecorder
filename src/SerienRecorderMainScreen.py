@@ -201,7 +201,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 	def changeTVDBID(self):
 		from .SerienRecorderScreenHelpers import EditTVDBID
 		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
-		editTVDBID = EditTVDBID(self, self.session, serien_name, None, serien_wlid, serien_fsid)
+		editTVDBID = EditTVDBID(self, self.session, serien_name, None, serien_wlid, serien_fsid, 0)
 		editTVDBID.changeTVDBID()
 
 	def reloadSerienplaner(self):

@@ -1,18 +1,10 @@
-##Version 4.6.1-beta (02.01.2023)
+##Version 4.6.2-beta (xx.xx.2023)
 
 **Änderungen:**
-- Wurde die Timer-Art am Serien-Marker gesetzt, wurde sie beim openATV Image nicht im Timer gesetzt
-- Der Update Screen zeigt jetzt auch das Datum und die Größe des Updates an
-- Weiterer Bugfix für "IM STREAM" Zeilen in der TV-Planer E-Mail
-- Am Serien-Marker kann ein alternativer Serienanme für den Timer gesetzt werden (siehe Anmerkung 1)
+- Beim Hinzufügen der TVDB-ID kann jetzt auch noch einem Teilstring gesucht werden
+- Im Serien-/Staffelstart Screen kann nach Serien ohne TVDB-ID gefiltert werden
 
-**Anmerkungen:**
-1. Manchmal gibt es Serien mit sehr langen Namen und man möchte für seine Aufnahmen nicht den kompletten
-Namen oder einen ganz anderen Namen vergeben.
-Das lässt sich jetzt mit der Option 'Alternativer Serienname für Timer' verwirklichen.
-Wird für einen Serien-Marker ein solcher 'Alternative Serienname für Timer' definiert, wird beim Anlegen
-des Timers dieser Name anstelle des Seriennamens verwendet (gemäß des verwendeten Timernamen Patterns).
-Beispiel: 'Anwälte der Toten - Die spektakulärsten Mordfälle aus den USA' in 'Anwälte der Toten'
+
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel

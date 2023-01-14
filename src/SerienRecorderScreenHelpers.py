@@ -462,18 +462,19 @@ class serienRecBaseScreen:
 			self.displayTimer = None
 
 class EditTVDBID:
-	def __init__(self, parent, session, serien_name, serien_alias, serien_id, serien_fsid):
+	def __init__(self, parent, session, serien_name, serien_alias, serien_id, serien_fsid, serien_tvdbid):
 		self._parent = parent
 		self._session = session
 		self._serien_name = serien_name
 		self._serien_alias = serien_alias
 		self._serien_id = serien_id
 		self._serien_fsid = serien_fsid
-		self._tvdb_id = 0
+		self._tvdb_id = serien_tvdbid
 
 	def changeTVDBID(self):
 		if self.allowChangeTVDBID():
-			self._tvdb_id = SeriesServer().getTVDBID(self._serien_id)
+			if self._tvdb_id == 0:
+				self._tvdb_id = SeriesServer().getTVDBID(self._serien_id)
 			if self._tvdb_id is False:
 				self._session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!", MessageBox.TYPE_ERROR, timeout=5)
 			else:
