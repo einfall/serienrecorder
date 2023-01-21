@@ -813,7 +813,7 @@ class SRDatabase:
 		if row:
 			(result,) = row
 		cur.close()
-		return bool(result)
+		return result
 
 	def getKindOfTimer(self, fsID, default):
 		result = None
