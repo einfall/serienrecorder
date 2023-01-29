@@ -211,7 +211,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			updatedMarkers = self.database.updateSeriesMarker(True)
 			self.readSerienMarker()
 			message = "Es musste kein Serien-Marker aktualisiert werden."
-			if len(updatedMarkers) > 0:
+			if len(updatedMarkers) == 1:
+				message = "Es wurde %d Serien-Marker aktualisiert.\n\nEine Liste der geänderten Marker wurde ins Log geschrieben." % len(updatedMarkers)
+			if len(updatedMarkers) > 1:
 				message = "Es wurden %d Serien-Marker aktualisiert.\n\nEine Liste der geänderten Marker wurde ins Log geschrieben." % len(updatedMarkers)
 
 			self.session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=10)

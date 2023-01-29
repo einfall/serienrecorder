@@ -526,12 +526,16 @@ class SRDatabase:
 			# Update Series-Markers
 			markers = self.getMarkerNamesAndWLID()
 			changedMarkers = getChangedSeriesNames(markers)
-			SRLogger.writeLog("Es wurden %d geänderte Seriennamen bzw. Serieninformationen gefunden" % len(changedMarkers), True)
+			if len(changedMarkers) == 1:
+				SRLogger.writeLog("Es wurde %d geänderter Serienname bzw. geänderte Serieninformationen gefunden" % len(changedMarkers), True)
+			if len(changedMarkers) > 1:
+				SRLogger.writeLog("Es wurden %d geänderte Seriennamen bzw. Serieninformationen gefunden" % len(changedMarkers), True)
 
 			cur.execute("BEGIN TRANSACTION")
 			for key, val in list(changedMarkers.items()):
 				cur.execute("UPDATE SerienMarker SET Serie = ?, info = ?, fsID = ? WHERE Url = ?", (val['new_name'], val['new_info'], val['new_fsID'], key))
-				SRLogger.writeLog("SerienMarker Tabelle aktualisiert [%s] (%s) → [%s] (%s) / [%s]: %d" % (val['old_name'], val['old_fsID'], val['new_name'], val['new_fsID'], val['new_info'], cur.rowcount), True)
+				SRLogger.writeLog("SerienMarker Tabelle aktualisiert:", True)
+				SRLogger.writeLog("[%s] (%s) → [%s] (%s) / [%s]: %d" % (val['old_name'], val['old_fsID'], val['new_name'], val['new_fsID'], val['new_info'], cur.rowcount), True)
 				if not hasFSIDColumn:
 					# Update AngelegteTimer and Merkzettel table by name
 					if val['new_name'] != val['old_name']:
