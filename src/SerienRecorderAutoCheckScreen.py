@@ -68,6 +68,10 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.autoCheckRunning = False
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
+			"left": (self.keyLeft, "Zur vorherigen Seite blättern"),
+			"right": (self.keyRight, "Zur nächsten Seite blättern"),
+			"up": (self.keyUp, "Zur vorherigen Seite blättern"),
+			"down": (self.keyDown, "Zur nächsten Seite blättern"),
 			"red": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
 			"cancel": (self.keyCancel, "Zurück zur vorherigen Ansicht"),
 			"menu": (self.recSetup, "Menü für globale Einstellungen öffnen"),
@@ -225,17 +229,29 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 20 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
 
-	def pageUp(self):
-		self['log'].pageUp()
+	def keyLeft(self):
+		if self['log'].instance.atBegin():
+			self['log'].up()
+		else:
+			self['log'].pageUp()
 
-	def pageDown(self):
-		self['log'].pageDown()
+	def keyRight(self):
+		if self['log'].instance.atEnd():
+			self['log'].down()
+		else:
+			self['log'].pageDown()
 
 	def keyDown(self):
-		self['log'].pageDown()
+		if self['log'].instance.atEnd():
+			self['log'].down()
+		else:
+			self['log'].pageDown()
 
 	def keyUp(self):
-		self['log'].pageUp()
+		if self['log'].instance.atBegin():
+			self['log'].up()
+		else:
+			self['log'].pageUp()
 
 	def __onClose(self):
 		if self.readLogTimer:
