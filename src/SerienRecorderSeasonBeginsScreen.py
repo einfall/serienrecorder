@@ -298,7 +298,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		if self[self.modus].getCurrent() is None:
 			return
 		else:
-			(serien_name, serien_staffel, serien_sender, serien_startzeit, serien_wlid, serien_markerFlag, serien_fsid, serien_info, serien_alias) = self[self.modus].getCurrent()[0]
+			(serien_name, serien_staffel, serien_sender, serien_startzeit, serien_wlid, serien_markerFlag, serien_fsid, serien_info, serien_alias, serien_tvdbid) = self[self.modus].getCurrent()[0]
 			(existingID, from_season, all_channels) = self.database.getMarkerSeasonAndChannelSettings(serien_fsid)
 			if existingID > 0:
 				# Add season and channel of selected series to marker
