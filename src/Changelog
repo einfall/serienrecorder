@@ -1,9 +1,11 @@
-##Version 4.6.2-beta (xx.xx.2023)
+##Version 4.6.2-beta (07.02.2023)
 
 **Änderungen:**
-- Beim Hinzufügen der TVDB-ID kann jetzt auch noch einem Teilstring gesucht werden
+- Beim Hinzufügen der TVDB-ID kann jetzt auch nach einem Teilstring gesucht werden
 - Im Serien-/Staffelstart Screen kann nach Serien ohne TVDB-ID gefiltert werden
-
+- Fehler beim Setzen von autoAdjust am Timer behoben
+- Fehler beim Blättern in der Logausgabe nach einem manuellen Timer-Suchlauf behoben
+- Logausgabe verbessert
 
 
 Spenden an die Entwickler:
