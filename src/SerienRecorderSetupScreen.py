@@ -788,7 +788,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				self.session.open(MessageBox, "Das SerienRecorder Webinterface wurde erfolgreich installiert.", MessageBox.TYPE_INFO, timeout=5)
 			else:
 				if os.path.isdir(targetFilePath):
-					os.rmdir(targetFilePath)
+					import shutil
+					shutil.rmtree(targetFilePath)
 				self.session.open(MessageBox, "Das SerienRecorder Webinterface konnte nicht installiert werden%s." % error, MessageBox.TYPE_INFO, timeout=5)
 
 	def removeWebinterfaceCallback(self, answer):
