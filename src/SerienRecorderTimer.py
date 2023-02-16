@@ -862,9 +862,10 @@ class serienRecTimer:
 
 	def addTimerToDB(self, serien_name, serien_wlid, serien_fsid, staffel, episode, title, start_time, stbRef, webChannel, eit, addToDatabase, TimerAktiviert=True):
 		seasonEpisodeString = "S%sE%s" % (str(staffel).zfill(2), str(episode).zfill(2))
+		channelName = STBHelpers.getChannelByRef(self.channelList, stbRef)
 		if not addToDatabase:
-			print("[SerienRecorder] Timer nur auf der Box angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
-			SRLogger.writeLogFilter("timerDebug", "   Timer nur auf der Box angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
+			print("[SerienRecorder] Timer nur auf der Box angelegt: ' %s - %s - %s @ %s '" % (serien_name, seasonEpisodeString, title, channelName))
+			SRLogger.writeLogFilter("timerDebug", "   Timer nur auf der Box angelegt: ' %s - %s - %s @ %s '" % (serien_name, seasonEpisodeString, title, channelName))
 			self.countBoxOnlyTimer += 1
 		else:
 			#startTimeLowBound = int(start_time) - (int(STBHelpers.getEPGTimeSpan()) * 60)
@@ -875,9 +876,10 @@ class serienRecTimer:
 			# 	print("[SerienRecorder] Ein Timer für diese Serie ist zu dieser Startzeit bereits vorhanden: ' %s %s - %s '" % (serien_name, seasonEpisodeString, title))
 			# 	SRLogger.writeLog("   Ein Timer für diese Serie ist zu dieser Startzeit bereits vorhanden: ' %s %s - %s '" % (serien_name, seasonEpisodeString, title))
 			# else:
+
 			self.database.addToTimerList(serien_name, serien_fsid, episode, episode, staffel, title, start_time, stbRef, webChannel, eit, TimerAktiviert)
-			print("[SerienRecorder] Timer angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
-			SRLogger.writeLogFilter("timerDebug", "   Timer angelegt: ' %s - %s - %s '" % (serien_name, seasonEpisodeString, title))
+			print("[SerienRecorder] Timer angelegt: ' %s - %s - %s @ %s '" % (serien_name, seasonEpisodeString, title, channelName))
+			SRLogger.writeLogFilter("timerDebug", "   Timer angelegt: ' %s - %s - %s @ %s '" % (serien_name, seasonEpisodeString, title, channelName))
 
 
 	def shouldCreateEventTimer(self, serien_fsid, season, episode, title):
