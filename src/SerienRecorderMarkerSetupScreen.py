@@ -25,7 +25,7 @@ else:
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, InitSkin, setMenuTexts, buttonText_na
 from .SerienRecorder import serienRecDataBaseFilePath
 
-from .SerienRecorderHelpers import hasAutoAdjust, PY2, toStr
+from .SerienRecorderHelpers import hasAutoAdjust
 from .SerienRecorderDatabase import SRDatabase
 
 # Tageditor
