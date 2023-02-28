@@ -358,7 +358,7 @@
 					
 					
 					</div>
-					<div class="update">Letztes Update <strong>04.10.2022</strong> <br>Stand der Anleitung:<br><a href="https://vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-4-5-0-19-06-2022/&postID=2176670#post2176670" target="_blank"><strong><u>Version 4.5.3 Beta</u></strong></a>
+					<div class="update">Letztes Update <strong>28.02.2023</strong> <br>Stand der Anleitung:<br><a href="https://vuplus-support.org/wbb4/index.php?thread/85765-serien-recorder-4-5-0-19-06-2022/&postID=2176670#post2176670" target="_blank"><strong><u>Version 4.5.3 Beta</u></strong></a>
 					<br><a href="https://vuplus-support.org/wbb4/index.php?thread/142111-serienrecorder-webinterface-0-9-9-20-06-2022/&postID=2166673#post2166673" target="_blank"> Webinterface 0.9.9</a>
 					</div>
 				
@@ -1417,6 +1417,15 @@
                             <br/>Bei Konflikten kann aber auch bei aktivierter Option kein Timer angelegt werden.
                         </p>
                     </li>
+					<li>
+						<span id="mzt_anlegen" class="anchor"></span>
+                        <strong>Merkzettel Timer immer anlegen:</strong>
+                        <p>
+                            Wird diese Option aktiviert, dann werden alle Episoden, die auf dem Merkzettel stehen, getimert, egal ob sie schon in der DB stehen oder auf der Platte vorhanden sind. Natürlich werden alle anderen Prüfungen abgearbeitet und befolgt.
+                            <br/>Bei Konflikten kann aber auch bei aktivierter Option kein Timer angelegt werden.
+							<br>Siehe auch <a href="index.html#merkzettel">Merkzettel</a>
+                        </p>
+                    </li>
                     <li>
                         <strong>Event-Programmierungen behandeln:</strong>
                         <p>
@@ -1476,6 +1485,7 @@
                                 <p>
                                     Wenn diese Option aktiviert ist und die Episode auf einem Sender des Standard Bouquets ausgestrahlt wird, legt der SerienRecorder auch dann noch Timer an, wenn für diese Episode bereits ein Timer auf einem Sender des alternativen Bouquets angelegt wurde.
 									<br>Dadurch kann man z.B. eine Episode noch einmal werbefrei aufnehmen, dazu müssen allerdings dann die werbefreien Sender dem Standard Bouquet zugeordnet werden und die anderen dem alternativen Bouquet.
+									<br>Diese Option sollte man idR nicht aktivieren, da hierzu auch noch die Senderzuordnung speziell angepasst werden muss.
                                 </p>
                             </li>
                         </ul>
@@ -1499,11 +1509,12 @@
                         </p>
                     </li>
                     <li>
-                        <strong>Sucht eine Episode als Aufnahme auf der HDD:</strong>
+                        <strong>Episode als Aufnahme auf der HDD suchen:</strong>
                         <p>
                             In einigen Ansichten werden die Episoden mit einem Festplatten Symbol gekennzeichnet, wenn sie sich bereits auf der Festplatte befinden.<br/>
                             Ist diese Option auf NEIN gesetzt, wird dieses Symbol nicht angezeigt und es wird auch nicht auf der Festplatte nach der Aufnahme gesucht.
-                        </p>
+							<br>Diese Option kann <strong>nicht</strong> zusammen mit den Optionen "Standard Bouquet bevorzugen" und "Timername = (Serienname)" verwendet werden, da diese Option dann automatisch deaktiviert wird.
+                         </p>
 						<ul><div class="bs-callout bs-callout-danger">Diese Option muß aktiviert sein, wenn der SR keine Episoden timern soll, die er schon auf der Festplatte (HDD, NAS) findet. Dies kann allerdings den Timer-Suchlauf verlängern und evtl. die Leistung der Box beeinträchtigen, da der/die Ordner durchsucht werden müssen. Es werden nur das Hauptaufnahme-Verzeichnis (meist /media/hdd/movie/) und andere, die vom SR genutzt werden, falls vom SR Verzeichnisse angelegt werden. Es werden nicht sämtliche, angeschlossenen Medien durchsucht.
 						<br> Es werden folgende Dateiendungen verarbeitet:<strong> ts | mkv | avi | mp4 | divx | xvid | mpg | mov </strong>. Natürlich ist auch eine "korrekte" und SR-Kompatible Schreibweise der zu durchsuchenden Aufnahmen dazu nötig.
                                         </div>
@@ -2805,6 +2816,29 @@
 				
 			</li>
 			<li>
+				<strong>Alternativer Serienname für Timer:</strong>
+			
+				<p>Der alternative Serienname im Timer dient dazu, das nicht durch manche ellenlangen Seriennamen, bei der Anzeige z.B. die Staffel/Episoden Bezeichnung und/oder der Episodenname "abgeschnitten" wird.
+				
+				<br>
+				<ul>
+				<br><strong>Beispiel</strong>	
+				<table class="table table-bordered">
+					<tr class="table-info">
+						<td>Anwälte der Toten - Die spektakulärsten Mordfälle aus den USA - S01E01 - Tödliches Sex-Spiel</td>
+						
+					</tr>
+					<tr class="table-success">
+						<td>Anwälte der Toten - USA - S01E01 - Tödliches Sex-Spiel</td>
+						
+					</tr>
+				</table>
+			</ul>
+			<br>Bei der Anzeige im Timer-Editor oder in der MovieList/EMC ist meist nur begrenzter Platz dafür und man selbst weiß ja, was es für eine Serie ist, deshalb dürfte der zweite Teil des Seriennamens gekürzt auf ein Wort ausreichen.
+				</p>
+				
+			</li>
+			<li>
 				<strong>Aktiviere abweichenden Timervorlauf:</strong>
 			
 				<p>Durch drücken von Steuerkreuzes <span class="bi bi-arrow-left-square gz22"></span>&nbsp;<span class="bi bi-arrow-right-square gz22"></span> wird auf "Ja" gewechselt und man kann darunter dann die Zeit in Minuten angeben.
@@ -3964,6 +3998,7 @@
 		<br><br>
 		<div class="alert alert-danger">
 			<strong>WICHTIG: </strong> Bei Nutzung von <strong>Google Mail (gmail)</strong> ist darauf zu achten, das man in seinem Google-Mail-Konto den <a href="https://support.google.com/accounts/answer/6010255" target="_blank"><strong>Der Zugriff auf Ihr Google-Konto durch weniger sichere Apps</strong></a> aktiviert hat. Somit wird der <strong>Zugriff durch Drittanbieter-Apps</strong> aktiviert bzw. erlaubt. Um damit trotzdem auf der "sicheren" Seite zu sein, empfiehlt es sich, für die TV Planer Mail ein eigenes Mail-Konto zu nutzen/erstellen.
+			<br>Des weiteren wird ein <strong>App-Passwort</strong> benötigt.
 		</div>
 		<div class="alert alert-danger">
 			<strong>WICHTIG: </strong> Bei Nutzung von <strong>GMX Mail</strong> ist darauf zu achten, das man ggf. den Abruf von Mails über <strong>POP3/IMAP</strong> erlauben muß. 
@@ -4290,6 +4325,9 @@
 		<ul>	
 		<p>Mithilfe der Funktion Merkzettel können Serien-Episoden "vorgemerkt" werden, damit für diese dann vom SR ein Timer angelegt wird. Dabei werden sämtliche Einschränkungen, die für "normale" Timer gelten, auch beachtet. Allerdings werden natürlich keine Staffeleinschränkungen beachtet, es wird genau die vorgemerkte Episode versucht zu timern.
 		</p>
+		<div class="bs-callout bs-callout-info">Hierzu gibt es noch eine weitere Option, die man aktivieren sollte, damit auch wirklich (fast) jede Episode vom Merkzettel getimert wird.
+			<br><a href="index.html#mzt_anlegen">Merkzettel Timer immer anlegen</a>
+		</div>
 		<p>Der Merkzettel wird mit Taste <kbd>7</kbd> geöffnet. Dort lassen sich dann mit <kbd>OK</kbd> neue Einträge anlegen. 
 		<br>Danach muss man noch "Staffel", "von Episode" und "bis Episode" eingeben, wobei letztere beiden auch gleich sein können, wenn nur EINE Episode vorgemerkt werden soll. Hat man alles erledigt, werden mit <kbd class="green">Speichern</kbd> alle Änderungen übernommen.
 		<br>Mit <kbd class="red">Eintrag löschen</kbd>, lässt sich der gerade selektierte Eintrag der Liste löschen und mit <kbd class="blue">Liste leeren</kbd> werden ALLE Einträge dieser Liste gelöscht.
@@ -5158,9 +5196,9 @@
 			</li>
 			<li><strong>"config.plugins.serienRec.tvplaner=true" :</strong>Durch diesen Eintrag sieht man, das die TV-Planer-Mail Funktion aktiviert ist.
 			</li>
-			<li><strong>"config.plugins.serienRec.imap_login=*" :</strong>Hier ist der IMAP-Login Name verschlüsselt abgelegt.
+			<li><strong>"config.plugins.serienRec.imap_login_hidden=" :</strong>Hier ist der IMAP-Login Name verschlüsselt abgelegt.
 			</li>
-			<li><strong>"config.plugins.serienRec.imap_password=*" :</strong>Hier ist das IMAP-Passwort verschlüsselt abgelegt.
+			<li><strong>"config.plugins.serienRec.imap_password_hidden=" :</strong>Hier ist das IMAP-Passwort verschlüsselt abgelegt.
 			</li>
 		</ul>
 
@@ -5178,6 +5216,13 @@
 		<br>Sollte man nämlich eine Datei mit einem "Normalen" (Windows) Editor bearbeiten, bei der es zwingend erforderlich wäre, dann funktioniert diese Datei später nicht mehr auf dem Receiver.
 		<br>Als ein solcher Editor sei hier nur der <strong>"Notepad++"</strong> genannt, den man "überall" kostenlos herunterladen kann.
 		</p>
+		<ul>
+		<div class="bs-callout bs-callout-danger"><strong>Linux-Konform</strong>, was heißt das?
+			<br>Damit ist das Zeilen-Ende Format gemeint. Bei Windows wird "CR/LF" benutzt und bei Unix (Linux) wird "LF" benutzt. Näheres dazu kann man sich "ergoogeln", wenn man möchte.
+			<br>Beim <strong>"Notepad++"</strong> findet man dies unter: <i> Einstellungen -> Einstellungen -> Neues Dokument</i>. 
+			<br>In geöffneten Dateien steht das Zeilen-Ende Format unten rechts in der Status-Bar, entweder <strong>Unix(LF)</strong> oder <strong>Windows(CR/LF)</strong>
+		</div>
+	</ul>
 		<p>Zuerst sollte man bei Eingriffen ins System ein Image-Backup machen, falls mal was schief geht. Natürlich sollte der Receiver auch nicht anderweitig beschäftigt sein, mit Aufnahmen oder dgl.
 		<br>Dann die Datei <strong>"settings"</strong> auf den PC (oder ähnlichem) kopieren und in den Editor laden. Hier dann die gewünschten Änderungen vornehmen und die Datei abspeichern.
 		</p>
