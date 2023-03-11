@@ -357,7 +357,7 @@ class serienRecTimer:
 				for transmissionForTimer in transmissionsForTimer:
 					(current_time, future_time, serien_name, serien_wlid, serien_fsid, markerType, staffel, episode, check_SeasonEpisode, title, label_serie,
 					 webChannel, stbChannel, stbRef, start_unixtime, end_unixtime, altstbChannel, altstbRef,
-					 dirname, AnzahlAufnahmen, fromTime, toTime,
+					 dirname, AnzahlAufnahmen, from_time, to_time,
 					 vomMerkzettel, excludedWeekdays, updateFromEPG, source) = transmissionForTimer
 
 					print("[SerienRecorder] Transmission for deactivated timer: %s" % label_serie)
@@ -388,11 +388,11 @@ class serienRecTimer:
 					# Setze deaktivierten Timer
 					#
 					# Ueberpruefe ob der sendetermin zwischen der fromTime und toTime liegt
-					if (int(fromTime) > 0) or (int(toTime) < (23 * 60) + 59):
+					if (int(from_time) > 0) or (int(to_time) < (23 * 60) + 59):
 						start_time = (time.localtime(int(timer_start_unixtime)).tm_hour * 60) + time.localtime(int(timer_start_unixtime)).tm_min
 						end_time = (time.localtime(int(timer_end_unixtime)).tm_hour * 60) + time.localtime(int(timer_end_unixtime)).tm_min
-						print("[SerienRecorder] Check allowed time range [%s/%s] - [%s/%s]" % (str(fromTime), str(start_time), str(toTime), str(end_time)))
-						if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
+						print("[SerienRecorder] Check allowed time range [%s/%s] - [%s/%s]" % (str(from_time), str(start_time), str(to_time), str(end_time)))
+						if not TimeHelpers.allowedTimeRange(from_time, to_time, start_time):
 							continue
 
 					if self.doTimer(current_time, future_time, title, staffel, episode, label_serie,
@@ -437,7 +437,7 @@ class serienRecTimer:
 		for transmissionForTimer in transmissionsForTimer:
 			(current_time, future_time, serien_name, serien_wlid, serien_fsid, markerType, staffel, episode, check_SeasonEpisode, title, label_serie,
 			 webChannel, stbChannel, stbRef, start_unixtime, end_unixtime, altstbChannel, altstbRef,
-			 dirname, AnzahlAufnahmen, fromTime, toTime, vomMerkzettel,
+			 dirname, AnzahlAufnahmen, from_time, to_time, vomMerkzettel,
 			 excludedWeekdays, updateFromEPG, source) = transmissionForTimer
 
 			# set the lead/follow-up time
@@ -565,13 +565,13 @@ class serienRecTimer:
 			# Ueberpruefe ob der sendetermin zwischen der fromTime und toTime liegt und finde Wiederholungen auf dem gleichen Sender
 			#
 			# prepare valid time range
-			if (int(fromTime) > 0) or (int(toTime) < (23 * 60) + 59):
+			if (int(from_time) > 0) or (int(to_time) < (23 * 60) + 59):
 				start_time = (time.localtime(int(timer_start_unixtime)).tm_hour * 60) + time.localtime(int(timer_start_unixtime)).tm_min
 				end_time = (time.localtime(int(timer_end_unixtime)).tm_hour * 60) + time.localtime(int(timer_end_unixtime)).tm_min
-				print("[SerienRecorder] Check allowed time range [%s/%s] - [%s/%s]" % (str(fromTime), str(start_time), str(toTime), str(end_time)))
+				print("[SerienRecorder] Check allowed time range [%s/%s] - [%s/%s]" % (str(from_time), str(start_time), str(to_time), str(end_time)))
 
-				if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
-					timeRangeConfigured = "%s:%s - %s:%s" % (str(int(fromTime) // 60).zfill(2), str(int(fromTime) % 60).zfill(2), str(int(toTime) // 60).zfill(2), str(int(toTime) % 60).zfill(2))
+				if not TimeHelpers.allowedTimeRange(from_time, to_time, start_time):
+					timeRangeConfigured = "%s:%s - %s:%s" % (str(int(from_time) // 60).zfill(2), str(int(from_time) % 60).zfill(2), str(int(to_time) // 60).zfill(2), str(int(to_time) % 60).zfill(2))
 					timeRangeTransmission = "%s:%s - %s:%s" % (str(int(start_time) // 60).zfill(2), str(int(start_time) % 60).zfill(2), str(int(end_time) // 60).zfill(2), str(int(end_time) % 60).zfill(2))
 					SRLogger.writeLogFilter("timeRange", "' %s ' - Sendung (%s) nicht in Zeitspanne [%s]" % (label_serie, timeRangeTransmission, timeRangeConfigured))
 

@@ -415,22 +415,10 @@ class TimeHelpers:
 		return date.strftime("%s")
 		
 	@classmethod
-	def allowedTimeRange(cls, fromTime, toTime, start_time, end_time):
-		if fromTime < toTime:
-			if start_time < end_time:
-				if (start_time >= fromTime) and (end_time <= toTime):
-					return True
-		else:
-			if start_time >= fromTime:
-				if end_time >= fromTime:
-					if start_time < end_time:
-						return True
-				elif end_time <= toTime:
-					return True
-			elif start_time < end_time:
-				if (start_time <= toTime) and (end_time <= toTime):
-					return True
-		return False
+	def allowedTimeRange(cls, from_time, to_time, start_time):
+		if to_time < from_time:
+			return start_time >= from_time or start_time <= to_time
+		return from_time <= start_time <= to_time
 
 	@classmethod
 	def td2HHMMstr(cls, td):

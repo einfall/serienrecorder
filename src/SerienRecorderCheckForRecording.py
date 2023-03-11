@@ -792,7 +792,7 @@ class serienRecCheckForRecording:
 		if len(data) == 0 and limitedChannels:
 			SRLogger.writeLogFilter("channels", "' %s ' - Für diesen Serien-Marker wurden keine Ausstrahlungstermine gefunden, die Sender sind am Marker eingeschränkt." % serien_name)
 
-		(fromTime, toTime) = self.database.getTimeSpan(serien_fsid, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
+		(from_time, to_time) = self.database.getTimeSpan(serien_fsid, config.plugins.serienRec.globalFromTime.value, config.plugins.serienRec.globalToTime.value)
 		if self.noOfRecords < AnzahlAufnahmen:
 			self.noOfRecords = AnzahlAufnahmen
 
@@ -818,12 +818,12 @@ class serienRecCheckForRecording:
 			label_serie = "%s - %s - %s" % (serien_name, seasonEpisodeString, title)
 
 			if not self.database.getForceRecording(serien_fsid, config.plugins.serienRec.forceRecording.value):
-				if (int(fromTime) > 0) or (int(toTime) < (23 * 60) + 59):
+				if (int(from_time) > 0) or (int(to_time) < (23 * 60) + 59):
 					start_time = (time.localtime(int(start_unixtime)).tm_hour * 60) + time.localtime(int(start_unixtime)).tm_min
 					end_time = (time.localtime(int(end_unixtime)).tm_hour * 60) + time.localtime(int(end_unixtime)).tm_min
-					if not TimeHelpers.allowedTimeRange(fromTime, toTime, start_time, end_time):
+					if not TimeHelpers.allowedTimeRange(from_time, to_time, start_time):
 						print("[SerienRecorder] processTransmissions time range ignore: %r" % serien_name)
-						timeRangeConfigured = "%s:%s - %s:%s" % (str(int(fromTime) // 60).zfill(2), str(int(fromTime) % 60).zfill(2), str(int(toTime) // 60).zfill(2), str(int(toTime) % 60).zfill(2))
+						timeRangeConfigured = "%s:%s - %s:%s" % (str(int(from_time) // 60).zfill(2), str(int(from_time) % 60).zfill(2), str(int(to_time) // 60).zfill(2), str(int(to_time) % 60).zfill(2))
 						timeRangeTransmission = "%s:%s - %s:%s" % (str(int(start_time) // 60).zfill(2), str(int(start_time) % 60).zfill(2), str(int(end_time) // 60).zfill(2), str(int(end_time) % 60).zfill(2))
 						SRLogger.writeLogFilter("timeRange", "' %s ' - Sendung (%s) nicht in Zeitspanne (%s)" % (label_serie, timeRangeTransmission, timeRangeConfigured))
 						continue
@@ -910,7 +910,7 @@ class serienRecCheckForRecording:
 
 			(dirname, dirname_serie) = getDirname(self.database, serien_name, serien_fsid, staffel)
 			self.tempDB.addTransmission([(current_time, future_time, serien_name, serien_wlid, serien_fsid, markerType, staffel, episode, seasonEpisodeString, title, label_serie, webChannel, stbChannel, stbRef, start_unixtime, end_unixtime, altstbChannel, altstbRef, dirname, AnzahlAufnahmen,
-			                              fromTime, toTime, int(vomMerkzettel), excludedWeekdays, updateFromEPG, source)])
+			                              from_time, to_time, int(vomMerkzettel), excludedWeekdays, updateFromEPG, source)])
 		self.tempDB.commitTransaction()
 
 	def askForDSB(self):
