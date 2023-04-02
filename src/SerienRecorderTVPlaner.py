@@ -283,7 +283,7 @@ def getEmailData():
 	liststarttime_unix = TimeHelpers.getRealUnixTime(minute, hour, day, month, year)
 	# generate dictionary with final transmissions
 	SRLogger.writeLog("Ab dem %s %s Uhr wurden die folgenden %d Sendungen gefunden:\n" % (planerDateTime[0], planerDateTime[1], len(transmissions)))
-	print("[SerienRecorder] TV-Planer: Found %d number of transmissions from %s %s o'clock:" % (len(transmissions), planerDateTime[0], planerDateTime[1]))
+	print("[SerienRecorder] TV-Planer: Found %d transmissions from %s %s:" % (len(transmissions), planerDateTime[0], planerDateTime[1]))
 	if missingTime:
 		SRLogger.writeLog("In der Kopfzeile der TV-Planer E-Mail konnte keine Uhrzeit gefunden werden, bitte die angelegten Timer kontrollieren!\n")
 	transmissiondict = dict()

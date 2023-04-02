@@ -18,7 +18,7 @@ try:
 except ImportError:
 	import json
 
-from .SerienRecorderHelpers import doReplaces, isDreamOS, toBinary, toStr
+from .SerienRecorderHelpers import isDreamOS, toBinary, toStr
 from .SerienRecorderSeriesServer import SeriesServer
 from .SerienRecorderDatabase import SRDatabase
 from .SerienRecorderLogWriter import SRLogger
@@ -58,6 +58,7 @@ def getCover(self, serien_name, serien_fsid, auto_check=False, forceReload=False
 	if not config.plugins.serienRec.downloadCover.value:
 		return
 
+	from .SerienRecorderHelpers import doReplaces
 	serien_name = doReplaces(toStr(serien_name))
 	jpg_serien_cover_path = "%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_name)
 	png_serien_cover_path = "%s%s.png" % (config.plugins.serienRec.coverPath.value, serien_name)

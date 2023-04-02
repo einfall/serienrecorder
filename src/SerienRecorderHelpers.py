@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.6.2-beta'
+SRVERSION = '4.6.3-beta'
 SRDBVERSION = '4.6.0'
 SRAPIVERSION = '2.8'
 SRWEBAPPVERSION = '1.1.0'
@@ -313,8 +313,8 @@ def getDirname(database, serien_name, serien_fsid, staffel):
 		# It is a movie (because there is no marker)
 		isMovie = True
 	else:
-		(dirname, seasonsubdir, type) = row
-		if type == 1:
+		(dirname, seasonsubdir, markerType) = row
+		if markerType == 1:
 			isMovie = True
 
 	if isMovie:
@@ -342,12 +342,14 @@ def getDirname(database, serien_name, serien_fsid, staffel):
 				info = database.getMarkerInfo(serien_fsid)
 				if info:
 					match = re.search("([0-9xX]{4})-?(?:[0-9xX]{4})?$", info)
-					serien_name = "%s (%s)" % (serien_name, match.group(1))
+					serien_name = "%s (%s)" % (toStr(serien_name), match.group(1))
 			dirname = "%s%s/" % (dirname, "".join(i for i in serien_name if i not in "\/:*?<>|."))
 			dirname_serie = dirname
 			if isCreateSeasonSubDir:
 				dirname = "%s%s %s/" % (dirname, seasonDirName, str(staffel).lstrip('0 ').rjust(config.plugins.serienRec.seasonsubdirnumerlength.value, seasonsubdirfillchar))
 
+	print("[SerienRecorder] Dirname: [%s]" % dirname)
+	print("[SerienRecorder] Series Dirname: [%s]" % dirname_serie)
 	return dirname, dirname_serie
 
 def readTags(tagString):

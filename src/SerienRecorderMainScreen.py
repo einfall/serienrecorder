@@ -362,7 +362,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				else:
 					self.processTopThirty(result, False)
 
-			def onCacheDataFailed():
+			def onCacheDataFailed(error):
 				SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der Serien-Planer bzw. Top30 Daten vom SerienServer.\n", True)
 
 			import twisted.python.runtime

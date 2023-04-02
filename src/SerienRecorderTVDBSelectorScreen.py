@@ -144,8 +144,11 @@ class TVDBSelectorScreen(Screen):
 		menu_list = [("TVDB-ID eingeben", "enter_tvdb_id"), ("Cover aktualisieren", "reload_cover")]
 		if self._series_alias and len(self._series_alias) > 0:
 			menu_list.append(("Mit Aliasnamen suchen", "search_with_alias"))
-		if " - " in self._series_name:
-			menu_list.append(("Nach '%s' suchen" % self._series_name[0:self._series_name.find(" - ")], "search_substring"))
+		if " - " or ": " in self._series_name:
+			if " - " in self._series_name:
+				menu_list.append(("Nach '%s' suchen" % self._series_name[0:self._series_name.find(" - ")], "search_substring"))
+			else:
+				menu_list.append(("Nach '%s' suchen" % self._series_name[0:self._series_name.find(": ")], "search_substring"))
 
 		from Screens.ChoiceBox import ChoiceBox
 		self.session.openWithCallback(self.menuCallback, ChoiceBox, title=self._searchTerm, list=menu_list)
@@ -168,7 +171,10 @@ class TVDBSelectorScreen(Screen):
 					searchTerm = self._series_name
 				self.doSearch(searchTerm)
 			if ret == "search_substring":
-				searchTerm = self._series_name[0:self._series_name.find(" - ")]
+				if " - " in self._series_name:
+					searchTerm = self._series_name[0:self._series_name.find(" - ")]
+				else:
+					searchTerm = self._series_name[0:self._series_name.find(": ")]
 				self.doSearch(searchTerm)
 
 	def enterTVDBID(self):

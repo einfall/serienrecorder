@@ -258,7 +258,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 					# Delete remove channels
 					if removedWebChannels:
-						SRLogger.writeLog("Folgende Sender wurden bei Wunschliste nicht mehr gefunden, die Zuordnung im SerienRecorder wurde gelöscht:\n" + "\n".join(removedWebChannels), True)
+						SRLogger.writeLog("Folgende Sender wurden bei Wunschliste nicht mehr gefunden, die Zuordnung im SerienRecorder wurde gelöscht:\n" + "\n   ".join(removedWebChannels), True)
 						self.session.open(MessageBox, "Folgende Sender wurden bei Wunschliste nicht mehr gefunden,\ndie Zuordnung im SerienRecorder wurde gelöscht:\n\n" + "\n".join(removedWebChannels), MessageBox.TYPE_INFO, timeout=10)
 						for webChannel in removedWebChannels:
 							self.selected_sender = webChannel
@@ -269,7 +269,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 						self.session.open(MessageBox, "Es wurden keine neuen Sender bei Wunschliste gefunden.", MessageBox.TYPE_INFO, timeout=10)
 						self.showChannels()
 					else:
-						newChannelsMessage = "Folgende Sender wurden neu bei Wunschliste gefunden:\n" + "\n".join(newWebChannels)
+						newChannelsMessage = "Folgende Sender wurden neu bei Wunschliste gefunden:\n" + "\n   ".join(newWebChannels)
 						SRLogger.writeLog(newChannelsMessage, True)
 						self.session.open(MessageBox, "Folgende Sender wurden neu bei Wunschliste gefunden,\nsie wurden am Ende der Liste eingefügt:\n\n" + "\n".join(newWebChannels), MessageBox.TYPE_INFO, timeout=10)
 						channels = []
