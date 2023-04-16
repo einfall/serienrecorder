@@ -1,12 +1,8 @@
-##Version 4.6.3-beta (02.04.2023)
+##Version 4.6.4-beta (16.04.2023)
 
 **Änderungen:**
-- Überprüfung des Zeitbereichs für einen Timer korrigiert, es wird nur noch die Startzeit berücksichtigt
-- Beim Hinzufügen der TVDB-ID wird jetzt direkt gesucht, wenn keine TVDB-ID vorhanden ist
-- Die Teilstring Suche beim Hinzufügen der TVDB-ID wurde ist jetzt am Doppelpunkt möglich
-- web-data Ordner wird jetzt auch dann gelöscht, wenn er nicht leer ist
-- Fehler beim Anlegen von Serien-Verzeichnissen mit Umlauten / Sonderzeichen korrigiert
-- Logausgabe verbessert
+- Kein Absturz wenn die TV-Planer E-Mail keine relevanten Ausstrahlungstermine enthält
+- Fehler bei der Teilstring Suche beim Hinzufügen der TVDB-ID behoben
 
 
 Spenden an die Entwickler:
