@@ -144,7 +144,9 @@ class TVDBSelectorScreen(Screen):
 		menu_list = [("TVDB-ID eingeben", "enter_tvdb_id"), ("Cover aktualisieren", "reload_cover")]
 		if self._series_alias and len(self._series_alias) > 0:
 			menu_list.append(("Mit Aliasnamen suchen", "search_with_alias"))
-		if " - " or ": " in self._series_name:
+
+		matches = [" - ", ": "]
+		if any([x in self._series_name for x in matches]):
 			if " - " in self._series_name:
 				menu_list.append(("Nach '%s' suchen" % self._series_name[0:self._series_name.find(" - ")], "search_substring"))
 			else:

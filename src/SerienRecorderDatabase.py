@@ -1495,10 +1495,11 @@ class SRDatabase:
 		result = []
 		cur = self._srDBConn.cursor()
 
-		if seriesFilter:
-			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID FROM SerienMarker WHERE fsID IN(%s) ORDER BY Serie" % ','.join('?' * len(seriesFilter)), seriesFilter)
-		else:
+		if seriesFilter is None:
 			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID FROM SerienMarker ORDER BY Serie")
+		else:
+			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID FROM SerienMarker WHERE fsID IN(%s) ORDER BY Serie" % ','.join('?' * len(seriesFilter)), seriesFilter)
+
 		rows = cur.fetchall()
 		for row in rows:
 			(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, markerType, fsID) = row
