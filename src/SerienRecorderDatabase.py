@@ -1541,7 +1541,7 @@ class SRDatabase:
 
 
 	def addToTimerList(self, series, fsID, fromEpisode, toEpisode, season, episodeTitle, startUnixtime, stbRef, webChannel, eit, activated):
-		# Es gibt Episodennummern die nicht nur aus Zahlen bestehen, z.B. 14a
+		# Es gibt Episodennummern, die nicht nur aus Zahlen bestehen, z.B. 14a
 		# um solche Folgen in die Datenbank zu bringen wird hier eine Unterscheidung gemacht.
 		result = False
 		cur = self._srDBConn.cursor()

@@ -554,8 +554,8 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		return [entry,
 		        (eListboxPythonMultiContent.TYPE_TEXT, 5 * skinFactor, 3, 40 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_RIGHT | RT_VALIGN_CENTER, rank, subTitleColor, subTitleColor),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 70 * skinFactor, 3, 520 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, seriesColor, seriesColor),
-		        (eListboxPythonMultiContent.TYPE_TEXT, 70 * skinFactor, 29 * skinFactor, 520 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, subTitle, subTitleColor, subTitleColor)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 70 * skinFactor, 3, 620 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, title, seriesColor, seriesColor),
+		        (eListboxPythonMultiContent.TYPE_TEXT, 70 * skinFactor, 29 * skinFactor, 620 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, subTitle, subTitleColor, subTitleColor)
 		        ]
 
 	def keyOK(self):
