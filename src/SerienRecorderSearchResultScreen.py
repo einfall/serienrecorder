@@ -209,7 +209,7 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		if database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
 			from .SerienRecorderLogWriter import SRLogger
-			SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
+			SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde angelegt" % (serien_name, serien_info), True)
 			result = True
 
 		return result

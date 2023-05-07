@@ -616,7 +616,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		database = SRDatabase(serienRecDataBaseFilePath)
 		database.removeMarker(serien_fsid, withTimer)
 		from .SerienRecorderLogWriter import SRLogger
-		SRLogger.writeLog("Der Serien-Marker für '%s (%s)' wurde gelöscht" % (serien_name, serien_info), True)
+		SRLogger.writeLog("Der Serien-Marker für ' %s ' (%s) wurde gelöscht" % (serien_name, serien_info), True)
 
 	def keyRed(self):
 		if self.modus == "menu_list":

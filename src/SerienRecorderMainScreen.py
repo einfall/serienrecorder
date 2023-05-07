@@ -549,7 +549,7 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				boxID = config.plugins.serienRec.BoxID.value
 
 			if self.database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
-				SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
+				SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde angelegt" % (serien_name, serien_info), True)
 				self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 				self['title'].instance.setForegroundColor(parseColor("green"))
 

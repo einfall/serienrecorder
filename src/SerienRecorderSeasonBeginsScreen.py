@@ -313,7 +313,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				self.database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0)
 
 				from .SerienRecorderLogWriter import SRLogger
-				SRLogger.writeLog("Ein Serien-Marker für '%s (%s)' wurde angelegt" % (serien_name, serien_info), True)
+				SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde angelegt" % (serien_name, serien_info), True)
 				self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 
 				from .SerienRecorder import getCover
