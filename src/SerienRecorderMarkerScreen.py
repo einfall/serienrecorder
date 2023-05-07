@@ -26,7 +26,6 @@ from .SerienRecorderScreenHelpers import serienRecBaseScreen, InitSkin, skinFact
 from .SerienRecorder import serienRecDataBaseFilePath
 
 from .SerienRecorderDatabase import SRDatabase
-from .SerienRecorderEpisodesScreen import serienRecEpisodes
 from .SerienRecorderSeriesServer import SeriesServer
 from .SerienRecorderMarkerSetupScreen import serienRecMarkerSetup
 
@@ -244,6 +243,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		if self.modus == "menu_list" and self['menu_list'].getCurrent():
 			(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
 			if serien_wlid:
+				from .SerienRecorderEpisodesScreen import serienRecEpisodes
 				self.session.open(serienRecEpisodes, serien_name, serien_wlid)
 
 	def wunschliste(self):

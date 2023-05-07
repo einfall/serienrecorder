@@ -48,8 +48,10 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			"0"	    : (self.readLogFile, "Log-File des letzten Suchlaufs anzeigen"),
 			"2"		: (self.changeTVDBID, "TVDB-ID ändern"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
+			"5"		: (self.episodeList, "Episoden der ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
+			"9"		: (self.showTransmissions, "Sendetermine für ausgewählte Serie anzeigen"),
 		}, -1)
 		self.helpList[0][2].sort()
 
@@ -83,8 +85,10 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_yellow'].setText("Zeige Serienstarts")
 		self['text_blue'].setText("Alle Sender")
 
+		self.num_bt_text[0][1] = "Episoden-Liste"
 		self.num_bt_text[2][0] = "TVDB-ID ändern"
 		self.num_bt_text[3][0] = buttonText_na
+		self.num_bt_text[4][1] = "Sendetermine"
 		super(self.__class__, self).startDisplayTimer()
 
 	def setupSkin(self):
@@ -285,6 +289,14 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 			from .SerienRecorderSeriesInfoScreen import serienRecShowInfo
 			self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
+	def episodeList(self):
+		if self[self.modus].getCurrent() is None:
+			return
+		(serien_name, serien_alias, serien_wlid, serien_fsid, serien_tvdbid) = self.getCurrentSelection()
+		if serien_wlid > 0:
+			from .SerienRecorderEpisodesScreen import serienRecEpisodes
+			self.session.open(serienRecEpisodes, serien_name, serien_wlid)
+
 	def wunschliste(self):
 		if self[self.modus].getCurrent() is None:
 			return
@@ -293,6 +305,14 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def setupClose(self, result):
 		super(self.__class__, self).setupClose(result)
+
+	def showTransmissions(self):
+		if self[self.modus].getCurrent() is None:
+			return
+		(serien_name, serien_alias, serien_wlid, serien_fsid, serien_tvdbid) = self.getCurrentSelection()
+		if serien_name and serien_wlid:
+			from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
+			self.session.openWithCallback(None, serienRecSendeTermine, serien_name, serien_wlid, serien_fsid)
 
 	def keyOK(self):
 		if self[self.modus].getCurrent() is None:

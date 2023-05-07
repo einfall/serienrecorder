@@ -69,9 +69,11 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			"2"	    : (self.changeTVDBID, "TVDB-ID ändern"),
 			"3"		: (self.showProposalDB, "Liste der Serien/Staffel-Starts anzeigen"),
 			"4"		: (self.serieInfo, "Informationen zur ausgewählten Serie anzeigen"),
+			"5"	    : (self.episodeList, "Episoden der ausgewählten Serie anzeigen"),
 			"6"		: (self.showConflicts, "Liste der Timer-Konflikte anzeigen"),
 			"7"		: (self.showWishlist, "Merkzettel (vorgemerkte Folgen) anzeigen"),
 			"8"		: (self.reloadSerienplaner, "Serien-Planer neu laden"),
+			"9"	    : (self.showTransmissions, "Sendetermine für ausgewählte Serie anzeigen"),
 			#"9"     : (self.test, ""),
 		}, -1)
 		self.helpList[0][2].sort()
@@ -143,10 +145,12 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self['text_ok'].setText("Marker hinzufügen")
 		self['text_yellow'].setText("Serien-Marker")
 		self['text_blue'].setText("Timer-Liste")
+		self.num_bt_text[0][1] = "Episoden-Liste"
 		self.num_bt_text[1][0] = "Serie suchen"
 		self.num_bt_text[2][0] = "TVDB-ID ändern"
 		self.num_bt_text[2][2] = "Timer suchen"
 		self.num_bt_text[3][1] = "Neu laden"
+		self.num_bt_text[4][1] = "Sendetermine"
 
 		super(self.__class__, self).startDisplayTimer()
 
@@ -245,9 +249,31 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		from .SerienRecorderSeriesInfoScreen import serienRecShowInfo
 		self.session.open(serienRecShowInfo, serien_name, serien_wlid, serien_fsid)
 
+	def episodeList(self):
+		if self.loading or self['menu_list'].getCurrent() is None:
+			return
+
+		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
+		if serien_wlid > 0:
+			from .SerienRecorderEpisodesScreen import serienRecEpisodes
+			self.session.open(serienRecEpisodes, serien_name, serien_wlid)
+
 	def wunschliste(self):
+		if self.loading or self['menu_list'].getCurrent() is None:
+			return
+
 		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
 		super(self.__class__, self).wunschliste(serien_fsid)
+
+	def showTransmissions(self):
+		if self.loading or self['menu_list'].getCurrent() is None:
+			return
+
+		(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
+		if serien_name and serien_wlid:
+			from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
+			self.session.openWithCallback(None, serienRecSendeTermine, serien_name, serien_wlid, serien_fsid)
+
 
 	def setHeadline(self):
 		if int(config.plugins.serienRec.screenplaner.value) == 1:
