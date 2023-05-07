@@ -69,6 +69,17 @@ class SeriesServer:
 		except:
 			return 0
 
+	def getSeriesIDBySearch(self, series_name, fs_id):
+		result = 0
+		try:
+			searchResults = self.server.sp.cache.searchSeries(series_name, 0)
+			for searchResult in searchResults['results']:
+				if searchResult['fs_id'] == fs_id:
+					result = searchResult['id']
+		except:
+			result = 0
+		return result
+
 	def getIDByFSID(self, fsID):
 		try:
 			return self.server.sp.cache.getIDByFSID(fsID)

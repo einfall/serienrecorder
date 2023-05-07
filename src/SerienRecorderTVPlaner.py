@@ -380,6 +380,9 @@ def getEmailData():
 			seriesInfo = ""
 			if url.startswith('https://www.wunschliste.de/serie'):
 				seriesID = SeriesServer().getIDByFSID(fsID)
+				if seriesID == 0:
+					seriesID = SeriesServer().getSeriesIDBySearch(seriesname, fsID)
+
 				if seriesID > 0:
 					url = str(seriesID)
 					data = SeriesServer().getSeriesNamesAndInfoByWLID([seriesID])
