@@ -46,6 +46,12 @@ def toStr(s):
 		return s.decode("utf-8")
 	return s
 
+def findZeroBitsOffsets(n):
+	binary_str = bin(n)[2:]
+	binary_str = binary_str.zfill(n.bit_length())
+	zero_bit_indices = [str(n.bit_length() - i) for i in range(len(binary_str)) if binary_str[i] == '0']
+	return zero_bit_indices
+
 def doReplaces(txt):
 	non_allowed_characters = "/.\\:*?<>|\"'"
 	cleanedString = ''

@@ -326,10 +326,15 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			if useAlternativeChannel == -1:
 				useAlternativeChannel = config.plugins.serienRec.useAlternativeChannel.value
 			
+			deactivatedBoxIDs = []
 			SerieAktiviert = True
-			if ErlaubteSTB is not None and not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
-				numberOfDeactivatedSeries += 1
-				SerieAktiviert = False
+			if ErlaubteSTB is not None:
+				from .SerienRecorderHelpers import findZeroBitsOffsets
+				deactivatedBoxIDs = findZeroBitsOffsets(ErlaubteSTB)
+
+				if not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
+					numberOfDeactivatedSeries += 1
+					SerieAktiviert = False
 
 			staffeln = ', '.join(str(staffel) for staffel in staffeln)
 			sender = ', '.join(sender)
@@ -352,13 +357,15 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			elif Nachlaufzeit < 0:
 				Nachlaufzeit = 0
 
-			markerList.append((ID, Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert, Info, fsID))
+			markerList.append((ID, Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert, Info, fsID, deactivatedBoxIDs))
 
 		return numberOfDeactivatedSeries, markerList
 	
 	
 	def buildList(self, entry):
-		(ID, serie, url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info, fsID) = entry
+		(ID, serie, url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info, fsID, deactivatedBoxIDs) = entry
+
+		serie = "[%s] %s" % ("-" if len(deactivatedBoxIDs) == 0 else ', '.join(deactivatedBoxIDs), serie)
 
 		if preferredChannel == 1:
 			senderText = "Std."

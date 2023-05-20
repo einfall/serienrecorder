@@ -329,7 +329,7 @@ class ApiGetMarkersResource(ApiBaseResource):
 
 		numberOfDeactivatedSeries, markerList = serienRecMarker.getMarkerList(database)
 		for marker in markerList:
-			(ID, serie, wlID, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info, fsID) = marker
+			(ID, serie, wlID, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info, fsID, deactivatedBoxIDs) = marker
 
 			data['markers'].append( {
 					'id': ID,
