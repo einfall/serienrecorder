@@ -658,7 +658,7 @@ class STBHelpers:
 		#	raise
 
 		# Copy cover only if path exists and series sub dir is activated
-		if markerType == 0 and fileExists(dirname) and config.plugins.serienRec.seriensubdir.value and config.plugins.serienRec.copyCoverToFolder.value:
+		if markerType == 0 and fileExists(dirname) and config.plugins.serienRec.seriensubdir.value and config.plugins.serienRec.copyCoverToFolder.value != "0":
 			print("[SerienRecorder] Cover soll in Verzeichnis kopiert werden: %s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid))
 			if fileExists("%s%s.jpg" % (config.plugins.serienRec.coverPath.value, serien_fsid)) and not fileExists("%sfolder.jpg" % dirname_serie):
 				print("[SerienRecorder] Kopiere Cover in Verzeichnis: %sfolder.jpg" % dirname_serie)
