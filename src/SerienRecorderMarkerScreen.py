@@ -325,7 +325,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 			if useAlternativeChannel == -1:
 				useAlternativeChannel = config.plugins.serienRec.useAlternativeChannel.value
-			
+
 			deactivatedBoxIDs = []
 			SerieAktiviert = True
 			if ErlaubteSTB is not None:
@@ -335,6 +335,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				if not (ErlaubteSTB & (1 << (int(config.plugins.serienRec.BoxID.value) - 1))):
 					numberOfDeactivatedSeries += 1
 					SerieAktiviert = False
+
+			if not config.plugins.serienRec.showDeactivatedBoxIDs.value:
+				deactivatedBoxIDs = None
 
 			staffeln = ', '.join(str(staffel) for staffel in staffeln)
 			sender = ', '.join(sender)
@@ -365,7 +368,8 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def buildList(self, entry):
 		(ID, serie, url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info, fsID, deactivatedBoxIDs) = entry
 
-		serie = "[%s] %s" % ("-" if len(deactivatedBoxIDs) == 0 else ', '.join(deactivatedBoxIDs), serie)
+		if deactivatedBoxIDs is not None:
+			serie = "[%s] %s" % ("-" if len(deactivatedBoxIDs) == 0 else ', '.join(deactivatedBoxIDs), serie)
 
 		if preferredChannel == 1:
 			senderText = "Std."

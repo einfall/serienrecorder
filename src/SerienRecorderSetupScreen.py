@@ -94,7 +94,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.eventid = ConfigYesNo(default=True)
 	config.plugins.serienRec.epgTimeSpan = ConfigInteger(10, (0, 30))
 	config.plugins.serienRec.forceRecording = ConfigYesNo(default=False)
-	config.plugins.serienRec.TimeSpanForRegularTimer = ConfigInteger(7, (int(config.plugins.serienRec.checkfordays.value), 999))
+	config.plugins.serienRec.TimeSpanForRegularTimer = ConfigInteger(7, (int(config.plugins.serienRec.checkfordays.value), 28))
 	config.plugins.serienRec.NoOfRecords = ConfigInteger(1, (1, 9))
 	config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default=True)
 	config.plugins.serienRec.tuner = ConfigInteger(4, (1, 8))
@@ -183,6 +183,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.listFontsize = ConfigSelectionNumber(-5, 35, 1, default=0)
 	config.plugins.serienRec.markerColumnWidth = ConfigSelectionNumber(-200, 200, 10, default=0)
 	config.plugins.serienRec.markerNameInset = ConfigSelectionNumber(0, 80, 1, default=40)
+	config.plugins.serienRec.showDeactivatedBoxIDs = ConfigYesNo(default=False)
 	config.plugins.serienRec.seasonFilter = ConfigSelection(choices=[("0", "Nein"), ("1", "Ausblenden"), ("2", "In grau anzeigen")], default="0")
 	config.plugins.serienRec.timerFilter = ConfigYesNo(default=False)
 	config.plugins.serienRec.markerSort = ConfigSelection(choices=[("0", "Alphabetisch"), ("1", "Wunschliste")], default="0")
@@ -457,6 +458,7 @@ def saveSettings():
 	config.plugins.serienRec.listFontsize.save()
 	config.plugins.serienRec.markerColumnWidth.save()
 	config.plugins.serienRec.markerNameInset.save()
+	config.plugins.serienRec.showDeactivatedBoxIDs.save()
 	config.plugins.serienRec.seasonFilter.save()
 	config.plugins.serienRec.timerFilter.save()
 	config.plugins.serienRec.markerSort.save()
@@ -1051,6 +1053,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Korrektur der Schriftgröße in Listen:", config.plugins.serienRec.listFontsize))
 		self.list.append(getConfigListEntry("Korrektur der Spaltenbreite der Serien-Marker Ansicht:", config.plugins.serienRec.markerColumnWidth))
 		self.list.append(getConfigListEntry("Einzug der Serien-Namen in der Serien-Marker Ansicht:", config.plugins.serienRec.markerNameInset))
+		self.list.append(getConfigListEntry("Deaktivierte Box-IDs in der Serien-Marker Ansicht:", config.plugins.serienRec.showDeactivatedBoxIDs))
 		self.list.append(getConfigListEntry("Staffel-Filter in Sendetermine Ansicht:", config.plugins.serienRec.seasonFilter))
 		self.list.append(getConfigListEntry("Timer-Filter in Sendetermine Ansicht:", config.plugins.serienRec.timerFilter))
 		self.list.append(getConfigListEntry("Sortierung der Serien-Marker:", config.plugins.serienRec.markerSort))
@@ -1423,6 +1426,9 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Mit dieser Einstellung kann die Breite der ersten Spalte in der Serien-Marker Ansicht angepasst werden. Ausgehend von der Standardbreite kann die Spalte schmaler bzw. breiter gemacht machen."),
 			config.plugins.serienRec.markerNameInset: (
 				"Mit dieser Einstellung kann der Einzug der Seriennamen in der Serien-Marker Ansicht angepasst werden. Damit lässt sich eine deutlichere optische Abgrenzung der einzelnen Serien-Marker erreichen."),
+			config.plugins.serienRec.showDeactivatedBoxIDs: (
+				"Bei 'ja' werden die deaktivierten Box-IDs für jeden Serien-Marker angezeigt. So lässt sich schnell erkennen für welche Boxen der Marker aktiviert/deaktiviert wurde."),
+
 			config.plugins.serienRec.seasonFilter: ("Bei 'Ausblenden' werden nur Termine angezeigt, die der am Marker eingestellten Staffeln entsprechen.\n"
 			                                      "Bei 'In grau anezeigen' werden die Termine in grau angezeigt, die NICHT der am Marker eingestellten Staffeln entsprechen"),
 			config.plugins.serienRec.timerFilter: (
