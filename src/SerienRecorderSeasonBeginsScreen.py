@@ -318,6 +318,7 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		if self[self.modus].getCurrent() is None:
 			return
 		else:
+			from .SerienRecorder import getCover
 			(serien_name, serien_staffel, serien_sender, serien_startzeit, serien_wlid, serien_markerFlag, serien_fsid, serien_info, serien_alias, serien_tvdbid) = self[self.modus].getCurrent()[0]
 			(existingID, from_season, all_channels) = self.database.getMarkerSeasonAndChannelSettings(serien_fsid)
 			if existingID > 0:
@@ -336,7 +337,6 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 				SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde angelegt" % (serien_name, serien_info), True)
 				self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 
-				from .SerienRecorder import getCover
 				getCover(self, serien_name, serien_fsid, False, True)
 
 			if config.plugins.serienRec.openMarkerScreen.value:
