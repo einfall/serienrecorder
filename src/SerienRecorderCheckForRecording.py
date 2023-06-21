@@ -870,7 +870,6 @@ class serienRecCheckForRecording:
 								liste.reverse()
 								liste.insert(0, "0 ab E%s" % str(AbEpisode).zfill(2))
 								SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Episode nicht erlaubt → ' %s ' → ' %s '" % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
-							continue
 						else:
 							serieAllowed = True
 				elif int(staffel) in staffeln:
