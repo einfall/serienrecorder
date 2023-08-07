@@ -346,7 +346,8 @@ class ApiGetMarkersResource(ApiBaseResource):
 					'useAlternativeChannel': bool(useAlternativeChannel),
 					'active': SerieAktiviert,
 					'info': info,
-					'coverid': int(wlID)
+					'coverid': int(wlID),
+					'deactivatedBoxIDs': deactivatedBoxIDs
 				} )
 
 		return self.returnResult( req, True, data )
@@ -985,6 +986,7 @@ class ApiGetSettingsResource(ApiBaseResource):
 				'listFontsize' : config.plugins.serienRec.listFontsize.value,
 				'markerColumnWidth' : config.plugins.serienRec.markerColumnWidth.value,
 				'markerNameInset' : config.plugins.serienRec.markerNameInset.value,
+				'showDeactivatedBoxIDs': config.plugins.serienRec.showDeactivatedBoxIDs.value,
 				'seasonFilter' : config.plugins.serienRec.seasonFilter.value,
 				'timerFilter' : config.plugins.serienRec.timerFilter.value,
 				'markerSort' : config.plugins.serienRec.markerSort.value,
@@ -1130,6 +1132,7 @@ class ApiSetSettingsResource(ApiBaseResource):
 			config.plugins.serienRec.listFontsize.value = data['gui']['listFontsize']
 			config.plugins.serienRec.markerColumnWidth.value = data['gui']['markerColumnWidth']
 			config.plugins.serienRec.markerNameInset.value = data['gui']['markerNameInset']
+			config.plugins.serienRec.showDeactivatedBoxIDs.value = data['gui']['showDeactivatedBoxIDs']
 			config.plugins.serienRec.seasonFilter.value = data['gui']['seasonFilter']
 			config.plugins.serienRec.timerFilter.value = data['gui']['timerFilter']
 			config.plugins.serienRec.markerSort.value = data['gui']['markerSort']
