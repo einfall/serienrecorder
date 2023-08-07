@@ -1053,7 +1053,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Korrektur der Schriftgröße in Listen:", config.plugins.serienRec.listFontsize))
 		self.list.append(getConfigListEntry("Korrektur der Spaltenbreite der Serien-Marker Ansicht:", config.plugins.serienRec.markerColumnWidth))
 		self.list.append(getConfigListEntry("Einzug der Serien-Namen in der Serien-Marker Ansicht:", config.plugins.serienRec.markerNameInset))
-		self.list.append(getConfigListEntry("Deaktivierte Box-IDs in der Serien-Marker Ansicht:", config.plugins.serienRec.showDeactivatedBoxIDs))
+		self.list.append(getConfigListEntry("Deaktivierte Box-IDs in der Serien-Marker Ansicht anzeigen:", config.plugins.serienRec.showDeactivatedBoxIDs))
 		self.list.append(getConfigListEntry("Staffel-Filter in Sendetermine Ansicht:", config.plugins.serienRec.seasonFilter))
 		self.list.append(getConfigListEntry("Timer-Filter in Sendetermine Ansicht:", config.plugins.serienRec.timerFilter))
 		self.list.append(getConfigListEntry("Sortierung der Serien-Marker:", config.plugins.serienRec.markerSort))
@@ -1260,7 +1260,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			config.plugins.serienRec.epgTimeSpan: (
 				"Die Anzahl Minuten um die der EPG Suchzeitraum nach vorne und hinten vergrößert werden soll (Standard: 10 min).\n\n"
 				"Beispiel: Eine Sendung soll laut Wunschliste um 3:20 Uhr starten, im EPG ist die Startzeit aber 3:28 Uhr, um die Sendung im EPG zu finden wird der Suchzeitraum um den eingestellten Wert "
-				"vergrößert, im Standard wird also von 3:10 Uhr bis 3:30 Uhr gesucht um die Sendung im EPG zu finden."),
+				"vergrößert, im Standard wird also von 3:10 Uhr bis 3:30 Uhr gesucht um die Sendung im EPG zu finden.\n\n"
+				"Die Suchgrenze darf nicht größer sein, als die Länge der Sendung, ansonsten werden die Timer u.U. falsch korrigiert."),
 			config.plugins.serienRec.forceRecording: (
 					"Bei 'ja' werden auch Timer für Episoden erstellt, die außerhalb der erlaubten Zeitspanne (%s:%s - %s:%s) ausgestrahlt werden, "
 					"falls KEINE Wiederholung innerhalb der erlaubten Zeitspanne gefunden wird.\n"
