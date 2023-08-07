@@ -1,9 +1,16 @@
-##Version 4.6.4-beta (16.04.2023)
+##Version 4.6.5-beta (07.08.2023)
 
 **Änderungen:**
-- Kein Absturz wenn die TV-Planer E-Mail keine relevanten Ausstrahlungstermine enthält
-- Fehler bei der Teilstring Suche beim Hinzufügen der TVDB-ID behoben
-
+- Ist eine Serie aus der TV-Planer E-Mail nicht auf dem SerienServer wird sie automatisch bei Wunschliste gesucht
+- Die Sendetermine und Episodenliste kann jetzt auch für Serien in der Serien-Planer bzw. Serien-/Staffelstart Ansicht abgerufen werden
+- Spaltenbreite in der Top 30 Ansicht korrigiert
+- Zeige deaktivierte Boxen am Serien-Marker
+- Für Merkzettel Episoden mit Staffel 0 wurden keine Timer erstellt
+- 'Maximal x Tage auf Wiederholung warten' ist jetzt auf 28 Tage begrenzt
+- Verbesserte Logausgabe
+- Absturz in der Serien-/Staffelstart Ansicht behoben
+- Bugfix: Trotz deaktivierter Option werden Cover in Serien-/Staffelordner kopiert
+- Zeilenhöhe in der Planer-/Top 30 Ansicht angepasst
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel
