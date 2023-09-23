@@ -58,6 +58,8 @@ def getEmailData():
 		config.plugins.serienRec.imap_mail_age.value = 1
 
 	try:
+		import socket
+		socket.setdefaulttimeout(10)
 		if config.plugins.serienRec.imap_server_ssl.value:
 			mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value, config.plugins.serienRec.imap_server_port.value)
 		else:
@@ -418,7 +420,8 @@ def imaptest(session):
 
 	try:
 		SRLogger.writeLog("IMAP Check: Versuche Verbindung zum IMAP Server [%s:%s] aufzubauen..." % (str(config.plugins.serienRec.imap_server.value), str(config.plugins.serienRec.imap_server_port.value)))
-
+		import socket
+		socket.setdefaulttimeout(10)
 		if config.plugins.serienRec.imap_server_ssl.value:
 			mail = imaplib.IMAP4_SSL(config.plugins.serienRec.imap_server.value,
 									 config.plugins.serienRec.imap_server_port.value)
