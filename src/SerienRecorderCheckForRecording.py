@@ -506,7 +506,7 @@ class serienRecCheckForRecording:
 				jobQueue = Queue.Queue()
 				resultQueue = Queue.Queue()
 
-				for serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays, skipSeriesServer, markerType, fsID in self.markers:
+				for serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays, skipSeriesServer, markerType, fsID, forceRecording in self.markers:
 					if config.plugins.serienRec.tvplaner.value:
 						if skipSeriesServer is None:
 							# No overwrite for this marker - use global setting
@@ -618,7 +618,7 @@ class serienRecCheckForRecording:
 			jobQueue = Queue.Queue()
 			resultQueue = Queue.Queue()
 
-			for serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays, skipSeriesServer, markerType, fsID in self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, list(self.emailData.keys())):
+			for serienTitle, SerieUrl, SerieStaffel, SerieSender, AbEpisode, AnzahlAufnahmen, SerieEnabled, excludedWeekdays, skipSeriesServer, markerType, fsID, forceRecording in self.database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, list(self.emailData.keys())):
 				if SerieEnabled:
 					# Process only if series is enabled
 					limitedChannels = False

@@ -550,7 +550,8 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 				self.serien_name, self.savetopath.value),
 			self.epgSeriesName: ("Eingabe des Seriennamens wie er im EPG erscheint.\n\n"
 			                     "Manchmal kommt es vor, dass eine Serie bei Wunschliste anders heißt als im EPG (z.B. 'Die 2' vs. 'Die Zwei') das führt dazu, dass der SerienRecorder die Sendung nicht im EPG finden und aktualisieren kann.\n"
-			                     "Wenn sich der Serienname unterscheidet, kann der Name hier eingegeben werden, um darüber die Sendung im EPG zu finden."),
+			                     "Wenn sich der Serienname unterscheidet, kann der Name hier eingegeben werden, um darüber die Sendung im EPG zu finden.\n"
+								 "Durch den Platzhalter #Titel# kann auch nach dem Episodentitel als Sendungsnamen im EPG gesucht werden."),
 			self.timerSeriesName: ("Eingabe des Seriennamens wie er im Timer erscheinen soll.\n\n"
 			                     "Manchmal möchte man einen sehr langen Seriennamen gerne in kürzerer Form abspeichern.\n"
 			                     "(z.B. 'Anwälte der Toten - Die spektakulärsten Mordfälle aus den USA' in 'Anwälte der Toten')"),

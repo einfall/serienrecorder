@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.6.5-beta'
+SRVERSION = '4.6.6-beta'
 SRDBVERSION = '4.6.0'
 SRAPIVERSION = '2.9'
 SRWEBAPPVERSION = '1.3.0'
@@ -47,9 +47,9 @@ def toStr(s):
 	return s
 
 def findZeroBitsOffsets(n):
-	binary_str = bin(n)[2:]
-	binary_str = binary_str.zfill(n.bit_length())
-	zero_bit_indices = [str(n.bit_length() - i) for i in range(len(binary_str)) if binary_str[i] == '0']
+	maxBitLenght = 16
+	binary_str = bin(n)[2:].zfill(maxBitLenght)
+	zero_bit_indices = [str(maxBitLenght - i) for i in range(len(binary_str)) if binary_str[i] == '0']
 	return zero_bit_indices
 
 def doReplaces(txt):
@@ -564,9 +564,13 @@ class STBHelpers:
 		return len(allevents) == 0, epgmatches
 
 	@classmethod
-	def getStartEndTimeFromEPG(cls, start_unixtime_eit, end_unixtime_eit, margin_before, series_name, epg_series_name, stbRef):
+	def getStartEndTimeFromEPG(cls, start_unixtime_eit, end_unixtime_eit, margin_before, series_name, title, epg_series_name, stbRef):
 		eit = 0
 		# event_matches = self.getEPGevent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
+		if epg_series_name == '#Titel#':
+			regex = re.compile(r"\(\d+\):(.*)", re.IGNORECASE)
+			epg_series_name = regex.sub("", title)
+			print("[SerienRecorder] Found #Titel# placeholder - replace it with [%s] (%s)" % (epg_series_name, title))
 		(noEventsFound, event_matches) = cls.getEPGEvent(stbRef, series_name, epg_series_name, int(start_unixtime_eit) + (int(margin_before) * 60))
 		if event_matches and len(event_matches) > 0:
 			for event_entry in event_matches:

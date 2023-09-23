@@ -854,6 +854,19 @@ class SRDatabase:
 		if result is None:
 			result = default
 		return bool(result)
+	
+	def hasForceRecording(self, default):
+		result = False
+		if default == False:
+			cur = self._srDBConn.cursor()
+			cur.execute("SELECT MAX(forceRecording) FROM SerienMarker")
+			row = cur.fetchone()
+			if row:
+				(result,) = row
+			cur.close()
+		else:
+			result = True
+		return True if result == 1 else False
 
 	def getSpecialsAllowed(self, fsID):
 		TimerForSpecials = False
@@ -1496,13 +1509,13 @@ class SRDatabase:
 		cur = self._srDBConn.cursor()
 
 		if seriesFilter is None:
-			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID FROM SerienMarker ORDER BY Serie")
+			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID, forceRecording FROM SerienMarker ORDER BY Serie")
 		else:
-			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID FROM SerienMarker WHERE fsID IN(%s) ORDER BY Serie" % ','.join('?' * len(seriesFilter)), seriesFilter)
+			cur.execute("SELECT ID, Serie, Url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, type, fsID, forceRecording FROM SerienMarker WHERE fsID IN(%s) ORDER BY Serie" % ','.join('?' * len(seriesFilter)), seriesFilter)
 
 		rows = cur.fetchall()
 		for row in rows:
-			(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, markerType, fsID) = row
+			(ID, serie, url, AlleStaffelnAb, alleSender, AnzahlWiederholungen, AbEpisode, excludedWeekdays, skipSeriesServer, markerType, fsID, forceRecording) = row
 			enabled = True
 			cur.execute("SELECT ErlaubteSTB FROM STBAuswahl WHERE ID=?", [ID])
 			rowSTB = cur.fetchone()
@@ -1535,7 +1548,7 @@ class SRDatabase:
 			else:
 				skipSeriesServer = None
 
-			result.append((serie, url, seasons, channels, AbEpisode, AnzahlAufnahmen, enabled, excludedWeekdays, skipSeriesServer, markerType, fsID))
+			result.append((serie, url, seasons, channels, AbEpisode, AnzahlAufnahmen, enabled, excludedWeekdays, skipSeriesServer, markerType, fsID, forceRecording))
 		cur.close()
 		return result
 

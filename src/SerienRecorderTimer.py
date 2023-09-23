@@ -735,7 +735,7 @@ class serienRecTimer:
 		eit = 0
 		if self.database.getUpdateFromEPG(serien_fsid, config.plugins.serienRec.eventid.value):
 			print("[SerienRecorder] Update data from EPG")
-			eit, start_unixtime, end_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, serien_name, epgSeriesName, stbRef)
+			eit, start_unixtime, end_unixtime = STBHelpers.getStartEndTimeFromEPG(start_unixtime, end_unixtime, margin_before, serien_name, title, epgSeriesName, stbRef)
 
 		if eit > 0:
 			# If event found in EPG we get start- and endtimes from EPG without margins → add margins
@@ -975,6 +975,12 @@ class serienRecTimer:
 				epgSeriesName = self.database.getMarkerEPGName(serien_fsid)
 				if len(epgSeriesName) == 0 or epgSeriesName == serien_name:
 					epgSeriesName = ""
+				
+				if epgSeriesName == '#Titel#':
+					import re
+					regex = re.compile(r"\(\d+\):(.*)", re.IGNORECASE)
+					epgSeriesName = regex.sub("", new_serien_title)
+					print("[SerienRecorder] Found #Titel# placeholder - replace it with [%s] (%s)" % (epgSeriesName, new_serien_title))
 
 				# event_matches = STBHelpers.getEPGEvent(['RITBDSE',("1:0:19:EF75:3F9:1:C00000:0:0:0:", 0, 1392755700, -1)], "1:0:19:EF75:3F9:1:C00000:0:0:0:", "2 Broke Girls", 1392755700)
 				(no_events_found, event_matches) = STBHelpers.getEPGEvent(stbRef, new_serien_name, epgSeriesName, int(serien_time)+(int(margin_before) * 60))

@@ -432,7 +432,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					eit, start_unixtime_eit, end_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(start_unixtime,
 					                                                                              end_unixtime,
 					                                                                              margin_before,
-					                                                                              serien_name, epgSeriesName,
+					                                                                              serien_name, title, epgSeriesName,
 					                                                                              timer_stbRef)
 					if eit > 0:
 						# Adjust the EPG start/end time with margins
@@ -463,7 +463,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 
 					if database.getUpdateFromEPG(fsid, config.plugins.serienRec.eventid.value):
 						alt_eit, alt_start_unixtime_eit, alt_end_unixtime_eit = STBHelpers.getStartEndTimeFromEPG(
-							start_unixtime, end_unixtime, margin_before, serien_name, epgSeriesName, timer_altstbRef)
+							start_unixtime, end_unixtime, margin_before, serien_name, title, epgSeriesName, timer_altstbRef)
 					else:
 						alt_eit = 0
 						alt_start_unixtime_eit = start_unixtime
