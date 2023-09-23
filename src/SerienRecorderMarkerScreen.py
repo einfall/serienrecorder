@@ -139,7 +139,11 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		
 		#normal
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(int(70*skinFactor))
+		itemHeight = int(70*skinFactor)
+		if config.plugins.serienRec.showDeactivatedBoxIDs.value:
+			itemHeight = int(90*skinFactor)
+		
+		self.chooseMenuList.l.setItemHeight(itemHeight)
 		self['menu_list'] = self.chooseMenuList
 		self['menu_list'].show()
 
@@ -368,9 +372,6 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 	def buildList(self, entry):
 		(ID, serie, url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, useAlternativeChannel, SerieAktiviert, info, fsID, deactivatedBoxIDs) = entry
 
-		if deactivatedBoxIDs is not None:
-			serie = "[%s] %s" % ("-" if len(deactivatedBoxIDs) == 0 else ', '.join(deactivatedBoxIDs), serie)
-
 		if preferredChannel == 1:
 			senderText = "Std."
 			if useAlternativeChannel:
@@ -392,7 +393,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		infoText = "Wdh./Vorl./Nachl.: %s / %s / %s" % (int(AnzahlAufnahmen) - 1, int(Vorlaufzeit), int(Nachlaufzeit))
 		folderText = "Dir: %s" % AufnahmeVerzeichnis
 
-		return [entry,
+		entries = [entry,
 			(eListboxPythonMultiContent.TYPE_TEXT, int(config.plugins.serienRec.markerNameInset.value), 3, (410 + self.columnWidth) * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, serieColor, serieColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, (470 + self.columnWidth) * skinFactor, 3, (380 + self.columnWidth) * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, info, serieColor, serieColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 29 * skinFactor, (410 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, staffelText, foregroundColor, foregroundColor),
@@ -400,6 +401,12 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 			(eListboxPythonMultiContent.TYPE_TEXT, 40, 49 * skinFactor, (410 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, infoText, foregroundColor, foregroundColor),
 			(eListboxPythonMultiContent.TYPE_TEXT, (470 + self.columnWidth) * skinFactor, 49 * skinFactor, (380 + self.columnWidth) * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, folderText, foregroundColor, foregroundColor)
 			]
+		
+		if deactivatedBoxIDs is not None:
+			deactivatedBoxIDText = "Deaktivierte Box IDs: %s" % ("-" if len(deactivatedBoxIDs) == 0 else ', '.join(deactivatedBoxIDs))
+			entries.append((eListboxPythonMultiContent.TYPE_TEXT, 40, 69 * skinFactor, 750 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, deactivatedBoxIDText, foregroundColor, foregroundColor))
+		
+		return entries
 
 	def keyCheck(self):
 		if self['menu_list'].getCurrent() is None:
