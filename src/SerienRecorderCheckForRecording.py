@@ -429,7 +429,8 @@ class serienRecCheckForRecording:
 		search_end = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(future_time)))
 		search_rerun_end = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(future_time + (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400))
 		SRLogger.writeLog("Berücksichtige Ausstrahlungstermine zwischen %s und %s" % (search_start, search_end), True)
-		SRLogger.writeLog("Berücksichtige Wiederholungen zwischen %s und %s" % (search_start, search_rerun_end), True)
+		if self.database.hasForceRecording(config.plugins.serienRec.forceRecording.value):
+			SRLogger.writeLog("Berücksichtige Wiederholungen zwischen %s und %s" % (search_start, search_rerun_end), True)
 
 		# hier werden die wunschliste markers eingelesen
 		self.emailData = None
@@ -541,7 +542,12 @@ class serienRecCheckForRecording:
 						self.countActivatedSeries += 1
 						seriesID = SerieUrl
 
-						jobQueue.put((seriesID, fsID, (int(config.plugins.serienRec.TimeSpanForRegularTimer.value)), markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, limitedChannels))
+						if config.plugins.serienRec.forceRecording.value or bool(forceRecording):
+							timeSpan = int(config.plugins.serienRec.TimeSpanForRegularTimer.value)
+						else:
+							timeSpan = int(config.plugins.serienRec.checkfordays.value)
+
+						jobQueue.put((seriesID, fsID, timeSpan, markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, limitedChannels))
 					else:
 						SRLogger.writeLog("' %s ' - Dieser Serien-Marker ist deaktiviert - es werden keine Timer angelegt." % serienTitle, True)
 
