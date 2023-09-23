@@ -277,7 +277,9 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				self['text_yellow'].setText("Sortieren")
 				config.plugins.serienRec.wishListSorted.setValue(False)
 			else:
-				self.wishlist_tmp.sort()
+				import re
+				natsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
+				self.wishlist_tmp.sort(key=natsort)
 				self['text_yellow'].setText("unsortierte Liste")
 				config.plugins.serienRec.wishListSorted.setValue(True)
 			config.plugins.serienRec.wishListSorted.save()
