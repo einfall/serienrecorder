@@ -192,23 +192,24 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			self['text_blue'].setText("Zugewiesene Sender")
 
-		for event in self.transmissions['events']:
-			if self.filter and str(event['season']).isdigit() and int(event['season']) > 1:
-				continue
+		if len(self.transmissions) > 0:
+			for event in self.transmissions['events']:
+				if self.filter and str(event['season']).isdigit() and int(event['season']) > 1:
+					continue
 
-			series_tvdbid = event['tvdb_id']
-			if self.tvdbidFilter and series_tvdbid > 0:
-				continue
+				series_tvdbid = event['tvdb_id']
+				if self.tvdbidFilter and series_tvdbid > 0:
+					continue
 
-			series_name = toStr(event['name'])
-			series_fsid = event['fs_id']
+				series_name = toStr(event['name'])
+				series_fsid = event['fs_id']
 
-			# marker flags: 0 = no marker, 1 = active marker, 2 = inactive marker
-			marker_flag = 0
-			if series_fsid in markers:
-				marker_flag = 1 if markers[series_fsid] else 2
+				# marker flags: 0 = no marker, 1 = active marker, 2 = inactive marker
+				marker_flag = 0
+				if series_fsid in markers:
+					marker_flag = 1 if markers[series_fsid] else 2
 
-			self.proposalList.append([series_name, event['season'], toStr(event['channel']), event['start'], event['id'], marker_flag, series_fsid, toStr(event['info']), toStr(event['subtitle']), series_tvdbid])
+				self.proposalList.append([series_name, event['season'], toStr(event['channel']), event['start'], event['id'], marker_flag, series_fsid, toStr(event['info']), toStr(event['subtitle']), series_tvdbid])
 
 		if self.filter:
 			self['title'].setText("%d neue Serien gefunden:" % len(self.proposalList))
