@@ -403,10 +403,15 @@ def getEmailData():
 
 			if url:
 				if database.addMarker(url, seriesname, seriesInfo, fsID, boxID, 1 if url.startswith('https://www.wunschliste.de/spielfilm') else 0):
-					if len(seriesInfo) == 0:
-						SRLogger.writeLog("Ein %s für ' %s ' wurde angelegt" % (marker_type, seriesname), True)
+					if boxID:
+						onBoxText = " auf Box %s" % str(boxID)
 					else:
-						SRLogger.writeLog("Ein %s für ' %s ' (%s) wurde angelegt" % (marker_type, seriesname, seriesInfo), True)
+						onBoxText = ""
+					
+					if len(seriesInfo) == 0:
+						SRLogger.writeLog("Ein %s für ' %s ' wurde%s angelegt" % (marker_type, seriesname, onBoxText), True)
+					else:
+						SRLogger.writeLog("Ein %s für ' %s ' (%s) wurde%s angelegt" % (marker_type, seriesname, seriesInfo, onBoxText), True)
 					print("[SerienRecorder] TV-Planer: %s created ' %s ' (%s)" % (marker_type, seriesname, seriesInfo))
 		except Exception as e:
 			SRLogger.writeLog("%s für ' %s ' konnte wegen eines Fehlers nicht angelegt werden [%s]" % (marker_type, seriesname, str(e)), True)

@@ -203,13 +203,16 @@ class serienRecSearchResultScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		from .SerienRecorderDatabase import SRDatabase
 		database = SRDatabase(SerienRecorder.serienRecDataBaseFilePath)
 		if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
-			boxID = None
-		else:
 			boxID = config.plugins.serienRec.BoxID.value
+		else:
+			boxID = None
 
 		if database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
 			from .SerienRecorderLogWriter import SRLogger
-			SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde angelegt" % (serien_name, serien_info), True)
+			if boxID:
+				SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde auf Box %s angelegt" % (serien_name, serien_info, str(boxID)), True)
+			else:
+				SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde angelegt" % (serien_name, serien_info), True)
 			result = True
 
 		return result

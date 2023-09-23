@@ -570,12 +570,16 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		if add:
 			(serien_name, serien_wlid, serien_fsid, serien_info) = self.getCurrentSelection()
 			if config.plugins.serienRec.activateNewOnThisSTBOnly.value:
-				boxID = None
-			else:
 				boxID = config.plugins.serienRec.BoxID.value
+			else:
+				boxID = None
 
 			if self.database.addMarker(str(serien_wlid), serien_name, serien_info, serien_fsid, boxID, 0):
-				SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde angelegt" % (serien_name, serien_info), True)
+				if boxID:
+					SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde auf Box %s angelegt" % (serien_name, serien_info, str(boxID)), True)
+				else:
+					SRLogger.writeLog("Ein Serien-Marker für ' %s ' (%s) wurde angelegt" % (serien_name, serien_info), True)
+
 				self['title'].setText("Marker '%s (%s)' wurde angelegt." % (serien_name, serien_info))
 				self['title'].instance.setForegroundColor(parseColor("green"))
 

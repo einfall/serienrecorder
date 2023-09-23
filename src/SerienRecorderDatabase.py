@@ -985,7 +985,7 @@ class SRDatabase:
 			cur.execute("INSERT OR IGNORE INTO SerienMarker (Serie, Url, info, AlleStaffelnAb, alleSender, preferredChannel, useAlternativeChannel, AbEpisode, Staffelverzeichnis, TimerForSpecials, type, autoAdjust, fsID) VALUES (?, ?, ?, 0, 1, 1, -1, 0, -1, 0, ?, NULL, ?)", (name, url, info, markerType, fsID))
 			erlaubteSTB = 0xFFFF
 			if boxID:
-				erlaubteSTB |= (1 << (int(boxID) - 1))
+				erlaubteSTB = 0 | (1 << (int(boxID) - 1))
 			cur.execute("INSERT OR IGNORE INTO STBAuswahl (ID, ErlaubteSTB) VALUES (?,?)",(cur.lastrowid, erlaubteSTB))
 			result = True
 		cur.close()
