@@ -199,7 +199,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		seriesSeason = None
 		fromEpisode = None
 		try:
-			(serienTitle, seriesURL, seriesSeason, seriesChannel, fromEpisode, numberOfRecordings, seriesEnabled, excludedWeekdays, skipSeriesServer, markerType, fsID) = database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, [seriesFSID])[0]
+			(serienTitle, seriesURL, seriesSeason, seriesChannel, fromEpisode, numberOfRecordings, seriesEnabled, excludedWeekdays, skipSeriesServer, markerType, fsID, forceRecording) = database.getMarkers(config.plugins.serienRec.BoxID.value, config.plugins.serienRec.NoOfRecords.value, [seriesFSID])[0]
 		except:
 			SRLogger.writeLog("Fehler beim Filtern nach Staffel", True)
 
