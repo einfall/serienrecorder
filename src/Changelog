@@ -1,16 +1,28 @@
-##Version 4.6.5-beta (07.08.2023)
+##Version 4.6.6-beta (23.09.2023)
+
+**Neue Funktionen:**
+- "Alternativer Serienname im EPG" kann jetzt über #Titel# den Episodennamen im EPG suchen (siehe Anmerkungen)
 
 **Änderungen:**
-- Ist eine Serie aus der TV-Planer E-Mail nicht auf dem SerienServer wird sie automatisch bei Wunschliste gesucht
-- Die Sendetermine und Episodenliste kann jetzt auch für Serien in der Serien-Planer bzw. Serien-/Staffelstart Ansicht abgerufen werden
-- Spaltenbreite in der Top 30 Ansicht korrigiert
-- Zeige deaktivierte Boxen am Serien-Marker
-- Für Merkzettel Episoden mit Staffel 0 wurden keine Timer erstellt
-- 'Maximal x Tage auf Wiederholung warten' ist jetzt auf 28 Tage begrenzt
-- Verbesserte Logausgabe
-- Absturz in der Serien-/Staffelstart Ansicht behoben
-- Bugfix: Trotz deaktivierter Option werden Cover in Serien-/Staffelordner kopiert
-- Zeilenhöhe in der Planer-/Top 30 Ansicht angepasst
+- Zeilenhöhe in der Timer-Liste Ansicht angepasst
+- Die deaktivierten Box-IDs werden jetzt in einer zusätzlichen Zeile angezeigt
+- "Neue Serien-Marker nur auf dieser Box aktivieren" funktionierte nicht richtig
+- "Maximal x Tage auf Wiederholung warten" wurde beim Abrufen der Sendetermine beim Timer-Suchlauf nicht berücksichtigt
+- Sortierung in der Merkzettel Ansicht korrigiert
+- Timeout für das Abrufen der TV-Planer E-Mail auf 10 Sekunden reduziert
+- Möglichen Absturz beim schnellen Tastenwechsel in der Serien-/Staffelstart Ansicht abgefangen
+
+**Anmerkungen:**
+1. Es gibt Serien wie z.B. "ARD Crime Time" die EPG gar nicht den Seriennamen sondern den Episodennamen enthalten.
+Solche Serien konnten bisher nicht im EPG gefunden und aktualisiert werden. Jetzt kann man pro Serien-Marker
+beim "Alternativen Seriennamen im EPG" das magische Schlüsselwort #Titel# eingeben und der SerienRecorder sucht
+nach dem Episodentitel von Wunschliste.
+Beispiel:
+Wunschliste = ' ARD Crime Time - S20E01 - Tödliche Notwehr '
+EPG = ' Tödliche Notwehr '
+Der SerienRecorder würde jetzt nach "Tödliche Notwehr" suchen und die Sendung im EPG finden
+
+
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel
