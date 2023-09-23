@@ -95,7 +95,7 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.chooseMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 		self.chooseMenuList.l.setFont(0, gFont('Regular', 20 + int(config.plugins.serienRec.listFontsize.value)))
-		self.chooseMenuList.l.setItemHeight(int(50 *skinFactor))
+		self.chooseMenuList.l.setItemHeight(int(56 *skinFactor))
 		self['menu_list'] = self.chooseMenuList
 		self['menu_list'].show()
 
@@ -253,10 +253,10 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		return [entry,
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 5 * skinFactor, 5 * skinFactor, 80 * skinFactor, 40 * skinFactor, picon),
 				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 3 * skinFactor, 250 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, channelName, SerieColor, SerieColor),
-				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 27 * skinFactor, 220 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
+				(eListboxPythonMultiContent.TYPE_TEXT, 100 * skinFactor, 27 * skinFactor, 220 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtime, foregroundColor, foregroundColor),
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 315 * skinFactor, 27 * skinFactor, 30 * skinFactor, 22 * skinFactor, loadPNG(imageTimer)),
 				(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 3 * skinFactor, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serie, SerieColor, SerieColor),
-				(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 29 * skinFactor, 500 * skinFactor, 18 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtitle, foregroundColor, foregroundColor)
+				(eListboxPythonMultiContent.TYPE_TEXT, 350 * skinFactor, 29 * skinFactor, 500 * skinFactor, 26 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, xtitle, foregroundColor, foregroundColor)
 		        ]
 
 
