@@ -971,7 +971,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.list.append(getConfigListEntry("    IMAP Passwort:", config.plugins.serienRec.imap_password))
 			self.list.append(getConfigListEntry("    IMAP Mailbox:", config.plugins.serienRec.imap_mailbox))
 			self.list.append(getConfigListEntry("    IMAP Einstellungen testen:", config.plugins.serienRec.imap_test))
-			self.list.append(getConfigListEntry("    TV-Planer Subject:", config.plugins.serienRec.imap_mail_subject))
+			self.list.append(getConfigListEntry("    TV-Planer Betreff:", config.plugins.serienRec.imap_mail_subject))
 			self.list.append(getConfigListEntry("    Maximales Alter der E-Mail (Tage):", config.plugins.serienRec.imap_mail_age))
 			self.list.append(getConfigListEntry("    Voller Timer-Suchlauf mindestens einmal im Erstellungszeitraum:", config.plugins.serienRec.tvplaner_full_check))
 			self.tvplaner_full_check = config.plugins.serienRec.tvplaner_full_check.value
