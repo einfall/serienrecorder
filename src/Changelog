@@ -1,27 +1,8 @@
-##Version 4.6.6-beta (23.09.2023)
-
-**Neue Funktionen:**
-- "Alternativer Serienname im EPG" kann jetzt über #Titel# den Episodennamen im EPG suchen (siehe Anmerkungen)
+##Version 4.6.7-beta (14.10.2023)
 
 **Änderungen:**
-- Zeilenhöhe in der Timer-Liste Ansicht angepasst
-- Die deaktivierten Box-IDs werden jetzt in einer zusätzlichen Zeile angezeigt
-- "Neue Serien-Marker nur auf dieser Box aktivieren" funktionierte nicht richtig
-- "Maximal x Tage auf Wiederholung warten" wurde beim Abrufen der Sendetermine beim Timer-Suchlauf nicht berücksichtigt
-- Sortierung in der Merkzettel Ansicht korrigiert
-- Timeout für das Abrufen der TV-Planer E-Mail auf 10 Sekunden reduziert
-- Möglichen Absturz beim schnellen Tastenwechsel in der Serien-/Staffelstart Ansicht abgefangen
-
-**Anmerkungen:**
-1. Es gibt Serien wie z.B. "ARD Crime Time" die EPG gar nicht den Seriennamen sondern den Episodennamen enthalten.
-Solche Serien konnten bisher nicht im EPG gefunden und aktualisiert werden. Jetzt kann man pro Serien-Marker
-beim "Alternativen Seriennamen im EPG" das magische Schlüsselwort #Titel# eingeben und der SerienRecorder sucht
-nach dem Episodentitel von Wunschliste.
-Beispiel:
-Wunschliste = ' ARD Crime Time - S20E01 - Tödliche Notwehr '
-EPG = ' Tödliche Notwehr '
-Der SerienRecorder würde jetzt nach "Tödliche Notwehr" suchen und die Sendung im EPG finden
-
+- Sortierung in der Merkzettel Ansicht stürzt nicht mehr
+- Logausgabe beim Aktualisieren von Serien-Markern verbessert
 
 
 Spenden an die Entwickler:
