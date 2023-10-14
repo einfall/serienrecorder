@@ -527,29 +527,29 @@ class SRDatabase:
 			markers = self.getMarkerNamesAndWLID()
 			changedMarkers = getChangedSeriesNames(markers)
 			if len(changedMarkers) == 1:
-				SRLogger.writeLog("Es wurde %d geänderter Serienname bzw. geänderte Serieninformationen gefunden" % len(changedMarkers), True)
+				SRLogger.writeLog("Es wurde ' %d ' geänderter Serienname bzw. geänderte Serieninformationen gefunden" % len(changedMarkers), True)
 			if len(changedMarkers) > 1:
-				SRLogger.writeLog("Es wurden %d geänderte Seriennamen bzw. Serieninformationen gefunden" % len(changedMarkers), True)
+				SRLogger.writeLog("Es wurden ' %d ' geänderte Seriennamen bzw. Serieninformationen gefunden" % len(changedMarkers), True)
 
 			cur.execute("BEGIN TRANSACTION")
 			for key, val in list(changedMarkers.items()):
 				cur.execute("UPDATE SerienMarker SET Serie = ?, info = ?, fsID = ? WHERE Url = ?", (val['new_name'], val['new_info'], val['new_fsID'], key))
 				SRLogger.writeLog("SerienMarker Tabelle aktualisiert:", True)
-				SRLogger.writeLog("[%s] (%s) → [%s] (%s) / [%s]: %d" % (val['old_name'], val['old_fsID'], val['new_name'], val['new_fsID'], val['new_info'], cur.rowcount), True)
+				SRLogger.writeLog("' %s ' (%s) → ' %s ' (%s) / ' %s ' → ' %s '" % (val['old_name'], val['old_fsID'], val['new_name'], val['new_fsID'], val['old_info'], val['new_info']), True)
 				if not hasFSIDColumn:
 					# Update AngelegteTimer and Merkzettel table by name
 					if val['new_name'] != val['old_name']:
 						cur.execute("UPDATE AngelegteTimer SET Serie = ? WHERE TRIM(Serie) = ?", (val['new_name'], val['old_name']))
-						SRLogger.writeLog("AngelegteTimer Tabelle aktualisiert [%s]: %d" % (val['new_name'], cur.rowcount), True)
+						SRLogger.writeLog("AngelegteTimer Tabelle aktualisiert ' %s ': %d" % (val['new_name'], cur.rowcount), True)
 						cur.execute("UPDATE Merkzettel SET Serie = ? WHERE TRIM(Serie) = ?", (val['new_name'], val['old_name']))
-						SRLogger.writeLog("Merkzettel Tabelle aktualisiert [%s]: %d" % (val['new_name'], cur.rowcount), True)
+						SRLogger.writeLog("Merkzettel Tabelle aktualisiert ' %s ': %d" % (val['new_name'], cur.rowcount), True)
 
 				else:
 					if val['new_name'] != val['old_name'] or val['old_fsID'] != val['new_fsID']:
 						cur.execute("UPDATE AngelegteTimer SET Serie = ?, fsID = ? WHERE fsID = ?", (val['new_name'], val['new_fsID'], val['old_fsID']))
-						SRLogger.writeLog("AngelegteTimer Tabelle aktualisiert [%s] (%s): %d" % (val['new_name'], val['new_fsID'], cur.rowcount), True)
+						SRLogger.writeLog("AngelegteTimer Tabelle aktualisiert ' %s ' (%s): %d" % (val['new_name'], val['new_fsID'], cur.rowcount), True)
 						cur.execute("UPDATE Merkzettel SET Serie = ?, fsID = ? WHERE fsID = ?", (val['new_name'], val['new_fsID'], val['old_fsID']))
-						SRLogger.writeLog("Merkzettel Tabelle aktualisiert [%s] (%s): %d" % (val['new_name'], val['new_fsID'], cur.rowcount), True)
+						SRLogger.writeLog("Merkzettel Tabelle aktualisiert ' %s ' (%s): %d" % (val['new_name'], val['new_fsID'], cur.rowcount), True)
 				result.append(val['new_name'])
 			cur.execute("UPDATE OR IGNORE dbInfo SET Value = ? WHERE Key='MarkersLastUpdate'", [int(time.time())])
 			cur.execute("COMMIT")
@@ -632,9 +632,12 @@ class SRDatabase:
 		cur.close()
 		return result
 
-	def getBookmarks(self):
+	def getBookmarks(self, sort=False):
 		cur = self._srDBConn.cursor()
-		cur.execute("SELECT * FROM Merkzettel")
+		if sort:
+			cur.execute("SELECT * FROM Merkzettel ORDER BY Serie, Staffel, CAST(Episode AS DECIMAL)")
+		else:
+			cur.execute("SELECT * FROM Merkzettel")
 		rows = cur.fetchall()
 		cur.close()
 		return rows

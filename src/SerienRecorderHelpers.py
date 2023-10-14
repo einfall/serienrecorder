@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.6.6-beta'
+SRVERSION = '4.6.7-beta'
 SRDBVERSION = '4.6.0'
 SRAPIVERSION = '2.9'
 SRWEBAPPVERSION = '1.3.0'
@@ -169,15 +169,13 @@ def getChangedSeriesNames(markers):
 	series = SeriesServer().getSeriesNamesAndInfoByWLID(IDs)
 
 	result = {}
-	#from SerienRecorderLogWriter import SRLogger
 	for marker in markers:
 		try:
 			(markerID, name, info, wlID, fsID) = marker
 			for serie in series:
 				if str(wlID) == str(serie['id']):
 					if name != serie['name'] or info != serie['info'] or fsID != serie['fs_id']:
-						#SRLogger.writeTestLog("Found difference: %s [%s / %s]" % (name, serie['name'], serie['info']))
-						result[str(wlID)] = dict( old_name = name, new_name = serie['name'], new_info = serie['info'], old_fsID = fsID, new_fsID = serie['fs_id'] )
+						result[str(wlID)] = dict( old_name = name, new_name = serie['name'], old_info = info, new_info = serie['info'], old_fsID = fsID, new_fsID = serie['fs_id'] )
 					break
 		except:
 			continue

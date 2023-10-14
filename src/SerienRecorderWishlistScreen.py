@@ -172,17 +172,14 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def readWishlist(self):
 		self.wishlist = []
-		bookmarks = self.database.getBookmarks()
+		bookmarks = self.database.getBookmarks(config.plugins.serienRec.wishListSorted.value)
 		for bookmark in bookmarks:
 			(Serie, Staffel, Episode, numberOfRecordings, fsID) = bookmark
 			row = "%s S%sE%s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2))
 			wlID = self.database.getMarkerWLID(fsID)
 			self.wishlist.append((row, Serie, Staffel, Episode, wlID, fsID))
 
-		self.wishlist_tmp = self.wishlist[:]
-		if config.plugins.serienRec.wishListSorted.value:
-			self.wishlist_tmp.sort()
-		self.chooseMenuList.setList(list(map(self.buildList, self.wishlist_tmp)))
+		self.chooseMenuList.setList(list(map(self.buildList, self.wishlist)))
 		self.getCover()
 
 	@staticmethod
@@ -271,23 +268,16 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.close()
 
 	def keyYellow(self):
-		if len(self.wishlist_tmp) != 0:
-			if config.plugins.serienRec.wishListSorted.value:
-				self.wishlist_tmp = self.wishlist[:]
-				self['text_yellow'].setText("Sortieren")
-				config.plugins.serienRec.wishListSorted.setValue(False)
-			else:
-				import re
-				natsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
-				self.wishlist_tmp.sort(key=natsort)
-				self['text_yellow'].setText("unsortierte Liste")
-				config.plugins.serienRec.wishListSorted.setValue(True)
-			config.plugins.serienRec.wishListSorted.save()
-			SerienRecorder.configfile.save()
-
-			self.chooseMenuList.setList(list(map(self.buildList, self.wishlist_tmp)))
-			self.getCover()
-
+		if config.plugins.serienRec.wishListSorted.value:
+			self['text_yellow'].setText("Sortieren")
+			config.plugins.serienRec.wishListSorted.setValue(False)
+		else:
+			self['text_yellow'].setText("unsortierte Liste")
+			config.plugins.serienRec.wishListSorted.setValue(True)
+		
+		SerienRecorder.configfile.save()
+		self.readWishlist()
+		
 	def keyBlue(self):
 		if self['menu_list'].getCurrent() is None:
 			print("[SerienRecorder] Merkzettel ist leer.")
