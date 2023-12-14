@@ -25,6 +25,7 @@ class SRDatabase:
 			self._srDBConn.text_factory = lambda x: str(x.decode("utf-8"))
 		except Exception as e:
 			print("[SerienRecorder] Unable to connect to database [%s]" % str(e))
+			raise
 
 	def close(self):
 		if self._srDBConn:
