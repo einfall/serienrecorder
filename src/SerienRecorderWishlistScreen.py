@@ -59,7 +59,6 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.delAdded = False
 		self.wishlist = []
-		self.wishlist_tmp = []
 		self.dbData = []
 		self.modus = "menu_list"
 		self.aSerie = ""
@@ -257,9 +256,8 @@ class serienRecWishlistScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		zeile = self['menu_list'].getCurrent()[0]
 		(title, serie, staffel, episode, wlID, fsID) = zeile
 		self.dbData.append((fsID, str(staffel).lower(), episode.lower()))
-		self.wishlist_tmp.remove(zeile)
 		self.wishlist.remove(zeile)
-		self.chooseMenuList.setList(list(map(self.buildList, self.wishlist_tmp)))
+		self.chooseMenuList.setList(list(map(self.buildList, self.wishlist)))
 		self.delAdded = True
 
 	def keyGreen(self):
