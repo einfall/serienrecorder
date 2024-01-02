@@ -127,6 +127,8 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 
 		if row.startswith('---------'):
 			color = parseColor('blue').argb()
+		elif serienRecReadLog.isAlertRow(row):
+			color = parseColor('red').argb()
 		elif row.startswith('\''):
 			color = parseColor('green').argb()
 		else:
@@ -136,6 +138,15 @@ class serienRecReadLog(serienRecBaseScreen, Screen, HelpableScreen):
 			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 65 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER | RT_WRAP, row, color, color)]
 		else:
 			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 00, 2 * skinFactor, width * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
+
+	@staticmethod
+	def isAlertRow(row):
+		if 'Timer konnte nicht' in row:
+			return True
+		elif 'Fehler beim Abrufen und Verarbeiten der Ausstrahlungstermine' in row:
+			return True
+		else:
+			return False
 
 	def keyLeft(self):
 		if self['log'].instance.atBegin():
