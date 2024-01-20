@@ -1794,7 +1794,7 @@ class SRTempDatabase:
 	def getTransmissionsOrderedByNumberOfRecordings(self, numberOfRecordings):
 		result = []
 		cur = self._tempDBConn.cursor()
-		cur.execute("SELECT * FROM (SELECT SerieName, wlID, fsID, type, Staffel, Episode, Title, COUNT(*) AS Anzahl FROM GefundeneFolgen WHERE AnzahlAufnahmen>? GROUP BY wlID, Staffel, Episode, Title) ORDER BY Anzahl", [numberOfRecordings])
+		cur.execute("SELECT * FROM (SELECT SerieName, wlID, fsID, type, Staffel, Episode, Title, COUNT(*) AS Anzahl FROM GefundeneFolgen WHERE AnzahlAufnahmen>? GROUP BY wlID, Staffel, Episode, Title ORDER BY Staffel, LENGTH(Episode), Episode ASC) ORDER BY Anzahl", [numberOfRecordings])
 		rows = cur.fetchall()
 		for row in rows:
 			result.append(row)
