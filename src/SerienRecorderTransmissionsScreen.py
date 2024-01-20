@@ -510,6 +510,19 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)
 		print("---------' Manuelle Timererstellung aus Sendeterminen um %s '---------" % uhrzeit)
 		SRLogger.writeLog("\n---------' Manuelle Timererstellung aus Sendeterminen um %s '---------" % uhrzeit, True)
+
+		# Versuche Verzeichnisse zu erreichen
+		print("[SerienRecorder] Check configured recording directories")
+		try:
+			SRLogger.writeLog("\nPrüfe konfigurierte Aufnahmeverzeichnisse:", True)
+			recordDirectories = database.getRecordDirectories(config.plugins.serienRec.savetopath.value)
+			for directory in recordDirectories:
+				SRLogger.writeLog("  ' %s '" % directory, True)
+				os.path.exists(directory)
+			SRLogger.writeLog("\n", True)
+		except:
+			SRLogger.writeLog("Es konnten nicht alle Aufnahmeverzeichnisse gefunden werden", True)
+
 		for serien_name, sender, start_unixtime, end_unixtime, staffel, episode, title, status, addedType, seasonAllowed  in sendetermine:
 			if int(status) == 1:
 				# initialize strings
@@ -545,18 +558,6 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 				timerSeriesName = database.getMarkerTimerName(fsid)
 
 				(dirname, dirname_serie) = getDirname(database, serien_name, fsid, staffel)
-
-				# Versuche Verzeichnisse zu erreichen
-				print("[SerienRecorder] Check configured recording directories")
-				try:
-					SRLogger.writeLog("\nPrüfe konfigurierte Aufnahmeverzeichnisse:", True)
-					recordDirectories = database.getRecordDirectories(config.plugins.serienRec.savetopath.value)
-					for directory in recordDirectories:
-						SRLogger.writeLog("  ' %s '" % directory, True)
-						os.path.exists(directory)
-					SRLogger.writeLog("\n", True)
-				except:
-					SRLogger.writeLog("Es konnten nicht alle Aufnahmeverzeichnisse gefunden werden", True)
 
 				(NoOfRecords, preferredChannel, useAlternativeChannel) = database.getPreferredMarkerChannels(
 					fsid, config.plugins.serienRec.useAlternativeChannel.value,
