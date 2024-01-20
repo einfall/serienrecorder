@@ -20,6 +20,8 @@ from .SerienRecorderHelpers import STBHelpers, hasAutoAdjust, toStr
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, InitSkin, skinFactor, updateMenuKeys, setMenuTexts
 from .SerienRecorderLogWriter import SRLogger
 
+NO_ASSIGNMENT = "-- Keine Zuordnung --"
+
 def checkChannelListTimelineness(database):
 	channelListUpToDate = True
 	remoteChannelListLastUpdated = SeriesServer.getChannelListLastUpdate()
@@ -364,9 +366,10 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 
 	@staticmethod
 	def buildList_popup(entry):
-		(servicename,serviceref) = entry
+		(serviceName,serviceref, bouquetName) = entry
 		return [entry,
-			(eListboxPythonMultiContent.TYPE_TEXT, 5, 1, 250 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, servicename)
+			(eListboxPythonMultiContent.TYPE_TEXT, 5, 1, 270 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, serviceName),
+			(eListboxPythonMultiContent.TYPE_TEXT, 290, 1, 250 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, bouquetName),
 			]
 
 	def keyOK(self):
@@ -379,10 +382,10 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_list'].show()
 			self['popup_bg'].show()
 			if config.plugins.serienRec.selectBouquets.value:
-				self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
+				self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value, True)
 			else:
-				self.stbChannelList = STBHelpers.buildSTBChannelList()
-			self.stbChannelList.insert(0, ("", ""))
+				self.stbChannelList = STBHelpers.buildSTBChannelList(None, True)
+			self.stbChannelList.insert(0, (NO_ASSIGNMENT, "", ""))
 			self.chooseMenuList_popup.setList(list(map(self.buildList_popup, self.stbChannelList)))
 			idx = 0
 			(serviceRef, altServiceRef) = self.database.getSTBChannelRef(self['list'].getCurrent()[0][0])
@@ -392,15 +395,15 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				except:
 					pass
 			self['popup_list'].moveToIndex(idx)
-			self['title'].setText("Standard STB-Sender für '%s':" % self['list'].getCurrent()[0][0])
+			self['title'].setText("Standard Box-Sender für '%s':" % self['list'].getCurrent()[0][0])
 		elif config.plugins.serienRec.selectBouquets.value:
 			if self.modus == "popup_list":
 				self.modus = "popup_list2"
 				self['popup_list'].hide()
 				self['popup_list2'].show()
 				self['popup_bg'].show()
-				self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.AlternativeBouquet.value)
-				self.stbChannelList.insert(0, ("", ""))
+				self.stbChannelList = STBHelpers.buildSTBChannelList(config.plugins.serienRec.AlternativeBouquet.value, True)
+				self.stbChannelList.insert(0, (NO_ASSIGNMENT, "", ""))
 				self.chooseMenuList_popup2.setList(list(map(self.buildList_popup, self.stbChannelList)))
 				idx = 0
 				(serviceRef, altServiceRef) = self.database.getSTBChannelRef(self['list'].getCurrent()[0][0])
@@ -410,7 +413,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 					except:
 						pass
 				self['popup_list2'].moveToIndex(idx)
-				self['title'].setText("alternativer Box-Sender für '%s':" % self['list'].getCurrent()[0][0])
+				self['title'].setText("Alternativer Box-Sender für '%s':" % self['list'].getCurrent()[0][0])
 			else:
 				self.modus = "list"
 				self['popup_list'].hide()
@@ -427,7 +430,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 				altstbRef = self['popup_list2'].getCurrent()[0][1]
 				print("[SerienRecorder] select:", chlistSender, stbSender, stbRef, altstbSender, altstbRef)
 				channels = []
-				if stbSender != "" or altstbSender != "":
+				if stbSender != NO_ASSIGNMENT or altstbSender != NO_ASSIGNMENT:
 					channels.append((stbSender, stbRef, altstbSender, altstbRef, 1, chlistSender.lower()))
 				else:
 					channels.append((stbSender, stbRef, altstbSender, altstbRef, 0, chlistSender.lower()))
@@ -454,7 +457,7 @@ class serienRecMainChannelEdit(serienRecBaseScreen, Screen, HelpableScreen):
 			stbRef = self['popup_list'].getCurrent()[0][1]
 			print("[SerienRecorder] select:", chlistSender, stbSender, stbRef)
 			channels = []
-			if stbSender != "":
+			if stbSender != NO_ASSIGNMENT:
 				channels.append((stbSender, stbRef, 1, chlistSender.lower()))
 			else:
 				channels.append((stbSender, stbRef, 0, chlistSender.lower()))

@@ -474,30 +474,32 @@ class STBHelpers:
 		return cls.getServiceList(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet')
 
 	@classmethod
-	def buildSTBChannelList(cls, BouquetName=None):
+	def buildSTBChannelList(cls, BouquetName=None, withBouquetName=False):
 		serien_chlist = []
 		mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
 		print("[SerienRecorder] Read box channellist")
 		tvbouquets = cls.getTVBouquets()
 		print("[SerienRecorder] Found %d bouquet: %s" % (len(tvbouquets), tvbouquets))
 
+		def _appendChannel(bouquet, mask, serien_chlist, withBouquetName):
+			bouquetlist = cls.getServiceList(bouquet[0])
+			for (serviceref, servicename) in bouquetlist:
+				playable = not (eServiceReference(serviceref).flags & mask)
+				if playable:
+					if withBouquetName:
+						serien_chlist.append((servicename, serviceref, bouquet[1]))
+					else:
+						serien_chlist.append((servicename, serviceref))
+
 		if not BouquetName:
 			print("[SerienRecorder] Get channels from all bouquets")
 			for bouquet in tvbouquets:
-				bouquetlist = cls.getServiceList(bouquet[0])
-				for (serviceref, servicename) in bouquetlist:
-					playable = not (eServiceReference(serviceref).flags & mask)
-					if playable:
-						serien_chlist.append((servicename, serviceref))
+				_appendChannel(bouquet, mask, serien_chlist, withBouquetName)
 		else:
 			print("[SerienRecorder] Get channels for bouquet %s" % BouquetName)
 			for bouquet in tvbouquets:
 				if bouquet[1] == BouquetName:
-					bouquetlist = cls.getServiceList(bouquet[0])
-					for (serviceref, servicename) in bouquetlist:
-						playable = not (eServiceReference(serviceref).flags & mask)
-						if playable:
-							serien_chlist.append((servicename, serviceref))
+					_appendChannel(bouquet, mask, serien_chlist, withBouquetName)
 					break
 		print("[SerienRecorder] Number of channels found: %d" % len(serien_chlist))
 
