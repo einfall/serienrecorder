@@ -596,7 +596,7 @@ class serienRecTimer:
 				if self.database.getForceRecording(serien_fsid, config.plugins.serienRec.forceRecording.value):
 					TimeSpan_time = int(future_time) + (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
 					if int(timer_start_unixtime) > int(TimeSpan_time):
-						# backup timer data for post processing
+						# backup timer data for postprocessing
 						show_start = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
 						SRLogger.writeLogFilter("timeRange", "' %s ' - Backup Timer → %s" % (label_serie, show_start))
 						forceRecordings_W.append((title, staffel, episode, label_serie, timer_start_unixtime,
@@ -614,7 +614,8 @@ class serienRecTimer:
 			                timer_stbChannel, optionalText, vomMerkzettel):
 				#self.removeTransmission(episode, serien_fsid, staffel, timer_start_unixtime, timer_stbRef, title)
 				TimerDone = True
-				break
+				# Do not break here - because if there are more transmissions for the same season and episode (e.g. S00EE with equal title) we have to process them all
+				# break
 
 		### end of for loop
 		self.tempDB.commitTransaction()
@@ -660,7 +661,7 @@ class serienRecTimer:
 					TimerDone = True
 
 		if not TimerDone:
-			# post-processing event recordings
+			# postprocessing event recordings
 			for singleTitle, staffel, singleEpisode, label_serie, timer_start_unixtime, timer_end_unixtime, timer_stbRef, dirname, serien_name, serien_wlid, serien_fsid, markerType, webChannel, timer_stbChannel, check_SeasonEpisode, vomMerkzettel, current_time, future_time in eventRecordings[:]:
 				if self.shouldCreateEventTimer(serien_fsid, staffel, singleEpisode, singleTitle):
 					show_start = time.strftime("%a, %d.%m.%Y - %H:%M", time.localtime(int(timer_start_unixtime)))
