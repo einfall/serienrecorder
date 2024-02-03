@@ -1394,13 +1394,13 @@ class ApiGetBoxChannelsResource(ApiBaseResource):
 		if config.plugins.serienRec.selectBouquets.value:
 			useBouquets = True
 			mainBouquetName = config.plugins.serienRec.MainBouquet.value
-			boxChannels = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value)
+			boxChannels = STBHelpers.buildSTBChannelList(config.plugins.serienRec.MainBouquet.value, True)
 			altBouquetName = config.plugins.serienRec.AlternativeBouquet.value
-			altBoxChannels = STBHelpers.buildSTBChannelList(config.plugins.serienRec.AlternativeBouquet.value)
+			altBoxChannels = STBHelpers.buildSTBChannelList(config.plugins.serienRec.AlternativeBouquet.value, True)
 		else:
 			useBouquets = False
 			mainBouquetName = None
-			boxChannels = STBHelpers.buildSTBChannelList()
+			boxChannels = STBHelpers.buildSTBChannelList(None, True)
 			altBouquetName = None
 			altBoxChannels = []
 

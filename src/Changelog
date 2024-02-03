@@ -1,8 +1,34 @@
-##Version 4.6.7-beta (14.10.2023)
+##Version 4.7.0 (03.02.2024)
+
+**Neue Funktionen:**
+- Fehler werden im Log in rot hervorgehoben
+- "TVDB-ID bearbeiten Dialog" überarbeitet (siehe Anmerkung 1)
+- Neue Option "Automatisch" bei "Aktion nach dem automatischen Timer-Suchlauf" (siehe Anmerkung 2)
 
 **Änderungen:**
-- Sortierung in der Merkzettel Ansicht stürzt nicht mehr
-- Logausgabe beim Aktualisieren von Serien-Markern verbessert
+- Verbesserte Fehlerbehandlung wenn die Datenbank nicht gefunden werden kann
+- Logeintrag wenn OpenWebIf und Standard-Webinterface installiert sind
+- Die Senderzuordnung wurde verbessert (siehe Anmerkung 3)
+- Verzeichnisse bei manuellen Timern nur einmal prüfen
+- Erweitertes Logging beim Initialisieren der Datenbank
+
+**Bugfixes:**
+- Kein Absturz beim Löschen aus dem Merkzettel
+- Fehlerhaftes Verhalten bei Eventprogrammierungen behoben (siehe Anmerkung 4)
+- Fehlerhaftes Verhalten bei S00E00 Epsisoden mit gleichem Titel behoben (siehe Anmerkung 5)
+
+**Anmerkungen:**
+1. Wenn in der Serien- und Staffelstart Ansicht der "Ohne TVDB-ID" Filter aktiv ist,
+kann man jetzt beim Setzen der TVDB-ID mit den Bouquet Tasten zur nächsten Serie ohne TVDB-ID wechseln.
+2. Es gibt jetzt die Möglichkeit bei "Aktion nach dem automatischen Timer-Suchlauf" die Option "Automatisch" zu setzen.
+Dann fährt der SerienRecorder die Box wieder herunter, wenn er sie für den automatischen Timer-Suchlauf gestartet hat.
+In allen anderen Zuständen oder wenn die Box nach dem Starten bedient wurde, macht der SerienRecorder nichts.
+3. Die Senderzuordnung wurde verbessert, in der Senderauswahl wird jetzt der Bouquetname angezeigt.
+Außerdem ist die erste Zeile nicht mehr leer, sondern zeigt jetzt "-- Keine Zuordnung --".
+4. Wenn im Suchzeitraum zusätzlich zum Event auch die Einzelepisoden gefunden wurden, hat der SerienRecorder
+zusätzlich zu den Timern für die Einzelepisoden auch noch einen Timer für das Event erstellt.
+5. Bei Episoden mit S00E00 und dem gleichen Titel hat der SerienRecorder beim Timer-Suchlauf die Verarbeitunge
+vorzeitig abgebrochen und unabhängig von den Einstellungen nur einen Timer angelegt.
 
 
 Spenden an die Entwickler:
