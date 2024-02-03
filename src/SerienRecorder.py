@@ -148,6 +148,7 @@ def showCover(data, self, serien_cover_path, force_show=True):
 def initDB():
 	# type: () -> object
 	global serienRecDataBaseFilePath
+	print("[SerienRecorder] Initializing database...")
 
 	# If database is at old default location (SerienRecorder plugin folder) we have to move the db to new default location
 	serienRecMainPath = os.path.dirname(__file__)
@@ -155,23 +156,24 @@ def initDB():
 	if fileExists("%s/SerienRecorder.db" % serienRecMainPath):
 		shutil.move("%s/SerienRecorder.db" % serienRecMainPath, serienRecDataBaseFilePath)
 
+	print("[SerienRecorder] Database file path: %s" % serienRecDataBaseFilePath)
 	if not fileExists(serienRecDataBaseFilePath):
 		config.plugins.serienRec.databasePath.value = "/etc/enigma2/"
 		config.plugins.serienRec.databasePath.save()
 		configfile.save()
 		SRLogger.writeLog("Datenbankpfad nicht gefunden, auf Standardpfad zurückgesetzt!")
-		print("[SerienRecorder] Datenbankpfad nicht gefunden, auf Standardpfad zurückgesetzt!")
+		print("[SerienRecorder] Database path not found, reset to default path")
 		Notifications.AddPopup(
 			"SerienRecorder Datenbank wurde nicht gefunden.\nDer Standardpfad für die Datenbank wurde wiederhergestellt!",
 			MessageBox.TYPE_INFO, timeout=10)
 		serienRecDataBaseFilePath = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
 
 	try:
+		print("[SerienRecorder] Trying to instanciate SerienRecorder database at %s" % serienRecDataBaseFilePath)
 		database = SRDatabase(serienRecDataBaseFilePath)
 	except:
 		print("[SerienRecorder] Database failed to initialize")
 		SRLogger.writeLog("Fehler beim Initialisieren der Datenbank")
-		print("[SerienRecorder] Fehler beim Initialisieren der Datenbank")
 		Notifications.AddPopup("SerienRecorder Datenbank kann nicht initialisiert werden.\nSerienRecorder wurde beendet!", MessageBox.TYPE_INFO, timeout=10)
 		return False
 
@@ -193,6 +195,7 @@ def initDB():
 			if dbVersion == config.plugins.serienRec.dbversion.value:
 				dbVersionMatch = True
 			elif dbVersion > config.plugins.serienRec.dbversion.value:
+				print("[SerienRecorder] Database version is incompatible, it has to be at least: %s" % dbVersion)
 				SRLogger.writeLog("Datenbankversion nicht kompatibel: SerienRecorder Version muss mindestens %s sein." % dbVersion)
 				Notifications.AddPopup("Die SerienRecorder Datenbank ist mit dieser Version nicht kompatibel.\nEs wird mindestens die SerienRecorder Version %s benötigt!" % dbVersion, MessageBox.TYPE_INFO, timeout=10)
 				dbIncompatible = True
@@ -201,6 +204,7 @@ def initDB():
 
 		mode = os.R_OK | os.W_OK
 		if not os.access(serienRecDataBaseFilePath, mode):
+			print("[SerienRecorder] Database file has incorrect permissions!")
 			SRLogger.writeLog("Datenbankdatei hat nicht die richtigen Berechtigungen - es müssen Lese- und Schreibrechte gesetzt sein.")
 			Notifications.AddPopup("Datenbankdatei hat nicht die richtigen Berechtigungen - es müssen Lese- und Schreibrechte gesetzt sein.", MessageBox.TYPE_INFO, timeout=10)
 			dbIncompatible = True
@@ -212,6 +216,7 @@ def initDB():
 			return False
 
 		if not dbVersionMatch:
+			print("[SerienRecorder] Database is too old!")
 			SRLogger.writeLog("Datenbank ist zu alt - sie muss aktualisiert werden...", True)
 			database.close()
 			backupSerienRecDataBaseFilePath = "%sSerienRecorder_old.db" % config.plugins.serienRec.databasePath.value
@@ -219,9 +224,11 @@ def initDB():
 			shutil.copy(serienRecDataBaseFilePath, backupSerienRecDataBaseFilePath)
 			database = SRDatabase(serienRecDataBaseFilePath)
 			if database.update(config.plugins.serienRec.dbversion.value):
+				print("[SerienRecorder] Database updated from %s to version %s" % (dbVersion, config.plugins.serienRec.dbversion.value))
 				SRLogger.writeLog("Datenbank von Version %s auf Version %s aktualisiert" % (dbVersion, config.plugins.serienRec.dbversion.value), True)
 			else:
 				database.close()
+				print("[SerienRecorder] Failed to update database")
 				Notifications.AddPopup("SerienRecorder Datenbank konnte nicht aktualisiert werden. Fehler wurden in die Logdatei geschrieben.\nSerienRecorder wurde beendet!", MessageBox.TYPE_INFO, timeout=10)
 				return False
 
@@ -230,6 +237,7 @@ def initDB():
 		database.optimize()
 	except Exception as e:
 		database.close()
+		print("[SerienRecorder] Failed to access database")
 		SRLogger.writeLog("Fehler beim Zugriff auf die Datenbank [%s]" % str(e))
 		Notifications.AddPopup("Fehler beim Zugriff auf die Datenbank!\n%s" % str(e), MessageBox.TYPE_INFO, timeout=10)
 		return False
