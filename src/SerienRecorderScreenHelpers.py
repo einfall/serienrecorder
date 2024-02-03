@@ -462,55 +462,59 @@ class serienRecBaseScreen:
 			self.displayTimer = None
 
 class EditTVDBID:
-	def __init__(self, parent, session, serien_name, serien_alias, serien_id, serien_fsid, serien_tvdbid):
+
+	class Series:
+		def __init__(self, serien_name, serien_alias, serien_id, serien_fsid, tvdb_id):
+			self.serien_name = serien_name
+			self.serien_alias = serien_alias
+			self.serien_id = serien_id
+			self.serien_fsid = serien_fsid
+			self.tvdb_id = tvdb_id
+
+	def __init__(self, parent, session, selected_index, series_list):
 		self._parent = parent
 		self._session = session
-		self._serien_name = serien_name
-		self._serien_alias = serien_alias
-		self._serien_id = serien_id
-		self._serien_fsid = serien_fsid
-		self._tvdb_id = serien_tvdbid
+		self._selected_index = selected_index
+		self._series_list = series_list
 
 	def changeTVDBID(self):
 		if self.allowChangeTVDBID():
-			if self._tvdb_id == 0:
-				self._tvdb_id = SeriesServer().getTVDBID(self._serien_id)
-			if self._tvdb_id is False:
-				self._session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!", MessageBox.TYPE_ERROR, timeout=5)
+			if len(self._series_list) > 1:
+				self.selectTVDBID(True)
 			else:
-				if self._tvdb_id == 0:
-					self.enterTVDBID(True)
+				# Single series
+				series = self._series_list[0]
+				if series.tvdb_id == 0:
+					series.tvdb_id = SeriesServer().getTVDBID(series.serien_id)
+				if series.tvdb_id is False:
+					self._session.open(MessageBox, "Fehler beim Abrufen der TVDB-ID vom SerienServer!",
+									   MessageBox.TYPE_ERROR, timeout=5)
 				else:
-					tvdb_id_text = str(self._tvdb_id) if self._tvdb_id > 0 else 'Keine'
-					message = "Für ' %s ' ist folgende TVDB-ID zugewiesen: %s\n\nDie TVDB-ID ändern?" % (self._serien_name, tvdb_id_text)
-					self._session.openWithCallback(self.enterTVDBID, MessageBox, message, MessageBox.TYPE_YESNO, default = False)
+					if series.tvdb_id == 0:
+						self.selectTVDBID(True)
+					else:
+						tvdb_id_text = str(series.tvdb_id) if series.tvdb_id > 0 else 'Keine'
+						message = "Für ' %s ' ist folgende TVDB-ID zugewiesen: %s\n\nDie TVDB-ID ändern?" % (
+						series.serien_name, tvdb_id_text)
+						self._session.openWithCallback(self.selectTVDBID, MessageBox, message, MessageBox.TYPE_YESNO,
+													   default=False)
+
 		else:
 			message = "Cover und Serien-/Episodeninformationen stammen von 'TheTVDB' - dafür muss jeder Serie eine TVDB-ID zugewiesen werden. " \
-			          "Für viele Serien stellt Wunschliste diese ID zur Verfügung, manchmal ist sie aber falsch oder fehlt ganz.\n\n" \
-			          "In diesem Fall kann die TVDB-ID über diese Funktion direkt im SerienRecorder geändert und auf dem SerienServer " \
-			          "gespeichert werden, sodass alle SerienRecorder Nutzer von der Änderung profitieren.\n\n" \
-			          "Um Missbrauch zu verhindern, muss diese Funktion aber erst freigeschaltet werden, wer sich beteiligen möchte, kann " \
-			          "sich an den SerienRecorder Entwickler wenden."
+					  "Für viele Serien stellt Wunschliste diese ID zur Verfügung, manchmal ist sie aber falsch oder fehlt ganz.\n\n" \
+					  "In diesem Fall kann die TVDB-ID über diese Funktion direkt im SerienRecorder geändert und auf dem SerienServer " \
+					  "gespeichert werden, sodass alle SerienRecorder Nutzer von der Änderung profitieren.\n\n" \
+					  "Um Missbrauch zu verhindern, muss diese Funktion aber erst freigeschaltet werden, wer sich beteiligen möchte, kann " \
+					  "sich an den SerienRecorder Entwickler wenden."
 
 			self._session.open(MessageBox, message, MessageBox.TYPE_INFO, timeout=0)
 
-	def enterTVDBID(self, answer):
+	def selectTVDBID(self, answer):
 		if answer:
 			from .SerienRecorderTVDBSelectorScreen import TVDBSelectorScreen
-			self._session.open(TVDBSelectorScreen, self._parent, self._serien_id, self._serien_name, self._serien_alias, self._serien_fsid, self._tvdb_id)
-
-			# tvdb_id_text = str(self.tvdb_id) if self.tvdb_id > 0 else ''
-			# from Screens.InputBox import InputBox
-			# from Components.Input import Input
-			# self.session.openWithCallback(self.setTVDBID, InputBox, title="TVDB-ID (zum Löschen eine 0 eingeben):",
-		    #                           windowTitle="TVDB-ID hinzufügen/ändern", text=tvdb_id_text, type=Input.NUMBER)
-
-	# def setTVDBID(self, tvdb_id):
-	# 	if tvdb_id:
-	# 		from .SerienRecorder import getCover
-	# 		if not SeriesServer().setTVDBID(self._serien_id, tvdb_id):
-	# 			self._session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
-	# 		getCover(self._parent, self._serien_name, self._serien_id, self._serien_fsid, False, True)
+			# self._session.open(TVDBSelectorScreen, self._parent, self._serien_id, self._serien_name, self._serien_alias,
+			# 				   self._serien_fsid, self._tvdb_id)
+			self._session.open(TVDBSelectorScreen, self._parent, self._selected_index, self._series_list)
 
 	@staticmethod
 	def allowChangeTVDBID():

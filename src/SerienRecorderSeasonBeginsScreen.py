@@ -137,8 +137,17 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 
 	def changeTVDBID(self):
 		from .SerienRecorderScreenHelpers import EditTVDBID
-		(serien_name, serien_alias, serien_wlid, serien_fsid, serien_tvdbid) = self.getCurrentSelection()
-		editTVDBID = EditTVDBID(self, self.session, serien_name, serien_alias, serien_wlid, serien_fsid, serien_tvdbid)
+		series_list = []
+		selectedIndex = 0
+		if self.tvdbidFilter:
+			for series in self.proposalList:
+				series_list.append(EditTVDBID.Series(series[0], series[8], series[4], series[6], series[9]))
+			selectedIndex = self[self.modus].getSelectedIndex()
+		else:
+			(serien_name, serien_alias, serien_wlid, serien_fsid, serien_tvdbid) = self.getCurrentSelection()
+			series_list.append(EditTVDBID.Series(serien_name, serien_alias, serien_wlid, serien_fsid, serien_tvdbid))
+
+		editTVDBID = EditTVDBID(self, self.session, selectedIndex, series_list)
 		editTVDBID.changeTVDBID()
 
 	def readProposal(self):
@@ -177,6 +186,8 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 		markers = self.database.getAllMarkerStatusForBoxID(config.plugins.serienRec.BoxID.value)
 		self.proposalList = []
 
+		fsIDList = []
+
 		if self.tvdbidFilter:
 			self['text_green'].setText("Alle Serien")
 		else:
@@ -198,11 +209,14 @@ class serienRecShowSeasonBegins(serienRecBaseScreen, Screen, HelpableScreen):
 					continue
 
 				series_tvdbid = event['tvdb_id']
-				if self.tvdbidFilter and series_tvdbid > 0:
-					continue
-
-				series_name = toStr(event['name'])
 				series_fsid = event['fs_id']
+				series_name = toStr(event['name'])
+
+				if self.tvdbidFilter:
+					if series_tvdbid > 0 or series_fsid in fsIDList:
+						continue
+					elif series_tvdbid == 0:
+						fsIDList.append(series_fsid)
 
 				# marker flags: 0 = no marker, 1 = active marker, 2 = inactive marker
 				marker_flag = 0

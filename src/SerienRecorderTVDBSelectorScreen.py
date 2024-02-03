@@ -27,7 +27,8 @@ class TVDBSelectorScreen(Screen):
 
 	skin = """
 			<screen name="TVDBSelectorScreen" position="%d,%d" size="%d,%d" title="%s" backgroundColor="#26181d20">
-				<widget name="headline" position="10,6" size="660,52" foregroundColor="green" backgroundColor="#26181d20" transparent="1" font="Regular;19" valign="center" halign="left" />
+				<widget name="headline" position="10,6" size="615,52" foregroundColor="green" backgroundColor="#26181d20" transparent="1" font="Regular;19" valign="center" halign="left" />
+				<widget name="currentIndex" position="620,6" size="50,52" foregroundColor="#ffffff" backgroundColor="#26181d20" transparent="1" font="Regular;16" valign="center" halign="left" />
 				<widget name="list" position="5,66" size="%d,%d" scrollbarMode="showOnDemand"/>
 				<widget name="footer" position="10,%d" size="500,26" foregroundColor="green" backgroundColor="#26181d20" transparent="1" font="Regular;19" valign="center" halign="left" />
 				<eLabel text="MENU" position="%d,%d" size="60,25" backgroundColor="#777777" valign="center" halign="center" font="Regular;18"/>
@@ -37,16 +38,13 @@ class TVDBSelectorScreen(Screen):
                             DIALOG_WIDTH - 65, DIALOG_HEIGHT - 28
 	                        )
 
-	def __init__(self, session, parent, series_id, series_name, series_alias, series_fsid, tvdb_id):
+	def __init__(self, session, parent, selected_index, series_list):
 		Screen.__init__(self, session)
 
 		self._session = session
 		self._parent = parent
-		self._series_name = series_name
-		self._series_alias = series_alias
-		self._series_id = series_id
-		self._series_fsid = series_fsid
-		self._tvdb_id = tvdb_id
+		self._selected_index = selected_index
+		self._series_list = series_list
 		self._tempDir = '/tmp/serienrecorder/'
 		self._searchResultList = []
 		self._numberOfSearchResults = 0
@@ -56,6 +54,7 @@ class TVDBSelectorScreen(Screen):
 			os.mkdir(self._tempDir)
 
 		self['headline'] = Label("Welche ID soll für die Serie gespeichert werden?")
+		self['currentIndex'] = Label("%d/%d" % (self._selected_index + 1, len(self._series_list)))
 		self['list'] = TVDBIDSelectorList()
 		self['footer'] = Label("Suche wird ausgeführt...")
 
@@ -65,12 +64,14 @@ class TVDBSelectorScreen(Screen):
 			"cancel": self.keyExit,
 			"red"   : self.keyExit,
 			"menu"  : self.menu,
+			"nextBouquet": self.keyNextBouquet,
+			"prevBouquet": self.keyPrevBouquet
 		}, -1)
 
 		self.onLayoutFinish.append(self.__onLayoutFinished)
 
 	def __onLayoutFinished(self):
-		self.doSearch(self._series_name)
+		self.doSearch(self._series_list[self._selected_index].serien_name)
 
 	def doSearch(self, searchTerm):
 		self._numberOfSearchResults = 0
@@ -78,22 +79,26 @@ class TVDBSelectorScreen(Screen):
 		self._searchTerm = searchTerm
 
 		self['list'].setList(self._searchResultList)
-		if self._series_alias and len(self._series_alias) > 0:
-			self['headline'].setText("%s (%s)" % (self._series_name, self._series_alias))
+		if self._series_list[self._selected_index].serien_alias and len(self._series_list[self._selected_index].serien_alias) > 0:
+			self['headline'].setText("%s (%s)" % (self._series_list[self._selected_index].serien_name, self._series_list[self._selected_index].serien_alias))
 		else:
-			self['headline'].setText(self._series_name)
-		from .SerienRecorderSeriesServer import SeriesServer
-		print("[SerienRecorder] Search TVDB series: " + str(self._searchTerm))
-		searchResults = SeriesServer().doSearchTVDBSeries(self._searchTerm)
-		if searchResults is not None:
-			self._numberOfSearchResults = len(searchResults)
-			print("[SerienRecorder] Number of search results found = " + str(self._numberOfSearchResults))
+			self['headline'].setText(self._series_list[self._selected_index].serien_name)
+		
+		try:
+			from .SerienRecorderSeriesServer import SeriesServer
+			print("[SerienRecorder] Search TVDB series: " + str(self._searchTerm))
+			searchResults = SeriesServer().doSearchTVDBSeries(self._searchTerm)
+			if searchResults is not None:
+				self._numberOfSearchResults = len(searchResults)
+				print("[SerienRecorder] Number of search results found = " + str(self._numberOfSearchResults))
 
-			ds = defer.DeferredSemaphore(tokens=5)
-			downloads = [ds.run(self.download, searchResult).addCallback(self.buildList, searchResult).addErrback(self.buildList, searchResult) for searchResult in searchResults]
-			defer.DeferredList(downloads).addErrback(self.dataError).addCallback(self.dataFinish)
-		else:
-			self['footer'].setText("Keine Cover gefunden!")
+				ds = defer.DeferredSemaphore(tokens=5)
+				downloads = [ds.run(self.download, searchResult).addCallback(self.buildList, searchResult).addErrback(self.buildList, searchResult) for searchResult in searchResults]
+				defer.DeferredList(downloads).addErrback(self.dataError).addCallback(self.dataFinish)
+			else:
+				self['footer'].setText("Keine Cover gefunden!")
+		except:
+			self['footer'].setText("Fehler bei der Suche nach Covern")
 
 	def download(self, searchResult):
 		from twisted.web import client
@@ -127,9 +132,9 @@ class TVDBSelectorScreen(Screen):
 		self['footer'].setText("Es wurden %d Serien gefunden" % self._numberOfSearchResults)
 
 		# Select row
-		if self._tvdb_id:
+		if self._series_list[self._selected_index].tvdb_id:
 			try:
-				idx = [i[0] for i in list(*zip(*self._searchResultList))].index(str(self._tvdb_id))
+				idx = [i[0] for i in list(*zip(*self._searchResultList))].index(str(self._series_list[self._selected_index].tvdb_id))
 				self['list'].moveToIndex(idx)
 			except Exception:
 				pass
@@ -142,15 +147,15 @@ class TVDBSelectorScreen(Screen):
 
 	def menu(self):
 		menu_list = [("TVDB-ID eingeben", "enter_tvdb_id"), ("Cover aktualisieren", "reload_cover")]
-		if self._series_alias and len(self._series_alias) > 0:
+		if self._series_list[self._selected_index].serien_alias and len(self._series_list[self._selected_index].serien_alias) > 0:
 			menu_list.append(("Mit Aliasnamen suchen", "search_with_alias"))
 
 		matches = [" - ", ": "]
-		if any([x in self._series_name for x in matches]):
-			if " - " in self._series_name:
-				menu_list.append(("Nach '%s' suchen" % self._series_name[0:self._series_name.find(" - ")], "search_substring"))
+		if any([x in self._series_list[self._selected_index].serien_name for x in matches]):
+			if " - " in self._series_list[self._selected_index].serien_name:
+				menu_list.append(("Nach '%s' suchen" % self._series_list[self._selected_index].serien_name[0:self._series_list[self._selected_index].serien_name.find(" - ")], "search_substring"))
 			else:
-				menu_list.append(("Nach '%s' suchen" % self._series_name[0:self._series_name.find(": ")], "search_substring"))
+				menu_list.append(("Nach '%s' suchen" % self._series_list[self._selected_index].serien_name[0:self._series_list[self._selected_index].serien_name.find(": ")], "search_substring"))
 
 		from Screens.ChoiceBox import ChoiceBox
 		self.session.openWithCallback(self.menuCallback, ChoiceBox, title=self._searchTerm, list=menu_list)
@@ -162,25 +167,25 @@ class TVDBSelectorScreen(Screen):
 				self.enterTVDBID()
 			if ret == "reload_cover":
 				from .SerienRecorder import getCover
-				getCover(self._parent, self._series_name, self._series_fsid, False, True)
+				getCover(self._parent, self._series_list[self._selected_index].serien_name, self._series_list[self._selected_index].serien_fsid, False, True)
 				self.close()
 			if ret == "search_with_alias":
 				# If there are more than one alias they are separated by slashes
 				# We will use the first alias only
-				aliases = self._series_alias.split("/")
+				aliases = self._series_list[self._selected_index].serien_alias.split("/")
 				searchTerm = aliases[0]
 				if searchTerm == self._searchTerm:
-					searchTerm = self._series_name
+					searchTerm = self._series_list[self._selected_index].serien_name
 				self.doSearch(searchTerm)
 			if ret == "search_substring":
-				if " - " in self._series_name:
-					searchTerm = self._series_name[0:self._series_name.find(" - ")]
+				if " - " in self._series_list[self._selected_index].serien_name:
+					searchTerm = self._series_list[self._selected_index].serien_name[0:self._series_list[self._selected_index].serien_name.find(" - ")]
 				else:
-					searchTerm = self._series_name[0:self._series_name.find(": ")]
+					searchTerm = self._series_list[self._selected_index].serien_name[0:self._series_list[self._selected_index].serien_name.find(": ")]
 				self.doSearch(searchTerm)
 
 	def enterTVDBID(self):
-			tvdb_id_text = str(self._tvdb_id) if self._tvdb_id > 0 else ''
+			tvdb_id_text = str(self._series_list[self._selected_index].tvdb_id) if self._series_list[self._selected_index].tvdb_id > 0 else ''
 			from Screens.InputBox import InputBox
 			from Components.Input import Input
 			self.session.openWithCallback(self.setTVDBID, InputBox, title="TVDB-ID (zum Löschen eine 0 eingeben):",
@@ -189,12 +194,35 @@ class TVDBSelectorScreen(Screen):
 	def setTVDBID(self, tvdb_id):
 		if tvdb_id:
 			from .SerienRecorderSeriesServer import SeriesServer
-			if not SeriesServer().setTVDBID(self._series_id, tvdb_id):
+			if not SeriesServer().setTVDBID(self._series_list[self._selected_index].serien_id, tvdb_id):
 				self.session.open(MessageBox, "Die TVDB-ID konnte nicht auf dem SerienServer geändert werden!", MessageBox.TYPE_ERROR, timeout=5)
 
 			from .SerienRecorder import getCover
-			getCover(self._parent, self._series_name, self._series_fsid, False, True)
-		self.close()
+			getCover(self._parent, self._series_list[self._selected_index].serien_name, self._series_list[self._selected_index].serien_fsid, False, True)
+
+		if len(self._series_list) <= 1 or self._selected_index == len(self._series_list) - 1:
+			self.close()
+		else:
+			self.keyPrevBouquet()
+
+	def cleanup(self, serien_id):
+		for series in self._series_list:
+			if series.serien_id == serien_id:
+				self._series_list.remove(series)
+
+	def keyPrevBouquet(self):
+		if self._selected_index < len(self._series_list) - 1:
+			self._selected_index += 1
+			self['currentIndex'].setText("%d/%d" % (self._selected_index + 1, len(self._series_list)))
+			self['footer'].setText("Suche wird ausgeführt...")
+			self.doSearch(self._series_list[self._selected_index].serien_name)
+
+	def keyNextBouquet(self):
+		if self._selected_index > 0:
+			self._selected_index -= 1
+			self['currentIndex'].setText("%d/%d" % (self._selected_index + 1, len(self._series_list)))
+			self['footer'].setText("Suche wird ausgeführt...")
+			self.doSearch(self._series_list[self._selected_index].serien_name)
 
 	def keyExit(self):
 		self.close()
