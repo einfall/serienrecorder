@@ -99,7 +99,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.selectNoOfTuners = ConfigYesNo(default=True)
 	config.plugins.serienRec.tuner = ConfigInteger(4, (1, 8))
 	config.plugins.serienRec.wakeUpDSB = ConfigYesNo(default=False)
-	config.plugins.serienRec.afterAutocheck = ConfigSelection(choices=[("0", "Keine"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen")], default="0")
+	config.plugins.serienRec.afterAutocheck = ConfigSelection(choices=[("0", "Keine"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen"), ("3", "Automatisch")], default="0")
 	config.plugins.serienRec.DSBTimeout = ConfigInteger(20, (0, 999))
 
 	###############################################################################################################################
@@ -235,6 +235,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.addedListSorted = ConfigYesNo(default=False)
 	config.plugins.serienRec.wishListSorted = ConfigYesNo(default=False)
 	config.plugins.serienRec.serienRecShowSeasonBegins_filter = ConfigYesNo(default=False)
+	config.plugins.serienRec.lastWakeUpDSBTime = ConfigInteger(default = 0)
 
 	# OBSOLETE
 	config.plugins.serienRec.dbversion = NoSave(ConfigText(default=SRDBVERSION))
@@ -502,6 +503,7 @@ def saveSettings():
 	###############################################################################################################################
 	config.plugins.serienRec.timeUpdate.save()
 	config.plugins.serienRec.kindOfTimer.save()
+	config.plugins.serienRec.lastWakeUpDSBTime.save()
 	# Save obsolete config setting here to remove it from file
 	config.plugins.serienRec.dbversion.save()
 	config.plugins.serienRec.bouquetList.save()
@@ -1296,7 +1298,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' wird die Box vor dem automatischen Timer-Suchlauf hochgefahren, falls sie sich im Deep-Standby befindet.\n"
 				"Bei 'nein' wird der automatische Timer-Suchlauf NICHT ausgeführt, wenn sich die Box im Deep-Standby befindet."),
 			config.plugins.serienRec.afterAutocheck: (
-				"Hier kann ausgewählt werden, ob die Box nach dem automatischen Timer-Suchlauf in Standby oder Deep-Standby gehen soll."),
+				"Hier kann ausgewählt werden, ob die Box nach dem automatischen Timer-Suchlauf in Standby oder Deep-Standby gehen soll.\n"
+				"Bei 'Automatisch' geht die Box in den vorherigen Zustand, falls sie zwischenzeitlich nicht bedient wurde."),
 			config.plugins.serienRec.DSBTimeout: (
 				"Bevor die Box in den Deep-Standby fährt, wird für die hier eingestellte Dauer (in Sekunden) eine entsprechende Nachricht auf dem Bildschirm angezeigt. "
 				"Während dieser Zeitspanne hat der Benutzer die Möglichkeit, das Herunterfahren der Box abzubrechen. Nach Ablauf dieser Zeitspanne fährt die Box automatisch in den Deep-Standby."),

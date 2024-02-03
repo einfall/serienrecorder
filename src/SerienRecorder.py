@@ -275,26 +275,30 @@ class serienRecEPGSelection(EPGSelection):
 
 def getNextWakeup():
 	if config.plugins.serienRec.wakeUpDSB.value and config.plugins.serienRec.timeUpdate.value and config.plugins.serienRec.autochecktype.value == "1":
-		print("[SerienRecorder] Deep-Standby WakeUp: AN")
+		print("[SerienRecorder] Deep-Standby WakeUp: ON")
 		now = time.localtime()
 		current_time = int(time.time())
 
-		begin = int(time.mktime((now.tm_year, now.tm_mon, now.tm_mday, config.plugins.serienRec.deltime.value[0],
+		wakeupTime = int(time.mktime((now.tm_year, now.tm_mon, now.tm_mday, config.plugins.serienRec.deltime.value[0],
 								 config.plugins.serienRec.deltime.value[1], 0, now.tm_wday, now.tm_yday, now.tm_isdst)))
 
 		# überprüfe ob die aktuelle zeit größer ist als der clock-timer + 1 day.
-		if int(current_time) > int(begin):
+		if int(current_time) > int(wakeupTime):
 			print("[SerienRecorder] WakeUp-Timer + 1 day.")
-			begin += 86400
+			wakeupTime += 86400
 		# 5 min. bevor der Clock-Check anfängt wecken.
-		begin -= 300
+		wakeupTime -= 300
 
-		wakeupUhrzeit = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(begin)))
-		print("[SerienRecorder] Deep-Standby WakeUp um %s" % wakeupUhrzeit)
+		config.plugins.serienRec.lastWakeUpDSBTime.value = wakeupTime
+		config.plugins.serienRec.lastWakeUpDSBTime.save()
 
-		return begin
+		wakeupTimeString = time.strftime("%d.%m.%Y - %H:%M", time.localtime(int(wakeupTime)))
+		print("[SerienRecorder] Deep-Standby WakeUp um %s" % wakeupTimeString)
+
+		return wakeupTime
 	else:
-		print("[SerienRecorder] Deep-Standby WakeUp: AUS")
+		print("[SerienRecorder] Deep-Standby WakeUp: OFF")
+		return -1
 
 
 def autostart(reason, **kwargs):
@@ -304,6 +308,16 @@ def autostart(reason, **kwargs):
 
 		global startTimer
 		global startTimerConnection
+
+		wasTimerWakeup = session.nav.wasTimerWakeup()  # woken by any timer
+		serienRecorderWakeup = wasTimerWakeup and config.plugins.serienRec.lastWakeUpDSBTime.value == config.misc.prev_wakeup_time.value
+
+		# If box was started by SerienRecorder we switch the box into standby
+		if config.plugins.serienRec.wakeUpDSB.value and serienRecorderWakeup:
+			from Screens.Standby import Standby, inStandby
+			if not inStandby:
+				from Tools import Notifications
+				Notifications.AddNotificationWithID("Standby", Standby)
 
 		lt = time.localtime()
 		uhrzeit = time.strftime("%d.%m.%Y - %H:%M:%S", lt)

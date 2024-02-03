@@ -921,7 +921,11 @@ class serienRecCheckForRecording:
 	def askForDSB(self):
 		if not self.manuell:
 			if config.plugins.serienRec.afterAutocheck.value != "0":
-				if config.plugins.serienRec.DSBTimeout.value > 0 and not Screens.Standby.inStandby:
+				if config.plugins.serienRec.afterAutocheck.value == "3":
+					if config.plugins.serienRec.wakeUpDSB.value and self.session.nav.wasTimerWakeup() and config.plugins.serienRec.lastWakeUpDSBTime.value == config.misc.prev_wakeup_time.value and Screens.Standby.inStandby:
+						print("[SerienRecorder] Automatic mode and box was started by SerienRecorder")
+						self.gotoDeepStandby(True)
+				elif config.plugins.serienRec.DSBTimeout.value > 0 and not Screens.Standby.inStandby:
 					print("[SerienRecorder] Try to display shutdown notification...")
 					try:
 						notificationText = "Soll der SerienRecorder die Box in den Ruhemodus (Standby) schalten?"
@@ -936,23 +940,23 @@ class serienRecCheckForRecording:
 
 	def gotoDeepStandby(self, answer):
 		if answer:
-			if config.plugins.serienRec.afterAutocheck.value == "2":
-				if not NavigationInstance.instance.RecordTimer.isRecording():
+			if config.plugins.serienRec.afterAutocheck.value == "2" or config.plugins.serienRec.afterAutocheck.value == "3":
+				nextRecordingTime = self.session.nav.RecordTimer.getNextRecordingTime()
+
+				from time import time
+				if not (NavigationInstance.instance.RecordTimer.isRecording() or (nextRecordingTime > 0 and (nextRecordingTime - time()) < 360)):
 					for each in self.messageList:
 						Notifications.RemovePopup(each[3])
 
 					print("[SerienRecorder] Going into Deep-Standby")
 					SRLogger.writeLog("Gehe in den Deep-Standby")
 					if Screens.Standby.inStandby:
-						# from RecordTimer import RecordTimerEntry
-						# RecordTimerEntry.TryQuitMainloop()
-						#self.session.open(Screens.Standby.TryQuitMainloop, 1)
 						quitMainloop(1)
 					else:
 						Notifications.AddNotificationWithID("Shutdown", Screens.Standby.TryQuitMainloop, 1)
 				else:
-					print("[SerienRecorder] A running recording prevents Deep-Standby")
-					SRLogger.writeLog("Eine laufende Aufnahme verhindert den Deep-Standby")
+					print("[SerienRecorder] Recordings are in progress or coming up in few seconds - prevent Deep-Standby")
+					SRLogger.writeLog("Eine laufende oder bald startende Aufnahme verhindert den Deep-Standby")
 			else:
 				if not Screens.Standby.inStandby:
 					print("[SerienRecorder] Going into standby")
