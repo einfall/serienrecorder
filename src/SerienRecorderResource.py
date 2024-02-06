@@ -65,14 +65,6 @@ def addWebInterface(session):
 	use_openwebif = False
 	if os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/OpenWebif/pluginshook.src"):
 		use_openwebif = True
-		try:
-			from Plugins.Extensions.WebInterface.WebChilds.Screenpage import ScreenPage
-		except ImportError:
-			print("[SerienRecorder] Default webinterface and OpenWebif installed in parallel, you have to remove one of them")
-			from SerienRecorderLogWriter import SRLogger
-			SRLogger.writeLog("Standard Webinterface und OpenWebif dürfen nicht zusammen installiert sein, bitte eines der beiden deinstallieren.")
-			pass
-
 	print("[SerienRecorder] addWebInterface for OpenWebif = %s" % str(use_openwebif))
 
 	try:

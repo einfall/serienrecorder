@@ -754,7 +754,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 			self.changedEntry()
 
 	def onChangeWebinterfaceSelection(self, selection):
-		if selection:
+		if selection is not None:
 			if selection.value:
 				# Webinterface enabled
 				if os.path.isdir("%s/web-data" % os.path.dirname(__file__)) is False:
@@ -768,36 +768,25 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 
 	def installWebinterfaceCallback(self, answer):
 		if answer:
-			abortInstallation = False
 			successful = False
 			error = ''
 			targetFilePath = os.path.join(os.path.dirname(__file__), "web-data")
 
-			# Are OpenWebif and default Webinterface installed
-			if os.path.exists("/usr/lib/enigma2/python/Plugins/Extensions/OpenWebif/pluginshook.src"):
-				try:
-					from Plugins.Extensions.WebInterface.WebChilds.Screenpage import ScreenPage
-				except ImportError:
-					print("[SerienRecorder] Default webinterface and OpenWebif installed in parallel, you have to remove one of them")
-					self.session.open(MessageBox, "Standard Webinterface und OpenWebif dürfen nicht zusammen installiert sein, bitte eines der beiden deinstallieren.", MessageBox.TYPE_INFO, timeout=0)
-					abortInstallation = True
-
-			if not abortInstallation:
-				try:
-					from .SerienRecorderUpdateScreen import checkGitHubUpdate
-					webapp_assets = checkGitHubUpdate.checkForWebinterfaceUpdate()
-					if not webapp_assets:
-						error = ' [Fehler beim Herunterladen des Updates]'
-					else:
-						for webapp_asset in webapp_assets:
-							(api_version, webapp_version, url, size) = webapp_asset
-							if api_version == SRAPIVERSION:
-								os.makedirs(targetFilePath)
-								successful = checkGitHubUpdate.installWebinterfaceUpdate(url)
-								break
-				except Exception as e:
-					print("[SerienRecorder] Failed to install webinterface [%s]" % str(e))
-					error = ' [%s]' % str(e)
+			try:
+				from .SerienRecorderUpdateScreen import checkGitHubUpdate
+				webapp_assets = checkGitHubUpdate.checkForWebinterfaceUpdate()
+				if not webapp_assets:
+					error = ' [Fehler beim Herunterladen des Updates]'
+				else:
+					for webapp_asset in webapp_assets:
+						(api_version, webapp_version, url, size) = webapp_asset
+						if api_version == SRAPIVERSION:
+							os.makedirs(targetFilePath)
+							successful = checkGitHubUpdate.installWebinterfaceUpdate(url)
+							break
+			except Exception as e:
+				print("[SerienRecorder] Failed to install webinterface [%s]" % str(e))
+				error = ' [%s]' % str(e)
 
 			if successful:
 				self.session.open(MessageBox, "Das SerienRecorder Webinterface wurde erfolgreich installiert.", MessageBox.TYPE_INFO, timeout=5)
