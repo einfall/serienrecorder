@@ -244,6 +244,7 @@ class checkGitHubUpdateScreen(Screen):
 		self.changeLogList = MenuList([], enableWrapAround=False, content=eListboxPythonMultiContent)
 		self.changeLogList.l.setFont(0, gFont('Regular', int(16 * skinFactor)))
 		self.changeLogList.l.setFont(1, gFont('Regular', int(22 * skinFactor)))
+		self.changeLogList.l.setFont(2, gFont('Regular', int(24 * skinFactor)))
 		self.changeLogList.l.setItemHeight(int(28 * skinFactor))
 		self['changelog'] = self.changeLogList
 
@@ -273,6 +274,10 @@ class checkGitHubUpdateScreen(Screen):
 		if len(row) == 0:
 			self.indent = False
 
+		if row.startswith('##'):
+			row = row.replace('#', '')
+			color = parseColor('green').argb()
+			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 5, 2 * skinFactor, DESKTOP_WIDTH - 105, 28 * skinFactor, 2, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row, color, color)]
 		if row.startswith('**'):
 			row = row.replace('*', '')
 			return [entry, (eListboxPythonMultiContent.TYPE_TEXT, 5, 2 * skinFactor, DESKTOP_WIDTH - 105, 28 * skinFactor, 1, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row)]
