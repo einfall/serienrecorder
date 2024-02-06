@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.7.0'
+SRVERSION = '4.7.1-beta'
 SRDBVERSION = '4.6.0'
 SRAPIVERSION = '2.10'
 SRWEBAPPVERSION = '1.5.0'
@@ -780,6 +780,15 @@ class STBHelpers:
 			return cinum
 
 		return -1
+
+	@classmethod
+	def getLastWakeupTime(cls):
+		if hasattr(config.misc, "prev_wakeup_time"):
+			return config.misc.prev_wakeup_time.value
+		elif hasattr(config.misc, "FPwakeUpTime"):
+			return config.misc.FPwakeUpTime.value
+		else:
+			return 0
 
 
 # ----------------------------------------------------------------------------------------------------------------------

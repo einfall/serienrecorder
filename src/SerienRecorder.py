@@ -18,7 +18,7 @@ try:
 except ImportError:
 	import json
 
-from .SerienRecorderHelpers import isDreamOS, toBinary, toStr
+from .SerienRecorderHelpers import isDreamOS, toBinary, toStr, STBHelpers
 from .SerienRecorderSeriesServer import SeriesServer
 from .SerienRecorderDatabase import SRDatabase
 from .SerienRecorderLogWriter import SRLogger
@@ -310,7 +310,7 @@ def autostart(reason, **kwargs):
 		global startTimerConnection
 
 		wasTimerWakeup = session.nav.wasTimerWakeup()  # woken by any timer
-		serienRecorderWakeup = wasTimerWakeup and config.plugins.serienRec.lastWakeUpDSBTime.value == config.misc.prev_wakeup_time.value
+		serienRecorderWakeup = wasTimerWakeup and config.plugins.serienRec.lastWakeUpDSBTime.value == STBHelpers.getLastWakeupTime()
 
 		# If box was started by SerienRecorder we switch the box into standby
 		if config.plugins.serienRec.wakeUpDSB.value and serienRecorderWakeup:

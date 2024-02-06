@@ -922,7 +922,7 @@ class serienRecCheckForRecording:
 		if not self.manuell:
 			if config.plugins.serienRec.afterAutocheck.value != "0":
 				if config.plugins.serienRec.afterAutocheck.value == "3":
-					if config.plugins.serienRec.wakeUpDSB.value and self.session.nav.wasTimerWakeup() and config.plugins.serienRec.lastWakeUpDSBTime.value == config.misc.prev_wakeup_time.value and Screens.Standby.inStandby:
+					if config.plugins.serienRec.wakeUpDSB.value and self.session.nav.wasTimerWakeup() and config.plugins.serienRec.lastWakeUpDSBTime.value == STBHelpers.getLastWakeupTime() and Screens.Standby.inStandby:
 						print("[SerienRecorder] Automatic mode and box was started by SerienRecorder")
 						self.gotoDeepStandby(True)
 				elif config.plugins.serienRec.DSBTimeout.value > 0 and not Screens.Standby.inStandby:
