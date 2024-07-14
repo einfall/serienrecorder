@@ -163,10 +163,19 @@ def initDB():
 		configfile.save()
 		SRLogger.writeLog("Datenbankpfad nicht gefunden, auf Standardpfad zurückgesetzt!")
 		print("[SerienRecorder] Database path not found, reset to default path")
-		Notifications.AddPopup(
-			"SerienRecorder Datenbank wurde nicht gefunden.\nDer Standardpfad für die Datenbank wurde wiederhergestellt!",
-			MessageBox.TYPE_INFO, timeout=10)
+		Notifications.AddPopup("SerienRecorder Datenbank wurde nicht gefunden.\nDer Standardpfad für die Datenbank wurde wiederhergestellt!", MessageBox.TYPE_INFO, timeout=10)
 		serienRecDataBaseFilePath = "%sSerienRecorder.db" % config.plugins.serienRec.databasePath.value
+	else:
+		dbFolderStatus = os.stat(os.path.dirname(serienRecDataBaseFilePath))
+		print("[SerienRecorder] Database folder stats: %s" % str(dbFolderStatus))
+		print("[SerienRecorder] Database folder permissions: %s" % oct(dbFolderStatus.st_mode)[-3:])
+		dbFileStatus = os.stat(serienRecDataBaseFilePath)
+		print("[SerienRecorder] Database file stats: %s" % str(dbFileStatus))
+		print("[SerienRecorder] Database file permissions: %s" % oct(dbFileStatus.st_mode)[-3:])
+
+		if not os.access(serienRecDataBaseFilePath, os.W_OK):
+			Notifications.AddPopup("Die Schreibberechtigung für die SerienRecorder Datenbank Datei fehlt.\nSerienRecorder wurde beendet!", MessageBox.TYPE_INFO, timeout=10)
+			return False
 
 	try:
 		print("[SerienRecorder] Trying to instanciate SerienRecorder database at %s" % serienRecDataBaseFilePath)
@@ -237,7 +246,7 @@ def initDB():
 		database.optimize()
 	except Exception as e:
 		database.close()
-		print("[SerienRecorder] Failed to access database")
+		print("[SerienRecorder] Failed to access database (%s)" % str(e))
 		SRLogger.writeLog("Fehler beim Zugriff auf die Datenbank [%s]" % str(e))
 		Notifications.AddPopup("Fehler beim Zugriff auf die Datenbank!\n%s" % str(e), MessageBox.TYPE_INFO, timeout=10)
 		return False
