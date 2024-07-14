@@ -13,6 +13,7 @@ class SRDatabase:
 	def __init__(self, dbfilepath):
 		self._dbfilepath = dbfilepath
 		self._srDBConn = None
+		self._cursor = None
 		self.connect()
 
 	def __del__(self):
@@ -27,8 +28,27 @@ class SRDatabase:
 			print("[SerienRecorder] Unable to connect to database [%s]" % str(e))
 			raise
 
+	def beginTransaction(self):
+		self._cursor = self._srDBConn.cursor()
+		self._cursor.execute("begin")
+
+	def commitTransaction(self):
+		if self._cursor:
+			self._cursor.execute("commit")
+			self._cursor.close()
+			self._cursor = None
+
+	def rollbackTransaction(self):
+		if self._cursor:
+			self._cursor.execute("rollback")
+			self._cursor.close()
+			self._cursor = None
+
 	def close(self):
 		if self._srDBConn:
+			if self._cursor:
+				self._cursor.close()
+				self._cursor = None
 			self._srDBConn.close()
 			self._srDBConn = None
 
@@ -1322,14 +1342,16 @@ class SRDatabase:
 		return rows
 
 	def getAllTimer(self, startUnixtime):
-		cur = self._srDBConn.cursor()
+		cur = self._cursor if self._cursor else self._srDBConn.cursor()
+					
 		if startUnixtime:
 			cur.execute("SELECT ROWID, * FROM AngelegteTimer WHERE StartZeitstempel>=?", [startUnixtime])
 		else:
 			cur.execute("SELECT ROWID, * FROM AngelegteTimer")
 
 		rows = cur.fetchall()
-		cur.close()
+		if not self._cursor:
+			cur.close()
 		return rows
 
 	def isBouquetActive(self, channel):
@@ -1561,7 +1583,7 @@ class SRDatabase:
 		# Es gibt Episodennummern, die nicht nur aus Zahlen bestehen, z.B. 14a
 		# um solche Folgen in die Datenbank zu bringen wird hier eine Unterscheidung gemacht.
 		result = False
-		cur = self._srDBConn.cursor()
+		cur = self._cursor if self._cursor else self._srDBConn.cursor()
 		if fromEpisode == toEpisode:
 			cur.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (series, season, str(fromEpisode).zfill(2), episodeTitle, int(startUnixtime), stbRef, webChannel, eit, int(activated), fsID))
 			result = True
@@ -1571,7 +1593,8 @@ class SRDatabase:
 					print("[SerienRecorder] %s Staffel: %s Episode: %s " % (str(series), str(season), str(i)))
 					cur.execute("INSERT OR IGNORE INTO AngelegteTimer VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (series, season, str(i).zfill(2), episodeTitle, int(startUnixtime), stbRef, webChannel, eit, int(activated), fsID))
 				result = True
-		cur.close()
+		if not self._cursor:
+			cur.close()
 		return result
 
 	def updateTimerEIT(self, fsID, stbRef, eit, startUnixtimeLowBound, startUnixtimeHighBound, activated):
@@ -1601,11 +1624,12 @@ class SRDatabase:
 		cur.close()
 
 	def removeTimers(self, row_ids):
-		cur = self._srDBConn.cursor()
+		cur = self._cursor if self._cursor else self._srDBConn.cursor()
 		for row_id in row_ids:
-			print("[SerienRecorder] RemoveTimers: %d" % row_id)
+			print("[SerienRecorder] RemoveTimers: Row ID [%d]" % row_id)
 			cur.execute("DELETE FROM AngelegteTimer WHERE ROWID=?", [row_id])
-		cur.close()
+		if not self._cursor:
+			cur.close()
 
 	def removeTimersBySeason(self, fsID, maxSeason, fromEpisode, allowedSeasons, allowSpecials):
 		numberOfRemovedTimers = 0

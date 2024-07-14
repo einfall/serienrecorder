@@ -31,6 +31,7 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 		self.session = session
 		self.picload = ePicLoad()
 		self.database = SRDatabase(getDataBaseFilePath())
+		self.database.beginTransaction()
 		self.chooseMenuList_popup = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
 
 		self["actions"] = HelpableActionMap(self, "SerienRecorderActions", {
@@ -62,10 +63,9 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.setupSkin()
 
-		self.delAdded = False
+		self.changed = False
 		self.addedlist = []
 		self.addedlist_tmp = []
-		self.rowIDsToBeDeleted = []
 		self.modus = "menu_list"
 		self.aSerie = ""
 		self.aSerieFSID = None
@@ -170,19 +170,18 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 	def readAdded(self):
 		self.addedlist = []
 		series = []
-
-		def loadAllTimer():
+		
+		def loadAllTimer(database):
 			print("[SerienRecorder] loadAllTimer")
-			database = SRDatabase(getDataBaseFilePath())
 			return database.getAllTimer(None)
 
 		def onLoadAllTimerSuccessful(timers):
 			for timer in timers:
-				(row_id, Serie, Staffel, Episode, title, start_time, stbRef, webChannel, eit, active, serien_fsid) = timer
-				series.append(Serie)
-				zeile = "%s - S%sE%s - %s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2), title)
-				zeile = zeile.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)").replace(" - webdump", " - %s" % "(Manuell übers Webinterface hinzugefügt !!)")
-				self.addedlist.append((zeile, row_id, Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid))
+				(row_id, serien_name, serien_season, serien_episode, serien_title, start_time, stbRef, webChannel, eit, active, serien_fsid) = timer
+				series.append(serien_name)
+				text = "%s - S%sE%s - %s" % (serien_name, str(serien_season).zfill(2), str(serien_episode).zfill(2), serien_title)
+				text = text.replace(" - dump", " - %s" % "(Manuell hinzugefügt !!)").replace(" - webdump", " - %s" % "(Manuell übers Webinterface hinzugefügt !!)")
+				self.addedlist.append((text, row_id, serien_name, serien_season, serien_episode, serien_title, start_time, webChannel, serien_fsid))
 
 			self.addedlist_tmp = self.addedlist[:]
 			number_of_series = len(set(series))
@@ -199,20 +198,23 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self['title'].setText("Lade Liste aller Timer...")
 
-		import twisted.python.runtime
-		if twisted.python.runtime.platform.supportsThreads():
-			from twisted.internet.threads import deferToThread
-			deferToThread(loadAllTimer).addCallback(onLoadAllTimerSuccessful).addErrback(onLoadAllTimerFailed)
-		else:
-			allTimers = loadAllTimer()
-			onLoadAllTimerSuccessful(allTimers)
+		# import twisted.python.runtime
+		# if twisted.python.runtime.platform.supportsThreads():
+		# 	from twisted.internet.threads import deferToThread
+		# 	deferToThread(loadAllTimer).addCallback(onLoadAllTimerSuccessful).addErrback(onLoadAllTimerFailed)
+		# else:
+		# 	allTimers = loadAllTimer()
+		# 	onLoadAllTimerSuccessful(allTimers)
+		
+		allTimers = loadAllTimer(self.database)
+		onLoadAllTimerSuccessful(allTimers)	
 
 	@staticmethod
 	def buildList(entry):
-		(zeile, row_id, Serie, Staffel, Episode, title, start_time, webChannel, serien_fsid) = entry
+		(row_text, row_id, serien_name, serien_season, serien_episode, serien_title, start_time, webChannel, serien_fsid) = entry
 		foregroundColor = parseColor('foreground').argb()
 		return [entry,
-		        (eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, zeile, foregroundColor)
+		        (eListboxPythonMultiContent.TYPE_TEXT, 20, 00, 1280 * skinFactor, 25 * skinFactor, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, row_text, foregroundColor)
 		        ]
 
 	@staticmethod
@@ -255,6 +257,7 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 			self.aStaffel = self.aStaffel[1:]
 
 		if self.database.addToTimerList(self.aSerie, self.aSerieFSID, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
+			self.changed = True
 			self.readAdded()
 
 	def keyOK(self):
@@ -288,17 +291,15 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 			if self['menu_list'].getCurrent() is None:
 				return
 
-			zeile = self['menu_list'].getCurrent()[0]
-			(txt, row_id, serie, staffel, episode, title, start_time, webChannel, serien_fsid) = zeile
-			self.rowIDsToBeDeleted.append(row_id)
-			self.addedlist_tmp.remove(zeile)
-			self.addedlist.remove(zeile)
-			self.chooseMenuList.setList(list(map(self.buildList, self.addedlist_tmp)))
-			self.delAdded = True
+			entry = self['menu_list'].getCurrent()[0]
+			(txt, row_id, serien_name, serien_season, serien_episode, serien_title, start_time, webChannel, serien_fsid) = entry
+			
+			self.database.removeTimers([row_id])
+			self.changed = True
+			self.readAdded()
 
 	def keyGreen(self):
-		if self.modus == "menu_list" and self.delAdded:
-			self.database.removeTimers(self.rowIDsToBeDeleted)
+		self.database.commitTransaction()
 		self.close()
 
 	def keyYellow(self):
@@ -368,7 +369,9 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 	def callDeleteMsg(self, answer):
 		if answer:
 			self.keyGreen()
-		self.close()
+		else:
+			self.database.rollbackTransaction()
+			self.close()
 
 	def keyCancel(self):
 		if self.modus == "popup_list":
@@ -377,8 +380,9 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 			self['popup_list'].hide()
 			self['popup_bg'].hide()
 		else:
-			if self.delAdded:
+			if self.changed:
 				self.session.openWithCallback(self.callDeleteMsg, MessageBox, "Sollen die Änderungen gespeichert werden?", MessageBox.TYPE_YESNO, default = True)
 				self.close()
 			else:
+				self.database.rollbackTransaction()
 				self.close()
