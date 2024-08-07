@@ -1,9 +1,11 @@
-##Version 4.7.1 (11.02.2024)
+##Version 4.7.2-beta (06.07.2024)
+
+**Neue Funktionen:**
+- Änderungen an der SerienRecorder API für neue Funktion im SerienRecorder Webinterface
 
 **Bugfixes:**
-- Prüfung ob OpenWebIf und Standard Webinterface zusammen installiert sind, erstmal wieder entfernt
-- VTI Konfigurationswert FPwakeUpTime wird jetzt ebenfalls beim Aufwachen der Box berücksichtigt
-- Im Updatescreen wird jetzt auch das Changelog von GitHub korrekt formatiert dargestellt
+- Fehler beim Hinzufügen und Löschen in der Timerliste behoben
+- Verbesserte Logausgabe und Fehlerbehandlung wenn der Datenbankpfad schreibgeschützt ist
 
 
 

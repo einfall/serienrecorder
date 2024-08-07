@@ -204,7 +204,7 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		markerLastUpdate = self.database.getMarkerLastUpdate()
 		if (markerLastUpdate + 30 * 24 * 60 * 60) < int(time.time()):
 			self.onShow.remove(self.checkLastMarkerUpdate)
-			self.session.openWithCallback(self.executeUpdateMarkers, MessageBox, "Die Namen der Serien-Marker wurden vor mehr als 30 Tagen das letzte Mal aktualisiert, sollen sie jetzt aktualisiert werden?", MessageBox.TYPE_YESNO)
+			self.session.openWithCallback(self.executeUpdateMarkers, MessageBox, "Die Serien-Marker wurden vor mehr als 30 Tagen das letzte Mal aktualisiert, sollen sie jetzt aktualisiert werden?", MessageBox.TYPE_YESNO)
 
 	def updateMarkers(self):
 		self.session.openWithCallback(self.executeUpdateMarkers, MessageBox, "Sollen die Namen der Serien-Marker aktualisiert werden?", MessageBox.TYPE_YESNO)

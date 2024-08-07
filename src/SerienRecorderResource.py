@@ -25,6 +25,7 @@ def getApiList(session):
 	childs.append( ('setmarkersettings', ApiSetMarkerSettingsResource() ) )
 	childs.append( ('createmarker', ApiCreateMarkerResource() ) )
 	childs.append( ('deletemarker', ApiDeleteMarkerResource() ) )
+	childs.append( ('updatemarkers', ApiUpdateMarkersResource() ) )
 	childs.append( ('settings', ApiGetSettingsResource() ) )
 	childs.append( ('setsettings', ApiSetSettingsResource(session)))
 	childs.append( ('resetsettings', ApiResetSettingsResource()))
@@ -34,6 +35,8 @@ def getApiList(session):
 	childs.append( ('tvdbcovers', ApiGetTVDBCoversResource() ) )
 	childs.append( ('settvdbcover', ApiSetTVDBCoverResource()))
 	childs.append( ('settvdbid', ApiSetTVDBIDResource()))
+	childs.append( ('searchtvdbid', ApiSearchTVDBIDResource()))
+	childs.append( ('tvdbidurl', ApiGetTVDBUrlResource()))
 	childs.append( ('transmissions', ApiGetTransmissionsResource() ) )
 	childs.append( ('searchseries', ApiSearchSeriesResource() ) )
 	childs.append( ('activechannels', ApiGetActiveChannelsResource() ) )
@@ -314,6 +317,33 @@ class ApiSetTVDBIDResource(ApiBaseResource):
 
 		return self.returnResult(req, True, True)
 
+class ApiSearchTVDBIDResource(ApiBaseResource):
+	def render_GET(self, req):
+		print("[SerienRecorder] ApiSearchTVDBID")
+		print(req.args)
+		search_term = toStr(req.args[toBinary("searchterm")][0])
+
+		from .SerienRecorderSeriesServer import SeriesServer
+		search_results = SeriesServer().doSearchTVDBSeries(search_term)
+
+		return self.returnResult(req, True, search_results)
+
+class ApiGetTVDBUrlResource(ApiBaseResource):
+	def render_GET(self, req):
+		print("[SerienRecorder] ApiGetTVDBUrl")
+		print(req.args)
+		wl_id = toStr(req.args[toBinary("wlid")][0])
+
+		from .SerienRecorderSeriesServer import SeriesServer
+		from .SerienRecorderScreenHelpers import EditTVDBID
+		
+		data = {}
+		data['tvdbid'] = SeriesServer().getTVDBID(wl_id)
+		data['url'] = "https://thetvdb.com/dereferrer/series/" + str(data['tvdbid'])
+		data['allowChangeTVDBID'] = EditTVDBID.allowChangeTVDBID()
+
+		return self.returnResult(req, True, data)
+
 class ApiGetMarkersResource(ApiBaseResource):
 	def render_GET(self, req):
 		print("[SerienRecorder] ApiGetMarkers")
@@ -395,6 +425,19 @@ class ApiDeleteMarkerResource(ApiBaseResource):
 			result = True
 		return self.returnResult(req, result, None)
 
+class ApiUpdateMarkersResource(ApiBaseResource):
+	def render_POST(self, req):
+		print("[SerienRecorder] ApiUpdateMarkers")
+		print(req.content.getvalue())
+
+		from .SerienRecorderDatabase import SRDatabase
+		from .SerienRecorder import serienRecDataBaseFilePath
+		
+		database = SRDatabase(serienRecDataBaseFilePath)
+		updatedMarkers = database.updateSeriesMarker(True)
+		
+		return self.returnResult(req, True, updatedMarkers)
+	
 class ApiSetMarkerChannelsResource(ApiBaseResource):
 	def render_POST(self, req):
 		print("[SerienRecorder] ApiSetMarkerChannels")
@@ -846,9 +889,9 @@ class ApiSetMarkerSettingsResource(ApiBaseResource):
 
 			results = {
 				'recordfolder': AufnahmeVerzeichnis if AufnahmeVerzeichnis else config.plugins.serienRec.savetopath.value,
-				'numberOfRecords': data['settings']['numberOfRecordings']['value'] if data['settings']['numberOfRecordings']['value'] else config.plugins.serienRec.NoOfRecords,
-				'leadtime': data['settings']['leadTime']['value'] if data['settings']['leadTime']['value'] else config.plugins.serienRec.margin_before,
-				'followuptime': data['settings']['followupTime']['value'] if data['settings']['followupTime']['value'] else config.plugins.serienRec.margin_after,
+				'numberOfRecords': data['settings']['numberOfRecordings']['value'] if data['settings']['numberOfRecordings']['value'] else config.plugins.serienRec.NoOfRecords.value,
+				'leadtime': data['settings']['leadTime']['value'] if data['settings']['leadTime']['value'] else config.plugins.serienRec.margin_before.value,
+				'followuptime': data['settings']['followupTime']['value'] if data['settings']['followupTime']['value'] else config.plugins.serienRec.margin_after.value,
 				'preferredChannel': int(data['settings']['preferredChannel']),
 				'useAlternativeChannel': bool(data['settings']['useAlternativeChannel']['value'])
 			}
@@ -1752,6 +1795,7 @@ class ApiGetInfoResource(ApiBaseResource):
 
 		database = SRDatabase(serienRecDataBaseFilePath)
 		channelListUpToDate = checkChannelListTimelineness(database)
+		markerLastUpdate = database.getMarkerLastUpdate()
 
 		data = {
 			'stbType': STBHelpers.getSTBType(),
@@ -1759,7 +1803,8 @@ class ApiGetInfoResource(ApiBaseResource):
 			'srVersion': config.plugins.serienRec.showversion.value,
 			'dbVersion': str(database.getVersion()),
 			'apiVersion': SRAPIVERSION,
-			'channelListeUpToDate': bool(channelListUpToDate)
+			'channelListeUpToDate': bool(channelListUpToDate),
+			'markerLastUpdate': int(markerLastUpdate)
 		}
 		return self.returnResult(req, True, data)
 
