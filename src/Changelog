@@ -1,12 +1,8 @@
-##Version 4.7.2-beta (06.07.2024)
-
-**Neue Funktionen:**
-- Änderungen an der SerienRecorder API für neue Funktion im SerienRecorder Webinterface
+##Version 4.7.3-beta (26.08.2024)
 
 **Bugfixes:**
-- Fehler beim Hinzufügen und Löschen in der Timerliste behoben
-- Verbesserte Logausgabe und Fehlerbehandlung wenn der Datenbankpfad schreibgeschützt ist
-
+- Absturz in der Timer-Liste beim Sortieren unter Python3
+- Fehlerhafte Sortierung in der Timer-Liste behoben
 
 
 Spenden an die Entwickler:

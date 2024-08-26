@@ -11,7 +11,7 @@ from Tools.Directories import fileExists
 
 from enigma import ePicLoad, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_CENTER
 from skin import parseColor
-import time
+import time, re
 
 from .SerienRecorderScreenHelpers import serienRecBaseScreen, buttonText_na, updateMenuKeys, InitSkin, skinFactor
 from .SerienRecorderDatabase import SRDatabase
@@ -170,7 +170,7 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 	def readAdded(self):
 		self.addedlist = []
 		series = []
-		
+
 		def loadAllTimer(database):
 			print("[SerienRecorder] loadAllTimer")
 			return database.getAllTimer(None)
@@ -189,7 +189,7 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 			self['title'].setText("Keine weiteren Timer für %d Episoden aus %d Serien" % (len(self.addedlist_tmp), number_of_series))
 
 			if config.plugins.serienRec.addedListSorted.value:
-				self.addedlist_tmp.sort(key=lambda x: (x[2].lower(), int(x[3]) if x[3].isdigit() else x[3].lower(), int(x[4]) if x[4].isdigit() else x[4].lower()))
+				self.addedlist_tmp.sort(key=lambda x: (x[2].lower(), self.alphanum_key(x[3]), self.alphanum_key(x[4])))
 			self.chooseMenuList.setList(list(map(self.buildList, self.addedlist_tmp)))
 			self.getCover()
 
@@ -209,6 +209,10 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 		allTimers = loadAllTimer(self.database)
 		onLoadAllTimerSuccessful(allTimers)	
 
+	@staticmethod
+	def alphanum_key(s):
+		return [int(text) if text.isdigit() else text for text in re.split('([0-9]+)', s)]
+	
 	@staticmethod
 	def buildList(entry):
 		(row_text, row_id, serien_name, serien_season, serien_episode, serien_title, start_time, webChannel, serien_fsid) = entry
@@ -309,7 +313,7 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 				self['text_yellow'].setText("Alphabetisch")
 				config.plugins.serienRec.addedListSorted.setValue(False)
 			else:
-				self.addedlist_tmp.sort(key=lambda x: (x[2].lower(), x[3].lower(), x[4].lower()))
+				self.addedlist_tmp.sort(key=lambda x: (x[2].lower(), self.alphanum_key(x[3]), self.alphanum_key(x[4])))
 				self['text_yellow'].setText("Chronologisch")
 				config.plugins.serienRec.addedListSorted.setValue(True)
 			config.plugins.serienRec.addedListSorted.save()
