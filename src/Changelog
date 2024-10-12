@@ -1,8 +1,8 @@
-##Version 4.7.3-beta (26.08.2024)
+##Version 4.7.4-beta (12.10.2024)
 
 **Bugfixes:**
-- Absturz in der Timer-Liste beim Sortieren unter Python3
-- Fehlerhafte Sortierung in der Timer-Liste behoben
+- Ist an einem Serien-Marker eine Staffeleinschränkung konfiguriert, wurden trotzdem Timer für S00 angelegt.
+
 
 
 Spenden an die Entwickler:

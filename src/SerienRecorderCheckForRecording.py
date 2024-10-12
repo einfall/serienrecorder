@@ -15,6 +15,7 @@ from .SerienRecorder import serienRecDataBaseFilePath, getCover, initDB
 from .SerienRecorderSeriesServer import SeriesServer
 from .SerienRecorderDatabase import SRDatabase, SRTempDatabase
 from .SerienRecorderLogWriter import SRLogger
+from .SerienRecorderTransmissionsScreen import serienRecSendeTermine
 
 #autoCheckFinished = False
 refreshTimer = None
@@ -857,43 +858,16 @@ class serienRecCheckForRecording:
 			#
 			# ueberprueft welche staffel(n) erlaubt sind
 			#
-			serieAllowed = False
-			if -2 in staffeln:  # 'Manuell'
-				serieAllowed = False
-			elif (-1 in staffeln) and (0 in staffeln):  # 'Alle'
-				serieAllowed = True
-			elif str(staffel).isdigit():
-				if int(staffel) == 0:
-					if str(episode).isdigit():
-						if int(episode) < int(AbEpisode):
-							if config.plugins.serienRec.writeLogAllowedEpisodes.value:
-								liste = staffeln[:]
-								liste.sort()
-								liste.reverse()
-								if -1 in staffeln:
-									liste.remove(-1)
-									liste[0] = "ab %s" % liste[0]
-								liste.reverse()
-								liste.insert(0, "0 ab E%s" % str(AbEpisode).zfill(2))
-								SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Episode nicht erlaubt → ' %s ' → ' %s '" % (label_serie, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
-						else:
-							serieAllowed = True
-				elif int(staffel) in staffeln:
-					serieAllowed = True
-				elif -1 in staffeln:  # 'folgende'
-					if int(staffel) >= max(staffeln):
-						serieAllowed = True
-			elif self.database.getSpecialsAllowed(serien_fsid):
-				serieAllowed = True
+			seasonAllowed = serienRecSendeTermine.isSeasonAllowed(self.database, serien_fsid, staffel, episode, staffeln, AbEpisode, label_serie, seasonEpisodeString)
 
 			vomMerkzettel = False
-			if not serieAllowed:
+			if not seasonAllowed:
 				if self.database.hasBookmark(serien_fsid, staffel, episode):
 					SRLogger.writeLog("' %s ' - Timer vom Merkzettel wird angelegt @ %s" % (label_serie, stbChannel), True)
-					serieAllowed = True
+					seasonAllowed = True
 					vomMerkzettel = True
 
-			if not serieAllowed:
+			if not seasonAllowed:
 				if config.plugins.serienRec.writeLogAllowedEpisodes.value:
 					liste = staffeln[:]
 					liste.sort()

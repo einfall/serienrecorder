@@ -204,7 +204,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			SRLogger.writeLog("Fehler beim Filtern nach Staffel", True)
 
 		for seriesName, channel, startTime, endTime, season, episode, title, status in transmissions:
-			seasonAllowed = serienRecSendeTermine.isSeasonAllowed(database, seriesFSID, season, episode, seriesSeason, fromEpisode)
+			seasonAllowed = serienRecSendeTermine.isSeasonAllowed(database, seriesFSID, season, episode, seriesSeason, fromEpisode, None, None)
 
 			if config.plugins.serienRec.seasonFilter.value == "1" and not seasonAllowed:
 				continue
@@ -619,7 +619,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		return activatedTimer, deactivatedTimer
 
 	@staticmethod
-	def isSeasonAllowed(database, seriesFSID, season, episode, markerSeasons, fromEpisode):
+	def isSeasonAllowed(database, seriesFSID, season, episode, markerSeasons, fromEpisode, seriesName, seasonEpisodeString):
 		if not markerSeasons and not fromEpisode:
 			return True
 
@@ -629,14 +629,24 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		elif (-1 in markerSeasons) and (0 in markerSeasons):  # 'Alle'
 			allowed = True
 		elif str(season).isdigit():
-			if int(season) == 0:
-				if str(episode).isdigit():
+			if int(season) in markerSeasons:
+				if int(season) == 0 and str(episode).isdigit():
 					if int(episode) < int(fromEpisode):
+						if seriesName and config.plugins.serienRec.writeLogAllowedEpisodes.value:
+							liste = markerSeasons[:]
+							liste.sort()
+							liste.reverse()
+							if -1 in markerSeasons:
+								liste.remove(-1)
+								liste[0] = "ab %s" % liste[0]
+							liste.reverse()
+							liste.insert(0, "0 ab E%s" % str(fromEpisode).zfill(2))
+							SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Episode nicht erlaubt → ' %s ' → ' %s '" % (seriesName, seasonEpisodeString, str(liste).replace("'", "").replace('"', "")))
 						allowed = False
 					else:
 						allowed = True
-			elif int(season) in markerSeasons:
-				allowed = True
+				else:
+					allowed = True
 			elif -1 in markerSeasons:  # 'folgende'
 				if int(season) >= max(markerSeasons):
 					allowed = True
