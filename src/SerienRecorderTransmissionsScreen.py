@@ -622,14 +622,14 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 	def isSeasonAllowed(database, seriesFSID, season, episode, markerSeasons, fromEpisode, seriesName, seasonEpisodeString):
 		if not markerSeasons and not fromEpisode:
 			return True
-
+		
 		allowed = False
 		if -2 in markerSeasons:  # 'Manuell'
 			allowed = False
 		elif (-1 in markerSeasons) and (0 in markerSeasons):  # 'Alle'
 			allowed = True
 		elif str(season).isdigit():
-			if int(season) in markerSeasons:
+			if int(season) in markerSeasons or len(markerSeasons) == 0:
 				if int(season) == 0 and str(episode).isdigit():
 					if int(episode) < int(fromEpisode):
 						if seriesName and config.plugins.serienRec.writeLogAllowedEpisodes.value:

@@ -1,7 +1,7 @@
-##Version 4.7.4-beta (12.10.2024)
+##Version 4.7.5-beta (13.10.2024)
 
 **Bugfixes:**
-- Ist an einem Serien-Marker eine Staffeleinschränkung konfiguriert, wurden trotzdem Timer für S00 angelegt.
+- Ist an einem Serien-Marker nur Staffel 0 konfiguriert, wurden keine Timer mehr angelegt.
 
 
 
