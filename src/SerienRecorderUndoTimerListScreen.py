@@ -52,9 +52,9 @@ class serienRecUndoTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 
 		self.undoList = []
 
-		self.onLayoutFinish.append(self.setSkinProperties)
 		self.onLayoutFinish.append(self.getUndoList)
 		self.onClose.append(self.__onClose)
+		self.onLayoutFinish.append(self.setSkinProperties)
 
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()

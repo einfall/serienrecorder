@@ -203,8 +203,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		except:
 			SRLogger.writeLog("Fehler beim Filtern nach Staffel", True)
 
+		areSpecialsAllowed = database.getSpecialsAllowed(seriesFSID)
 		for seriesName, channel, startTime, endTime, season, episode, title, status in transmissions:
-			seasonAllowed = serienRecSendeTermine.isSeasonAllowed(database, seriesFSID, season, episode, seriesSeason, fromEpisode, None, None)
+			seasonAllowed = serienRecSendeTermine.isSeasonAllowed(season, episode, seriesSeason, fromEpisode, areSpecialsAllowed, None, None)
 
 			if config.plugins.serienRec.seasonFilter.value == "1" and not seasonAllowed:
 				continue
@@ -619,7 +620,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		return activatedTimer, deactivatedTimer
 
 	@staticmethod
-	def isSeasonAllowed(database, seriesFSID, season, episode, markerSeasons, fromEpisode, seriesName, seasonEpisodeString):
+	def isSeasonAllowed(season, episode, markerSeasons, fromEpisode, specialsAllowed, seriesName, seasonEpisodeString):
 		if not markerSeasons and not fromEpisode:
 			return True
 		
@@ -629,7 +630,9 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		elif (-1 in markerSeasons) and (0 in markerSeasons):  # 'Alle'
 			allowed = True
 		elif str(season).isdigit():
-			if int(season) in markerSeasons or len(markerSeasons) == 0:
+			if int(season) == 0 and specialsAllowed:
+				allowed = True
+			elif int(season) in markerSeasons or len(markerSeasons) == 0:
 				if int(season) == 0 and str(episode).isdigit():
 					if int(episode) < int(fromEpisode):
 						if seriesName and config.plugins.serienRec.writeLogAllowedEpisodes.value:
@@ -650,7 +653,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 			elif -1 in markerSeasons:  # 'folgende'
 				if int(season) >= max(markerSeasons):
 					allowed = True
-		elif database.getSpecialsAllowed(seriesFSID):
+		elif specialsAllowed:
 			allowed = True
 
 		return allowed

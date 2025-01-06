@@ -322,9 +322,17 @@ class serienRecEditTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 			self.chooseMenuList.setList(list(map(self.buildList, self.addedlist_tmp)))
 			self.getCover()
 
+	def onCloseUndoTimerList(self):
+		self.database.beginTransaction()
+		self.readAdded()
+	
 	def keyBlue(self):
-		from .SerienRecorderUndoTimerListScreen import serienRecUndoTimerList
-		self.session.open(serienRecUndoTimerList)
+		if self.changed:
+			self.session.open(MessageBox, "Vor der Wiederherstellung müssen die Änderungen an der Timer-Liste gespeichert werden.", MessageBox.TYPE_INFO, timeout=7)
+		else:
+			self.database.commitTransaction()
+			from .SerienRecorderUndoTimerListScreen import serienRecUndoTimerList
+			self.session.openWithCallback(self.onCloseUndoTimerList, serienRecUndoTimerList)
 
 	def previousSeries(self):
 		(selected_serien_name, selected_serien_wlid, selected_serien_fsid) = self.getCurrentSelection()

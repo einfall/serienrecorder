@@ -807,6 +807,8 @@ class serienRecCheckForRecording:
 		if self.database.getForceRecording(serien_fsid, config.plugins.serienRec.forceRecording.value):
 			TimeSpan_time += (int(config.plugins.serienRec.TimeSpanForRegularTimer.value) - int(config.plugins.serienRec.checkfordays.value)) * 86400
 
+		areSpecialsAllowed = self.database.getSpecialsAllowed(serien_fsid)
+
 		# loop over all transmissions
 		self.tempDB.beginTransaction()
 		for current_serien_name, sender, startzeit, endzeit, staffel, episode, title, status in data:
@@ -858,7 +860,7 @@ class serienRecCheckForRecording:
 			#
 			# ueberprueft welche staffel(n) erlaubt sind
 			#
-			seasonAllowed = serienRecSendeTermine.isSeasonAllowed(self.database, serien_fsid, staffel, episode, staffeln, AbEpisode, label_serie, seasonEpisodeString)
+			seasonAllowed = serienRecSendeTermine.isSeasonAllowed(staffel, episode, staffeln, AbEpisode, areSpecialsAllowed, label_serie, seasonEpisodeString)
 
 			vomMerkzettel = False
 			if not seasonAllowed:

@@ -1,9 +1,15 @@
-##Version 4.7.5-beta (13.10.2024)
+##Version 4.7.6 (06.01.2025)
 
 **Bugfixes:**
-- Ist an einem Serien-Marker nur Staffel 0 konfiguriert, wurden keine Timer mehr angelegt.
-
-
+- Prüfung ob OpenWebIf und Standard Webinterface zusammen installiert sind, erstmal wieder entfernt
+- VTI Konfigurationswert FPwakeUpTime wird jetzt ebenfalls beim Aufwachen der Box berücksichtigt
+- Im Updatescreen wird jetzt auch das Changelog von GitHub korrekt formatiert dargestellt
+- Fehler beim Hinzufügen und Löschen in der Timerliste behoben
+- Verbesserte Logausgabe und Fehlerbehandlung wenn der Datenbankpfad schreibgeschützt ist
+- Absturz in der Timer-Liste beim Sortieren unter Python3 behoben
+- Fehlerhafte Sortierung in der Timer-Liste behoben
+- Ist an einem Serien-Marker eine Staffeleinschränkung konfiguriert, wurden trotzdem Timer für S00 angelegt
+- Absturz beim Löschen oder Wiederherstellen von Timern aus der Undo Liste behoben
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel
