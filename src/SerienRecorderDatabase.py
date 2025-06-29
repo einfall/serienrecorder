@@ -581,6 +581,29 @@ class SRDatabase:
 		cur.close()
 		return result
 
+	def getTimerWithLeadingZeroInSeason(self):
+		cur = self._srDBConn.cursor()
+		cur.execute("SELECT Serie, Staffel, Episode FROM AngelegteTimer WHERE Staffel != '0' AND Staffel LIKE '0%'")
+		rows = cur.fetchall()
+		cur.close()
+		return rows
+
+	def removeLeadingZerosFromSeasonInTimer(self):
+		result = False
+		cur = self._srDBConn.cursor()
+		try:
+			# Remove leading zeros from Staffel column in AngelegteTimer table
+			cur.execute("BEGIN TRANSACTION")
+			cur.execute("UPDATE AngelegteTimer SET Staffel = CASE WHEN Staffel = '0' THEN Staffel ELSE ltrim(Staffel, '0') END WHERE Staffel IS NOT NULL")
+			cur.execute("COMMIT")
+			result = True
+		except Exception as e:
+			result = False
+			cur.execute("ROLLBACK")
+			SRLogger.writeLog("Fehler beim Entfernen der führenden Nullen aus der Staffel in der Timerliste [%s]." % str(e), True)
+		cur.close()
+		return result
+	
 	def updateTimers(self):
 		result = False
 		cur = self._srDBConn.cursor()
@@ -1580,6 +1603,9 @@ class SRDatabase:
 
 
 	def addToTimerList(self, series, fsID, fromEpisode, toEpisode, season, episodeTitle, startUnixtime, stbRef, webChannel, eit, activated):
+		if season.startswith('0') and len(season) > 1:
+			season = season[1:]
+		
 		# Es gibt Episodennummern, die nicht nur aus Zahlen bestehen, z.B. 14a
 		# um solche Folgen in die Datenbank zu bringen wird hier eine Unterscheidung gemacht.
 		result = False

@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.7.6'
+SRVERSION = '4.7.7'
 SRDBVERSION = '4.6.0'
 SRAPIVERSION = '2.11'
 SRWEBAPPVERSION = '1.6.0'
@@ -606,9 +606,15 @@ class STBHelpers:
 		from Components.About import about
 		if hasattr(about,'getVTiVersionString'):
 			creator = about.getVTiVersionString()
-		else:
+		elif hasattr(about,'getEnigmaVersionString'):
 			creator = about.getEnigmaVersionString()
-		version = about.getVersionString()
+		else:
+			creator = "unknown"
+
+		if hasattr(about,'getVersionString'):
+			version = about.getVersionString()
+		else:
+			version = "unknown"
 
 		return ' / '.join((creator, version))
 
@@ -857,15 +863,18 @@ class PiconLoader:
 		if not fields or 10 > len(fields) > 1:
 			return "", False
 		pngname = '_'.join(fields)
-		if not pngname and not fields[6].endswith("0000"):
+		exists = PiconLoader.piconExists(pngname, True)
+		if not exists and not fields[6].endswith("0000"):
 			# remove "subnetwork" from namespace
 			fields[6] = fields[6][:-4] + "0000"
 			pngname = '_'.join(fields)
-		if not pngname and fields[0] != '1':
+			exists = PiconLoader.piconExists(pngname, True)
+		if not exists and fields[0] != '1':
 			# fallback to 1 for other reftypes
 			fields[0] = '1'
 			pngname = '_'.join(fields)
-		if not pngname and fields[2] != '1':
+			exists = PiconLoader.piconExists(pngname, True)
+		if not exists and fields[2] != '1':
 			# fallback to 1 for services with different service types
 			fields[2] = '1'
 			pngname = '_'.join(fields)
@@ -889,6 +898,11 @@ class PiconLoader:
 			if not fileExists(pngname):
 				pngname = ""
 		return pngname
+
+	@staticmethod
+	def piconExists(piconName, isPiconByServiceRef):
+		return True if PiconLoader.findPicon(piconName, isPiconByServiceRef) != "" else False
+		
 
 	def piconPathChanged(self, configElement = None):
 		self.nameCache.clear()

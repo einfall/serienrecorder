@@ -317,6 +317,16 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 				from .SerienRecorderChannelScreen import serienRecMainChannelEdit
 				self.session.openWithCallback(self.readPlanerData, serienRecMainChannelEdit)
 			else:
+				timerWithLeadingZeroInSeason = self.database.getTimerWithLeadingZeroInSeason()
+				if timerWithLeadingZeroInSeason:
+					self.session.open(MessageBox, "Die SerienRecorder Timer-Liste enthält fehlerhafte Einträge.\nDiese werden korrigiert - siehe Log.", MessageBox.TYPE_INFO, timeout=5)
+					correctedTimers = []
+					for timer in timerWithLeadingZeroInSeason:
+						(Serie, Staffel, Episode) = timer
+						correctedTimers.append("%s S%sE%s" % (Serie, str(Staffel).zfill(2), str(Episode).zfill(2)))
+					SRLogger.writeLog("Folgende Einträge in der SerienRecorder Timer-Liste enthalten führende Nullen in der Staffel und wurden korrigiert:\n" + "\n   ".join(correctedTimers), True)
+					self.database.removeLeadingZerosFromSeasonInTimer()
+
 				from .SerienRecorderChannelScreen import checkChannelListTimelineness
 				self.serviceRefs = self.database.getActiveServiceRefs()
 				channelListUpToDate = True

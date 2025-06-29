@@ -445,9 +445,6 @@ class serienRecEpisodes(serienRecBaseScreen, Screen, HelpableScreen):
 		print("[SerienRecorder] von Episode: %s" % self.aFromEpisode)
 		print("[SerienRecorder] bis Episode: %s" % self.aToEpisode)
 
-		if self.aStaffel.startswith('0') and len(self.aStaffel) > 1:
-			self.aStaffel = self.aStaffel[1:]
-
 		if self.database.addToTimerList(self.serien_name, self.serien_fsid, self.aFromEpisode, self.aToEpisode, self.aStaffel, "dump", int(time.time()), "", "", 0, 1):
 			self.chooseMenuList.setList(list(map(self.buildList_episodes, self.episodes_list_cache[self.page])))
 
