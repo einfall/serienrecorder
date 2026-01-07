@@ -334,6 +334,8 @@ class serienRecCheckForRecording:
 			sMsg += "Senderliste "
 		if config.plugins.serienRec.writeLogAllowedEpisodes.value:
 			sMsg += "Episoden "
+		if config.plugins.serienRec.writeLogDeactivatedMarker.value:
+			sMsg += "Deaktivierte Marker "
 		if config.plugins.serienRec.writeLogAdded.value:
 			sMsg += "Added "
 		if config.plugins.serienRec.writeLogDisk.value:
@@ -550,7 +552,8 @@ class serienRecCheckForRecording:
 
 						jobQueue.put((seriesID, fsID, timeSpan, markerChannels, serienTitle, SerieStaffel, AbEpisode, AnzahlAufnahmen, current_time, future_time, excludedWeekdays, limitedChannels))
 					else:
-						SRLogger.writeLog("' %s ' - Dieser Serien-Marker ist deaktiviert - es werden keine Timer angelegt." % serienTitle, True)
+						if config.plugins.serienRec.writeLogDeactivatedMarker.value:
+							SRLogger.writeLog("' %s ' - Dieser Serien-Marker ist deaktiviert - es werden keine Timer angelegt." % serienTitle, True)
 
 					if -2 in SerieStaffel:
 						SRLogger.writeLog("' %s ' - Dieser Serien-Marker steht auf manuell - es werden keine Timer automatisch angelegt." % serienTitle, True)

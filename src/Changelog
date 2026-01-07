@@ -1,12 +1,11 @@
-##Version 4.7.7 (29.06.2025)
+##Version 4.7.8 (07.01.2026)
 
-**Neue Funktion**
-- Enthält die Timer-Liste fehlerhafte Einträge (mit führenden Nullen in der Staffelnummer) werden diese automatisch korrigiert
+**Neue Funktionen:**
+- Zusätzliche Einstellungsoption um deaktivierte Serien-Marker aus der Serien-Marker Ansicht auszublenden
+- Zusätzliche Einstellungsoption um Meldungen zu deaktivierten Serien-Markers im Log zu unterdrücken
 
 **Bugfixes:**
-- Bei manuell hinzugefügten Einträgen in die Timer-Liste wird die Staffelnummer jetzt in allen Fällen automatisch normalisiert
 - Kein Absturz, wenn die Imageversion nicht ermittelt werden konnte
-- Verbesserte Suche nach Picons
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel

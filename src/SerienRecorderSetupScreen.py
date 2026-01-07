@@ -184,6 +184,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.markerColumnWidth = ConfigSelectionNumber(-200, 200, 10, default=0)
 	config.plugins.serienRec.markerNameInset = ConfigSelectionNumber(0, 80, 1, default=40)
 	config.plugins.serienRec.showDeactivatedBoxIDs = ConfigYesNo(default=False)
+	config.plugins.serienRec.showDeactivatedMarkers = ConfigYesNo(default=True)
 	config.plugins.serienRec.seasonFilter = ConfigSelection(choices=[("0", "Nein"), ("1", "Ausblenden"), ("2", "In grau anzeigen")], default="0")
 	config.plugins.serienRec.timerFilter = ConfigYesNo(default=False)
 	config.plugins.serienRec.markerSort = ConfigSelection(choices=[("0", "Alphabetisch"), ("1", "Wunschliste")], default="0")
@@ -213,6 +214,7 @@ def ReadConfigFile():
 	config.plugins.serienRec.writeLogVersion = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogChannels = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogAllowedEpisodes = ConfigYesNo(default=True)
+	config.plugins.serienRec.writeLogDeactivatedMarker = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogAdded = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogDisk = ConfigYesNo(default=True)
 	config.plugins.serienRec.writeLogTimeRange = ConfigYesNo(default=True)
@@ -460,6 +462,7 @@ def saveSettings():
 	config.plugins.serienRec.markerColumnWidth.save()
 	config.plugins.serienRec.markerNameInset.save()
 	config.plugins.serienRec.showDeactivatedBoxIDs.save()
+	config.plugins.serienRec.showDeactivatedMarkers.save()
 	config.plugins.serienRec.seasonFilter.save()
 	config.plugins.serienRec.timerFilter.save()
 	config.plugins.serienRec.markerSort.save()
@@ -491,6 +494,7 @@ def saveSettings():
 	config.plugins.serienRec.writeLogVersion.save()
 	config.plugins.serienRec.writeLogChannels.save()
 	config.plugins.serienRec.writeLogAllowedEpisodes.save()
+	config.plugins.serienRec.writeLogDeactivatedMarker.save()
 	config.plugins.serienRec.writeLogAdded.save()
 	config.plugins.serienRec.writeLogDisk.save()
 	config.plugins.serienRec.writeLogTimeRange.save()
@@ -1056,6 +1060,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("Korrektur der Spaltenbreite der Serien-Marker Ansicht:", config.plugins.serienRec.markerColumnWidth))
 		self.list.append(getConfigListEntry("Einzug der Serien-Namen in der Serien-Marker Ansicht:", config.plugins.serienRec.markerNameInset))
 		self.list.append(getConfigListEntry("Deaktivierte Box-IDs in der Serien-Marker Ansicht anzeigen:", config.plugins.serienRec.showDeactivatedBoxIDs))
+		self.list.append(getConfigListEntry("Deaktivierte Serien-Marker in der Serien-Marker Ansicht anzeigen:", config.plugins.serienRec.showDeactivatedMarkers))
 		self.list.append(getConfigListEntry("Staffel-Filter in Sendetermine Ansicht:", config.plugins.serienRec.seasonFilter))
 		self.list.append(getConfigListEntry("Timer-Filter in Sendetermine Ansicht:", config.plugins.serienRec.timerFilter))
 		self.list.append(getConfigListEntry("Sortierung der Serien-Marker:", config.plugins.serienRec.markerSort))
@@ -1085,6 +1090,7 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		self.list.append(getConfigListEntry("DEBUG LOG - Box Informationen:", config.plugins.serienRec.writeLogVersion))
 		self.list.append(getConfigListEntry("DEBUG LOG - Senderliste:", config.plugins.serienRec.writeLogChannels))
 		self.list.append(getConfigListEntry("DEBUG LOG - Episoden:", config.plugins.serienRec.writeLogAllowedEpisodes))
+		self.list.append(getConfigListEntry("DEBUG LOG - Deaktivierte Marker:", config.plugins.serienRec.writeLogDeactivatedMarker))
 		self.list.append(getConfigListEntry("DEBUG LOG - Added:", config.plugins.serienRec.writeLogAdded))
 		self.list.append(getConfigListEntry("DEBUG LOG - Festplatte:", config.plugins.serienRec.writeLogDisk))
 		self.list.append(getConfigListEntry("DEBUG LOG - Tageszeit:", config.plugins.serienRec.writeLogTimeRange))
@@ -1432,7 +1438,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Mit dieser Einstellung kann der Einzug der Seriennamen in der Serien-Marker Ansicht angepasst werden. Damit lässt sich eine deutlichere optische Abgrenzung der einzelnen Serien-Marker erreichen."),
 			config.plugins.serienRec.showDeactivatedBoxIDs: (
 				"Bei 'ja' werden die deaktivierten Box-IDs für jeden Serien-Marker angezeigt. So lässt sich schnell erkennen für welche Boxen der Marker aktiviert/deaktiviert wurde."),
-
+			config.plugins.serienRec.showDeactivatedMarkers: (
+				"Bei 'ja' werden in der Serien-Marker Ansicht auch die deaktivierten Marker angezeigt."),
 			config.plugins.serienRec.seasonFilter: ("Bei 'Ausblenden' werden nur Termine angezeigt, die der am Marker eingestellten Staffeln entsprechen.\n"
 			                                      "Bei 'In grau anezeigen' werden die Termine in grau angezeigt, die NICHT der am Marker eingestellten Staffeln entsprechen"),
 			config.plugins.serienRec.timerFilter: (
@@ -1497,6 +1504,8 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 				"Bei 'ja' erfolgt ein Eintrag in die Log-Datei, wenn dem ausstrahlenden Sender in der Sender-Zuordnung kein Box-Sender zugeordnet ist, oder der Box-Sender deaktiviert ist."),
 			config.plugins.serienRec.writeLogAllowedEpisodes: (
 				"Bei 'ja' erfolgt ein Eintrag in die Log-Datei, wenn die zu timende Staffel oder Folge in den Einstellungen des Serien-Markers für diese Serie nicht zugelassen ist."),
+			config.plugins.serienRec.writeLogDeactivatedMarker: (
+				"Bei 'ja' erfolgt ein Eintrag in die Log-Datei, wenn der Serien-Marker für eine Serie deaktiviert ist."),
 			config.plugins.serienRec.writeLogAdded: (
 				"Bei 'ja' erfolgt ein Eintrag in die Log-Datei, wenn für die zu timende Folge bereits die maximale Anzahl von Timern vorhanden ist."),
 			config.plugins.serienRec.writeLogDisk: (

@@ -20,12 +20,12 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.7.7'
+SRVERSION = '4.7.8'
 SRDBVERSION = '4.6.0'
 SRAPIVERSION = '2.11'
-SRWEBAPPVERSION = '1.6.0'
+SRWEBAPPVERSION = '1.7.0'
 SRMANUALURL = "https://einfall.github.io/serienrecorder/"
-SRCOPYRIGHT = "©2014-25 einfall, w22754, egn und MacDisein"
+SRCOPYRIGHT = "©2014-26 einfall, w22754, egn und MacDisein"
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
@@ -624,14 +624,18 @@ class STBHelpers:
 			from Tools.HardwareInfoVu import HardwareInfoVu
 			STBType = HardwareInfoVu().get_device_name()
 		except:
-			from Tools.HardwareInfo import HardwareInfo
 			try:
+				from Tools.HardwareInfo import HardwareInfo
 				STBType = HardwareInfo().get_device_model()
 			except:
 				try:
 					STBType = HardwareInfo().get_device_name()
 				except:
-					STBType = "unknown"
+					try:
+						from Components.SystemInfo import getMachineName
+						STBType = getMachineName()
+					except:
+						STBType = "unknown"
 		return STBType
 
 	@classmethod

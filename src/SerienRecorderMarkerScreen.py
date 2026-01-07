@@ -364,7 +364,10 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 				Nachlaufzeit = config.plugins.serienRec.margin_after.value
 			elif Nachlaufzeit < 0:
 				Nachlaufzeit = 0
-
+			
+			if not SerieAktiviert and not config.plugins.serienRec.showDeactivatedMarkers.value:
+				continue			
+			
 			markerList.append((ID, Serie, Url, staffeln, sender, AufnahmeVerzeichnis, AnzahlAufnahmen, Vorlaufzeit, Nachlaufzeit, preferredChannel, bool(useAlternativeChannel), SerieAktiviert, Info, fsID, deactivatedBoxIDs))
 
 		return numberOfDeactivatedSeries, markerList
