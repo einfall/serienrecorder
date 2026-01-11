@@ -1,11 +1,7 @@
-##Version 4.7.8 (07.01.2026)
-
-**Neue Funktionen:**
-- Zusätzliche Einstellungsoption um deaktivierte Serien-Marker aus der Serien-Marker Ansicht auszublenden
-- Zusätzliche Einstellungsoption um Meldungen zu deaktivierten Serien-Markers im Log zu unterdrücken
+##Version 4.7.9 (11.01.2026)
 
 **Bugfixes:**
-- Kein Absturz, wenn die Imageversion nicht ermittelt werden konnte
+- Fehler beim Aufrufen der Einstellungen im Webinterface
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel

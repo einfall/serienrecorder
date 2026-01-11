@@ -1058,7 +1058,7 @@ class ApiGetSettingsResource(ApiBaseResource):
 				'writeLogVersion' : config.plugins.serienRec.writeLogVersion.value,
 				'writeLogChannels' : config.plugins.serienRec.writeLogChannels.value,
 				'writeLogAllowedEpisodes' : config.plugins.serienRec.writeLogAllowedEpisodes.value,
-				'writeLogDeactivatedMarkers' : config.plugins.serienRec.writeLogDeactivatedMarkers.value,
+				'writeLogDeactivatedMarker' : config.plugins.serienRec.writeLogDeactivatedMarker.value,
 				'writeLogAdded' : config.plugins.serienRec.writeLogAdded.value,
 				'writeLogDisk' : config.plugins.serienRec.writeLogDisk.value,
 				'writeLogTimeRange' : config.plugins.serienRec.writeLogTimeRange.value,
