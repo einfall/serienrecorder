@@ -609,9 +609,11 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 		else:
 			return
 
-	def callDelMsg(self, answer):
+	def callDelMsg(self, deleteTimerAnswer):
 		(serien_name, serien_wlid, serien_fsid) = self.getCurrentSelection()
-		self.removeSerienMarker(serien_fsid, serien_name, answer)
+
+		
+		self.removeSerienMarker(serien_fsid, serien_name, deleteTimerAnswer)
 
 	def callCleanupTimer(self, answer):
 		if answer:

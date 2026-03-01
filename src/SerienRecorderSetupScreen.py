@@ -133,8 +133,8 @@ def ReadConfigFile():
 
 	config.plugins.serienRec.kindOfTimer = ConfigSelection(choices=getKindOfTimerChoices(), default="0")
 	config.plugins.serienRec.afterEvent = ConfigSelection(choices=[("0", "Nichts"), ("1", "In Standby gehen"), ("2", "In Deep-Standby gehen"), ("3", "Automatisch")], default="3")
-	config.plugins.serienRec.margin_before = ConfigInteger(default_before, (0, 99))
-	config.plugins.serienRec.margin_after = ConfigInteger(default_after, (0, 99))
+	config.plugins.serienRec.margin_before = ConfigSelectionNumber(-99, 99, 1, default=default_before)
+	config.plugins.serienRec.margin_after = ConfigSelectionNumber(-99, 99, 1, default=default_after)
 	config.plugins.serienRec.TimerName = ConfigSelection(choices=pattern_title_choices, default=pattern_title_default)
 	config.plugins.serienRec.TimerDescription = ConfigSelection(choices=pattern_description_choices, default=pattern_description_default)
 	config.plugins.serienRec.forceManualRecording = ConfigYesNo(default=False)

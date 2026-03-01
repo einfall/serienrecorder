@@ -9,7 +9,7 @@ import time
 
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.ConfigList import ConfigListScreen, ConfigList
-from Components.config import config, ConfigInteger, getConfigListEntry, ConfigText, ConfigYesNo, ConfigSelection, NoSave, ConfigClock
+from Components.config import config, ConfigInteger, getConfigListEntry, ConfigText, ConfigYesNo, ConfigSelection, NoSave, ConfigClock, ConfigSelectionNumber
 
 from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
@@ -82,17 +82,17 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 													 ("1", "Ja")], default=str(Staffelverzeichnis))
 
 		if str(Vorlaufzeit).isdigit():
-			self.margin_before = ConfigInteger(Vorlaufzeit, (0, 999))
+			self.margin_before = ConfigSelectionNumber(-99, 99, 1, default=Vorlaufzeit)
 			self.enable_margin_before = ConfigYesNo(default=True)
 		else:
-			self.margin_before = ConfigInteger(config.plugins.serienRec.margin_before.value, (0, 999))
+			self.margin_before = ConfigSelectionNumber(-99, 99, 1, default=config.plugins.serienRec.margin_before.value)
 			self.enable_margin_before = ConfigYesNo(default=False)
 
 		if str(Nachlaufzeit).isdigit():
-			self.margin_after = ConfigInteger(Nachlaufzeit, (0, 999))
+			self.margin_after = ConfigSelectionNumber(-99, 99, 1, default=Nachlaufzeit)
 			self.enable_margin_after = ConfigYesNo(default=True)
 		else:
-			self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0, 999))
+			self.margin_after = ConfigSelectionNumber(-99, 99, 1, default=config.plugins.serienRec.margin_after.value)
 			self.enable_margin_after = ConfigYesNo(default=False)
 
 		if str(AnzahlWiederholungen).isdigit():

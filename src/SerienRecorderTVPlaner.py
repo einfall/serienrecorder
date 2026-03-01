@@ -370,6 +370,7 @@ def getEmailData():
 	# Create marker
 	SRLogger.writeLog("\n", True)
 	print("[SerienRecorder] TV-Planer: Create markers...")
+	seriesServer = SeriesServer()
 	for fsID in list(transmissiondict.keys()):
 		print("[SerienRecorder] TV-Planer: Check whether or not a marker exists for fsid: [%s]" % str(fsID))
 		# marker isn't in database, create new marker
@@ -381,13 +382,13 @@ def getEmailData():
 			boxID = None
 			seriesInfo = ""
 			if url.startswith('https://www.wunschliste.de/serie'):
-				seriesID = SeriesServer().getIDByFSID(fsID)
+				seriesID = seriesServer.getIDByFSID(fsID)
 				if seriesID == 0:
-					seriesID = SeriesServer().getSeriesIDBySearch(seriesname, fsID)
+					seriesID = seriesServer.getSeriesIDBySearch(seriesname, fsID)
 
 				if seriesID > 0:
 					url = str(seriesID)
-					data = SeriesServer().getSeriesNamesAndInfoByWLID([seriesID])
+					data = seriesServer.getSeriesNamesAndInfoByWLID([seriesID])
 					if data:
 						seriesInfo = data[0]['info']
 				else:

@@ -15,15 +15,15 @@ else:
 	import pickle
 
 class downloadPlannerData(threading.Thread):
-	def __init__ (self, daypage, webChannels):
+	def __init__ (self, daypage, webChannels, seriesServer):
 		threading.Thread.__init__(self)
 		self.daypage = daypage
 		self.webChannels = webChannels
 		self.plannerData = None
+		self.seriesServer = seriesServer
 	def run(self):
 		try:
-			from .SerienRecorderSeriesServer import SeriesServer
-			self.plannerData = SeriesServer().doGetPlannerData(self.daypage, self.webChannels)
+			self.plannerData = self.seriesServer.doGetPlannerData(self.daypage, self.webChannels)
 		except:
 			SRLogger.writeLog("Fehler beim Abrufen und Verarbeiten der Serien-Planer Daten [%s]\n" % str(self.daypage), True)
 
@@ -44,8 +44,11 @@ class serienRecSeriesPlanner:
 
 		downloadPlannerDataResults = []
 		plannerCacheSize = 2
+		from .SerienRecorderSeriesServer import SeriesServer
+
+		seriesServer = SeriesServer()
 		for daypage in range(plannerCacheSize):
-			plannerData = downloadPlannerData(int(daypage), webChannels)
+			plannerData = downloadPlannerData(int(daypage), webChannels, seriesServer)
 			downloadPlannerDataResults.append(plannerData)
 			plannerData.start()
 

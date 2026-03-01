@@ -387,10 +387,11 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			webChannels = self.database.getActiveChannels()
 
 			def cacheData():
+				seriesServer = SeriesServer()
 				if config.plugins.serienRec.screenplaner.value == 1:
-					result = SeriesServer().doGetPlannerData(int(self.page), webChannels)
+					result = seriesServer.doGetPlannerData(int(self.page), webChannels)
 				else:
-					result = SeriesServer().doGetTopThirty()
+					result = seriesServer.doGetTopThirty()
 				return result
 
 			def onCacheDataSuccessful(result):

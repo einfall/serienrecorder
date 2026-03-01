@@ -274,16 +274,17 @@ class ApiGetTVDBCoversResource(ApiBaseResource):
 
 		data = {}
 		posterURLs = None
+		seriesServer = SeriesServer()
 		if config.plugins.serienRec.downloadCover.value:
 			try:
-				posterURLs = SeriesServer().getCoverURLs(wl_id)
+				posterURLs = seriesServer.getCoverURLs(wl_id)
 			except:
 				posterURLs = None
 
 		from .SerienRecorderScreenHelpers import EditTVDBID
 
 		data['urls'] = posterURLs
-		data['tvdbid'] = SeriesServer().getTVDBID(wl_id)
+		data['tvdbid'] = seriesServer.getTVDBID(wl_id)
 		data['allowChangeTVDBID'] = EditTVDBID.allowChangeTVDBID()
 
 		return self.returnResult(req, True, data)
@@ -1740,14 +1741,14 @@ class ApiGetSeriesInfoResource(ApiBaseResource):
 			from .SerienRecorderSeriesServer import SeriesServer
 
 			posterURL = None
+			seriesServer = SeriesServer()
 			if config.plugins.serienRec.downloadCover.value:
 				try:
-					posterURL = SeriesServer().doGetCoverURL(0, fs_id)
+					posterURL = seriesServer.doGetCoverURL(0, fs_id)
 				except:
 					posterURL = None
 
-			seriesInfo = SeriesServer().getSeriesInfo(wl_id, True)
-
+			seriesInfo = seriesServer.getSeriesInfo(wl_id, True)
 			data = { 'info': seriesInfo, 'coverURL': posterURL }
 
 		return self.returnResult(req, True, data)

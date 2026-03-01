@@ -513,6 +513,8 @@ class SRDatabase:
 		result = True
 		cur = self._srDBConn.cursor()
 		try:
+			from .SerienRecorderSeriesServer import SeriesServer
+			seriesServer = SeriesServer()
 			cur.execute("BEGIN TRANSACTION")
 			cur.execute("SELECT ID, Serie, Url FROM SerienMarker")
 			rows = cur.fetchall()
@@ -529,8 +531,7 @@ class SRDatabase:
 					else:
 						url = url[str.rindex(url, '=') + 1:]
 						if not url.isdigit():
-							from .SerienRecorderSeriesServer import SeriesServer
-							url = SeriesServer().getIDByFSID(url)
+							url = seriesServer.getIDByFSID(url)
 						cur.execute("UPDATE SerienMarker SET Url=? WHERE ID=?", (url, ID))
 			cur.execute("COMMIT")
 		except Exception as e:

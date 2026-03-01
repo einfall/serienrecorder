@@ -4,6 +4,8 @@
 
 from .SerienRecorderHelpers import toStr, PY2
 
+import inspect
+
 
 # Constants
 SERIES_SERVER_IP = 'www.serienserver.de'
@@ -42,13 +44,24 @@ class SeriesServer:
 
 	def __init__(self):
 		# Check dependencies
+		print("[SerienRecorder] SeriesServer init caller function name: [%s]" %	inspect.stack()[1][3])
 		if xmlrpclib is not None:
 			t = TimeoutTransport(7)
 			self.server = xmlrpclib.ServerProxy(SERIES_SERVER_BASE_URL + "/cache.php", transport=t)
 
 	@staticmethod
+	def getIP():
+		try:
+			import socket
+			return socket.gethostbyname(SERIES_SERVER_IP)
+		except Exception as e:
+			print("[SerienRecorder] Error getting Serien Server IP [%s]" % str(e))
+			return None
+
+	@staticmethod
 	def getChannelListLastUpdate():
 		remoteChannelListLastUpdated = None
+		print("[SerienRecorder] SeriesServer init caller function name: [%s]" %	inspect.stack()[1][3])
 		try:
 			if PY2:
 				import httplib

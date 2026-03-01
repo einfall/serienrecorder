@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import os, time, threading, datetime, random
+import os, time, threading, datetime, random, socket
 import Screens.Standby
 # Navigation (RecordTimer)
 import NavigationInstance
@@ -25,11 +25,12 @@ transmissionFailed = False
 ########################################################################################################################
 
 class downloadTransmissionsThread(threading.Thread):
-	def __init__(self, index, jobs, results):
+	def __init__(self, index, jobs, server, results):
 		threading.Thread.__init__(self)
 		self.index = index
 		self.jobQueue = jobs
 		self.resultQueue = results
+		self.server = server
 
 	def run(self):
 		while not self.jobQueue.empty():
@@ -41,7 +42,7 @@ class downloadTransmissionsThread(threading.Thread):
 		(seriesID, fsID, timeSpan, markerChannels, seriesTitle, season, fromEpisode, numberOfRecords, currentTime, futureTime, excludedWeekdays, limitedChannels) = data
 		try:
 			isTransmissionFailed = False
-			transmissions = SeriesServer().doGetTransmissions(seriesID, timeSpan, markerChannels)
+			transmissions = self.server.doGetTransmissions(seriesID, timeSpan, markerChannels)
 		except:
 			isTransmissionFailed = True
 			transmissions = None
@@ -563,8 +564,9 @@ class serienRecCheckForRecording:
 						SRLogger.writeLogFilter("allowedEpisodes", "' %s ' - Für diesen Serien-Marker sind die Staffeln eingeschränkt - es werden nicht alle Ausstrahlungstermine berücksichtigt." % serienTitle)
 
 				# Create the threads
+				server = SeriesServer()
 				for i in range(4):
-					worker = downloadTransmissionsThread(i, jobQueue, resultQueue)
+					worker = downloadTransmissionsThread(i, jobQueue, server, resultQueue)
 					worker.setDaemon(True)
 					worker.start()
 

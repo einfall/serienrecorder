@@ -1,7 +1,9 @@
-##Version 4.7.9 (11.01.2026)
+##Version 4.7.10-beta (01.02.2026)
 
-**Bugfixes:**
-- Fehler beim Aufrufen der Einstellungen im Webinterface
+**Änderungen:**
+- Negative Vor- und Nachlaufzeiten für Timer möglich
+- Optimierter Zugriff auf den Serien-Server
+
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel
