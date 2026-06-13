@@ -113,6 +113,9 @@ class checkGitHubUpdate:
 			latestRelease = checkGitHubUpdate.getLastestReleaseData()
 			#latestRelease = data[0]
 			latestVersion = latestRelease['tag_name'][1:]
+			# if the first character is a ".", remove it for version comparison
+			if latestVersion.startswith('.'):
+				latestVersion = latestVersion[1:]
 
 			remoteversion = latestVersion.lower().replace("-", ".").replace("beta", "-1").split(".")
 			version = config.plugins.serienRec.showversion.value.lower().replace("-", ".").replace("alpha", "-1").replace("beta", "-1").split(".")
@@ -158,8 +161,8 @@ class checkGitHubUpdate:
 				(updateName, updateInfo, updateDate, downloadURL, downloadFileSize) = result
 				self.session.open(checkGitHubUpdateScreen, updateName, updateInfo, updateDate, downloadURL, downloadFileSize)
 
-		def onUpdateCheckFailed():
-			print("[SerienRecorder] Update check failed")
+		def onUpdateCheckFailed(exception):
+			print("[SerienRecorder] Update check failed: %s" % str(exception))
 			self.session.open(MessageBox, "Bei der Suche nach einer neuen SerienRecorder Version ist ein Fehler aufgetreten!", MessageBox.TYPE_INFO, timeout=5)
 
 		import twisted.python.runtime
@@ -170,8 +173,8 @@ class checkGitHubUpdate:
 			try:
 				result = checkReleases()
 				onUpdateAvailable(result)
-			except:
-				onUpdateCheckFailed()
+			except Exception as e:
+				onUpdateCheckFailed(e)
 
 
 class checkGitHubUpdateScreen(Screen):

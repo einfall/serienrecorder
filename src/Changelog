@@ -1,8 +1,8 @@
-##Version 4.7.10-beta (01.02.2026)
+##Version 4.7.11-beta (13.06.2026)
 
-**Änderungen:**
-- Negative Vor- und Nachlaufzeiten für Timer möglich
-- Optimierter Zugriff auf den Serien-Server
+**Bugfix:**
+- Verzeichnis für Serien mit Umlaut/Sonderzeichen konnten nicht angelegt werden
+- Fehler beim Erkennen der gitHub Versionsnummer beim Auto-Update behoben
 
 
 Spenden an die Entwickler:

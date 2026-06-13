@@ -20,7 +20,7 @@ import datetime, os, re, sys, time, shutil
 # ----------------------------------------------------------------------------------------------------------------------
 
 STBTYPE = None
-SRVERSION = '4.7.10-beta'
+SRVERSION = '4.7.11-beta'
 SRDBVERSION = '4.6.0'
 SRAPIVERSION = '2.12'
 SRWEBAPPVERSION = '1.7.2'
@@ -354,7 +354,7 @@ def getDirname(database, serien_name, serien_fsid, staffel):
 
 	print("[SerienRecorder] Dirname: [%s]" % dirname)
 	print("[SerienRecorder] Series Dirname: [%s]" % dirname_serie)
-	return dirname, dirname_serie
+	return toStr(dirname), toStr(dirname_serie)
 
 def readTags(tagString):
 	tags = []
