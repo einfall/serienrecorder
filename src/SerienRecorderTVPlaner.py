@@ -217,7 +217,7 @@ def getEmailData():
 		transmissionRows = transmissionTable.childNodes
 		for transmissionRow in transmissionRows:
 			transmission = []
-			if not transmissionRow.hasAttribute('style'):
+			if transmissionRow.hasAttribute('style') and transmissionRow.getAttribute('style') == 'vertical-align: top':
 				transmissionColumns = transmissionRow.childNodes
 				# Each transmission row has three columns
 				# [0]: Start time
