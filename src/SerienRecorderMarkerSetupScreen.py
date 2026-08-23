@@ -81,14 +81,14 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 			config.plugins.serienRec.seasonsubdir.value).replace("True", "Ja").replace("False", "Nein")), ("0", "Nein"),
 													 ("1", "Ja")], default=str(Staffelverzeichnis))
 
-		if str(Vorlaufzeit).isdigit():
+		if str(Vorlaufzeit).lstrip("-").isdigit():
 			self.margin_before = ConfigSelectionNumber(-99, 99, 1, default=Vorlaufzeit)
 			self.enable_margin_before = ConfigYesNo(default=True)
 		else:
 			self.margin_before = ConfigSelectionNumber(-99, 99, 1, default=config.plugins.serienRec.margin_before.value)
 			self.enable_margin_before = ConfigYesNo(default=False)
 
-		if str(Nachlaufzeit).isdigit():
+		if str(Nachlaufzeit).lstrip("-").isdigit():
 			self.margin_after = ConfigSelectionNumber(-99, 99, 1, default=Nachlaufzeit)
 			self.enable_margin_after = ConfigYesNo(default=True)
 		else:

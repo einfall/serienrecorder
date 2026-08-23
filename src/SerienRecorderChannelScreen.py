@@ -8,7 +8,7 @@ from Screens.MessageBox import MessageBox
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.MenuList import MenuList
 from Components.ConfigList import ConfigList, ConfigListScreen
-from Components.config import config, ConfigInteger, getConfigListEntry, ConfigYesNo
+from Components.config import config, ConfigInteger, ConfigSelectionNumber, getConfigListEntry, ConfigYesNo
 
 from enigma import eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, loadPNG, RT_VALIGN_CENTER, eTimer
 from skin import parseColor
@@ -664,18 +664,18 @@ class serienRecChannelSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpa
 
 		(Vorlaufzeit, Nachlaufzeit, vps, autoAdjust) = self.database.getChannelsSettings(self.webSender)
 
-		if str(Vorlaufzeit).isdigit():
-			self.margin_before = ConfigInteger(Vorlaufzeit, (0, 99))
+		if str(Vorlaufzeit).lstrip("-").isdigit():
+			self.margin_before = ConfigSelectionNumber(-99, 99, 1, default=Vorlaufzeit)
 			self.enable_margin_before = ConfigYesNo(default=True)
 		else:
-			self.margin_before = ConfigInteger(config.plugins.serienRec.margin_before.value, (0, 99))
+			self.margin_before = ConfigSelectionNumber(-99, 99, 1, default=config.plugins.serienRec.margin_before.value)
 			self.enable_margin_before = ConfigYesNo(default=False)
 
-		if str(Nachlaufzeit).isdigit():
-			self.margin_after = ConfigInteger(Nachlaufzeit, (0, 99))
+		if str(Nachlaufzeit).lstrip("-").isdigit():
+			self.margin_after = ConfigSelectionNumber(-99, 99, 1, default=Nachlaufzeit)
 			self.enable_margin_after = ConfigYesNo(default=True)
 		else:
-			self.margin_after = ConfigInteger(config.plugins.serienRec.margin_after.value, (0, 99))
+			self.margin_after = ConfigSelectionNumber(-99, 99, 1, default=config.plugins.serienRec.margin_after.value)
 			self.enable_margin_after = ConfigYesNo(default=False)
 
 		if str(vps).isdigit():

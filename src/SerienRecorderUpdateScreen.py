@@ -109,6 +109,8 @@ class checkGitHubUpdate:
 			configfile.save()
 			return
 
+
+
 		def checkReleases():
 			latestRelease = checkGitHubUpdate.getLastestReleaseData()
 			#latestRelease = data[0]
@@ -259,9 +261,19 @@ class checkGitHubUpdateScreen(Screen):
 
 		self.onLayoutFinish.append(self.__onLayoutFinished)
 
+	def iso8610ToLocalTime(self, iso8601_string):
+		from datetime import datetime
+		import calendar
+		
+		dt_utc = datetime.strptime("2026-07-17T17:26:38Z", '%Y-%m-%dT%H:%M:%SZ')
+		timestamp = calendar.timegm(dt_utc.timetuple())
+		dt_local = datetime.fromtimestamp(timestamp)
+
+		return dt_local.strftime('%d.%m.%Y um %H:%M Uhr')
+	
 	def __onLayoutFinished(self):
 		self['headline'].setText("Update verfügbar: %s" % self.updateName)
-		self['dateline'].setText("Veröffentlicht am: %s / Größe: %s kB" % (re.sub(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z", r"\3.\2.\1 um \4:\5 Uhr", self.updateDate), self.downloadFileSize))
+		self['dateline'].setText("Veröffentlicht am: %s / Größe: %s kB" % (self.iso8610ToLocalTime(self.updateDate), self.downloadFileSize))
 
 		changelog_list = []
 		for row in self.updateInfo.splitlines():
