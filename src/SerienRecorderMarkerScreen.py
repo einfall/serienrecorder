@@ -357,13 +357,9 @@ class serienRecMarker(serienRecBaseScreen, Screen, HelpableScreen):
 
 			if Vorlaufzeit is None:
 				Vorlaufzeit = config.plugins.serienRec.margin_before.value
-			elif Vorlaufzeit < 0:
-				Vorlaufzeit = 0
-
+			
 			if Nachlaufzeit is None:
 				Nachlaufzeit = config.plugins.serienRec.margin_after.value
-			elif Nachlaufzeit < 0:
-				Nachlaufzeit = 0
 			
 			if not SerieAktiviert and not config.plugins.serienRec.showDeactivatedMarkers.value:
 				continue			

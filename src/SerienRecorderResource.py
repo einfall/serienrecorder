@@ -579,13 +579,13 @@ class ApiGetMarkerSettingsResource(ApiBaseResource):
 		if not timerSeriesName:
 			timerSeriesName = ""
 
-		if str(Vorlaufzeit).isdigit():
+		if str(Vorlaufzeit).lstrip("-").isdigit():
 			enable_lead_time = True
 		else:
 			Vorlaufzeit = config.plugins.serienRec.margin_before.value
 			enable_lead_time = False
 
-		if str(Nachlaufzeit).isdigit():
+		if str(Nachlaufzeit).lstrip("-").isdigit():
 			enable_followup_time = True
 		else:
 			Nachlaufzeit = config.plugins.serienRec.margin_after.value

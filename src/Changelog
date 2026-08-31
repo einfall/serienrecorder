@@ -1,13 +1,11 @@
-##Version 4.7.12 (17.07.2026)
+##Version 4.8.0-beta (31.08.2026)
 
 **Änderungen:**
-- Negative Vor- und Nachlaufzeiten für Timer möglich
-- Optimierter Zugriff auf den Serien-Server
+- Verhalten von Vor- und Nachlaufzeiten geändert (siehe Forum)
 
 **Bugfix:**
-- Verzeichnis für Serien mit Umlaut/Sonderzeichen konnten nicht angelegt werden
-- Fehler beim Erkennen der gitHub Versionsnummer beim Auto-Update behoben
-- Parsing der TV-Planer E-Mail an neues Format angepasst
+- Negative Vor- und Nachlaufzeiten wurden am Timer nicht korrekt gesetzt
+- Negative Vor- und Nachlaufzeiten konnten nicht im SerienRecorder Webinterface gespeichert werden
 
 
 Spenden an die Entwickler:

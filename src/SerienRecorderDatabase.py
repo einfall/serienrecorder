@@ -791,22 +791,14 @@ class SRDatabase:
 		cur.execute("SELECT COUNT(*) FROM SerienMarker WHERE fsID=?", [fsID])
 		markerExists = (cur.fetchone()[0] > 0)
 		if markerExists:
-			cur.execute("SELECT MAX(IFNULL(SerienMarker.Vorlaufzeit, -1), IFNULL(Channels.Vorlaufzeit, -1)), MAX(IFNULL(SerienMarker.Nachlaufzeit, -1), IFNULL(Channels.Nachlaufzeit, -1)) FROM SerienMarker, Channels WHERE SerienMarker.fsID=? AND LOWER(Channels.WebChannel)=?", (fsID, channel.lower()))
+			#cur.execute("SELECT MAX(IFNULL(SerienMarker.Vorlaufzeit, -1), IFNULL(Channels.Vorlaufzeit, -1)), MAX(IFNULL(SerienMarker.Nachlaufzeit, -1), IFNULL(Channels.Nachlaufzeit, -1)) FROM SerienMarker, Channels WHERE SerienMarker.fsID=? AND LOWER(Channels.WebChannel)=?", (fsID, channel.lower()))
+			cur.execute("SELECT IFNULL(IFNULL(SerienMarker.Vorlaufzeit, Channels.Vorlaufzeit), ?), IFNULL(IFNULL(SerienMarker.Nachlaufzeit, Channels.Nachlaufzeit), ?) FROM SerienMarker, Channels WHERE SerienMarker.fsID=? AND LOWER(Channels.WebChannel)=?", (globalMarginBefore, globalMarginAfter, fsID, channel.lower()))
 		else:
-			cur.execute("SELECT IFNULL(Vorlaufzeit, -1), IFNULL(Nachlaufzeit, -1) FROM Channels WHERE LOWER(WebChannel)=?", [channel.lower()])
+			#cur.execute("SELECT IFNULL(Vorlaufzeit, -1), IFNULL(Nachlaufzeit, -1) FROM Channels WHERE LOWER(WebChannel)=?", [channel.lower()])
+			cur.execute("SELECT IFNULL(Vorlaufzeit, ?), IFNULL(Nachlaufzeit, ?) FROM Channels WHERE LOWER(WebChannel)=?", (globalMarginBefore, globalMarginAfter, channel.lower()))
 		row = cur.fetchone()
-		if not row:
-			margin_before = globalMarginBefore
-			margin_after = globalMarginAfter
-		else:
-			(margin_before, margin_after) = row
-
-		if margin_before is None or margin_before == -1:
-			margin_before = globalMarginBefore
-
-		if margin_after is None or margin_after == -1:
-			margin_after = globalMarginAfter
-
+		(margin_before, margin_after) = row
+		
 		cur.close()
 		return margin_before, margin_after
 
