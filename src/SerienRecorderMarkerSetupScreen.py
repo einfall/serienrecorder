@@ -235,7 +235,10 @@ class serienRecMarkerSetup(serienRecBaseScreen, Screen, ConfigListScreen, Helpab
 		self.onLayoutFinish.append(self.setSkinProperties)
 
 	def callHelpAction(self, *args):
-		HelpableScreen.callHelpAction(self, *args)
+		if not hasattr(HelpableScreen, "callHelpAction"):
+			Screen.callHelpAction(self, *args)
+		else:
+			HelpableScreen.callHelpAction(self, *args)
 
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()

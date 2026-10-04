@@ -135,7 +135,10 @@ class serienRecMainScreen(serienRecBaseScreen, Screen, HelpableScreen):
 			self.startScreen()
 
 	def callHelpAction(self, *args):
-		HelpableScreen.callHelpAction(self, *args)
+		if not hasattr(HelpableScreen, "callHelpAction"):
+			Screen.callHelpAction(self, *args)
+		else:
+			HelpableScreen.callHelpAction(self, *args)
 
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
