@@ -1580,6 +1580,8 @@ class SRDatabase:
 				if AlleStaffelnAb < 999999:
 					seasons.insert(0, -1)
 					seasons.append(AlleStaffelnAb)
+				else:
+					seasons.append(AlleStaffelnAb)
 
 			AnzahlAufnahmen = int(numberOfRecordings)
 			if str(AnzahlWiederholungen).isdigit():

@@ -76,12 +76,6 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		self.onClose.append(self.__onClose)
 		self.onLayoutFinish.append(self.setSkinProperties)
 
-	def callHelpAction(self, *args):
-		if not hasattr(HelpableScreen, "callHelpAction"):
-			Screen.callHelpAction(self, *args)
-		else:
-			HelpableScreen.callHelpAction(self, *args)
-
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
 
@@ -303,11 +297,11 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 		elif addedType == 1:
 			titleColor = None
 			titleColorSelected = None
-			imageHDD = "%simages/hdd_icon.png" % serienRecMainPath
+			imageHDD = "%s/images/hdd_icon.png" % serienRecMainPath
 		elif addedType == 2:
 			titleColor = parseColor('blue').argb()
 			titleColorSelected = 0x0099C7
-			imageTimer = "%simages/timer.png" % serienRecMainPath
+			imageTimer = "%s/images/timer.png" % serienRecMainPath
 		elif addedType == 3:
 			titleColor = parseColor('green').argb()
 			titleColorSelected = titleColor
@@ -626,7 +620,6 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 	def isSeasonAllowed(season, episode, markerSeasons, fromEpisode, specialsAllowed, seriesName, seasonEpisodeString):
 		if not markerSeasons and not fromEpisode:
 			return True
-		
 		allowed = False
 		if -2 in markerSeasons:  # 'Manuell'
 			allowed = False
@@ -658,7 +651,7 @@ class serienRecSendeTermine(serienRecBaseScreen, Screen, HelpableScreen):
 					allowed = True
 		elif specialsAllowed:
 			allowed = True
-
+		
 		return allowed
 
 	def keyOK(self):

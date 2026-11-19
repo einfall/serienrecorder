@@ -1,12 +1,8 @@
-##Version 4.8.0 (03.10.2026)
-
-**Änderungen:**
-- Verhalten von Vor- und Nachlaufzeiten geändert (siehe Forum)
+##Version 4.8.1-beta (18.11.2026)
 
 **Bugfix:**
-- Negative Vor- und Nachlaufzeiten wurden am Timer nicht korrekt gesetzt
-- Negative Vor- und Nachlaufzeiten konnten nicht im SerienRecorder Webinterface gespeichert werden
-- Kein Absturz beim Aufrufen der Hilfe in neueren openATV Versionen
+- Nur "Specials" als Staffelfilter funktioniert jetzt wie erwartet
+- HDD und Timer Symbole werden in der Sendetermine Ansicht wieder angezeigt
 
 Spenden an die Entwickler:
 @einfall: sendet eine PN für den Amazon-Wunschzettel

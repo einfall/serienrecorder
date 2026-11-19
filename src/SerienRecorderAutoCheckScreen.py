@@ -99,12 +99,6 @@ class serienRecRunAutoCheckScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		#self.onLayoutFinish.append(self.readLog)
 		self.onClose.append(self.__onClose)
 
-	def callHelpAction(self, *args):
-		if not hasattr(HelpableScreen, "callHelpAction"):
-			Screen.callHelpAction(self, *args)
-		else:
-			HelpableScreen.callHelpAction(self, *args)
-
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
 

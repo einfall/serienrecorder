@@ -70,12 +70,6 @@ class serienRecTimerListScreen(serienRecBaseScreen, Screen, HelpableScreen):
 		self.onLayoutFinish.append(self.readTimer)
 		self.onClose.append(self.__onClose)
 		self.onLayoutFinish.append(self.setSkinProperties)
-
-	def callHelpAction(self, *args):
-		if not hasattr(HelpableScreen, "callHelpAction"):
-			Screen.callHelpAction(self, *args)
-		else:
-			HelpableScreen.callHelpAction(self, *args)
 			
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()

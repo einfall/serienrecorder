@@ -68,12 +68,6 @@ class serienRecUndoTimerList(serienRecBaseScreen, Screen, HelpableScreen):
 
 		super(self.__class__, self).startDisplayTimer()
 
-	def callHelpAction(self, *args):
-		if not hasattr(HelpableScreen, "callHelpAction"):
-			Screen.callHelpAction(self, *args)
-		else:
-			HelpableScreen.callHelpAction(self, *args)
-
 	def setupSkin(self):
 		self.skin = None
 		InitSkin(self)

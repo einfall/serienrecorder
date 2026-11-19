@@ -613,12 +613,6 @@ class serienRecSetup(serienRecBaseScreen, Screen, ConfigListScreen, HelpableScre
 		config.plugins.serienRec.showAdvice.save()
 		configfile.save()
 
-	def callHelpAction(self, *args):
-		if not hasattr(HelpableScreen, "callHelpAction"):
-			Screen.callHelpAction(self, *args)
-		else:
-			HelpableScreen.callHelpAction(self, *args)
-
 	def setSkinProperties(self):
 		super(self.__class__, self).setSkinProperties()
 
